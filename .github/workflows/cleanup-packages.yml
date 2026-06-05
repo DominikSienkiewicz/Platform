@@ -1,0 +1,58 @@
+name: Cleanup old package versions
+
+# Co 6h: dla każdego pakietu Platform (Maven + npm) zostawia N najnowszych wersji, resztę kasuje.
+# Bez tego GitHub Packages szybko puchnie (każdy publish = nowa wersja).
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: "Ile najnowszych wersji zostawić (per pakiet)"
+        type: string
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune (keep last N per package)
+        env:
+          # PAT konta (classic) z zakresami: read:packages + delete:packages.
+          # WAŻNE: automatyczny GITHUB_TOKEN NIE zarządza pakietami KONTA użytkownika — potrzebny PAT.
+          GH_TOKEN: ${{ secrets.PACKAGES_ADMIN_TOKEN }}
+          KEEP: ${{ inputs.keep || '3' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::Brak sekretu PACKAGES_ADMIN_TOKEN (PAT classic: read:packages + delete:packages)."
+            exit 1
+          fi
+
+          # Filtr bezpieczeństwa: ruszamy TYLKO pakiety Platform (nie inne pakiety konta).
+          PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@dominiksienkiewicz/)'
+
+          for type in maven npm; do
+            echo "::group::typ=$type"
+            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
+              | grep -E "$PLATFORM_RE" || { echo "(brak pakietów $type)"; echo "::endgroup::"; continue; }
+            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
+              | grep -E "$PLATFORM_RE" | while read -r pkg; do
+                enc=$(printf '%s' "$pkg" | jq -sRr @uri)
+                to_delete=$(gh api --paginate "/user/packages/$type/$enc/versions" --jq '.[]' \
+                  | jq -s --argjson keep "$KEEP" 'sort_by(.created_at) | reverse | .[$keep:] | .[].id')
+                if [ -z "$to_delete" ]; then
+                  echo "  $pkg: ≤ $KEEP wersji — nic do usunięcia"
+                  continue
+                fi
+                for id in $to_delete; do
+                  echo "  $pkg: usuwam wersję id=$id"
+                  gh api --method DELETE "/user/packages/$type/$enc/versions/$id"
+                done
+              done
+            echo "::endgroup::"
+          done
+          echo "Gotowe — zostawiono po $KEEP najnowszych wersji każdego pakietu Platform."

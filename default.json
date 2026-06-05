@@ -50,6 +50,18 @@
       "managerFilePatterns": ["/PlatformImages\\.java$/"],
       "matchStrings": ["\"(?<depName>[^\"]+?):(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Bump pinów platformy (catalog + convention pluginy) w Gradle konsumentów — datasource maven z GitHub Packages. Wymaga hostRules z tokenem read:packages w konfiguracji Renovate.",
+      "managerFilePatterns": ["/(settings|build)\\.gradle\\.kts$/"],
+      "matchStrings": [
+        "from\\(\"pl\\.seniordeveloper:catalog:(?<currentValue>[^\"]+)\"\\)",
+        "id\\(\"seniordev\\.[a-z-]+-conventions\"\\)\\s+version\\s+\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "pl.seniordeveloper:catalog",
+      "datasourceTemplate": "maven",
+      "registryUrlTemplate": "https://maven.pkg.github.com/DominikSienkiewicz/Platform"
     }
   ]
 }
