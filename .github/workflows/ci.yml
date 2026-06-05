@@ -1,0 +1,54 @@
+name: CI
+
+# Walidacja KAŻDEGO pushu/PR do Platform: czy build-logic / catalog / test-fixtures kompilują się
+# na JDK 25 i czy paczki frontendu instalują się + lintują. (Publish robi osobno release.yml.)
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gradle:
+    name: Gradle — ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [build-logic, catalog, test-fixtures]
+    defaults:
+      run:
+        working-directory: gradle/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build
+        run: chmod +x ./gradlew && ./gradlew --no-daemon build
+
+  frontend:
+    name: Frontend — install + lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm -r --if-present lint
