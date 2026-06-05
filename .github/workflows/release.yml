@@ -49,9 +49,18 @@ jobs:
           GPR_REPO: ${{ github.event.repository.name }}
           V: ${{ needs.version.outputs.version }}
         run: |
-          set -euo pipefail
+          set +e   # nie przerywaj na błędzie publish — sami obsługujemy 409 (idempotencja)
           for m in build-logic catalog test-fixtures; do
-            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" publish )
+            echo "== publish gradle/$m ($V) =="
+            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" publish ) 2>&1 | tee "/tmp/pub-$m.log"
+            rc=${PIPESTATUS[0]}
+            if [ "$rc" -ne 0 ]; then
+              if grep -q "status code 409" "/tmp/pub-$m.log"; then
+                echo "::notice::$m $V już opublikowane (409) — pomijam (publish idempotentny)"
+              else
+                echo "::error::publish $m nie powiódł się (kod $rc)"; exit 1
+              fi
+            fi
           done
 
   npm:
