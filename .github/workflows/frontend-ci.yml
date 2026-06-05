@@ -15,7 +15,7 @@ on:
         type: boolean
         default: false
     secrets:
-      gpr-token:
+      gpr_token:
         description: "Token do GitHub Packages npm (@dominiksienkiewicz/*). Fallback: automatyczny GITHUB_TOKEN."
         required: false
 
@@ -31,7 +31,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     env:
       # .npmrc konsumenta czyta ${GITHUB_TOKEN} dla scope @dominiksienkiewicz na GitHub Packages.
-      GITHUB_TOKEN: ${{ secrets.gpr-token || secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:

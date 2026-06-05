@@ -15,7 +15,7 @@ on:
         type: string
         default: "build"
     secrets:
-      gpr-token:
+      gpr_token:
         description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
         required: false
 
@@ -47,7 +47,7 @@ jobs:
         run: ./gradlew ${{ inputs.gradle-task }} --no-daemon --stacktrace
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.gpr-token || secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
 
       - name: Upload test reports
         if: ${{ !cancelled() }}
