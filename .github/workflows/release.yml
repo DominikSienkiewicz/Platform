@@ -6,12 +6,9 @@ name: Release (auto-version on push)
 #   3) przytnij do 3 najnowszych wersji każdego pakietu.
 # Konsumenci trzymają DOKŁADNE piny (powtarzalność); Renovate podbija je do najnowszej.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "gradle/**"
-      - "frontend/packages/**"
   workflow_dispatch:
+  push:
+    tags: ["v*"]   # wydanie = świadomy tag (wersja z gradle.properties), nie każdy push
 
 permissions:
   contents: read
@@ -30,9 +27,9 @@ jobs:
       - uses: actions/checkout@v4
       - id: v
         run: |
-          MAJMIN=$(grep '^platformVersion=' gradle/build-logic/gradle.properties | cut -d= -f2 | cut -d. -f1,2)
-          echo "version=${MAJMIN}.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
-          echo "Wersja release: ${MAJMIN}.${{ github.run_number }}"
+          V=$(grep '^platformVersion=' gradle/build-logic/gradle.properties | cut -d= -f2 | tr -d ' ')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Wersja release: $V (z gradle.properties — jedno źródło: local == GitHub == pin)"
 
   gradle:
     needs: version

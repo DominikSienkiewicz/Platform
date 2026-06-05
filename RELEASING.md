@@ -1,9 +1,10 @@
 # Releasing Platform
 
-Artefakty wersjonowane **automatycznie**: każdy push do `main` zmieniający `gradle/**` lub
-`frontend/packages/**` uruchamia `release.yml`, który nadaje wersję **`1.0.<run_number>`**
-(major.minor z `gradle/build-logic/gradle.properties`, patch = numer runu — zawsze unikalny, więc
-nigdy nie ma 409), publikuje Maven + npm i przycina do **3 najnowszych** wersji.
+Artefakty wersjonowane **deliberate**: jedna wersja w `gradle/build-logic/gradle.properties`
+(`platformVersion`) — ta sama lokalnie (mavenLocal), na GitHub Packages i w pinach konsumentów.
+`release.yml` publikuje **tę** wersję, wyzwalany **świadomie** (tag `v*` lub workflow_dispatch),
+publikuje Maven + npm i przycina do **3 najnowszych**. Bump = zmiana `platformVersion` + tag.
+(Auto-bump na każdy push został wycofany — kłócił się z dokładnymi pinami + local-first + keep-3.)
 
 Reusable workflows w repo konsumenckich wskazują **`@v1`** (ruchomy tag majora w gicie — niezależny od
 wersji artefaktów). Konsumenci trzymają DOKŁADNE piny artefaktów; Renovate je podbija.
@@ -17,13 +18,20 @@ wersji artefaktów). Konsumenci trzymają DOKŁADNE piny artefaktów; Renovate j
 git tag -f v1 && git push -f origin v1
 ```
 
-## Codzienna praca (wydanie = push)
+## Wydanie (świadome)
 
 ```bash
 cd Platform
-git add -A && git commit -m "feat: <zmiana platformy>"
-git push        # release.yml: wersja 1.0.N → publish (Maven + npm) → prune (keep 3)
+# 1) bump platformVersion w 3 plikach gradle.properties (build-logic, catalog, test-fixtures)
+#    + version("platform", ...) w gradle/catalog/build.gradle.kts   (lustro)
+git add -A && git commit -m "release: platform X.Y.Z" && git push
+# 2) wyzwól publikację (jedno z dwóch):
+git tag vX.Y.Z && git push origin vX.Y.Z        # albo: Actions → Release → Run workflow
+git tag -f v1  && git push -f origin v1          # przesuń ruchomy major dla reusable workflows
 ```
+
+Pierwsza publikacja `1.0.0`: bez bumpu — po prostu **Actions → Release → Run workflow** (weźmie
+`platformVersion=1.0.0` z gradle.properties i opublikuje na GitHub Packages).
 
 Lokalny smoke przed pushem (opcjonalnie, bez GitHuba):
 
