@@ -6,6 +6,14 @@ plugins {
 group = "pl.seniordeveloper.gradle"
 version = providers.gradleProperty("platformVersion").getOrElse("1.0.0")
 
+// Pin toolchainu na 25, żeby compileJava i compileKotlin celowały w ten sam JVM-target niezależnie
+// od ambientowego JDK (lokalnie JDK 26 dawał ostrzeżenie o niespójności 26 vs 25).
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(25)
+	}
+}
+
 repositories {
 	gradlePluginPortal()
 	mavenCentral()
