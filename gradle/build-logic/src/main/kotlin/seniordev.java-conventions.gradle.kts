@@ -23,9 +23,9 @@ plugins {
 	id("com.diffplug.spotless")
 }
 
-repositories {
-	mavenCentral()
-}
+// UWAGA: convention plugin NIE deklaruje repositories — repozytoria pochodzą z settings konsumenta
+// (dependencyResolutionManagement: mavenLocal + mavenCentral + GitHub Packages). Deklaracja repo
+// na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform z mavenLocal/GitHub.
 
 java {
 	toolchain {

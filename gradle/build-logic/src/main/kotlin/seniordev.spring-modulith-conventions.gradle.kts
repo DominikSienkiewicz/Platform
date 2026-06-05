@@ -21,9 +21,7 @@ plugins {
 	id("io.spring.dependency-management")
 }
 
-repositories {
-	mavenCentral()
-}
+// Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
 val springBootVersion = "4.0.6"
 val springModulithVersion = "2.0.6"

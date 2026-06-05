@@ -20,9 +20,7 @@ plugins {
 	id("org.cyclonedx.bom")
 }
 
-repositories {
-	mavenCentral()
-}
+// Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
 pitest {
 	// Wersje przypięte jawnie pod toolchain Java 25.
