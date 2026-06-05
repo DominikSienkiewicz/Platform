@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+# shadcn build output
+packages/ui-registry/public/r/

@@ -1,0 +1,46 @@
+name: platform-infra
+
+# Szablon środowiska dev współdzielony przez repo (Attestate / SkillSprintPlus / BookOfStyling).
+# PostgreSQL+pgvector zawsze; Ollama tylko z profilem "ai" (local-first, np. Attestate):
+#   docker compose up -d                  # samo PG
+#   docker compose --profile ai up -d     # PG + Ollama
+
+services:
+  postgres:
+    # PG patch = najnowszy 18.x w tym buildzie; pgvector przypięty do 0.8.2.
+    image: pgvector/pgvector:0.8.2-pg18
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.30.6
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-ollama
+    profiles: ["ai"]
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama --version || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  ollama-data:

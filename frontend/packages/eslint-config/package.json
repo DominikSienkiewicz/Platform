@@ -1,0 +1,27 @@
+{
+  "name": "@dominiksienkiewicz/eslint-config",
+  "version": "1.0.0",
+  "description": "Współdzielony ESLint flat config (Next core-web-vitals + TypeScript).",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./next": "./next.js"
+  },
+  "files": [
+    "index.js",
+    "next.js"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "^16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/eslint-config"
+  }
+}

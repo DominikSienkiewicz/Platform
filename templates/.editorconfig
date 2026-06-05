@@ -1,0 +1,35 @@
+# EditorConfig — spójny styl w monorepo (Java + TS) niezależnie od IDE/OS
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# JVM — Spring Initializr generuje wcięcia tabami; trzymamy się tego
+[*.{java,kt,kts}]
+indent_style = tab
+tab_width = 4
+
+[*.gradle]
+indent_style = tab
+tab_width = 4
+
+# Markdown — końcowe spacje bywają znaczące (twardy <br>)
+[*.md]
+trim_trailing_whitespace = false
+
+[Makefile]
+indent_style = tab
+
+# Skrypty powłoki i wrapper Gradle — zawsze LF
+[*.{sh,bat}]
+end_of_line = lf
+
+[{*.yml,*.yaml,*.json,*.tf,*.tfvars}]
+indent_style = space
+indent_size = 2

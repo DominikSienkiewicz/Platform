@@ -1,0 +1,55 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Współdzielony preset Renovate organizacji (DominikSienkiewicz). Konsumenci: extends github>DominikSienkiewicz/Platform.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "schedule": ["before 9am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "packageRules": [
+    {
+      "description": "Backend (Gradle): minor+patch w jednym PR; majory osobno (review człowieka).",
+      "matchManagers": ["gradle"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "gradle (minor & patch)",
+      "addLabels": ["backend"]
+    },
+    {
+      "description": "Frontend (npm): minor+patch w jednym PR.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm (minor & patch)",
+      "addLabels": ["frontend"]
+    },
+    {
+      "description": "GitHub Actions w jednej grupie.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "addLabels": ["ci"]
+    },
+    {
+      "description": "Artefakty Platform (pin 1.0.0) — osobna grupa, szybka ścieżka.",
+      "matchPackageNames": ["@dominiksienkiewicz/**", "pl.seniordeveloper:catalog", "seniordev.**"],
+      "groupName": "platform (DominikSienkiewicz)",
+      "addLabels": ["platform"]
+    },
+    {
+      "description": "ESLint 10 łamie eslint-config-next 16.2.7 (usunięte context.getFilename()). Blokuj major do czasu wsparcia.",
+      "matchPackageNames": ["eslint"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump tagów obrazów kontenerów testowych w PlatformImages.java (datasource: docker). No-op w repo, które tego pliku nie mają.",
+      "managerFilePatterns": ["/PlatformImages\\.java$/"],
+      "matchStrings": ["\"(?<depName>[^\"]+?):(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker"
+    }
+  ]
+}

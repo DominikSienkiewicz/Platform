@@ -1,0 +1,30 @@
+{
+  "name": "@dominiksienkiewicz/vitest-config",
+  "version": "1.0.0",
+  "description": "Współdzielona baza konfiguracji Vitest + setup Testing Library (jsdom, React).",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./setup": "./setup.js"
+  },
+  "files": [
+    "index.js",
+    "setup.js"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "vitest": "^4",
+    "@vitejs/plugin-react": "^6",
+    "jsdom": "^29",
+    "@testing-library/react": "^16",
+    "@testing-library/jest-dom": "^6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/vitest-config"
+  }
+}

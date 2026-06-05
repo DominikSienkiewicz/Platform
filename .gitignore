@@ -1,0 +1,28 @@
+# === OS junk ===
+.DS_Store
+._*
+Thumbs.db
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+
+# === Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Gradle ===
+.gradle/
+**/build/
+!src/**/build/
+
+# === Node / pnpm ===
+node_modules/
+**/dist/
+*.tsbuildinfo
+frontend/packages/ui-registry/public/r/
+
+# === Logs ===
+*.log

@@ -1,0 +1,3 @@
+# Lokalny JDK 25 przez SDKMAN: `sdk env` w tym katalogu (instalacja: `sdk env install`).
+# UWAGA: ustaw dokładny zainstalowany build — `sdk env init` wygeneruje właściwą wersję.
+java=25-tem

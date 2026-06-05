@@ -1,0 +1,17 @@
+{
+  "name": "@dominiksienkiewicz/platform-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build:registry": "pnpm --filter @dominiksienkiewicz/ui build",
+    "lint": "pnpm -r --if-present lint",
+    "publish:all": "pnpm -r publish --no-git-checks"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

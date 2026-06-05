@@ -1,0 +1,32 @@
+# Root .gitignore — ONLY cross-cutting, layer-agnostic ignores.
+# Layer-specific rules live next to the layer:
+#   frontend/.gitignore  — Next.js / Node
+#   backend/.gitignore   — Java / Gradle
+# (patterns without a leading slash match at any depth, so they cover every layer)
+
+# === OS junk ===
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+
+# === IDE / editors ===
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# === Environment / secrets ===
+.env
+.env.*
+!.env.example
+
+# === Logs ===
+*.log
+
+# === Local tooling ===
+/.claude/

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "dominiksienkiewicz",
+  "homepage": "https://github.com/DominikSienkiewicz/Platform",
+  "items": [
+    {
+      "name": "utils",
+      "type": "registry:lib",
+      "title": "cn() utility",
+      "description": "clsx + tailwind-merge helper.",
+      "files": [
+        { "path": "registry/new-york/lib/utils.ts", "type": "registry:lib" }
+      ]
+    },
+    {
+      "name": "button",
+      "type": "registry:ui",
+      "title": "Button",
+      "description": "Wariantowany przycisk (CVA, new-york).",
+      "dependencies": ["class-variance-authority", "@radix-ui/react-slot"],
+      "registryDependencies": ["utils"],
+      "files": [
+        { "path": "registry/new-york/ui/button.tsx", "type": "registry:ui" }
+      ]
+    }
+  ]
+}

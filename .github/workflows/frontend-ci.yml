@@ -1,0 +1,56 @@
+name: Frontend CI (reusable)
+
+# Reusable workflow dla frontendów Next.js. Kroki tolerancyjne (`--if-present`), więc działa
+# niezależnie od tego, które skrypty repo definiuje (lint/typecheck/test/build).
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: frontend
+      node-version:
+        type: string
+        default: "24"
+      run-e2e:
+        type: boolean
+        default: false
+    secrets:
+      gpr-token:
+        description: "Token do GitHub Packages npm (@dominiksienkiewicz/*). Fallback: automatyczny GITHUB_TOKEN."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint / test / build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      # .npmrc konsumenta czyta ${GITHUB_TOKEN} dla scope @dominiksienkiewicz na GitHub Packages.
+      GITHUB_TOKEN: ${{ secrets.gpr-token || secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - run: npm run test --if-present
+      - run: npm run build --if-present
+
+      - name: E2E (Playwright)
+        if: ${{ inputs.run-e2e }}
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e --if-present

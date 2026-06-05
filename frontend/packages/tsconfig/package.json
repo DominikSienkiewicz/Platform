@@ -1,0 +1,17 @@
+{
+  "name": "@dominiksienkiewicz/tsconfig",
+  "version": "1.0.0",
+  "description": "Współdzielone konfiguracje TypeScript (base + Next.js) dla repo organizacji.",
+  "files": [
+    "base.json",
+    "next.json"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/tsconfig"
+  }
+}

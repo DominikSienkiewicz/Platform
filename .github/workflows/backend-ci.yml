@@ -1,0 +1,61 @@
+name: Backend CI (reusable)
+
+# Reusable workflow dla backendów Spring/Gradle. Wołany przez repo:
+#   jobs: { backend: { uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1, secrets: inherit } }
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: backend
+      java-version:
+        type: string
+        default: "25"
+      gradle-task:
+        type: string
+        default: "build"
+    secrets:
+      gpr-token:
+        description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & test (JDK ${{ inputs.java-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
+      # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).
+      - name: ./gradlew ${{ inputs.gradle-task }}
+        run: ./gradlew ${{ inputs.gradle-task }} --no-daemon --stacktrace
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.gpr-token || secrets.GITHUB_TOKEN }}
+
+      - name: Upload test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports-${{ github.run_id }}
+          path: |
+            ${{ inputs.working-directory }}/build/reports/tests/
+            ${{ inputs.working-directory }}/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

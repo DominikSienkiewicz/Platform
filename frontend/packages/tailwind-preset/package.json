@@ -1,0 +1,22 @@
+{
+  "name": "@dominiksienkiewicz/tailwind-preset",
+  "version": "1.0.0",
+  "description": "Współdzielone design tokens (Tailwind v4, CSS-first @theme).",
+  "exports": {
+    "./theme.css": "./theme.css"
+  },
+  "files": [
+    "theme.css"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "tailwindcss": "^4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/tailwind-preset"
+  }
+}

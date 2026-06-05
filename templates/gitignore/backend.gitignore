@@ -1,0 +1,18 @@
+# Backend — Java + Spring Boot + Gradle (Kotlin DSL).
+# Cross-cutting ignores (OS junk, .idea/.vscode, .env, *.log) live in the ROOT .gitignore.
+# Keep only Java/Gradle-specific rules here.
+
+# === Gradle ===
+.gradle/
+build/
+# The Gradle wrapper jar MUST be committed so ./gradlew works on a fresh clone.
+# (do not add a blanket "*.jar" here — it would swallow the wrapper)
+!gradle/wrapper/gradle-wrapper.jar
+
+# === Java ===
+*.class
+hs_err_pid*
+replay_pid*
+
+# === IntelliJ build output ===
+out/

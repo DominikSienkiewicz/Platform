@@ -1,0 +1,34 @@
+{
+  "name": "@dominiksienkiewicz/ui",
+  "version": "1.0.0",
+  "description": "Prywatne shadcn registry — wspólny design system (komponenty + tokeny).",
+  "private": false,
+  "type": "module",
+  "scripts": {
+    "build": "shadcn build",
+    "lint": "echo \"(registry — brak lintu)\""
+  },
+  "files": [
+    "registry",
+    "registry.json",
+    "components.json"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "shadcn": "^4"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.6.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "lucide-react": "^1.17.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/ui-registry"
+  }
+}
