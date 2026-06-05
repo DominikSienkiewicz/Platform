@@ -5,6 +5,9 @@
 
 <suppressions>
     <suppress checks="LineLength" files="package-info\.java"/>
+    <!-- Klasy @SpringBootApplication i test-launchery mają tylko main() → Checkstyle widzi "utility
+         class", ale prywatny konstruktor zepsułby Spring Boot. Wyłączamy regułę dla *Application. -->
+    <suppress checks="HideUtilityClassConstructor" files=".*Application\.java"/>
     <suppress
             checks="FileLength"
             files=".*/modules/.*/infrastructure/web/.*(Command|Query)Controller\.java"/>
