@@ -1,7 +1,6 @@
 plugins {
 	`java-library`
 	`maven-publish`
-	id("io.spring.dependency-management") version "1.1.7"
 }
 
 group = "pl.seniordeveloper"
@@ -13,15 +12,13 @@ java {
 
 repositories { mavenCentral() }
 
-// Wersje BOM = lustro gradle/catalog (precompiled/standalone build nie czyta zewnętrznego katalogu).
-dependencyManagement {
-	imports {
-		mavenBom("org.springframework.boot:spring-boot-dependencies:4.0.6")
-		mavenBom("org.springframework.modulith:spring-modulith-bom:2.0.6")
-	}
-}
-
 dependencies {
+	// Natywne platformy Gradle zamiast io.spring.dependency-management — dzięki temu publikowane
+	// Gradle Module Metadata jest POPRAWNE (zależności bez wersji są pokryte referencją do platformy,
+	// a BOM-y eksportują się tranzytywnie do konsumenta). Wersje = lustro gradle/catalog.
+	api(platform("org.springframework.boot:spring-boot-dependencies:4.0.6"))
+	api(platform("org.springframework.modulith:spring-modulith-bom:2.0.6"))
+
 	api("org.springframework.boot:spring-boot-testcontainers")
 	api("org.springframework.boot:spring-boot-test")               // @TestConfiguration
 	api("org.testcontainers:testcontainers-postgresql")
