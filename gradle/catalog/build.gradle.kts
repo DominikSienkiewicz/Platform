@@ -14,7 +14,7 @@ catalog {
 		version("springBoot", "4.0.6")
 		version("springDependencyManagement", "1.1.7")
 		version("springModulith", "2.0.6")
-		version("springAi", "2.0.0")          // GA — było 2.0.0-M8 (milestone) we wszystkich 3 repo
+		version("springAi", "2.0.0-M8")       // GA jeszcze nie wyszło; M8 = najnowszy (na Maven Central). Bump na 2.0.0 gdy GA.
 		version("junit", "6.1.0")
 		version("archunit", "1.4.2")
 		version("resilience4j", "2.4.0")

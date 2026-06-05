@@ -25,7 +25,7 @@ plugins {
 
 val springBootVersion = "4.0.6"
 val springModulithVersion = "2.0.6"
-val springAiVersion = "2.0.0" // GA (repo stały na 2.0.0-M8 — milestone)
+val springAiVersion = "2.0.0-M8" // GA jeszcze nie wyszło; M8 = najnowszy milestone (jest na Maven Central)
 val archunitVersion = "1.4.2"
 val junitVersion = "6.1.0"
 
