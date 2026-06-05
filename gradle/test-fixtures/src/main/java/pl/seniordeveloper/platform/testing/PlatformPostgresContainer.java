@@ -17,10 +17,13 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformPostgresContainer {
 
+  // Uwaga: zmodularyzowany org.testcontainers.postgresql.PostgreSQLContainer jest NIE-generyczny
+  // (brak <SELF>), więc używamy typu surowego — z <?>/<> kod się nie kompiluje.
   @Bean
   @ServiceConnection
-  public PostgreSQLContainer<?> pgvectorContainer() {
-    return new PostgreSQLContainer<>(
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  public PostgreSQLContainer pgvectorContainer() {
+    return new PostgreSQLContainer(
         DockerImageName.parse(PlatformImages.PGVECTOR).asCompatibleSubstituteFor("postgres"));
   }
 }
