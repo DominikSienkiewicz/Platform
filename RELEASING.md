@@ -1,71 +1,77 @@
 # Releasing Platform
 
-Artefakty wersjonowane **deliberate**: jedna wersja w `gradle/build-logic/gradle.properties`
-(`platformVersion`) — ta sama lokalnie (mavenLocal), na GitHub Packages i w pinach konsumentów.
-`release.yml` publikuje **tę** wersję, wyzwalany **świadomie** (tag `v*` lub workflow_dispatch),
-publikuje Maven + npm i przycina do **3 najnowszych**. Bump = zmiana `platformVersion` + tag.
-(Auto-bump na każdy push został wycofany — kłócił się z dokładnymi pinami + local-first + keep-3.)
+Model: **publish-only + deliberate versioning**. GitHub Packages to **jedyne źródło prawdy**
+(Maven + npm). Jedna wersja `platformVersion` w `gradle/build-logic/gradle.properties` — ta sama
+na GitHub Packages i w pinach konsumentów. `release.yml` publikuje **tę** wersję, wyzwalany
+**świadomie** (tag `v*` lub `workflow_dispatch`). Brak auto-bumpu i brak auto-prune.
 
-Reusable workflows w repo konsumenckich wskazują **`@v1`** (ruchomy tag majora w gicie — niezależny od
-wersji artefaktów). Konsumenci trzymają DOKŁADNE piny artefaktów; Renovate je podbija.
+Reusable workflows w repo konsumenckich wskazują **`@v1`** (ruchomy tag majora w gicie — niezależny
+od wersji artefaktów). Konsumenci trzymają **DOKŁADNE** piny; podbija je `platform-bump.sh` lub Renovate.
 
-## Setup jednorazowy
+Aktualna wersja: **1.1.0**.
+
+## Setup jednorazowy (raz na maszynę / repo)
 
 ```bash
-# 1) Sekret repo: PAT (classic) z read:packages + delete:packages — do pruningu pakietów konta.
-#    Settings → Secrets and variables → Actions → New secret: PACKAGES_ADMIN_TOKEN
-# 2) Ruchomy tag v1 dla reusable workflows konsumentów (raz):
+# A) Lokalne poświadczenia do GitHub Packages (Gradle czyta je automatycznie):
+#    ~/.gradle/gradle.properties
+gpr.user=DominikSienkiewicz
+gpr.key=<PAT classic: read:packages>          # do publikacji dodaj też write:packages
+
+# B) npm lokalnie — token w env (project .npmrc czyta ${GITHUB_TOKEN}):
+export GITHUB_TOKEN=<PAT: read:packages>       # w ~/.zshrc lub sourcowanym, gitignorowanym pliku
+
+# C) Sekrety w repo konsumentów (CI): GPR_TOKEN = PAT (read:packages).
+# D) Ruchomy tag v1 dla reusable workflows (raz):
 git tag -f v1 && git push -f origin v1
 ```
 
-## Wydanie (świadome)
+## Wydanie (świadome) — jedną komendą
 
 ```bash
 cd Platform
-# 1) bump platformVersion w 3 plikach gradle.properties (build-logic, catalog, test-fixtures)
-#    + version("platform", ...) w gradle/catalog/build.gradle.kts   (lustro)
-git add -A && git commit -m "release: platform X.Y.Z" && git push
-# 2) wyzwól publikację (jedno z dwóch):
-git tag vX.Y.Z && git push origin vX.Y.Z        # albo: Actions → Release → Run workflow
-git tag -f v1  && git push -f origin v1          # przesuń ruchomy major dla reusable workflows
+./release.sh "fix: opis zmiany"          # patch +0.0.1 od aktualnej wersji
+./release.sh "feat: opis" 1.2.0          # konkretna wersja
 ```
 
-Pierwsza publikacja `1.0.0`: bez bumpu — po prostu **Actions → Release → Run workflow** (weźmie
-`platformVersion=1.0.0` z gradle.properties i opublikuje na GitHub Packages).
+`release.sh` bumpuje `platformVersion` we wszystkich miejscach (3× gradle.properties + lustro
+defaultu w catalogu), commituje TWOIM message, taguje `vX.Y.Z`, pcha branch + tag (Release publikuje
+Maven+npm) i przesuwa ruchomy `v1`. Pyta o potwierdzenie (tag = wersja immutable); `-y` pomija pytanie.
 
-Lokalny smoke przed pushem (opcjonalnie, bez GitHuba):
+Ręcznie (równoważnie):
 
 ```bash
-./buildAndPublishLocal.sh && (cd ../SkillSprintPlus/backend && ./gradlew test)
+# bump platformVersion w 3 gradle.properties + getOrElse("X.Y.Z") w gradle/catalog/build.gradle.kts
+git add -A && git commit -m "release: platform X.Y.Z" && git push
+git tag vX.Y.Z && git push origin vX.Y.Z        # albo: Actions → Release → Run workflow
+git tag -f v1  && git push -f origin v1          # ruchomy major dla reusable workflows
 ```
 
-## Bump major/minor
+Release publikuje Maven (`catalog`, `build-logic`, `test-fixtures`) + npm (5 paczek) w wersji
+`platformVersion`. Publish jest **idempotentny** (istniejąca wersja = 409 tolerowane), więc re-run
+jest bezpieczny. Wersje są **immutable** — nie nadpiszesz istniejącej; błąd w wydaniu = nowa wersja.
 
-Patch jest automatyczny (run_number). Major/minor zmieniasz **tylko** w
-`gradle/build-logic/gradle.properties` (`platformVersion=1.1.0` → kolejne release'y = `1.1.<run_number>`).
+## Konsumenci — jak skorzystać z nowej wersji
 
-## Konsumenci (Attestate / SkillSprintPlus / BookOfStyling)
+```bash
+cd <Attestate|SkillSprintPlus|BookOfStyling>
+./platform-bump.sh            # podbija piny (catalog + pluginy + npm) do najnowszej z GitHub Packages
+# albo: ./platform-bump.sh 1.2.0   (konkretna wersja)
+git add -A && git commit -m "build: Platform -> X.Y.Z" && git push
+```
 
-- Dokładne piny: `pl.seniordeveloper:catalog:1.0.X`, `id("seniordev.*-conventions") version "1.0.X"`,
-  `@dominiksienkiewicz/*` (npm). Renovate (preset `default.json` + customManagery) otwiera PR-y
-  podbijające je — powtarzalność zachowana (commit = znana wersja).
-- CI (`ci.yml`) woła reusable `@v1`. Resolucja artefaktów: Gradle przez `GITHUB_ACTOR`/`GITHUB_TOKEN`
-  (`secrets: inherit`), npm przez `${GITHUB_TOKEN}` w `.npmrc`. **Prywatne paczki cross-repo** mogą
-  wymagać PAT (`read:packages`) jako sekret `gpr-token` przekazany do reusable.
-- Renovate potrzebuje dostępu do prywatnego registry GitHub Packages (hostRules z tokenem
-  `read:packages`) — inaczej nie zobaczy nowych wersji do bumpu.
-- Lokalnie (bez GitHuba): `mavenLocal` + `npm run platform:link` (README „Local-first").
+`platform-bump.sh` odpytuje GitHub Packages o najnowszą wersję `catalog`, podmienia piny w
+`backend/settings.gradle.kts`, `backend/build.gradle.kts` i `frontend/package.json`, oraz regeneruje
+`package-lock.json`. Token bierze z `GPR_TOKEN`/`GITHUB_TOKEN` lub `gpr.key`.
+
+Pierwszy build po bumpie pobiera artefakty z GitHub Packages **raz** i cache'uje je w
+`~/.gradle/caches` (Gradle) / `node_modules` + lockfile (npm). Kolejne buildy idą z cache — bez sieci.
+**Nie ma `mavenLocal` ani `npm link`** (publish-only: zero driftu local↔CI).
 
 ## Retencja pakietów
 
-Przycinanie do **3 najnowszych** dzieje się w DWÓCH miejscach:
-- `release.yml` (krok `prune`) — po każdym publish,
-- `cleanup-packages.yml` — co 6h (siatka bezpieczeństwa / publish ręczne).
-
-Oba wymagają sekretu `PACKAGES_ADMIN_TOKEN` (PAT classic: `read:packages` + `delete:packages`) —
-automatyczny `GITHUB_TOKEN` NIE zarządza pakietami konta użytkownika. Filtr ogranicza czyszczenie do
-pakietów Platform (`pl.seniordeveloper*`, `seniordev.*`, `@dominiksienkiewicz/*`).
-
-⚠️ `keep=3` + auto-publish: pilnuj, by Renovate nadążał. Jeśli konsument pinuje wersję, która wypadnie
-z top-3, zanim Renovate ją podbije — jego build straci zależność. Path-filter (publish tylko przy
-realnej zmianie platformy) ogranicza częstotliwość; przy bardzo częstych zmianach rozważ `keep=5`.
+Brak auto-prune (ani w `release.yml`, ani z crona). Storage Packages jest współdzielony z Actions,
+ale przy tej skali (KB–MB) nieistotny. Sprzątanie świadome:
+**Actions → Cleanup old package versions → Run workflow** (`keep`, domyślnie 10). Wymaga sekretu
+`PACKAGES_ADMIN_TOKEN` (PAT classic: `read:packages` + `delete:packages`). ⚠️ Nie kasuj wersji, którą
+któryś konsument jeszcze pinuje.

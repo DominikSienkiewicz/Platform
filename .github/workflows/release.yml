@@ -91,32 +91,6 @@ jobs:
       - name: Publish
         run: pnpm -r publish --no-git-checks
 
-  prune:
-    needs: [gradle, npm]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Keep last 3 per package
-        env:
-          GH_TOKEN: ${{ secrets.PACKAGES_ADMIN_TOKEN }}
-          KEEP: "3"
-        run: |
-          set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::warning::Brak PACKAGES_ADMIN_TOKEN — pomijam pruning (zrobi to scheduled cleanup)."
-            exit 0
-          fi
-          PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@dominiksienkiewicz/)'
-          for type in maven npm; do
-            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
-              | grep -E "$PLATFORM_RE" || continue
-            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
-              | grep -E "$PLATFORM_RE" | while read -r pkg; do
-                enc=$(printf '%s' "$pkg" | jq -sRr @uri)
-                to_delete=$(gh api --paginate "/user/packages/$type/$enc/versions" --jq '.[]' \
-                  | jq -s --argjson keep "$KEEP" 'sort_by(.created_at) | reverse | .[$keep:] | .[].id')
-                for id in $to_delete; do
-                  echo "usuwam $type/$pkg id=$id"
-                  gh api --method DELETE "/user/packages/$type/$enc/versions/$id"
-                done
-              done
-          done
+  # Brak auto-prune: przy deliberate versioning + exact pin konsumenta przycięcie mogłoby skasować
+  # wersję, którą ktoś pinuje. Storage Packages jest współdzielony z Actions, ale przy tej skali
+  # (KB–MB) to nieistotne. Sprzątanie = świadome, ręczne: workflow "Cleanup old package versions".

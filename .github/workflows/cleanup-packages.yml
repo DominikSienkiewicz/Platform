@@ -1,16 +1,16 @@
 name: Cleanup old package versions
 
-# Co 6h: dla każdego pakietu Platform (Maven + npm) zostawia N najnowszych wersji, resztę kasuje.
-# Bez tego GitHub Packages szybko puchnie (każdy publish = nowa wersja).
+# ŚWIADOME, RĘCZNE sprzątanie (tylko workflow_dispatch — brak crona).
+# Powód: przy deliberate versioning + exact pin u konsumenta automatyczne przycinanie mogłoby
+# skasować wersję, którą ktoś jeszcze pinuje. Storage Packages (współdzielony z Actions) przy tej
+# skali jest nieistotny, więc nie kasujemy nic automatycznie — uruchamiasz to ręcznie, gdy chcesz.
 on:
-  schedule:
-    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       keep:
         description: "Ile najnowszych wersji zostawić (per pakiet)"
         type: string
-        default: "3"
+        default: "10"
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
           # PAT konta (classic) z zakresami: read:packages + delete:packages.
           # WAŻNE: automatyczny GITHUB_TOKEN NIE zarządza pakietami KONTA użytkownika — potrzebny PAT.
           GH_TOKEN: ${{ secrets.PACKAGES_ADMIN_TOKEN }}
-          KEEP: ${{ inputs.keep || '3' }}
+          KEEP: ${{ inputs.keep || '10' }}
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
