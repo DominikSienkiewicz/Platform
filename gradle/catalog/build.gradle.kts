@@ -4,12 +4,12 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.1.0")
+version = providers.gradleProperty("platformVersion").getOrElse("1.3.1")
 
 catalog {
 	versionCatalog {
 		// ============================ WERSJE ============================
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.1.0"))
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.3.1"))
 		version("java", "25")
 		version("springBoot", "4.0.6")
 		version("springDependencyManagement", "1.1.7")
