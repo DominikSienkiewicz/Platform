@@ -88,8 +88,30 @@ jobs:
         run: pnpm -r exec npm pkg set version="$V"
       - name: Build registry (shadcn)
         run: pnpm --filter @dominiksienkiewicz/ui build || echo "registry build skipped"
-      - name: Publish
-        run: pnpm -r publish --no-git-checks
+      # Idempotentnie, per-paczka (lustro logiki z joba gradle): 409 = wersja już opublikowana
+      # (np. re-run po częściowym wydaniu) — pomijamy i publikujemy RESZTĘ. `pnpm -r publish`
+      # wywala się na pierwszym 409 i zostawia partial release.
+      - name: Publish (idempotentny)
+        run: |
+          set +e
+          FAIL=0
+          for d in packages/*/; do
+            [ -f "$d/package.json" ] || continue
+            NAME=$(node -p "require('./$d/package.json').name")
+            PRIV=$(node -p "require('./$d/package.json').private === true")
+            if [ "$PRIV" = "true" ]; then echo "== $NAME: private — pomijam =="; continue; fi
+            echo "== publish $NAME@$V =="
+            ( cd "$d" && pnpm publish --no-git-checks ) 2>&1 | tee /tmp/pub-npm.log
+            rc=${PIPESTATUS[0]}
+            if [ "$rc" -ne 0 ]; then
+              if grep -qE "E409|409 Conflict|Cannot publish over existing version" /tmp/pub-npm.log; then
+                echo "::notice::$NAME@$V już opublikowane (409) — pomijam (publish idempotentny)"
+              else
+                echo "::error::publish $NAME@$V nie powiódł się (kod $rc)"; FAIL=1
+              fi
+            fi
+          done
+          exit $FAIL
 
   # Brak auto-prune: przy deliberate versioning + exact pin konsumenta przycięcie mogłoby skasować
   # wersję, którą ktoś pinuje. Storage Packages jest współdzielony z Actions, ale przy tej skali
