@@ -8,7 +8,10 @@ name: Release (auto-version on push)
 on:
   workflow_dispatch:
   push:
-    tags: ["v*"]   # wydanie = świadomy tag (wersja z gradle.properties), nie każdy push
+    # Tylko tagi wersji X.Y.Z (kropki wymagane) — ruchomy tag `v1` (reusable workflows) NIE może
+    # triggerować wydania: release.sh pcha v1.3.2 i v1 w tej samej sekundzie, a dwa równoległe
+    # publish'e tej samej wersji to race (źródło partial release 1.3.1).
+    tags: ["v*.*.*"]
 
 permissions:
   contents: read
@@ -88,9 +91,12 @@ jobs:
         run: pnpm -r exec npm pkg set version="$V"
       - name: Build registry (shadcn)
         run: pnpm --filter @dominiksienkiewicz/ui build || echo "registry build skipped"
-      # Idempotentnie, per-paczka (lustro logiki z joba gradle): 409 = wersja już opublikowana
+      # Idempotentnie, per-paczka (lustro logiki z joba gradle): wersja już opublikowana
       # (np. re-run po częściowym wydaniu) — pomijamy i publikujemy RESZTĘ. `pnpm -r publish`
-      # wywala się na pierwszym 409 i zostawia partial release.
+      # wywala się na pierwszym konflikcie i zostawia partial release.
+      # Detekcja "już istnieje": NAJPIERW pre-check `npm view` (pytamy registry, zamiast parsować
+      # komunikaty błędów — registry zwraca różne warianty: "E409", "409 Conflict", "You cannot
+      # publish over the previously published versions"), grep szeroki tylko jako fallback.
       - name: Publish (idempotentny)
         run: |
           set +e
@@ -100,12 +106,16 @@ jobs:
             NAME=$(node -p "require('./$d/package.json').name")
             PRIV=$(node -p "require('./$d/package.json').private === true")
             if [ "$PRIV" = "true" ]; then echo "== $NAME: private — pomijam =="; continue; fi
+            if npm view "$NAME@$V" version >/dev/null 2>&1; then
+              echo "::notice::$NAME@$V już w registry — pomijam (publish idempotentny)"
+              continue
+            fi
             echo "== publish $NAME@$V =="
             ( cd "$d" && pnpm publish --no-git-checks ) 2>&1 | tee /tmp/pub-npm.log
             rc=${PIPESTATUS[0]}
             if [ "$rc" -ne 0 ]; then
-              if grep -qE "E409|409 Conflict|Cannot publish over existing version" /tmp/pub-npm.log; then
-                echo "::notice::$NAME@$V już opublikowane (409) — pomijam (publish idempotentny)"
+              if grep -qiE "E409|409 Conflict|cannot publish over" /tmp/pub-npm.log; then
+                echo "::notice::$NAME@$V już opublikowane (konflikt wersji) — pomijam"
               else
                 echo "::error::publish $NAME@$V nie powiódł się (kod $rc)"; FAIL=1
               fi
