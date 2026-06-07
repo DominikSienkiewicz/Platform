@@ -1,0 +1,24 @@
+{
+  "_comment": "Kanon wersji wspólnej powierzchni frontendu (frameworki + toolchain). Wersje EXACT — bez ^ / ~. Zależności domenowe (tanstack, radix, lucide itp.) NIE należą do kanonu: deklaruje je repo (analogia: convention plugin nie dodaje zależności biznesowych). Guard sprawdza tylko klucze obecne w package.json konsumenta.",
+  "versions": {
+    "next": "16.2.7",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "eslint-config-next": "16.2.7",
+    "typescript": "6.0.3",
+    "eslint": "10.4.1",
+    "tailwindcss": "4.3.0",
+    "@tailwindcss/postcss": "4.3.0",
+    "vite": "8.0.16",
+    "vitest": "4.1.8",
+    "jsdom": "29.1.1",
+    "@vitejs/plugin-react": "6.0.2",
+    "@types/node": "25.9.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/user-event": "14.6.1"
+  }
+}

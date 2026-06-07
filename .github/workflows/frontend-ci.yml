@@ -44,6 +44,17 @@ jobs:
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
       - run: npm ci
+
+      # Guard kanonu wersji Platform (@dominiksienkiewicz/versions). Tolerancyjny jak reszta
+      # kroków: repo bez paczki = guard pominięty (notice), repo z paczką = dryf failuje build.
+      - name: Platform versions guard
+        run: |
+          if [ -e node_modules/.bin/platform-versions-check ]; then
+            node node_modules/@dominiksienkiewicz/versions/bin/check.mjs
+          else
+            echo "::notice::brak @dominiksienkiewicz/versions w zależnościach — guard kanonu pominięty"
+          fi
+
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present
       - run: npm run test --if-present

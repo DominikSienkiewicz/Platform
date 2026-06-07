@@ -11,6 +11,7 @@
  */
 
 import com.github.spotbugs.snom.SpotBugsTask
+import org.cyclonedx.gradle.CyclonedxDirectTask
 import java.io.File
 
 plugins {
@@ -28,6 +29,13 @@ pitest {
 	pitestVersion.set("1.25.3")
 	timestampedReports.set(false)
 	outputFormats.set(listOf("HTML", "XML"))
+}
+
+// SBOM = powierzchnia PRODUKCYJNA (to, co shippujemy). Domyślnie plugin bierze WSZYSTKIE
+// konfiguracje, więc do skanu CVE wpadał tooling (np. plexus-utils z konfiguracji checkstyle)
+// i wywalał gate'a Grype na zależnościach, których nie wdrażamy.
+tasks.withType<CyclonedxDirectTask>().configureEach {
+	includeConfigs.set(listOf("runtimeClasspath"))
 }
 
 // Współdzielony filtr wykluczeń SpotBugs żyje w resources tego pluginu (jedno źródło w Platform);

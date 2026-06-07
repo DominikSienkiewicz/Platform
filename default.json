@@ -32,7 +32,7 @@
     },
     {
       "description": "Artefakty Platform (pin 1.0.0) — osobna grupa, szybka ścieżka.",
-      "matchPackageNames": ["@dominiksienkiewicz/**", "pl.seniordeveloper:catalog", "seniordev.**"],
+      "matchPackageNames": ["@dominiksienkiewicz/**", "pl.seniordeveloper:platform-catalog", "seniordev.**"],
       "groupName": "platform (DominikSienkiewicz)",
       "addLabels": ["platform"]
     },
@@ -56,10 +56,10 @@
       "description": "Bump pinów platformy (catalog + convention pluginy) w Gradle konsumentów — datasource maven z GitHub Packages. Wymaga hostRules z tokenem read:packages w konfiguracji Renovate.",
       "managerFilePatterns": ["/(settings|build)\\.gradle\\.kts$/"],
       "matchStrings": [
-        "from\\(\"pl\\.seniordeveloper:catalog:(?<currentValue>[^\"]+)\"\\)",
+        "from\\(\"pl\\.seniordeveloper:platform-catalog:(?<currentValue>[^\"]+)\"\\)",
         "id\\(\"seniordev\\.[a-z-]+-conventions\"\\)\\s+version\\s+\"(?<currentValue>[^\"]+)\""
       ],
-      "depNameTemplate": "pl.seniordeveloper:catalog",
+      "depNameTemplate": "pl.seniordeveloper:platform-catalog",
       "datasourceTemplate": "maven",
       "registryUrlTemplate": "https://maven.pkg.github.com/DominikSienkiewicz/Platform"
     }

@@ -1,0 +1,24 @@
+{
+  "name": "@dominiksienkiewicz/versions",
+  "version": "1.0.0",
+  "description": "Kanon wersji frontendowych frameworków i toolchainu (jedno źródło prawdy w Platform). Konsumenci pinują dokładnie te wersje; guard `platform-versions-check` w CI failuje przy dryfie.",
+  "files": [
+    "versions.json",
+    "bin/check.mjs"
+  ],
+  "exports": {
+    ".": "./versions.json",
+    "./versions.json": "./versions.json"
+  },
+  "bin": {
+    "platform-versions-check": "bin/check.mjs"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/versions"
+  }
+}

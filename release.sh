@@ -54,5 +54,11 @@ git push
 git tag "v$VERSION" && git push origin "v$VERSION"
 git tag -f v1 && git push -f origin v1
 
-echo "==> v$VERSION wypchnięte. Release publikuje z taga: Actions → Release."
-echo "==> U konsumenta: ./platform-bump.sh   (podbije piny do $VERSION)"
+echo ""
+echo "════════════════════════════════════════════════"
+echo "  Platform podbity: $CUR → $VERSION"
+echo "  Tag: v$VERSION (+ przesunięty ruchomy v1)"
+echo "  Branch: $BR   Commit: \"$MSG\""
+echo "════════════════════════════════════════════════"
+echo "==> Release publikuje z taga: Actions → Release."
+echo "==> U konsumenta: ./platform-bump.sh $VERSION   (podbije piny do $VERSION)"

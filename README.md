@@ -16,7 +16,7 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 | Ścieżka | Artefakt | Publikacja |
 |---|---|---|
 | `gradle/build-logic/` | 3 convention pluginy (`seniordev.*-conventions`) | GitHub Packages (Maven) |
-| `gradle/catalog/` | publikowany version catalog (`pl.seniordeveloper:catalog`) | GitHub Packages (Maven) |
+| `gradle/catalog/` | publikowany version catalog (`pl.seniordeveloper:platform-catalog`) | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów) | GitHub Packages (Maven) |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
@@ -113,7 +113,7 @@ dependencyResolutionManagement {
         }
     }
     versionCatalogs {
-        create("libs") { from("pl.seniordeveloper:catalog:1.0.0") }   // współdzielony katalog
+        create("libs") { from("pl.seniordeveloper:platform-catalog:1.0.0") }   // współdzielony katalog
     }
 }
 ```

@@ -28,6 +28,8 @@ dependencies {
 	implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.5")
 	implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.19.0")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:3.2.4")
+	// Settings plugin (toolchain auto-provisioning) — aplikowany przez seniordev.settings-conventions.
+	implementation("org.gradle.toolchains:foojay-resolver:1.0.0")
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

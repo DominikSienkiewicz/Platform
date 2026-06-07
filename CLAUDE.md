@@ -13,12 +13,13 @@ opublikuj, podbij pin w repo konsumenta.
 
 | Katalog | Artefakt |
 |---|---|
-| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` |
-| `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:catalog` |
+| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria) |
+| `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów) |
-| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui}` |
-| `.github/workflows/` | reusable CI (`backend-ci`/`frontend-ci`/`scorecard`) + publish na tag `v*` |
-| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc |
+| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions}` |
+| `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json` + bin `platform-versions-check` — guard w `frontend-ci`) |
+| `.github/workflows/` | reusable CI (`backend-ci`/`frontend-ci`/`security-scan`/`scorecard`) + publish na tag `v*` |
+| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc/platform-bump.sh |
 
 ## Zasady (twarde)
 
@@ -32,6 +33,14 @@ opublikuj, podbij pin w repo konsumenta.
 4. **SpotBugs report-only** dopóki JDK 25 bytecode-support narzędzi nie jest zielony. Nie przełączaj
    `ignoreFailures=false` globalnie bez weryfikacji.
 5. **GitHub Packages npm:** scope = nazwa ownera repo (lowercase). Zmiana ownera = zmiana scope + `.npmrc`.
+6. **Wersje frontendowych frameworków → `frontend/packages/versions/versions.json`** (kanon: next,
+   react, typescript, eslint, tailwind, vitest, @types/*, @testing-library/*). Konsumenci pinują
+   EXACT (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` failuje przy dryfie;
+   `platform-bump.sh` nakłada kanon. Zależności domenowe (tanstack, radix itp.) zostają per-repo —
+   analogia zasady 2.
+7. **Nadpisania CVE nad BOM-em Boota** żyją w `spring-modulith-conventions` (propercje
+   `tomcat.version`/`netty.version`/`postgresql.version` przez `ext`) — usuwaj przy bumpie Boota,
+   gdy BOM dogoni fixy.
 
 ## Wersjonowanie
 

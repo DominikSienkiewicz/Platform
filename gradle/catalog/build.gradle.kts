@@ -26,6 +26,7 @@ catalog {
 		version("pitestJunit5", "1.2.3")
 		version("cyclonedx", "3.2.4")
 		version("jacoco", "0.8.14")
+		version("foojayResolver", "1.0.0") // lustro: implementation foojay-resolver w build-logic
 
 		// ============================ BOM-y ============================
 		library("spring-ai-bom", "org.springframework.ai", "spring-ai-bom").versionRef("springAi")
@@ -54,6 +55,9 @@ catalog {
 		plugin("conventions-java", "seniordev.java-conventions").versionRef("platform")
 		plugin("conventions-quality", "seniordev.quality-conventions").versionRef("platform")
 		plugin("conventions-spring-modulith", "seniordev.spring-modulith-conventions").versionRef("platform")
+		// Settings plugin (foojay + repozytoria) — aplikowany w settings.gradle.kts konsumenta,
+		// więc i tak pinowany tam jawnie (settings plugins{} nie czyta katalogu); wpis dla kompletu.
+		plugin("conventions-settings", "seniordev.settings-conventions").versionRef("platform")
 	}
 }
 
