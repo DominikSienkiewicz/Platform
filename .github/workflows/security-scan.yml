@@ -1,0 +1,87 @@
+name: Security scan (reusable)
+
+# Reusable skan CVE zależności: backend przez CycloneDX SBOM (generowany przez
+# seniordev.quality-conventions) + Grype; frontend przez skan package-lock.json.
+# Triggery (push/PR z filtrem paths, cron) deklaruje CALLER — tu mieszka wyłącznie logika.
+# Tiering: CRITICAL/HIGH = fail, MODERATE/LOW = log-only.
+# Wołany przez repo:
+#   jobs: { scan: { uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@v1, secrets: inherit } }
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        default: backend
+      java-version:
+        type: string
+        default: "25"
+      severity-cutoff:
+        type: string
+        default: high
+    secrets:
+      gpr_token:
+        description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  backend-sbom:
+    name: Backend — CycloneDX SBOM + Grype
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
+      - name: Generate CycloneDX SBOM
+        run: ./gradlew cyclonedxBom --no-daemon
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+
+      - name: Locate SBOM
+        id: sbom
+        run: |
+          BOM=$(find build -type f \( -name 'bom*.json' -o -name '*.cdx.json' \) -print -quit)
+          if [ -z "$BOM" ]; then
+            echo "::error::CycloneDX SBOM not found under ${{ inputs.working-directory }}/build — check the cyclonedxBom output path"
+            exit 1
+          fi
+          echo "path=${{ inputs.working-directory }}/$BOM" >> "$GITHUB_OUTPUT"
+
+      - name: Scan SBOM with Grype
+        uses: anchore/scan-action@v7
+        with:
+          sbom: ${{ steps.sbom.outputs.path }}
+          fail-build: true
+          severity-cutoff: ${{ inputs.severity-cutoff }}
+          output-format: table
+
+  frontend-deps:
+    name: Frontend — Grype (package-lock)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Scan frontend dependencies with Grype
+        uses: anchore/scan-action@v7
+        with:
+          path: frontend
+          fail-build: true
+          severity-cutoff: ${{ inputs.severity-cutoff }}
+          output-format: table
