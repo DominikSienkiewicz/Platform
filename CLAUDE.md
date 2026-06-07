@@ -26,6 +26,9 @@ opublikuj, podbij pin w repo konsumenta.
 1. **Wersje bibliotek/pluginów → `gradle/catalog`.** Jedyny wyjątek: BOM-y/narzędzia powielone w
    `build-logic` (oznaczone komentarzem "lustro gradle/catalog") — bo precompiled script plugin nie
    czyta zewnętrznego katalogu w czasie kompilacji. Bump = zmień OBA miejsca.
+   **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
+   build konsumenta, gdy zadeklarowana zależność ma jawną wersję spoza katalogu lub inną niż katalog.
+   Bez wersji = zarządzane BOM-ami platformy (OK). Nowa biblioteka = najpierw wpis tu + `./release.sh`.
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
@@ -33,11 +36,12 @@ opublikuj, podbij pin w repo konsumenta.
 4. **SpotBugs report-only** dopóki JDK 25 bytecode-support narzędzi nie jest zielony. Nie przełączaj
    `ignoreFailures=false` globalnie bez weryfikacji.
 5. **GitHub Packages npm:** scope = nazwa ownera repo (lowercase). Zmiana ownera = zmiana scope + `.npmrc`.
-6. **Wersje frontendowych frameworków → `frontend/packages/versions/versions.json`** (kanon: next,
-   react, typescript, eslint, tailwind, vitest, @types/*, @testing-library/*). Konsumenci pinują
-   EXACT (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` failuje przy dryfie;
-   `platform-bump.sh` nakłada kanon. Zależności domenowe (tanstack, radix itp.) zostają per-repo —
-   analogia zasady 2.
+6. **Wersje WSZYSTKICH zależności frontendu → `frontend/packages/versions/versions.json`**
+   (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
+   (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: zależność bez wpisu
+   w kanonie albo z inną wersją = czerwony build. `platform-bump.sh` nakłada kanon. Nowa biblioteka
+   w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym, CZY repo
+   używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
 7. **Nadpisania CVE nad BOM-em Boota** żyją w `spring-modulith-conventions` (propercje
    `tomcat.version`/`netty.version`/`postgresql.version` przez `ext`) — usuwaj przy bumpie Boota,
    gdy BOM dogoni fixy.

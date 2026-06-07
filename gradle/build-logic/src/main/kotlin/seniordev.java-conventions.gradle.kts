@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -107,4 +109,63 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 
 tasks.named("check") {
 	dependsOn(tasks.named("jacocoTestCoverageVerification"))
+}
+
+// === Governance wersji: KAŻDA wersja biblioteki pochodzi z platform-catalog ====================
+// Reguły:
+//   1. Zależność zadeklarowana BEZ wersji = zarządzana BOM-ami platformy (spring-modulith-conventions) — OK.
+//   2. Zależność z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją IDENTYCZNĄ
+//      — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Inline wersja spoza katalogu = czerwony build.
+//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) + ./release.sh,
+//      potem bump pinu i użycie przez libs.<alias>.
+// Wykrywanie w afterEvaluate (deps konsumenta już zadeklarowane), asercja w tasku — CC-safe.
+val governedConfigurations = setOf(
+	"api", "implementation", "compileOnly", "runtimeOnly", "annotationProcessor",
+	"testImplementation", "testCompileOnly", "testRuntimeOnly", "testAnnotationProcessor",
+)
+val platformDependencyCheck = tasks.register("platformDependencyCheck") {
+	description = "Pilnuje, że wersje wszystkich zadeklarowanych zależności pochodzą z platform-catalog."
+	group = "verification"
+}
+afterEvaluate {
+	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
+	val violations = mutableListOf<String>()
+	if (libs != null) {
+		val canon = mutableMapOf<String, String>()
+		libs.libraryAliases.forEach { alias ->
+			val dep = libs.findLibrary(alias).get().get()
+			val v = dep.versionConstraint.requiredVersion
+			if (v.isNotBlank()) canon["${dep.module.group}:${dep.module.name}"] = v
+		}
+		configurations.matching { it.name in governedConfigurations }.forEach { conf ->
+			conf.dependencies.withType(ExternalModuleDependency::class.java).forEach { d ->
+				val ver = d.version
+				if (ver.isNullOrBlank() || d.group == "pl.seniordeveloper") return@forEach
+				val key = "${d.group}:${d.name}"
+				val canonV = canon[key]
+				if (canonV == null) {
+					violations += "$key:$ver (${conf.name}) — BRAK w platform-catalog: dodaj wpis w Platform i wydaj (./release.sh)"
+				} else if (canonV != ver) {
+					violations += "$key:$ver (${conf.name}) — kanon platformy: $canonV (deklaruj przez libs.<alias>)"
+				}
+			}
+		}
+	}
+	val catalogMissing = libs == null
+	platformDependencyCheck.configure {
+		doLast {
+			if (catalogMissing) {
+				logger.lifecycle("platformDependencyCheck: pominięty — brak katalogu 'libs' (build spoza konsumenta platformy)")
+			} else if (violations.isNotEmpty()) {
+				throw GradleException(
+					"Wersje zależności spoza platformy (governance):\n  " + violations.joinToString("\n  "),
+				)
+			} else {
+				logger.lifecycle("platformDependencyCheck: OK — wszystkie jawne wersje zgodne z platform-catalog")
+			}
+		}
+	}
+}
+tasks.named("check") {
+	dependsOn(platformDependencyCheck)
 }
