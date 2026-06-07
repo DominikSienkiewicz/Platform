@@ -25,7 +25,7 @@ plugins {
 
 val springBootVersion = "4.0.6"
 val springModulithVersion = "2.0.6"
-val springAiVersion = "2.0.0-M8" // GA jeszcze nie wyszło; M8 = najnowszy milestone (jest na Maven Central)
+val springAiVersion = "2.0.0-RC1" // GA jeszcze nie wyszło; RC1 = najnowszy prerelease (Maven Central, 2026-06-07)
 val archunitVersion = "1.4.2"
 val junitVersion = "6.1.0"
 
@@ -33,10 +33,10 @@ val junitVersion = "6.1.0"
 // Mechanizm: io.spring.dependency-management honoruje nadpisanie propercji wersji z BOM-a przez ext.
 // USUŃ przy bumpie springBoot, gdy BOM dogoni te wersje (sprawdź propercje w spring-boot-dependencies):
 //   tomcat 11.0.22      — GHSA-r29c-68gh-xp6x, GHSA-h6fc-48rj-7qqh, GHSA-5m62-pw8w-7w9f (Critical) i in.
-//   netty 4.2.13.Final  — GHSA-f6hv-jmp6-3vwv, GHSA-rwm7-x88c-3g2p i in.
+//   netty 4.2.15.Final  — GHSA-f6hv-jmp6-3vwv, GHSA-rwm7-x88c-3g2p i in. (najnowszy patch 4.2.x, 2026-06-07)
 //   postgresql 42.7.11  — GHSA-98qh-xjc8-98pq
 ext["tomcat.version"] = "11.0.22"
-ext["netty.version"] = "4.2.13.Final"
+ext["netty.version"] = "4.2.15.Final"
 ext["postgresql.version"] = "42.7.11"
 
 dependencyManagement {

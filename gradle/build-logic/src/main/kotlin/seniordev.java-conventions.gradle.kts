@@ -74,8 +74,9 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 jacoco {
-	// 0.8.14 dodaje wsparcie class-file dla Javy 25 (LTS).
-	toolVersion = "0.8.14"
+	// 0.8.15 = najnowsza stabilna (2026-06-07); 0.8.14+ ma wsparcie class-file dla Javy 25 (LTS).
+	// Lustro gradle/catalog: version("jacoco").
+	toolVersion = "0.8.15"
 }
 
 tasks.withType<Test>().configureEach {
