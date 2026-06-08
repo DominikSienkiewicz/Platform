@@ -52,17 +52,33 @@ jobs:
           GPR_REPO: ${{ github.event.repository.name }}
           V: ${{ needs.version.outputs.version }}
         run: |
-          set +e   # nie przerywaj na błędzie publish — sami obsługujemy 409 (idempotencja)
+          set -uo pipefail
+          # Idempotencja BEZ partial-release: pre-check przez GitHub API "czy wersja JUŻ jest".
+          # - wersja istnieje  -> skip CAŁY moduł (re-run po sukcesie nic nie psuje)
+          # - wersja nie istnieje -> publikuj; KAŻDY błąd = fatal (NIE połykamy 409!)
+          # Dlaczego nie połykać 409: przy 409 na .pom Gradle przerywa moduł PRZED wgraniem .module
+          # (Gradle Module Metadata). Efekt = artefakt bez wariantu version-catalog/plugin-marker,
+          # czyli "No matching variant" u konsumenta (to zabiło platform-catalog:1.3.4).
+          # Mapowanie modeł -> nazwa pakietu Maven w GitHub Packages:
+          declare -A PKG=( [build-logic]="pl.seniordeveloper.gradle.build-logic" \
+                           [catalog]="pl.seniordeveloper.platform-catalog" \
+                           [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" )
+          version_exists() {
+            curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/users/$GPR_OWNER/packages/maven/$1/versions" 2>/dev/null \
+              | python3 -c "import sys,json; print(any(v['name']=='$V' for v in json.load(sys.stdin)))" 2>/dev/null
+          }
           for m in build-logic catalog test-fixtures; do
+            if [ "$(version_exists "${PKG[$m]}")" = "True" ]; then
+              echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
+              continue
+            fi
             echo "== publish gradle/$m ($V) =="
-            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" publish ) 2>&1 | tee "/tmp/pub-$m.log"
-            rc=${PIPESTATUS[0]}
+            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" publish )
+            rc=$?
             if [ "$rc" -ne 0 ]; then
-              if grep -q "status code 409" "/tmp/pub-$m.log"; then
-                echo "::notice::$m $V już opublikowane (409) — pomijam (publish idempotentny)"
-              else
-                echo "::error::publish $m nie powiódł się (kod $rc)"; exit 1
-              fi
+              echo "::error::publish $m ($V) nie powiódł się (kod $rc). Jeśli to 409: wersja jest częściowo opublikowana — usuń $V z GitHub Packages albo wydaj wyższą wersję (nie re-publikuj po partialu)."
+              exit 1
             fi
           done
 
