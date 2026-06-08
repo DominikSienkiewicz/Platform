@@ -4,17 +4,17 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.3.3")
+version = providers.gradleProperty("platformVersion").getOrElse("1.3.4")
 
 catalog {
 	versionCatalog {
 		// ============================ WERSJE ============================
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.3.3"))
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.3.4"))
 		version("java", "25")
 		version("springBoot", "4.0.6")
 		version("springDependencyManagement", "1.1.7")
 		version("springModulith", "2.0.6")
-		version("springAi", "2.0.0-RC1")      // GA jeszcze nie wyszło (najnowsza stabilna 1.1.7 nie wspiera Boot 4); RC1 = najnowszy prerelease (Maven Central, sprawdzone 2026-06-07). Bump na 2.0.0 gdy GA.
+		version("springAi", "2.0.0-M8")       // GA jeszcze nie wyszło; stabilna 1.1.7 nie wspiera Boot 4, więc zostajemy na sprawdzonym M8 (komplet w verification-metadata). NIE bumpować na RC/M bez `--write-verification-metadata`. Bump na 2.0.0 gdy GA.
 		version("junit", "6.1.0")
 		version("archunit", "1.4.2")
 		version("resilience4j", "2.4.0")

@@ -32,10 +32,10 @@ fi
 [ -z "$TARGET" ] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
 echo "==> Podbijam piny Platform do: $TARGET"
 
-# --- Backend: catalog + convention pluginy + settings plugin + lockfile settings ---
+# --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
+#     i settings-gradle.lockfile; conventions w build.gradle.kts są BEZ wersji (classpath settings). ---
 [ -f backend/settings.gradle.kts ] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
 [ -f backend/settings.gradle.kts ] && sed -i.bak -E "s#(id\(\"seniordev\.settings-conventions\"\) version \")[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
-[ -f backend/build.gradle.kts ] && sed -i.bak -E "s#(id\(\"seniordev\.[a-z-]+-conventions\"\) version \")[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#g" backend/build.gradle.kts && rm -f backend/build.gradle.kts.bak
 [ -f backend/settings-gradle.lockfile ] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings-gradle.lockfile && rm -f backend/settings-gradle.lockfile.bak
 
 # --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---

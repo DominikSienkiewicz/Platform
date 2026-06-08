@@ -25,7 +25,7 @@ plugins {
 
 val springBootVersion = "4.0.6"
 val springModulithVersion = "2.0.6"
-val springAiVersion = "2.0.0-RC1" // GA jeszcze nie wyszło; RC1 = najnowszy prerelease (Maven Central, 2026-06-07)
+val springAiVersion = "2.0.0-M8" // GA jeszcze nie wyszło; stabilna 1.1.7 nie wspiera Boot 4 — zostajemy na M8 (lustro gradle/catalog)
 val archunitVersion = "1.4.2"
 val junitVersion = "6.1.0"
 
