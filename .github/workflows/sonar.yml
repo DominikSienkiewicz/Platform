@@ -1,0 +1,87 @@
+name: Sonar (reusable)
+
+# Reusable: skan SonarQube Cloud dla monorepo (backend Gradle + frontend npm).
+# Zastępuje ~100 linii zduplikowanego inline-YAML z ci.yml obu repo (SkillSprintPlus, BookOfStyling).
+# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@v1
+#
+# Oba joby są POMIJANE dopóki nie istnieje sekret SONAR_TOKEN (guard krokowy `if: env.SONAR_TOKEN != ''`),
+# więc nigdy nie blokują CI zanim Sonar zostanie skonfigurowany. Klucze projektów i organizacja
+# żyją per-repo w sonar-project.properties / build.gradle.kts — tu są tylko mechanika i wersje toolingu.
+#
+# Jednorazowy setup w SonarCloud: utwórz oba projekty, włącz tryb monorepo, WYŁĄCZ Automatic Analysis
+# (Administration -> Analysis Method) — analiza automatyczna i CI-owa wykluczają się, a tylko skan z CI
+# wgrywa raport pokrycia wymagany przez bramkę "Sonar way" (>= 80% na nowym kodzie).
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: "JDK do uruchomienia Gradle (skan backendu)."
+        type: string
+        default: "21"
+      node-version:
+        description: "Node do testów + coverage (skan frontendu)."
+        type: string
+        default: "24"
+    # SONAR_TOKEN/GITHUB_TOKEN dostarcza caller przez `secrets: inherit`.
+
+permissions:
+  contents: read
+  packages: read # Gradle/npm dociągają artefakty Platform z GitHub Packages
+
+jobs:
+  backend:
+    name: Sonar backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: https://sonarcloud.io
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # pełna historia -> poprawne new-code & blame
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }} # uruchamia Gradle; toolchain aplikacji dociąga Foojay
+      # Testcontainers: Docker jest na runnerze. Testy -> JaCoCo XML -> skan.
+      - name: Test + JaCoCo + Sonar
+        if: ${{ env.SONAR_TOKEN != '' }}
+        working-directory: backend
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub Packages (convention-plugins Platform)
+        run: ./gradlew test jacocoTestReport sonar --no-daemon
+
+  frontend:
+    name: Sonar frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: https://sonarcloud.io
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install deps
+        if: ${{ env.SONAR_TOKEN != '' }}
+        working-directory: frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # scoped @dominiksienkiewicz/* z GitHub Packages
+        run: npm ci
+      - name: Test + coverage (lcov)
+        if: ${{ env.SONAR_TOKEN != '' }}
+        working-directory: frontend
+        run: npm run test -- --coverage
+      - name: SonarQube scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        with:
+          projectBaseDir: frontend

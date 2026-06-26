@@ -4,7 +4,8 @@
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
-    ":semanticCommits"
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests"
   ],
   "schedule": ["before 9am on monday"],
   "labels": ["dependencies"],
@@ -29,6 +30,12 @@
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
       "addLabels": ["ci"]
+    },
+    {
+      "description": "Nie pinuj po SHA własnych reusable workflows Platform — `@v1` to celowa, ruchoma linia wydania (jedno miejsce aktualizacji logiki dla repo konsumenckich).",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["DominikSienkiewicz/Platform"],
+      "enabled": false
     },
     {
       "description": "Artefakty Platform (pin 1.0.0) — osobna grupa, szybka ścieżka.",

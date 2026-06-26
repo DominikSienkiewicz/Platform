@@ -1,0 +1,44 @@
+name: Roadmap auto-unblock (reusable)
+
+# Reusable: po zamknięciu issue-prerekwizytu odpala skrypt repo wołającego, który przestawia
+# zależne pozycje roadmapy blocked/backlog -> ready (gdy WSZYSTKIE ich prerekwizyty są zamknięte).
+# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@v1
+#
+# Logika i parser zostają w repo wołającym (scripts/roadmap-unblock.sh + scripts/lib/*) — są sprzężone
+# z konfiguracją roadmapy danego repo (nazwa Projects v2, statusy, streamy). Tu owijamy tylko WARSTWĘ
+# CI: trigger-guard, uprawnienia, fail-safe na brak tokenu i checkout. Kontrakt skryptu, który repo
+# musi spełniać:  bash scripts/roadmap-unblock.sh --closed <issue-number>
+#
+# WYMAGANIA (repo user-owned!):
+#   • secret ROADMAP_PROJECT_TOKEN — PAT (classic: scope `project`,`repo`; lub fine-grained:
+#       Projects R/W + Issues R/W). Domyślny GITHUB_TOKEN NIE zapisuje Projects v2.
+#   • var ROADMAP_PROJECT_NUMBER — numer tablicy Projects v2.
+# Brak tokenu => krok kończy się ostrzeżeniem i nie robi nic (fail-safe).
+
+on:
+  workflow_call:
+    # Sekrety/zmienne idą z callera przez `secrets: inherit` + kontekst `vars`.
+
+permissions:
+  contents: read
+
+jobs:
+  unblock:
+    # Tylko issue z markerem roadmapy — reszta zamknięć ignorowana (kontekst eventu z callera).
+    if: contains(github.event.issue.body, 'roadmap-id:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auto-unblock dependents
+        env:
+          GH_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ROADMAP_PROJECT_NUMBER: ${{ vars.ROADMAP_PROJECT_NUMBER }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning title=Auto-unblock pominięty::Brak sekretu ROADMAP_PROJECT_TOKEN (PAT scope project). Projects v2 dla repo user-owned wymaga PAT-a."
+            exit 0
+          fi
+          bash scripts/roadmap-unblock.sh --closed "${{ github.event.issue.number }}"

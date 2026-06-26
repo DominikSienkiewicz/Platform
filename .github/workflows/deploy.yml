@@ -1,0 +1,253 @@
+name: Deploy (reusable)
+
+# Reusable deploy = UNIA najlepszych cech release.yml (SSP) i deploy.yml (BoS):
+#   • preflight walidujący sekrety/zmienne ZANIM ruszy build          (z SSP)
+#   • build obrazów przez docker/build-push-action (cache, provenance) (z SSP)
+#   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest) (z BoS)
+#   • workflow_dispatch — ręczny re-deploy                            (z BoS)
+#   • environment: production — druga bramka (required reviewer)        (z BoS)
+#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP)
+#   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
+#
+# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1
+# Różnice między repo idą przez `with:` (app-name, compose-dir, has-worker, migrate-*).
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Prefiks obrazów, np. skillsprintplus / bookofstyling."
+        type: string
+        required: true
+      compose-dir:
+        description: "Katalog z docker-compose.prod.yml i Caddyfile (SSP: '.', BoS: 'infra')."
+        type: string
+        default: "."
+      has-worker:
+        description: "Czy budować obraz <app>-eval-worker (SSP: true, BoS: false)."
+        type: boolean
+        default: false
+      migrate-image-suffix:
+        description: "Sufiks obrazu migracji (SSP: 'migrate', BoS: 'db-migrate')."
+        type: string
+        default: "migrate"
+      migrate-tag-source:
+        description: "Tag obrazu migracji: 'backend' (=wersja backendu) lub 'changelog' (numer changeloga)."
+        type: string
+        default: "backend"
+      java-version:
+        description: "JDK do builda. Pluginy Platform są kompilowane na JVM 25 -> Gradle MUSI działać na 25."
+        type: string
+        default: "25"
+    # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ inputs.app-name }}
+  cancel-in-progress: false # nie przerywaj trwającego deployu
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # ---- Fail-fast: ujawnij brakującą konfigurację ZANIM ruszy build/deploy ----
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sprawdź wymagane sekrety i zmienne
+        env:
+          GPR_USER: ${{ secrets.GPR_USER }}
+          GPR_KEY: ${{ secrets.GPR_KEY }}
+          NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          GHCR_OWNER: ${{ vars.GHCR_OWNER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for v in GPR_USER GPR_KEY NPM_GH_TOKEN SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS GHCR_OWNER DEPLOY_PATH; do
+            [ -z "${!v}" ] && missing+=("$v")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Brakuje sekretów/zmiennych: ${missing[*]} — ustaw je (runbook §B)."
+            exit 1
+          fi
+          echo "Preflight OK."
+
+  # ---- Wersje warstw = source of truth dla tagów obrazów ----
+  versions:
+    needs: preflight
+    runs-on: ubuntu-latest
+    outputs:
+      owner: ${{ steps.v.outputs.owner }}
+      backend: ${{ steps.v.outputs.backend }}
+      frontend: ${{ steps.v.outputs.frontend }}
+      migrate: ${{ steps.v.outputs.migrate }}
+      worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="${{ vars.GHCR_OWNER || github.repository_owner }}"
+          owner="$(echo "$owner" | tr '[:upper:]' '[:lower:]')"
+          backend="$(grep -E '^version=' backend/gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')"
+          frontend="$(node -p "require('./frontend/package.json').version")"
+          if [ "${{ inputs.migrate-tag-source }}" = "changelog" ]; then
+            migrate="$(ls backend/src/main/resources/db/changelog/changes | grep -oE '^[0-9]{4}' | sort | tail -1)"
+          else
+            migrate="$backend"
+          fi
+          { echo "owner=$owner"; echo "backend=$backend"; echo "frontend=$frontend"; echo "migrate=$migrate"; } | tee -a "$GITHUB_OUTPUT"
+
+  # ---- Build + push: build-push-action (z SSP) + idempotentny skip istniejącego tagu (z BoS) ----
+  build-push:
+    needs: versions
+    runs-on: ubuntu-latest
+    env:
+      OWNER: ${{ needs.versions.outputs.owner }}
+      APP: ${{ inputs.app-name }}
+      BACKEND_VER: ${{ needs.versions.outputs.backend }}
+      FRONTEND_VER: ${{ needs.versions.outputs.frontend }}
+      MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      # Które tagi już są w GHCR -> pomijamy rebuild (oszczędność minut, brak nadpisania :wersja).
+      - id: exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          chk() { docker manifest inspect "$1" >/dev/null 2>&1 && echo true || echo false; }
+          {
+            echo "backend=$(chk "$REGISTRY/$OWNER/$APP-backend:$BACKEND_VER")"
+            echo "frontend=$(chk "$REGISTRY/$OWNER/$APP-frontend:$FRONTEND_VER")"
+            echo "migrate=$(chk "$REGISTRY/$OWNER/$APP-${{ inputs.migrate-image-suffix }}:$MIGRATE_VER")"
+            echo "worker=$(chk "$REGISTRY/$OWNER/$APP-eval-worker:$BACKEND_VER")"
+          } | tee -a "$GITHUB_OUTPUT"
+
+      # bootJar potrzebny do obrazów backend/worker (pluginy Platform z GH Packages -> PAT).
+      - name: Build bootJar
+        if: steps.exists.outputs.backend == 'false' || (inputs.has-worker && steps.exists.outputs.worker == 'false')
+        working-directory: backend
+        env:
+          GITHUB_ACTOR: ${{ secrets.GPR_USER || github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GPR_KEY || secrets.GITHUB_TOKEN }}
+        run: ./gradlew bootJar --no-daemon
+
+      - name: Build & push — backend
+        if: steps.exists.outputs.backend == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:${{ env.BACKEND_VER }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:latest
+
+      - name: Build & push — migrate
+        if: steps.exists.outputs.migrate == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/migrate/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-${{ inputs.migrate-image-suffix }}:${{ env.MIGRATE_VER }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-${{ inputs.migrate-image-suffix }}:latest
+
+      - name: Build & push — eval-worker
+        if: inputs.has-worker && steps.exists.outputs.worker == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/eval-worker
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-eval-worker:${{ env.BACKEND_VER }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-eval-worker:latest
+
+      - name: Build & push — frontend (token npm jako BuildKit secret; id-ki gh_token + github_token)
+        if: steps.exists.outputs.frontend == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          secrets: |
+            gh_token=${{ secrets.NPM_GH_TOKEN }}
+            github_token=${{ secrets.NPM_GH_TOKEN }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:latest
+
+  # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
+  deploy:
+    needs: [versions, build-push]
+    runs-on: ubuntu-latest
+    environment: production # druga bramka (required reviewer) na szczycie merge'a PR
+    env:
+      OWNER: ${{ needs.versions.outputs.owner }}
+    steps:
+      - uses: actions/checkout@v4 # repo wołające: compose + Caddyfile
+
+      - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
+        uses: actions/checkout@v4
+        with:
+          repository: DominikSienkiewicz/Platform
+          ref: v1
+          path: _platform
+          token: ${{ secrets.GPR_KEY }}
+
+      - name: Plik z tagami (.env.deploy) — aliasy *_TAG i *_VER (compose SSP używa TAG, BoS VER)
+        run: |
+          {
+            echo "GHCR_OWNER=${{ env.OWNER }}"
+            echo "BACKEND_TAG=${{ needs.versions.outputs.backend }}"
+            echo "BACKEND_VER=${{ needs.versions.outputs.backend }}"
+            echo "FRONTEND_TAG=${{ needs.versions.outputs.frontend }}"
+            echo "FRONTEND_VER=${{ needs.versions.outputs.frontend }}"
+            echo "WORKER_TAG=${{ needs.versions.outputs.worker }}"
+            echo "MIGRATE_TAG=${{ needs.versions.outputs.migrate }}"
+            echo "MIGRATE_VER=${{ needs.versions.outputs.migrate }}"
+          } > .env.deploy
+
+      - name: Konfiguracja SSH (known_hosts PINOWANE — bez MITM)
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Wgranie artefaktów na boks (DEPLOY_PATH)
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/id_ed25519 \
+            "${{ inputs.compose-dir }}/docker-compose.prod.yml" \
+            "${{ inputs.compose-dir }}/Caddyfile" \
+            .env.deploy _platform/scripts/deploy-remote.sh \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ vars.DEPLOY_PATH }}/"
+
+      - name: Deploy (migracje -> backend -> frontend -> caddy, warunkowo + health-gate)
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "cd '${{ vars.DEPLOY_PATH }}' && bash deploy-remote.sh"

@@ -74,4 +74,15 @@ fi
 
 echo "==> Gotowe. Sprawdź i zacommituj:"
 git --no-pager diff --stat
-echo "Pamiętaj (backend): cd backend && ./gradlew build --write-locks  — jeśli bump zmienia wersje z BOM-ów."
+echo ""
+echo "Pamiętaj (backend) — po bumpie regeneruj ZAMROŻONY STAN narzędziem (NIE ręcznie):"
+echo "  cd backend"
+echo "  if [ -f gradle/verification-metadata.xml ]; then"
+echo "    # OBIE flagi RAZEM — osobno = deadlock (lock chce nowych artefaktów, verification je blokuje)."
+echo "    ./gradlew build --write-locks --write-verification-metadata sha256 --no-daemon"
+echo "  else"
+echo "    ./gradlew build --write-locks --no-daemon"
+echo "  fi"
+echo "  # --write-locks przelicza CAŁY graf (też transytywny: checker-qual itp.), nie tylko podbite wpisy;"
+echo "  # --write-verification-metadata dorzuca checksumy nowych wersji (netty/jackson po nadpisaniach CVE)."
+echo "  # Zrecenzuj diff gradle.lockfile + verification-metadata.xml przed commitem."
