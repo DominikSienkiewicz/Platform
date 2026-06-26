@@ -1,17 +1,19 @@
 {
   "name": "@dominiksienkiewicz/versions",
   "version": "1.0.0",
-  "description": "Kanon wersji frontendowych frameworków i toolchainu (jedno źródło prawdy w Platform). Konsumenci pinują dokładnie te wersje; guard `platform-versions-check` w CI failuje przy dryfie.",
+  "description": "Kanon wersji frontendowych frameworków i toolchainu (jedno źródło prawdy w Platform). Konsumenci pinują dokładnie te wersje; guard `platform-versions-check` w CI failuje przy dryfie. Dostarcza też bin `platform-bump` (jedno źródło logiki bumpu platformy).",
   "files": [
     "versions.json",
-    "bin/check.mjs"
+    "bin/check.mjs",
+    "bin/platform-bump.sh"
   ],
   "exports": {
     ".": "./versions.json",
     "./versions.json": "./versions.json"
   },
   "bin": {
-    "platform-versions-check": "bin/check.mjs"
+    "platform-versions-check": "bin/check.mjs",
+    "platform-bump": "bin/platform-bump.sh"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

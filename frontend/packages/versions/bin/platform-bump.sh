@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# platform-bump.sh — podbija piny artefaktów Platform (Maven catalog + convention pluginy + settings
-# plugin + npm) do NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu
-# z @dominiksienkiewicz/versions (publish-only: GitHub = źródło prawdy).
-# KANON tego pliku żyje w Platform/templates/platform-bump.sh — nie edytuj kopii per-repo.
+# platform-bump — KANON (jedno źródło): bin pakietu @dominiksienkiewicz/versions, publikowany z Platform.
+# Repo konsumenckie NIE trzymają kopii logiki — wołają go przez cienki stub -> node_modules/.../bin.
+# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @dominiksienkiewicz/*) do
+# NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu z versions.json.
 #
 # Token (PAT classic, read:packages): z env GPR_TOKEN lub GITHUB_TOKEN, albo gpr.key z ~/.gradle/gradle.properties.
-# Użycie:
-#   ./platform-bump.sh            # podbij do najnowszej
-#   ./platform-bump.sh 1.3.0      # podbij do konkretnej wersji
+# Użycie (z dowolnego miejsca w repo):
+#   platform-bump            # podbij do najnowszej
+#   platform-bump 1.3.0      # podbij do konkretnej wersji
 #
 # Backend gradle.lockfile jest regenerowany AUTOMATYCZNIE na końcu (--write-locks) — analogicznie do
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
 set -euo pipefail
+
+# Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
+cd "$(git rev-parse --show-toplevel)"
 
 OWNER="DominikSienkiewicz"
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"

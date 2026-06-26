@@ -17,9 +17,10 @@ opublikuj, podbij pin w repo konsumenta.
 | `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów) |
 | `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions}` |
-| `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json` + bin `platform-versions-check` — guard w `frontend-ci`) |
-| `.github/workflows/` | reusable CI (`backend-ci`/`frontend-ci`/`security-scan`/`scorecard`) + publish na tag `v*` |
-| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc/platform-bump.sh |
+| `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
+| `.github/workflows/` | reusable CI (`backend-ci`/`frontend-ci`/`sonar`/`security-scan`/`scorecard`/`roadmap-unblock`/`deploy`) + publish na tag `v*` |
+| `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`) |
+| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc (logika `platform-bump` → bin pakietu `versions`) |
 
 ## Zasady (twarde)
 
@@ -39,9 +40,9 @@ opublikuj, podbij pin w repo konsumenta.
 6. **Wersje WSZYSTKICH zależności frontendu → `frontend/packages/versions/versions.json`**
    (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
    (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: zależność bez wpisu
-   w kanonie albo z inną wersją = czerwony build. `platform-bump.sh` nakłada kanon. Nowa biblioteka
-   w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym, CZY repo
-   używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
+   w kanonie albo z inną wersją = czerwony build. `platform-bump` (bin pakietu `versions`) nakłada kanon.
+   Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym,
+   CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
 7. **Nadpisania CVE nad BOM-em Boota** żyją w `spring-modulith-conventions` (propercje
    `tomcat.version`/`netty.version`/`postgresql.version` przez `ext`) — usuwaj przy bumpie Boota,
    gdy BOM dogoni fixy.
