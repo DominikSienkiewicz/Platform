@@ -13,14 +13,14 @@ cd "$(dirname "$0")"   # zawsze z roota Platform
 
 MSG="${1:-}"
 VERSION="${2:-}"
-[ -z "$MSG" ] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
+[[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
 
 PROP="gradle/build-logic/gradle.properties"
-[ -f "$PROP" ] || { echo "Brak $PROP — uruchom z roota repo Platform."; exit 1; }
+[[ -f "$PROP" ]] || { echo "Brak $PROP — uruchom z roota repo Platform."; exit 1; }
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
 # Wersja: jawna (arg 2) albo patch +0.0.1 od aktualnej.
-if [ -z "$VERSION" ]; then
+if [[ -z "$VERSION" ]]; then
   echo "$CUR" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
     || { echo "Aktualne platformVersion '$CUR' nie jest X.Y.Z — podaj wersję jawnie."; exit 1; }
   IFS='.' read -r MA MI PA <<< "$CUR"
@@ -35,16 +35,16 @@ fi
 
 BR="$(git rev-parse --abbrev-ref HEAD)"
 echo "Plan: $CUR -> $VERSION   branch: $BR   commit: \"$MSG\""
-if [ "${3:-}" != "-y" ] && [ "${ASSUME_YES:-}" != "1" ]; then
+if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
   read -r -p "Kontynuować (commit + tag v$VERSION + push)? [y/N] " ans
-  [ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo "Przerwane."; exit 0; }
+  [[ "$ans" = "y" ]] || [[ "$ans" = "Y" ]] || { echo "Przerwane."; exit 0; }
 fi
 
 # Bump: 3× gradle.properties + lustro defaultu w catalogu.
 for f in gradle/build-logic/gradle.properties gradle/catalog/gradle.properties gradle/test-fixtures/gradle.properties; do
-  [ -f "$f" ] && sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f" && rm -f "$f.bak"
+  [[ -f "$f" ]] && sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f" && rm -f "$f.bak"
 done
-[ -f gradle/catalog/build.gradle.kts ] && \
+[[ -f gradle/catalog/build.gradle.kts ]] && \
   sed -i.bak -E "s/getOrElse\(\"[0-9]+\.[0-9]+\.[0-9]+\"\)/getOrElse(\"$VERSION\")/g" gradle/catalog/build.gradle.kts \
   && rm -f gradle/catalog/build.gradle.kts.bak
 

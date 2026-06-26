@@ -39,13 +39,14 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
 
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
       # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).
       - name: ./gradlew ${{ inputs.gradle-task }}
-        run: ./gradlew ${{ inputs.gradle-task }} --no-daemon --stacktrace
+        run: ./gradlew $GRADLE_TASK --no-daemon --stacktrace
         env:
+          GRADLE_TASK: ${{ inputs.gradle-task }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
 

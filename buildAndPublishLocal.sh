@@ -28,7 +28,7 @@ for arg in "$@"; do
   esac
 done
 
-log() { printf '\n\033[1;36m▶ %s\033[0m\n' "$1"; }
+log() { local msg="$1"; printf '\n\033[1;36m▶ %s\033[0m\n' "$msg"; }
 
 # --- 1) Gradle: publishToMavenLocal ---
 publish_gradle() {

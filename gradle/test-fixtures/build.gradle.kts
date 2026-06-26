@@ -12,6 +12,12 @@ java {
 
 repositories { mavenCentral() }
 
+// Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
+// Regeneracja po bumpie BOM-ów/wersji wyżej: ./gradlew dependencies --write-locks
+dependencyLocking {
+	lockAllConfigurations()
+}
+
 dependencies {
 	// Natywne platformy Gradle zamiast io.spring.dependency-management — dzięki temu publikowane
 	// Gradle Module Metadata jest POPRAWNE (zależności bez wersji są pokryte referencją do platformy,

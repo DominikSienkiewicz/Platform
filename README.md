@@ -229,6 +229,11 @@ kompilacji). To jedyna duplikacja w repo. Trzymana świadomie; opcjonalny dedup 
 `libs.versions.toml` dołączany do obu buildów przez `settings.gradle.kts`. Na teraz: przy bumpie zmieniasz
 oba miejsca (oznaczone komentarzem "lustro gradle/catalog").
 
+> **Dependency locking:** `gradle/build-logic` i `gradle/test-fixtures` mają `gradle.lockfile` (powtarzalne
+> rozwiązywanie zależności). Po bumpie którejkolwiek wersji w tych modułach **zregeneruj lockfile**:
+> `cd gradle/<moduł> && ./gradlew dependencies --write-locks` i zacommituj diff. `gradle/catalog` nie ma
+> lockfile — version catalog publikuje metadane, nie ma grafu zależności do zablokowania.
+
 ---
 
 ## Sekwencja rolloutu (niskie ryzyko)

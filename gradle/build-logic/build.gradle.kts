@@ -19,6 +19,12 @@ repositories {
 	mavenCentral()
 }
 
+// Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
+// Regeneracja po bumpie którejkolwiek wersji wyżej: ./gradlew dependencies --write-locks
+dependencyLocking {
+	lockAllConfigurations()
+}
+
 dependencies {
 	// Pluginy aplikowane WEWNĄTRZ convention pluginów muszą być na classpath build-logic
 	// jako zwykłe zależności (marker-artefakty pluginów). Wersje = lustro gradle/catalog

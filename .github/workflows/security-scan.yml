@@ -43,7 +43,7 @@ jobs:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
 
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
       - name: Generate CycloneDX SBOM
@@ -54,16 +54,18 @@ jobs:
 
       - name: Locate SBOM
         id: sbom
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working-directory }}
         run: |
           BOM=$(find build -type f \( -name 'bom*.json' -o -name '*.cdx.json' \) -print -quit)
           if [ -z "$BOM" ]; then
-            echo "::error::CycloneDX SBOM not found under ${{ inputs.working-directory }}/build — check the cyclonedxBom output path"
+            echo "::error::CycloneDX SBOM not found under $WORKING_DIRECTORY/build — check the cyclonedxBom output path"
             exit 1
           fi
-          echo "path=${{ inputs.working-directory }}/$BOM" >> "$GITHUB_OUTPUT"
+          echo "path=$WORKING_DIRECTORY/$BOM" >> "$GITHUB_OUTPUT"
 
       - name: Scan SBOM with Grype
-        uses: anchore/scan-action@v7
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           sbom: ${{ steps.sbom.outputs.path }}
           fail-build: true
@@ -79,7 +81,7 @@ jobs:
           persist-credentials: false
 
       - name: Scan frontend dependencies with Grype
-        uses: anchore/scan-action@v7
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           path: frontend
           fail-build: true

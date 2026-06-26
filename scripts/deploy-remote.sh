@@ -29,16 +29,16 @@ FRONTEND_DECL="${FRONTEND_TAG:-${FRONTEND_VER:-}}"
 
 log() { printf '\n\033[1m▶ %s\033[0m\n' "$*"; }
 services="$("${COMPOSE[@]}" config --services)"
-pick() { grep -iE "$1" <<<"$services" | head -1 || true; }
+pick() { local pattern="$1"; grep -iE "$pattern" <<<"$services" | head -1 || true; }
 SVC_MIGRATE="$(pick 'migrate')"
 SVC_BACKEND="$(pick 'backend')"
 SVC_FRONTEND="$(pick 'frontend')"
 SVC_CADDY="$(pick 'caddy')"
 SVC_WORKER="$(pick 'worker|eval')"
 
-cid() { "${COMPOSE[@]}" ps -q "$1" 2>/dev/null | head -1; }
-running_tag() { local id; id="$(cid "$1")"; [[ -n "$id" ]] && docker inspect -f '{{.Config.Image}}' "$id" 2>/dev/null | sed 's/.*://' || true; }
-health() { local id; id="$(cid "$1")"; [[ -n "$id" ]] && docker inspect -f '{{.State.Health.Status}}' "$id" 2>/dev/null || echo none; }
+cid() { local svc="$1"; "${COMPOSE[@]}" ps -q "$svc" 2>/dev/null | head -1; }
+running_tag() { local svc="$1" id; id="$(cid "$svc")"; [[ -n "$id" ]] && docker inspect -f '{{.Config.Image}}' "$id" 2>/dev/null | sed 's/.*://' || true; }
+health() { local svc="$1" id; id="$(cid "$svc")"; [[ -n "$id" ]] && docker inspect -f '{{.State.Health.Status}}' "$id" 2>/dev/null || echo none; }
 
 log "Pull obrazów (łącznie z profilem migrate)"
 "${COMPOSE[@]}" --profile migrate pull
