@@ -51,7 +51,9 @@ jobs:
         working-directory: backend
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub Packages (convention-plugins Platform)
+          # PAT read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN).
+          # Domyślny GITHUB_TOKEN jest scoped do repo-callera i NIE czyta paczek z osobnego repo Platform.
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
         run: ./gradlew test jacocoTestReport sonar --no-daemon
 
   frontend:
@@ -74,7 +76,8 @@ jobs:
         if: ${{ env.SONAR_TOKEN != '' }}
         working-directory: frontend
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # scoped @dominiksienkiewicz/* z GitHub Packages
+          # PAT read:packages do scoped @dominiksienkiewicz/* (fallback: automatyczny GITHUB_TOKEN).
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
         run: npm ci
       - name: Test + coverage (lcov)
         if: ${{ env.SONAR_TOKEN != '' }}
