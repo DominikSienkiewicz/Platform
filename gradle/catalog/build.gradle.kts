@@ -4,17 +4,17 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.3.12")
+version = providers.gradleProperty("platformVersion").getOrElse("1.3.13")
 
 catalog {
 	versionCatalog {
 		// ============================ WERSJE ============================
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.3.12"))
-		version("java", "25")
-		version("springBoot", "4.0.6")
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.3.13"))
+		version("java", "26")                 // non-LTS; baseline portfolio (2026-07). JaCoCo 0.8.15: wsparcie class-file 26 EKSPERYMENTALNE.
+		version("springBoot", "4.1.0")       // GA 2026-06-10
 		version("springDependencyManagement", "1.1.7")
-		version("springModulith", "2.0.6")
-		version("springAi", "2.0.0-M8")       // GA jeszcze nie wyszło; stabilna 1.1.7 nie wspiera Boot 4, więc zostajemy na sprawdzonym M8 (komplet w verification-metadata). NIE bumpować na RC/M bez `--write-verification-metadata`. Bump na 2.0.0 gdy GA.
+		version("springModulith", "2.1.0")
+		version("springAi", "2.0.0")          // GA 2026-06-12. Po bumpie konsumenci MUSZĄ zregenerować verification-metadata (--write-verification-metadata).
 		version("junit", "6.1.0")
 		version("archunit", "1.4.2")
 		version("resilience4j", "2.4.0")
@@ -27,6 +27,10 @@ catalog {
 		version("cyclonedx", "3.2.4")
 		version("jacoco", "0.8.15")
 		version("foojayResolver", "1.0.0") // lustro: implementation foojay-resolver w build-logic
+		// Domenowe (konsumenci: Azimuth) — wymagane, bo platformDependencyCheck failuje na jawnych wersjach spoza katalogu.
+		version("mapstruct", "1.6.3")
+		version("jsoup", "1.18.3")
+		version("wiremock", "3.13.1")
 
 		// ============================ BOM-y ============================
 		library("spring-ai-bom", "org.springframework.ai", "spring-ai-bom").versionRef("springAi")
@@ -41,6 +45,10 @@ catalog {
 		library("shedlock-provider-jdbc-template", "net.javacrumbs.shedlock", "shedlock-provider-jdbc-template").versionRef("shedlock")
 		library("javers-spring-boot-starter-sql", "org.javers", "javers-spring-boot-starter-sql").versionRef("javers")
 		library("archunit-junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
+		library("mapstruct", "org.mapstruct", "mapstruct").versionRef("mapstruct")
+		library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
+		library("jsoup", "org.jsoup", "jsoup").versionRef("jsoup")
+		library("wiremock-standalone", "org.wiremock", "wiremock-standalone").versionRef("wiremock")
 		// Reużywalna infrastruktura testowa (Testcontainers + bazy testów) — z gradle/test-fixtures.
 		library("platform-test-fixtures", "pl.seniordeveloper", "platform-test-fixtures").versionRef("platform")
 

@@ -18,6 +18,10 @@ on:
       severity-cutoff:
         type: string
         default: high
+      run-frontend:
+        description: "Skanuj frontend/package-lock (monorepo z frontem). Single-module backend bez frontu: false."
+        type: boolean
+        default: true
     secrets:
       gpr_token:
         description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
@@ -74,6 +78,7 @@ jobs:
 
   frontend-deps:
     name: Frontend — Grype (package-lock)
+    if: ${{ inputs.run-frontend }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
