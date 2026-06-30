@@ -4,12 +4,12 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.4.0")
+version = providers.gradleProperty("platformVersion").getOrElse("1.4.1")
 
 catalog {
 	versionCatalog {
 		// ============================ WERSJE ============================
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.4.0"))
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.4.1"))
 		version("java", "26")                 // non-LTS; baseline portfolio (2026-07). JaCoCo 0.8.15: wsparcie class-file 26 EKSPERYMENTALNE.
 		version("springBoot", "4.1.0")       // GA 2026-06-10
 		version("springDependencyManagement", "1.1.7")

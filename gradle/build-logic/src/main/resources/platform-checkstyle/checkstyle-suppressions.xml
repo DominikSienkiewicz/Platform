@@ -12,4 +12,10 @@
             checks="FileLength"
             files=".*/modules/.*/infrastructure/web/.*(Command|Query)Controller\.java"/>
 
+    <!-- Testy używają idiomu `static final ArchRule|JavaClasses|ApplicationModules <lowercaseName>`
+         (ArchUnit @ArchTest, Spring Modulith ApplicationModules, fixtures) — pól static final, które
+         ConstantName traktuje jak stałe i żąda UPPER_SNAKE. To kanoniczny styl w testach, więc
+         wyłączamy ConstantName wyłącznie w src/test. W src/main reguła pozostaje twarda. -->
+    <suppress checks="ConstantName" files="[/\\]src[/\\]test[/\\]"/>
+
 </suppressions>
