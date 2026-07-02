@@ -1,7 +1,8 @@
 name: CI
 
 # Walidacja pushy do main i PR-ów: czy build-logic / catalog / test-fixtures kompilują się
-# na JDK 25 i czy paczki frontendu instalują się + lintują. (Publish robi osobno release.yml.)
+# na JDK 25, czy paczki frontendu instalują się + lintują i czy testy skryptów szablonowych
+# (templates/tests) przechodzą. (Publish robi osobno release.yml.)
 # Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1),
 # czyli 3× na każde wydanie — ten sam commit jest już zwalidowany przez push do main.
 on:
@@ -36,6 +37,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
       - name: Build
         run: chmod +x ./gradlew && ./gradlew --no-daemon build
+
+  templates:
+    name: Templates — testy skryptów
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash templates/tests/platform-bump.test.sh
 
   frontend:
     name: Frontend — install + lint

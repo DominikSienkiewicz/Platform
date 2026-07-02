@@ -13,6 +13,10 @@
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
 set -euo pipefail
 
+# Kopia żyje w roocie repo konsumenta — operuj ZAWSZE tam, niezależnie skąd wywołano
+# (inaczej guardy [[ -f backend/... ]] po cichu no-opują, a git diff działa w obcym katalogu).
+cd "$(dirname "$0")"
+
 OWNER="DominikSienkiewicz"
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"
 
