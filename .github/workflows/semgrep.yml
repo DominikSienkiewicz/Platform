@@ -1,0 +1,62 @@
+name: Semgrep SAST (reusable)
+
+# Reusable SAST (Static Application Security Testing) — skanuje KOD ŹRÓDŁOWY (nie zależności;
+# to robi security-scan.yml/Dependabot) pod kątem wzorców podatności: injection, path traversal,
+# słabe krypto, hardkodowane sekrety, błędy authz. Uzupełnia warstwę SCA.
+#
+# Triggery (push/PR/cron) deklaruje CALLER — tu mieszka wyłącznie logika.
+# Wołane przez repo:
+#   jobs: { semgrep: { uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@v1 } }
+#
+# Repo PRYWATNE bez GitHub Advanced Security: zakładka „Code scanning" (upload SARIF) jest
+# ZABLOKOWANA — dlatego wynik idzie jako tekst + fail-build (dokładnie jak Grype w security-scan.yml),
+# NIE przez `github/codeql-action/upload-sarif`. Bramka: severity ERROR = fail, WARNING/INFO = log-only.
+on:
+  workflow_call:
+    inputs:
+      config:
+        description: "Rulesety Semgrep (spacje-separated, każdy dostaje własne --config)."
+        type: string
+        default: "p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions"
+      semgrep-version:
+        description: "Pinowana wersja CLI Semgrep (pipx)."
+        type: string
+        default: "1.168.0"
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep — SAST scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Semgrep (pinned)
+        env:
+          SEMGREP_VERSION: ${{ inputs.semgrep-version }}
+        run: pipx install "semgrep==${SEMGREP_VERSION}"
+
+      # Bramka: tylko reguły severity ERROR failują build (--error => exit != 0 przy znalezieniach).
+      # WARNING/INFO wypisujemy osobno jako log-only (|| true), żeby nie blokować PR-ów szumem.
+      - name: Semgrep — blocking (ERROR)
+        env:
+          SEMGREP_CONFIGS: ${{ inputs.config }}
+        run: |
+          set -euo pipefail
+          args=()
+          for c in $SEMGREP_CONFIGS; do args+=(--config "$c"); done
+          semgrep scan "${args[@]}" --severity ERROR --error --text
+
+      - name: Semgrep — advisory (WARNING/INFO, log-only)
+        if: ${{ always() }}
+        env:
+          SEMGREP_CONFIGS: ${{ inputs.config }}
+        run: |
+          set -uo pipefail
+          args=()
+          for c in $SEMGREP_CONFIGS; do args+=(--config "$c"); done
+          semgrep scan "${args[@]}" --severity WARNING --severity INFO --text || true

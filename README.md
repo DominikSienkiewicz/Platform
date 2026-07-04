@@ -24,7 +24,7 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — prywatne shadcn registry | GitHub Packages + HTTP JSON |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
 | `infra/` | szablon `docker-compose` (pgvector + Ollama opcjonalnie) | kopiowalny / submodule |
-| `.github/workflows/` | **reusable CI** (`backend-ci`, `frontend-ci`, `scorecard`, `workflow_call`) + publish-gradle/npm | wołane przez repo `uses: …@v1` |
+| `.github/workflows/` | **reusable CI** (`backend-ci`, `frontend-ci`, `sonar`, `scorecard`) + **security** (`security-scan` SBOM+Grype, `semgrep` SAST, `container-scan` Grype+Snyk) + publish-gradle/npm | wołane przez repo `uses: …@v1` |
 | `default.json` | **preset Renovate** organizacji | repo: `extends: github>DominikSienkiewicz/Platform` |
 | `templates/` | kanon `.editorconfig` / `.gitignore` / `Dockerfile.backend` (SoT — sync ręczny) | kopiowane do repo |
 
