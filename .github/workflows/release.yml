@@ -45,7 +45,7 @@ jobs:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
-      - name: Publish Maven (build-logic, catalog, test-fixtures)
+      - name: Publish Maven (build-logic, catalog, test-fixtures, security-starter)
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -63,13 +63,14 @@ jobs:
           # Mapowanie modeł -> nazwa pakietu Maven w GitHub Packages:
           declare -A PKG=( [build-logic]="pl.seniordeveloper.gradle.build-logic" \
                            [catalog]="pl.seniordeveloper.platform-catalog" \
-                           [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" )
+                           [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" \
+                           [security-starter]="pl.seniordeveloper.platform-security-starter" )
           version_exists() {
             curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/$GPR_OWNER/packages/maven/$1/versions" 2>/dev/null \
               | python3 -c "import sys,json; print(any(v['name']=='$V' for v in json.load(sys.stdin)))" 2>/dev/null
           }
-          for m in build-logic catalog test-fixtures; do
+          for m in build-logic catalog test-fixtures security-starter; do
             if [ "$(version_exists "${PKG[$m]}")" = "True" ]; then
               echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
               continue

@@ -1,0 +1,31 @@
+{
+  "name": "@dominiksienkiewicz/query",
+  "version": "1.0.0",
+  "description": "Współdzielony QueryClient (staleTime 60s, refetchOnWindowFocus off) + QueryProvider z Devtools. Likwiduje powielony provider w Attestate/Pragma.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "react": "^19",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-query-devtools": "^5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/query"
+  }
+}

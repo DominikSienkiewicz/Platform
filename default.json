@@ -10,6 +10,10 @@
   "schedule": ["before 9am on monday"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 10,
+  "gradle": {
+    "description": "Katalog wersji backendu w niestandardowej ścieżce (gradle/catalog/libs.versions.toml). Rozszerza domyślne wzorce (Renovate je łączy, nie nadpisuje). Domyślny wzorzec .versions.toml i tak prawdopodobnie łapie — to jawne + future-proof.",
+    "managerFilePatterns": ["/gradle/catalog/libs\\.versions\\.toml$/"]
+  },
   "packageRules": [
     {
       "description": "Backend (Gradle): minor+patch w jednym PR; majory osobno (review człowieka).",

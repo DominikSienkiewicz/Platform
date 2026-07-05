@@ -1,0 +1,90 @@
+# platform-catalog — KANON wersji backendu (plain-plik, edytowalny + Renovate-friendly, symetryczny z FE versions.json).
+# Ładowany przez gradle/catalog/build.gradle.kts: from(files("libs.versions.toml")).
+# `platform` jest PLACEHOLDEREM — nadpisywanym injectem (platformVersion z gradle.properties/-P) w build.gradle.kts,
+# bo statyczny TOML nie wyrazi dynamicznej wersji. Wpisy z version.ref="platform" biorą wstrzykniętą wartość.
+# Lustro tool-wersji convention-pluginów żyje w gradle/build-logic (reguła #1 CLAUDE.md) — TOML tego nie zmienia.
+
+[versions]
+platform = "1.4.3"                       # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts
+java = "26"                              # non-LTS; baseline portfolio (2026-07). JaCoCo 0.8.15: class-file 26 EKSPERYMENTALNE
+springBoot = "4.1.0"                     # GA 2026-06-10
+springDependencyManagement = "1.1.7"
+springModulith = "2.1.0"
+springAi = "2.0.0"                       # GA 2026-06-12 (po bumpie: --write-verification-metadata u konsumenta)
+junit = "6.1.0"
+archunit = "1.4.2"
+resilience4j = "2.4.0"
+bucket4j = "8.19.0"
+shedlock = "7.7.0"
+javers = "7.11.1"
+spotless = "8.6.0"
+pitest = "1.19.0"
+pitestJunit5 = "1.2.3"
+cyclonedx = "3.2.4"
+jacoco = "0.8.15"
+foojayResolver = "1.0.0"                 # lustro: implementation foojay-resolver w build-logic
+mapstruct = "1.6.3"
+jsoup = "1.18.3"
+wiremock = "3.13.1"
+sonarqube = "7.3.1.8318"                 # lustro: build-logic (plugin aplikowany w quality-conventions)
+openrewrite = "8.56.1"                   # Pragma (OpenRewrite AST/codegen)
+jimfs = "1.3.0"                          # Pragma (in-memory FS testów AST)
+javaDiffUtils = "4.12"                   # Pragma (diff/patch)
+
+[libraries]
+# --- BOM-y ---
+spring-ai-bom = { group = "org.springframework.ai", name = "spring-ai-bom", version.ref = "springAi" }
+spring-modulith-bom = { group = "org.springframework.modulith", name = "spring-modulith-bom", version.ref = "springModulith" }
+junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
+
+# --- Biblioteki (jawna wersja) ---
+resilience4j-spring-boot4 = { group = "io.github.resilience4j", name = "resilience4j-spring-boot4", version.ref = "resilience4j" }
+bucket4j-core = { group = "com.bucket4j", name = "bucket4j_jdk17-core", version.ref = "bucket4j" }
+shedlock-spring = { group = "net.javacrumbs.shedlock", name = "shedlock-spring", version.ref = "shedlock" }
+shedlock-provider-jdbc-template = { group = "net.javacrumbs.shedlock", name = "shedlock-provider-jdbc-template", version.ref = "shedlock" }
+javers-spring-boot-starter-sql = { group = "org.javers", name = "javers-spring-boot-starter-sql", version.ref = "javers" }
+archunit-junit5 = { group = "com.tngtech.archunit", name = "archunit-junit5", version.ref = "archunit" }
+mapstruct = { group = "org.mapstruct", name = "mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { group = "org.mapstruct", name = "mapstruct-processor", version.ref = "mapstruct" }
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", version.ref = "wiremock" }
+openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref = "openrewrite" }
+jimfs = { group = "com.google.jimfs", name = "jimfs", version.ref = "jimfs" }
+java-diff-utils = { group = "io.github.java-diff-utils", name = "java-diff-utils", version.ref = "javaDiffUtils" }
+
+# --- Artefakty platformy (pin = dynamiczny `platform`) ---
+platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
+platform-security-starter = { group = "pl.seniordeveloper", name = "platform-security-starter", version.ref = "platform" }
+
+# --- Startery Spring Boot / Modulith (BOM-managed → BEZ wersji; spina je bundle poniżej) ---
+boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
+boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
+boot-starter-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc" }
+modulith-starter-core = { group = "org.springframework.modulith", name = "spring-modulith-starter-core" }
+modulith-starter-jpa = { group = "org.springframework.modulith", name = "spring-modulith-starter-jpa" }
+boot-docker-compose = { group = "org.springframework.boot", name = "spring-boot-docker-compose" }
+spring-ai-docker-compose = { group = "org.springframework.ai", name = "spring-ai-spring-boot-docker-compose" }
+boot-test-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator-test" }
+boot-test-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test" }
+boot-test-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation-test" }
+boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc-test" }
+
+[bundles]
+# Kręgosłup web+modulith i slice'y testowe — powielane inline w 4 konsumentach. Wersje z BOM-ów.
+modulith-web = ["boot-starter-actuator", "boot-starter-data-jpa", "boot-starter-validation", "boot-starter-webmvc", "modulith-starter-core", "modulith-starter-jpa"]
+modulith-web-tests = ["boot-test-actuator", "boot-test-data-jpa", "boot-test-validation", "boot-test-webmvc"]
+dev-docker-compose = ["boot-docker-compose", "spring-ai-docker-compose"]
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "springDependencyManagement" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+pitest = { id = "info.solidsoft.pitest", version.ref = "pitest" }
+cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
+# Convention pluginy publikowane z gradle/build-logic (id = nazwa pliku *.gradle.kts). Pin = dynamiczny `platform`.
+conventions-java = { id = "seniordev.java-conventions", version.ref = "platform" }
+conventions-quality = { id = "seniordev.quality-conventions", version.ref = "platform" }
+conventions-spring-modulith = { id = "seniordev.spring-modulith-conventions", version.ref = "platform" }
+conventions-settings = { id = "seniordev.settings-conventions", version.ref = "platform" }

@@ -1,7 +1,8 @@
 # CLAUDE.md — Platform (root)
 
 Kontekst dla agentów AI. To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
-konsumowana przez osobne repo produktowe: Attestate, SkillSprintPlus, BookOfStyling.
+konsumowana przez osobne repo produktowe: Attestate, Azimuth, BookOfStyling, Pragma, SkillSprintPlus
+(wszystkie 5 konsumują convention pluginy + katalog + kanon frontendu).
 
 ## Czym to jest
 
@@ -13,14 +14,15 @@ opublikuj, podbij pin w repo konsumenta.
 
 | Katalog | Artefakt |
 |---|---|
-| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria) |
-| `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` |
-| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów) |
-| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions}` |
+| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria). Podział: `java` = Spotless/Checkstyle/JaCoCo+gate/`platformDependencyCheck`; `quality` = PIT/SpotBugs/CycloneDX/**SonarCloud**; `spring-modulith` = BOM-y + deps testowe + split testów |
+| `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` (+ **bundle'e**: `modulith-web`, `modulith-web-tests`, `dev-docker-compose` — zamiast powielanych inline starterów) |
+| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów + guardy migracji Liquibase/Flyway) |
+| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — parametryzowalny SecurityFilterChain + CORS (`platform.security.*`/`platform.cors.*`, opt-in `@ConditionalOnMissingBean`) |
+| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`api-client` = wrapper fetch; `query` = QueryClient+provider) |
 | `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
 | `.github/workflows/` | reusable CI (`backend-ci`/`frontend-ci`/`sonar`/`security-scan`/`scorecard`/`roadmap-unblock`/`deploy`) + publish na tag `v*` |
 | `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`) |
-| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc (logika `platform-bump` → bin pakietu `versions`) |
+| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
 
 ## Zasady (twarde)
 
@@ -43,9 +45,14 @@ opublikuj, podbij pin w repo konsumenta.
    w kanonie albo z inną wersją = czerwony build. `platform-bump` (bin pakietu `versions`) nakłada kanon.
    Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym,
    CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
-7. **Nadpisania CVE nad BOM-em Boota** żyją w `spring-modulith-conventions` (propercje
-   `tomcat.version`/`netty.version`/`postgresql.version` przez `ext`) — usuwaj przy bumpie Boota,
-   gdy BOM dogoni fixy.
+7. **Nadpisania CVE nad BOM-em Boota** (propercje `tomcat.version`/`netty.version`/`postgresql.version`
+   przez `ext` w `spring-modulith-conventions`) — **USUNIĘTE** przy bumpie na Boot 4.1.0 (BOM dogonił fixy).
+   Przy kolejnym bumpie Boota sprawdź propercje BOM-a i dodaj pin tylko jeśli CVE wróci.
+8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
+   bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
+   (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = katalog + lustro `build-logic`.
+9. **Bundle'e katalogu** grupują powielane startery (Boot/Modulith). Konsument: `libs.bundles.modulith.web`
+   (+ `.tests`, + `dev.docker.compose`). Członkowie są `withoutVersion()` — wersje z BOM-ów.
 
 ## Wersjonowanie
 

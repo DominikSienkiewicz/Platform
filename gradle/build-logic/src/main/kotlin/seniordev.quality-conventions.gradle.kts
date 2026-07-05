@@ -19,6 +19,7 @@ plugins {
 	id("info.solidsoft.pitest")
 	id("com.github.spotbugs")
 	id("org.cyclonedx.bom")
+	id("org.sonarqube")
 }
 
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
@@ -63,4 +64,29 @@ spotbugs {
 
 tasks.withType<SpotBugsTask>().configureEach {
 	dependsOn(extractSpotbugsConfig)
+}
+
+// ===== SonarCloud =====
+// Wspolna konfiguracja SonarCloud (sonarcloud.io) — koniec inline id("org.sonarqube") + blokow sonar{}
+// powielanych w repo (roznily sie tylko projectKey). Wersja pluginu = lustro gradle/catalog.
+// projectKey per-repo: property `sonarProjectKey` (fallback: DominikSienkiewicz_<rootProject.name>).
+val sonarProjectKey = providers.gradleProperty("sonarProjectKey")
+	.getOrElse("DominikSienkiewicz_${rootProject.name}")
+sonar {
+	properties {
+		property("sonar.host.url", "https://sonarcloud.io")
+		property("sonar.organization", "dominiksienkiewicz")
+		property("sonar.projectKey", sonarProjectKey)
+		property(
+			"sonar.coverage.jacoco.xmlReportPaths",
+			layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml").get().asFile.path,
+		)
+	}
+}
+
+// `sonar` musi czytac SWIEZY raport pokrycia (JaCoCo z java-conventions).
+plugins.withId("jacoco") {
+	tasks.named("sonar") {
+		dependsOn(tasks.named("jacocoTestReport"))
+	}
 }

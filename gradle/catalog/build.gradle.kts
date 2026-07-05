@@ -4,68 +4,18 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.4.3")
+version = providers.gradleProperty("platformVersion").getOrElse("1.5.0")
 
 catalog {
 	versionCatalog {
-		// ============================ WERSJE ============================
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.4.3"))
-		version("java", "26")                 // non-LTS; baseline portfolio (2026-07). JaCoCo 0.8.15: wsparcie class-file 26 EKSPERYMENTALNE.
-		version("springBoot", "4.1.0")       // GA 2026-06-10
-		version("springDependencyManagement", "1.1.7")
-		version("springModulith", "2.1.0")
-		version("springAi", "2.0.0")          // GA 2026-06-12. Po bumpie konsumenci MUSZĄ zregenerować verification-metadata (--write-verification-metadata).
-		version("junit", "6.1.0")
-		version("archunit", "1.4.2")
-		version("resilience4j", "2.4.0")
-		version("bucket4j", "8.19.0")
-		version("shedlock", "7.7.0")
-		version("javers", "7.11.1")
-		version("spotless", "8.6.0")
-		version("pitest", "1.19.0")
-		version("pitestJunit5", "1.2.3")
-		version("cyclonedx", "3.2.4")
-		version("jacoco", "0.8.15")
-		version("foojayResolver", "1.0.0") // lustro: implementation foojay-resolver w build-logic
-		// Domenowe (konsumenci: Azimuth) — wymagane, bo platformDependencyCheck failuje na jawnych wersjach spoza katalogu.
-		version("mapstruct", "1.6.3")
-		version("jsoup", "1.18.3")
-		version("wiremock", "3.13.1")
+		// KANON wersji backendu = plain-plik libs.versions.toml (edytowalny, Renovate-friendly,
+		// symetryczny z FE frontend/packages/versions/versions.json).
+		from(files("libs.versions.toml"))
 
-		// ============================ BOM-y ============================
-		library("spring-ai-bom", "org.springframework.ai", "spring-ai-bom").versionRef("springAi")
-		library("spring-modulith-bom", "org.springframework.modulith", "spring-modulith-bom").versionRef("springModulith")
-		library("junit-bom", "org.junit", "junit-bom").versionRef("junit")
-
-		// ===================== BIBLIOTEKI (jawna wersja) =====================
-		// FIX: poprawny wariant pod Spring Boot 4 (SkillSprintPlus miał resilience4j-spring-boot3).
-		library("resilience4j-spring-boot4", "io.github.resilience4j", "resilience4j-spring-boot4").versionRef("resilience4j")
-		library("bucket4j-core", "com.bucket4j", "bucket4j_jdk17-core").versionRef("bucket4j")
-		library("shedlock-spring", "net.javacrumbs.shedlock", "shedlock-spring").versionRef("shedlock")
-		library("shedlock-provider-jdbc-template", "net.javacrumbs.shedlock", "shedlock-provider-jdbc-template").versionRef("shedlock")
-		library("javers-spring-boot-starter-sql", "org.javers", "javers-spring-boot-starter-sql").versionRef("javers")
-		library("archunit-junit5", "com.tngtech.archunit", "archunit-junit5").versionRef("archunit")
-		library("mapstruct", "org.mapstruct", "mapstruct").versionRef("mapstruct")
-		library("mapstruct-processor", "org.mapstruct", "mapstruct-processor").versionRef("mapstruct")
-		library("jsoup", "org.jsoup", "jsoup").versionRef("jsoup")
-		library("wiremock-standalone", "org.wiremock", "wiremock-standalone").versionRef("wiremock")
-		// Reużywalna infrastruktura testowa (Testcontainers + bazy testów) — z gradle/test-fixtures.
-		library("platform-test-fixtures", "pl.seniordeveloper", "platform-test-fixtures").versionRef("platform")
-
-		// ============================ PLUGINY ============================
-		plugin("spring-boot", "org.springframework.boot").versionRef("springBoot")
-		plugin("spring-dependency-management", "io.spring.dependency-management").versionRef("springDependencyManagement")
-		plugin("spotless", "com.diffplug.spotless").versionRef("spotless")
-		plugin("pitest", "info.solidsoft.pitest").versionRef("pitest")
-		plugin("cyclonedx", "org.cyclonedx.bom").versionRef("cyclonedx")
-
-		// Convention pluginy publikowane z gradle/build-logic (id = nazwa pliku *.gradle.kts).
-		plugin("conventions-java", "seniordev.java-conventions").versionRef("platform")
-		plugin("conventions-quality", "seniordev.quality-conventions").versionRef("platform")
-		plugin("conventions-spring-modulith", "seniordev.spring-modulith-conventions").versionRef("platform")
-		// Settings plugin (foojay + repozytoria) — aplikowany w settings.gradle.kts konsumenta,
-		// więc i tak pinowany tam jawnie (settings plugins{} nie czyta katalogu); wpis dla kompletu.
-		plugin("conventions-settings", "seniordev.settings-conventions").versionRef("platform")
+		// Dynamiczny pin platformy — NIE do wyrażenia w statycznym TOML. Nadpisuje placeholder z TOML;
+		// wpisy z version.ref="platform" (platform-test-fixtures, platform-security-starter,
+		// convention pluginy) podchwytują tę wstrzykniętą wartość. Publish ustawia ją przez -PplatformVersion.
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.5.0"))
 	}
 }
 

@@ -1,0 +1,26 @@
+{
+  "name": "@dominiksienkiewicz/api-client",
+  "version": "1.0.0",
+  "description": "Współdzielony klient HTTP dla frontendów (env base URL, JSON, 204→null, ApiError z body.message). Likwiduje 4 zdryfowane wrappery fetch w repo.",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    }
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/api-client"
+  }
+}
