@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# CANON of the LOGIC is Platform; THIS file is per-repo values — copy to
+# scripts/lib/roadmap-config.sh and edit. Never re-synced from Platform: the
+# helper logic lives in roadmap-lib.sh (synced), these are your repo's values.
+#
+# This is a VALUES file sourced by roadmap-lib.sh + the three roadmap scripts.
+# Its variables are consumed ACROSS files (not locally), so we intentionally
+# silence SC2034 (shellcheck analyses this file in isolation, unaware of the
+# consumers that read every array below).
+# shellcheck disable=SC2034
+
+# --- Project + document paths (per-repo) -----------------------------------------
+ROADMAP_PROJECT_TITLE="My Project Roadmap"             # Projects v2 board title (set per-repo)
+ROADMAP_DOC_PATH="context/foundation/roadmap.md"       # source-of-truth roadmap doc
+ROADMAP_TITLES_TSV=""                                   # optional EN titles sidecar path; "" = none
+ROADMAP_DEFAULT_ASSIGNEE=""                             # "" = repo owner
+
+# --- Canonical Status field (shared across all repos) ----------------------------
+# ORDER is significant — updateProjectV2Field ALWAYS receives the full six options
+# (otherwise the option set is replaced). The four arrays below are parallel by index.
+# "done" is quoted so shellcheck does not read the array element as a keyword (SC1010).
+ROADMAP_STATUSES=(backlog ready in-progress blocked in-review "done")
+ROADMAP_STATUS_COLORS=(GRAY BLUE YELLOW RED PURPLE GREEN)   # enum ProjectV2SingleSelectFieldOptionColor
+ROADMAP_STATUS_DESCS=(
+  "Proposed roadmap item; not yet started"
+  "Prerequisites met; ready to pick up"
+  "Actively being worked on"
+  "Blocked by an open prerequisite or decision"
+  "Implementation complete; under review"
+  "Delivered / archived"
+)
+
+# --- Canonical Streams (shared across all repos) ---------------------------------
+ROADMAP_STREAMS=(A B C D E)
+
+# --- Label colors (hex, no #) — PER-REPO palette ---------------------------------
+# roadmap_label_color() in roadmap-lib.sh reads these arrays by index (no hardcoded hex).
+ROADMAP_TYPE_LABEL_COLORS=(5319E7 0E8A16)                  # order: foundation, slice
+ROADMAP_STREAM_LABEL_COLORS=(0E8A16 1D76DB 5319E7 B60205 FBCA04)  # parallel to ROADMAP_STREAMS
+ROADMAP_STATUS_LABEL_COLORS=(CFD3D7 1D76DB FBCA04 B60205 5319E7 0E8A16)  # parallel to ROADMAP_STATUSES
