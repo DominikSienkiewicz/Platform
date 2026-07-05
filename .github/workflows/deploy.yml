@@ -39,7 +39,19 @@ on:
         description: "JDK do builda. Pluginy Platform są kompilowane na JVM 25 -> Gradle MUSI działać na 25."
         type: string
         default: "25"
-    # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
+      has-migrate:
+        description: "Buduj/uruchamiaj osobny obraz migracji. Aplikacje z migracją na starcie (Flyway) -> false."
+        type: boolean
+        default: true
+      scan-images:
+        description: "Skan zbudowanych obrazów (Grype gate + opcjonalny Snyk) po push, przed deployem. Opt-in."
+        type: boolean
+        default: false
+      scan-severity:
+        description: "Próg fail dla Grype przy scan-images."
+        type: string
+        default: high
+    # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*, opcjonalnie SNYK_TOKEN) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
 
 concurrency:
   group: deploy-${{ inputs.app-name }}
@@ -102,7 +114,7 @@ jobs:
           backend="$(grep -E '^version=' backend/gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')"
           frontend="$(node -p "require('./frontend/package.json').version")"
           if [ "$MIGRATE_TAG_SOURCE" = "changelog" ]; then
-            migrate="$(ls backend/src/main/resources/db/changelog/changes | grep -oE '^[0-9]{4}' | sort | tail -1)"
+            migrate="$(find backend/src/main/resources/db/changelog/changes -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | grep -oE '^[0-9]{4}' | sort | tail -1)"
           else
             migrate="$backend"
           fi
@@ -121,6 +133,7 @@ jobs:
       BACKEND_VER: ${{ needs.versions.outputs.backend }}
       FRONTEND_VER: ${{ needs.versions.outputs.frontend }}
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # opcjonalny; puste => kroki Snyk pominięte
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -170,7 +183,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:latest
 
       - name: Build & push — migrate
-        if: steps.exists.outputs.migrate == 'false'
+        if: inputs.has-migrate && steps.exists.outputs.migrate == 'false'
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: backend
@@ -203,6 +216,41 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:latest
+
+      # ---- Opt-in gate: skan obrazów PO push, PRZED deployem. Grype-fail => job pada => deploy się nie ruszy.
+      #      Snyk nieblokujący (druga opinia), pomijany bez SNYK_TOKEN. Base-image OS CVE, tylko fixowalne.
+      - name: Grype scan — backend (gate)
+        if: ${{ inputs.scan-images }}
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:${{ env.BACKEND_VER }}
+          fail-build: true
+          severity-cutoff: ${{ inputs.scan-severity }}
+          only-fixed: true
+          output-format: table
+      - name: Grype scan — frontend (gate)
+        if: ${{ inputs.scan-images }}
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
+          fail-build: true
+          severity-cutoff: ${{ inputs.scan-severity }}
+          only-fixed: true
+          output-format: table
+      - name: Snyk scan — backend (advisory)
+        if: ${{ inputs.scan-images && env.SNYK_TOKEN != '' }}
+        continue-on-error: true
+        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:${{ env.BACKEND_VER }}
+          args: --severity-threshold=high
+      - name: Snyk scan — frontend (advisory)
+        if: ${{ inputs.scan-images && env.SNYK_TOKEN != '' }}
+        continue-on-error: true
+        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
+          args: --severity-threshold=high
 
   # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
   deploy:
@@ -256,11 +304,10 @@ jobs:
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         run: |
           set -euo pipefail
-          scp -i ~/.ssh/id_ed25519 \
-            "$COMPOSE_DIR/docker-compose.prod.yml" \
-            "$COMPOSE_DIR/Caddyfile" \
-            .env.deploy _platform/scripts/deploy-remote.sh \
-            "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
+          files=("$COMPOSE_DIR/docker-compose.prod.yml" .env.deploy _platform/scripts/deploy-remote.sh)
+          # Caddyfile opcjonalny — aplikacje bez reverse-proxy (np. health-check wprost na backend) go nie mają.
+          [ -f "$COMPOSE_DIR/Caddyfile" ] && files+=("$COMPOSE_DIR/Caddyfile")
+          scp -i ~/.ssh/id_ed25519 "${files[@]}" "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
 
       - name: Deploy (migracje -> backend -> frontend -> caddy, warunkowo + health-gate)
         env:
