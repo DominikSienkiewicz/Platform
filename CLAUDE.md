@@ -52,6 +52,12 @@ opublikuj, podbij pin w repo konsumenta.
 Wszystkie artefakty = jeden `platformVersion` (build-logic `gradle.properties` + catalog `version("platform")`).
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
 
+**`./release.sh` wymaga message jako 1. argumentu** (Conventional Commits, po angielsku, zero atrybucji AI) —
+bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
+- `./release.sh "fix: opis"` — patch +0.0.1 od aktualnej wersji
+- `./release.sh "feat: opis" 1.2.0` — konkretna wersja
+- `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
+
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
