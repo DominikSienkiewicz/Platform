@@ -1,0 +1,86 @@
+name: Container scan (reusable)
+
+# Reusable skan OPUBLIKOWANYCH obrazów (ścieżka MONITORINGU) — łapie CVE w warstwie bazowej
+# obrazu (pakiety OS bazy: eclipse-temurin/node), których SBOM+Grype na zależnościach nie widzi.
+# Grype = bramka fail-build (severity-cutoff). Snyk = druga opinia + `monitor` -> dashboard (nieblokujący).
+#
+# Obrazy budowane są runtime-only (jar/bundle na hoście), więc NIE odbudowujemy ich tutaj —
+# ściągamy gotowe z GHCR i skanujemy. Bramkę PRZY DEPLOYU (przed push) robią kroki inline w
+# deploy.yml repo (obraz jest tam lokalny). Ten workflow to cotygodniowy re-scan tego, co już wisi.
+#
+# Wołane przez repo (zwykle na cron):
+#   jobs:
+#     container-scan:
+#       uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@v1
+#       with:
+#         images: '["ghcr.io/owner/app-backend:latest","ghcr.io/owner/app-frontend:latest"]'
+#       secrets: inherit
+on:
+  workflow_call:
+    inputs:
+      images:
+        description: "JSON-array pełnych referencji obrazów do skanu (np. '[\"ghcr.io/o/a:latest\"]')."
+        type: string
+        required: true
+      severity-cutoff:
+        description: "Próg fail dla Grype: negligible|low|medium|high|critical."
+        type: string
+        default: high
+      only-fixed:
+        description: "Failuj TYLKO na CVE z dostępnym fixem. Obrazy bazowe niosą nienaprawialne HIGH OS-CVE — bez tego bramka byłaby permanentnie czerwona."
+        type: boolean
+        default: true
+    secrets:
+      snyk_token:
+        description: "Token Snyk. Bez niego kroki Snyk są pomijane (Grype nadal działa jako bramka)."
+        required: false
+
+permissions:
+  contents: read
+  packages: read # pull prywatnych obrazów z GHCR (GITHUB_TOKEN callera)
+
+jobs:
+  scan:
+    name: Scan ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(inputs.images) }}
+    env:
+      SNYK_TOKEN: ${{ secrets.snyk_token }}
+    steps:
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull image
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: docker pull "$IMAGE"
+
+      # --- Grype: bramka (fail-build na >= severity-cutoff) ---
+      - name: Grype scan (gate)
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ matrix.image }}
+          fail-build: true
+          severity-cutoff: ${{ inputs.severity-cutoff }}
+          only-fixed: ${{ inputs.only-fixed }}
+          output-format: table
+
+      # --- Snyk: druga opinia (nieblokująca) + monitor -> dashboard. Skip, gdy brak tokena. ---
+      - name: Snyk container test (advisory)
+        if: ${{ env.SNYK_TOKEN != '' }}
+        continue-on-error: true
+        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
+        with:
+          image: ${{ matrix.image }}
+          args: --severity-threshold=high
+
+      - name: Snyk container monitor (dashboard)
+        if: ${{ env.SNYK_TOKEN != '' }}
+        continue-on-error: true
+        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
+        with:
+          command: monitor
+          image: ${{ matrix.image }}
