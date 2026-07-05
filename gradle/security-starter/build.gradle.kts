@@ -26,6 +26,9 @@ dependencies {
 	api("org.springframework:spring-web")
 	// Auto-konfiguracja (@AutoConfiguration / @ConditionalOn*) — konsument ma je z Boota, więc compileOnly.
 	compileOnly("org.springframework.boot:spring-boot-autoconfigure")
+	// Konfiguracja annotationProcessor nie dziedziczy BOM-a z api/implementation — trzeba jej podać platformę
+	// osobno, inaczej spring-boot-configuration-processor rozwiązuje się bez wersji (build fail).
+	annotationProcessor(platform("org.springframework.boot:spring-boot-dependencies:4.1.0"))
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
 
