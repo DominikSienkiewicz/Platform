@@ -26,3 +26,4 @@ frontend/packages/ui-registry/public/r/
 
 # === Logs ===
 *.log
+/.claude/
