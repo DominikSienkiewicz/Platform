@@ -12,6 +12,8 @@ Pliki, których **nie da się** dystrybuować przez registry (są per-repo z nat
 | `Dockerfile.backend` | runtime-only (jar z `bootJar`) | `<repo>/backend/Dockerfile` |
 | `platform-bump.sh` | **stub** delegujący do binu `platform-bump` z `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); logika bumpu żyje w pakiecie npm, nie tutaj — drift-proof. Wymaga pinu `@dominiksienkiewicz/versions` ≥ 1.3.8 | root każdego repo |
 | `merge.sh` | integracja gałęzi feature z worktree do `main` + sprzątanie (usuwa worktree, kasuje gałąź); odmawia na brudnym drzewie i gałęziach chronionych | root każdego repo |
+| `setup-gh-deploy.sh` | bootstrap sekretów+zmiennych Actions dla reusable `deploy.yml@v1` z lokalnego `.secrets.local` (bezpieczny parser, wartości przez stdin, `SSH_KNOWN_HOSTS` z ssh-keyscan; opcje `--gen-key`, `--with-release`) | `<repo>/scripts/setup-gh-deploy.sh` |
+| `secrets.local.example` | szablon lokalnego pliku wartości dla `setup-gh-deploy.sh` (nazwy sekretów/zmiennych = kontrakt reusable deploy) | `<repo>/.secrets.local.example` |
 
 Testy skryptów szablonowych żyją w `tests/` (odpalane w CI, job „Templates").
 
