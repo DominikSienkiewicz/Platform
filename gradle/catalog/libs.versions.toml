@@ -30,6 +30,8 @@ sonarqube = "7.3.1.8318"                 # lustro: build-logic (plugin aplikowan
 openrewrite = "8.56.1"                   # Pragma (OpenRewrite AST/codegen)
 jimfs = "1.3.0"                          # Pragma (in-memory FS testów AST)
 javaDiffUtils = "4.12"                   # Pragma (diff/patch)
+openaiJavaClient = "4.36.0"              # Pragma (ChatClientFactory buduje klienta OkHttp ręcznie — Spring AI GA nie eksponuje go na compile)
+anthropicJavaClient = "2.34.0"           # Pragma (jw.)
 
 [libraries]
 # --- BOM-y ---
@@ -51,6 +53,8 @@ wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", ve
 openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref = "openrewrite" }
 jimfs = { group = "com.google.jimfs", name = "jimfs", version.ref = "jimfs" }
 java-diff-utils = { group = "io.github.java-diff-utils", name = "java-diff-utils", version.ref = "javaDiffUtils" }
+openai-java-client-okhttp = { group = "com.openai", name = "openai-java-client-okhttp", version.ref = "openaiJavaClient" }
+anthropic-java-client-okhttp = { group = "com.anthropic", name = "anthropic-java-client-okhttp", version.ref = "anthropicJavaClient" }
 
 # --- Artefakty platformy (pin = dynamiczny `platform`) ---
 platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
