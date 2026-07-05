@@ -11,6 +11,7 @@ Pliki, których **nie da się** dystrybuować przez registry (są per-repo z nat
 | `gitignore/frontend.gitignore` | Next.js/Node/Playwright | `<repo>/frontend/.gitignore` |
 | `Dockerfile.backend` | runtime-only (jar z `bootJar`) | `<repo>/backend/Dockerfile` |
 | `platform-bump.sh` | bump pinów platformy + kanon wersji FE; robi `cd` do własnego katalogu, więc działa wywołany z dowolnego miejsca | root każdego repo |
+| `merge.sh` | integracja gałęzi feature z worktree do `main` + sprzątanie (usuwa worktree, kasuje gałąź); odmawia na brudnym drzewie i gałęziach chronionych | root każdego repo |
 
 Testy skryptów szablonowych żyją w `tests/` (odpalane w CI, job „Templates").
 
