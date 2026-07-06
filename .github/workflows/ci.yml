@@ -44,6 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: bash templates/tests/platform-bump.test.sh
+      - run: bash templates/tests/container-scan-skip.test.sh
 
   frontend:
     name: Frontend — install + lint
