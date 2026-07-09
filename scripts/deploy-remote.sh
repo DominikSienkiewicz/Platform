@@ -9,16 +9,29 @@
 # Baza danych jest ZEWNĘTRZNA (osobny VPS) — tu tylko nanosimy migracje.
 set -euo pipefail
 
-[[ -f docker-compose.prod.yml ]] || { echo "BŁĄD: brak docker-compose.prod.yml w $(pwd)"; exit 1; }
+# Nazwa pliku compose i bazowego env-file są konfigurowalne przez env (przekazywane przez
+# reusable deploy.yml). Domyślne wartości zachowują dotychczasowe zachowanie (SSP/BoS).
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
-# Baza zmiennych: preferuj .env.prod (SSP), w przeciwnym razie host .env (BoS).
-if   [[ -f .env.prod ]]; then BASE_ENV=".env.prod"
-elif [[ -f .env ]];      then BASE_ENV=".env"
-else echo "BŁĄD: brak .env.prod ani .env w $(pwd)"; exit 1; fi
+# resolve_base_env: echo nazwy bazowego env-file. Jawny BASE_ENV ma priorytet (musi istnieć);
+# w przeciwnym razie preferuj .env.prod (SSP), potem host .env (BoS). Zwraca !=0 gdy brak.
+resolve_base_env() {
+  if   [[ -n "${BASE_ENV:-}" && -f "${BASE_ENV}" ]]; then printf '%s\n' "${BASE_ENV}"
+  elif [[ -z "${BASE_ENV:-}" && -f .env.prod ]];     then printf '%s\n' ".env.prod"
+  elif [[ -z "${BASE_ENV:-}" && -f .env ]];          then printf '%s\n' ".env"
+  else return 1; fi
+}
+
+# Sourcing (testy) ładuje tylko konfigurowalne definicje powyżej i tu wychodzi.
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && return 0 || true
+
+[[ -f "$COMPOSE_FILE" ]] || { echo "BŁĄD: brak $COMPOSE_FILE w $(pwd)"; exit 1; }
+
+BASE_ENV="$(resolve_base_env)" || { echo "BŁĄD: brak bazowego env (.env.prod/.env lub podany BASE_ENV) w $(pwd)"; exit 1; }
 
 ENV_ARGS=(--env-file "$BASE_ENV")
 [[ -f .env.deploy ]] && ENV_ARGS+=(--env-file .env.deploy)
-COMPOSE=(docker compose "${ENV_ARGS[@]}" -f docker-compose.prod.yml)
+COMPOSE=(docker compose "${ENV_ARGS[@]}" -f "$COMPOSE_FILE")
 
 # Do porównań tagów sourcujemy TYLKO .env.deploy (generowany przez CI = czysty KEY=VALUE).
 # Host .env/.env.prod czyta compose przez --env-file (nie sourcujemy go do bash — może mieć

@@ -51,6 +51,14 @@ on:
         description: "Próg fail dla Grype przy scan-images."
         type: string
         default: high
+      compose-file:
+        description: "Nazwa pliku compose w compose-dir (default docker-compose.prod.yml; azimuth: docker-compose.dev.yml)."
+        type: string
+        default: "docker-compose.prod.yml"
+      base-env:
+        description: "Nazwa host env-file bazowego (puste = auto .env.prod->.env; azimuth: .env.dev)."
+        type: string
+        default: ""
     # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*, opcjonalnie SNYK_TOKEN) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
 
 concurrency:
@@ -299,12 +307,13 @@ jobs:
       - name: Wgranie artefaktów na boks (DEPLOY_PATH)
         env:
           COMPOSE_DIR: ${{ inputs.compose-dir }}
+          COMPOSE_FILE: ${{ inputs.compose-file }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         run: |
           set -euo pipefail
-          files=("$COMPOSE_DIR/docker-compose.prod.yml" .env.deploy _platform/scripts/deploy-remote.sh)
+          files=("$COMPOSE_DIR/$COMPOSE_FILE" .env.deploy _platform/scripts/deploy-remote.sh)
           # Caddyfile opcjonalny — aplikacje bez reverse-proxy (np. health-check wprost na backend) go nie mają.
           [ -f "$COMPOSE_DIR/Caddyfile" ] && files+=("$COMPOSE_DIR/Caddyfile")
           scp -i ~/.ssh/id_ed25519 "${files[@]}" "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
@@ -314,7 +323,9 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          COMPOSE_FILE: ${{ inputs.compose-file }}
+          BASE_ENV: ${{ inputs.base-env }}
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && bash deploy-remote.sh"
+            "cd '$DEPLOY_PATH' && COMPOSE_FILE='$COMPOSE_FILE' BASE_ENV='$BASE_ENV' bash deploy-remote.sh"
