@@ -114,6 +114,9 @@
             <property name="allowEmptyMethods" value="true"/>
             <property name="allowEmptyTypes" value="true"/>
             <property name="allowEmptyLoops" value="true"/>
+            <!-- google-java-format (Spotless) renderuje pustą lambdę jako `() -> {}` — bez tego
+                 zezwolenia żadne formatowanie nie spełnia jednocześnie Spotless i Checkstyle. -->
+            <property name="allowEmptyLambdas" value="true"/>
         </module>
     </module>
 </module>

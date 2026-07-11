@@ -37,6 +37,18 @@ dependencies {
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:7.3.1.8318")
 	// Settings plugin (toolchain auto-provisioning) — aplikowany przez seniordev.settings-conventions.
 	implementation("org.gradle.toolchains:foojay-resolver:1.0.0")
+
+	// Testy configów platformy (guard checkstyle ↔ google-java-format).
+	// Checkstyle = lustro toolVersion w seniordev.java-conventions (te same reguły co u konsumenta).
+	// JUnit = lustro gradle/catalog (version "junit").
+	testImplementation("com.puppycrawl.tools:checkstyle:13.5.0")
+	testImplementation(platform("org.junit:junit-bom:6.1.0"))
+	testImplementation("org.junit.jupiter:junit-jupiter")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test>().configureEach {
+	useJUnitPlatform()
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---
