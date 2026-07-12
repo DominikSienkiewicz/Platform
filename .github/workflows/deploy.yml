@@ -110,7 +110,7 @@ jobs:
       migrate: ${{ steps.v.outputs.migrate }}
       worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: v
         shell: bash
         env:
@@ -143,14 +143,14 @@ jobs:
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # opcjonalny; puste => kroki Snyk pominięte
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+      - uses: actions/checkout@v6
+      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-      - uses: actions/setup-java@v4
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
@@ -181,7 +181,7 @@ jobs:
 
       - name: Build & push — backend
         if: steps.exists.outputs.backend == 'false'
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: backend
           file: backend/Dockerfile
@@ -192,7 +192,7 @@ jobs:
 
       - name: Build & push — migrate
         if: inputs.has-migrate && steps.exists.outputs.migrate == 'false'
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: backend
           file: backend/migrate/Dockerfile
@@ -203,7 +203,7 @@ jobs:
 
       - name: Build & push — eval-worker
         if: inputs.has-worker && steps.exists.outputs.worker == 'false'
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: backend/eval-worker
           push: true
@@ -213,7 +213,7 @@ jobs:
 
       - name: Build & push — frontend (token npm jako BuildKit secret; id-ki gh_token + github_token)
         if: steps.exists.outputs.frontend == 'false'
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: frontend
           file: frontend/Dockerfile
@@ -270,10 +270,10 @@ jobs:
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
     steps:
-      - uses: actions/checkout@v4 # repo wołające: compose + Caddyfile
+      - uses: actions/checkout@v6 # repo wołające: compose + Caddyfile
 
       - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: DominikSienkiewicz/Platform
           ref: v1

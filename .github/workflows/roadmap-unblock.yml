@@ -28,7 +28,7 @@ jobs:
     if: contains(github.event.issue.body, 'roadmap-id:')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Auto-unblock dependents
         env:
