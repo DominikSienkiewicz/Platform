@@ -40,23 +40,37 @@ jobs:
           SEMGREP_VERSION: ${{ inputs.semgrep-version }}
         run: pipx install "semgrep==${SEMGREP_VERSION}"
 
-      # Bramka: tylko reguły severity ERROR failują build (--error => exit != 0 przy znalezieniach).
-      # WARNING/INFO wypisujemy osobno jako log-only (|| true), żeby nie blokować PR-ów szumem.
-      - name: Semgrep — blocking (ERROR)
+      # JEDEN przebieg skanera. Wcześniej kod był skanowany DWA razy (osobny krok ERROR, potem osobny
+      # WARNING/INFO) — te same reguły na tym samym drzewie, podwójny compute na każdym runie. Teraz
+      # skanujemy raz do JSON, a bramkę (ERROR = fail) i widok advisory (WARNING/INFO = log-only)
+      # liczymy z tego samego wyniku. Semantyka bramki bez zmian: ERROR blokuje, reszta nie.
+      - name: Semgrep — SAST (jeden skan, bramka ERROR)
         env:
           SEMGREP_CONFIGS: ${{ inputs.config }}
         run: |
-          set -euo pipefail
+          set -uo pipefail   # bez -e: sami sterujemy kodem wyjścia na podstawie JSON
           args=()
           for c in $SEMGREP_CONFIGS; do args+=(--config "$c"); done
-          semgrep scan "${args[@]}" --severity ERROR --error --text
 
-      - name: Semgrep — advisory (WARNING/INFO, log-only)
-        if: ${{ always() }}
-        env:
-          SEMGREP_CONFIGS: ${{ inputs.config }}
-        run: |
-          set -uo pipefail
-          args=()
-          for c in $SEMGREP_CONFIGS; do args+=(--config "$c"); done
-          semgrep scan "${args[@]}" --severity WARNING --severity INFO --text || true
+          # Pojedynczy skan: wszystkie severity naraz -> JSON. rc=1 (są znaleziska) jest OK,
+          # rc>=2 to realny błąd skanera (brak/niepełny JSON) -> przerywamy.
+          semgrep scan "${args[@]}" --json --output semgrep.json --quiet
+          rc=$?
+          if [ ! -s semgrep.json ]; then
+            echo "::error::Semgrep nie wygenerował wyniku (rc=$rc) — skan się nie powiódł." >&2
+            exit 1
+          fi
+
+          # Czytelny widok z tego samego wyniku (severity  ścieżka:linia  reguła).
+          jq -r '.results[] | "\(.extra.severity)\t\(.path):\(.start.line)\t\(.check_id)"' \
+            semgrep.json | sort || true
+
+          err=$(jq  '[.results[] | select(.extra.severity=="ERROR")]   | length' semgrep.json)
+          warn=$(jq '[.results[] | select(.extra.severity=="WARNING")] | length' semgrep.json)
+          info=$(jq '[.results[] | select(.extra.severity=="INFO")]    | length' semgrep.json)
+          echo "Semgrep: ${err} ERROR (blokujące), ${warn} WARNING, ${info} INFO (log-only)"
+
+          if [ "${err:-0}" -gt 0 ]; then
+            echo "::error::Semgrep: ${err} znalezisk severity ERROR — bramka SAST failuje build."
+            exit 1
+          fi
