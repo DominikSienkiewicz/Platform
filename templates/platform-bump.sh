@@ -2,16 +2,17 @@
 # platform-bump.sh — cienki STUB: deleguje do binu `platform-bump` pakietu @dominiksienkiewicz/versions.
 # KANON LOGIKI bumpu żyje w Platform/frontend/packages/versions/bin/platform-bump.sh i dociera tu
 # przez npm (frontend/node_modules/.bin) — NIE wklejaj logiki do tego pliku ani do kopii per-repo.
-# CANON: to jest kanon stuba (Platform/templates/platform-bump.sh) — kopiowany do roota każdego repo.
+# CANON: to jest kanon stuba (Platform/templates/platform-bump.sh) — kopiowany do `scripts/` każdego repo.
 #
-# Użycie (jak dotąd):
-#   ./platform-bump.sh            # podbij do najnowszej
-#   ./platform-bump.sh 1.3.0      # podbij do konkretnej wersji
+# Użycie:
+#   ./scripts/platform-bump.sh            # podbij do najnowszej
+#   ./scripts/platform-bump.sh 1.3.0      # podbij do konkretnej wersji
 set -euo pipefail
 
-# Stub żyje w roocie repo konsumenta — operuj ZAWSZE tam, niezależnie skąd wywołano
-# (bin dziedziczy CWD i przez `git rev-parse --show-toplevel` trafia we właściwe repo).
-cd "$(dirname "$0")"
+# Stub żyje w `scripts/` repo konsumenta, a bin oczekuje CWD = root repo — operuj ZAWSZE tam,
+# niezależnie skąd wywołano (bin dziedziczy CWD i przez `git rev-parse --show-toplevel`
+# trafia we właściwe repo).
+cd "$(dirname "$0")/.."
 
 BIN="frontend/node_modules/.bin/platform-bump"
 if [[ ! -x "$BIN" ]]; then

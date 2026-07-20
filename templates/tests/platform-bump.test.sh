@@ -7,7 +7,8 @@
 # kontrakt stuba. Hermetyczny (bez npm/sieci): fake-bin nagrywa argumenty.
 #
 # Regresja (zachowana z poprzedniej wersji): wywołany SPOZA roota repo skrypt musi operować na
-# repo, w którym LEŻY (stub robi `cd "$(dirname "$0")"`), a nie w CWD wywołania.
+# repo, w którym LEŻY, a nie w CWD wywołania. Stub mieszka w `<repo>/scripts/`, więc dochodzi
+# do roota przez `cd "$(dirname "$0")/.."` — ten test pilnuje właśnie tego przeskoku o katalog.
 set -euo pipefail
 
 CANON="$(cd "$(dirname "$0")/.." && pwd)/platform-bump.sh"
@@ -16,10 +17,10 @@ trap 'rm -rf "$WORK"' EXIT
 
 # --- 1) Brak binu -> exit != 0 + komunikat wskazujący brakujący bin ---
 REPO1="$WORK/no-bin"
-mkdir -p "$REPO1"
-cp "$CANON" "$REPO1/platform-bump.sh"; chmod +x "$REPO1/platform-bump.sh"
+mkdir -p "$REPO1/scripts"
+cp "$CANON" "$REPO1/scripts/platform-bump.sh"; chmod +x "$REPO1/scripts/platform-bump.sh"
 rc=0
-out="$( ( cd "$WORK" && "$REPO1/platform-bump.sh" 1.2.3 ) 2>&1 )" || rc=$?
+out="$( ( cd "$WORK" && "$REPO1/scripts/platform-bump.sh" 1.2.3 ) 2>&1 )" || rc=$?
 [[ $rc -ne 0 ]] \
   || { echo "FAIL: brak binu powinien dać exit != 0"; exit 1; }
 grep -q 'node_modules/.bin/platform-bump' <<<"$out" \
@@ -37,9 +38,10 @@ printf '%s\n' "$@" > bump-args.txt
 exit 0
 EOF
 chmod +x "$BIN"
-cp "$CANON" "$REPO2/platform-bump.sh"; chmod +x "$REPO2/platform-bump.sh"
+mkdir -p "$REPO2/scripts"
+cp "$CANON" "$REPO2/scripts/platform-bump.sh"; chmod +x "$REPO2/scripts/platform-bump.sh"
 rc=0
-( cd "$WORK" && "$REPO2/platform-bump.sh" 9.9.9 ) >/dev/null 2>&1 || rc=$?
+( cd "$WORK" && "$REPO2/scripts/platform-bump.sh" 9.9.9 ) >/dev/null 2>&1 || rc=$?
 [[ $rc -eq 0 ]] \
   || { echo "FAIL: obecny bin -> oczekiwano exit 0, było $rc"; exit 1; }
 grep -qx '9.9.9' "$REPO2/bump-args.txt" \
