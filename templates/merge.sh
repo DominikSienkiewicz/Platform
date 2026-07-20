@@ -3,10 +3,10 @@
 # merge.sh — integrate a worktree feature branch into main, then clean up.
 #
 # CANON: this file lives in Platform/templates/merge.sh — do not edit per-repo copies;
-# edit here and re-sync to each consumer repo root (see templates/README.md).
+# edit here and re-sync to each consumer's scripts/ dir (see templates/README.md).
 #
 # Usage:
-#   ./merge.sh <branch> [message] [--into <target>] [--force]
+#   ./scripts/merge.sh <branch> [message] [--into <target>] [--force]
 #
 # Given a feature branch (typically living in a .claude/worktrees/* worktree),
 # this, run against the MAIN working tree:
