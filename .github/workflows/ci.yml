@@ -51,6 +51,7 @@ jobs:
       - uses: actions/checkout@v6
       - run: bash templates/tests/platform-bump.test.sh
       - run: bash templates/tests/container-scan-skip.test.sh
+      - run: bash templates/tests/merge.test.sh
 
   frontend:
     name: Frontend — install + lint
