@@ -32,6 +32,15 @@
 #                                   local branches, the index, or worktrees (fetch may still run)
 #   --                              treat all remaining arguments as positional
 #   -h, --help                      show this header
+#
+# Outcome:
+#   A successful run ends with a green "✓" line; every failure ends with a red "✗" line.
+#   The glyph is always printed, so captured output stays greppable; only the colour is
+#   conditional.
+#
+# Environment:
+#   NO_COLOR        set to any value to print the marks without colour (wins over FORCE_COLOR)
+#   FORCE_COLOR     set to any value to colour the marks even when the stream is not a terminal
 
 set -euo pipefail
 
@@ -47,18 +56,48 @@ PARSE_OPTIONS=1
 LOCK_HELD=0
 LOCK_DIR=""
 
+# Outcome marks. The glyph is always emitted so captured output stays greppable;
+# colour is added only for an interactive stream. NO_COLOR suppresses colour entirely
+# and wins over FORCE_COLOR, which exists so the coloured path stays testable off a TTY.
+#
+# The two -t probes must run here, in the main shell: inside a command substitution
+# stdout is a pipe, so `[ -t 1 ]` would be false no matter what the caller's stream is.
+STDOUT_COLOUR=0
+STDERR_COLOUR=0
+if [ -z "${NO_COLOR:-}" ]; then
+  if [ -n "${FORCE_COLOR:-}" ]; then
+    STDOUT_COLOUR=1
+    STDERR_COLOUR=1
+  else
+    if [ -t 1 ]; then STDOUT_COLOUR=1; fi
+    if [ -t 2 ]; then STDERR_COLOUR=1; fi
+  fi
+fi
+
+mark() {
+  local glyph="$1" colour="$2" enabled="$3"
+  if [ "$enabled" -eq 1 ]; then
+    printf '\033[%sm%s\033[0m' "$colour" "$glyph"
+  else
+    printf '%s' "$glyph"
+  fi
+}
+
+OK_MARK="$(mark "✓" 32 "$STDOUT_COLOUR")"
+FAIL_MARK="$(mark "✗" 31 "$STDERR_COLOUR")"
+
 usage() {
   echo "usage: merge.sh <branch> <message> [--into <target>] [--discard-worktree-changes] [--offline] [--dry-run]" >&2
 }
 
 usage_error() {
-  echo "$1" >&2
+  echo "$FAIL_MARK $1" >&2
   usage
   exit 2
 }
 
 die() {
-  echo "$1" >&2
+  echo "$FAIL_MARK $1" >&2
   exit 1
 }
 
@@ -278,11 +317,11 @@ git -C "$MAIN_WT" merge --no-ff -m "$MESSAGE" "$SOURCE_REF" || merge_rc=$?
 if [ "$merge_rc" -ne 0 ]; then
   UNMERGED_PATHS="$(git -C "$MAIN_WT" diff --name-only --diff-filter=U)"
   if [ -n "$UNMERGED_PATHS" ]; then
-    echo "!! merge conflict — resolve the unmerged paths and commit, or abort:" >&2
+    echo "$FAIL_MARK merge conflict — resolve the unmerged paths and commit, or abort:" >&2
     printf '     git -C %q status\n' "$MAIN_WT" >&2
     printf '     git -C %q merge --abort\n' "$MAIN_WT" >&2
   else
-    echo "!! merge failed with exit code $merge_rc; source branch and worktree were preserved" >&2
+    echo "$FAIL_MARK merge failed with exit code $merge_rc; source branch and worktree were preserved" >&2
     if git -C "$MAIN_WT" rev-parse --verify --quiet MERGE_HEAD >/dev/null; then
       echo "   Git left an in-progress merge; inspect it or abort with:" >&2
       printf '     git -C %q merge --abort\n' "$MAIN_WT" >&2
@@ -333,4 +372,4 @@ if [ "$branch_config_rc" -ne 0 ]; then
   esac
 fi
 
-echo "✓ merged $BRANCH into $TARGET and cleaned up"
+echo "$OK_MARK merged $BRANCH into $TARGET and cleaned up"

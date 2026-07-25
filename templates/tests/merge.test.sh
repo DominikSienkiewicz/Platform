@@ -398,6 +398,102 @@ test_invocation_from_source_worktree_succeeds() {
   [[ ! -d "$feature_wt" ]] || fail "invocation from source should still clean up its worktree"
 }
 
+assert_not_contains() {
+  local text="$1"
+  local unexpected="$2"
+  local message="$3"
+  ! grep -Fq -- "$unexpected" <<<"$text" || fail "$message (unexpected '$unexpected')"
+}
+
+test_success_is_marked_with_a_check() {
+  local repo feature_wt
+  repo="$(new_repo success-glyph)"
+  feature_wt="$WORK/success glyph worktree"
+  add_feature_worktree "$repo" feature "$feature_wt"
+
+  run_merge "$repo" feature "merge with a check mark" --offline
+
+  assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
+  assert_contains "$MERGE_OUTPUT" "✓ merged feature into main" "success should be marked with a check"
+  assert_not_contains "$MERGE_OUTPUT" "✗" "a successful merge must not emit a failure mark"
+}
+
+test_failure_is_marked_with_a_cross() {
+  local repo before
+  repo="$(new_repo failure-glyph)"
+  git -C "$repo" branch feature
+  before="$(git -C "$repo" rev-parse main)"
+
+  run_merge "$repo" feature
+
+  assert_eq 2 "$MERGE_RC" "missing merge message should be a usage error"
+  assert_contains "$MERGE_OUTPUT" "✗ merge message is required" "failure should be marked with a cross"
+  assert_not_contains "$MERGE_OUTPUT" "✓" "a failed run must not emit a success mark"
+  assert_eq "$before" "$(git -C "$repo" rev-parse main)" "a failed run must not move main"
+}
+
+test_conflict_is_marked_with_a_cross() {
+  local repo feature_wt
+  repo="$(new_repo conflict-glyph)"
+  feature_wt="$WORK/conflict glyph worktree"
+  git -C "$repo" worktree add -q -b feature "$feature_wt" main
+  printf 'theirs\n' >"$feature_wt/collide.txt"
+  git -C "$feature_wt" add collide.txt
+  git -C "$feature_wt" commit -q -m "feature side"
+  printf 'ours\n' >"$repo/collide.txt"
+  git -C "$repo" add collide.txt
+  git -C "$repo" commit -q -m "main side"
+
+  run_merge "$repo" feature "merge that conflicts" --offline
+
+  [[ "$MERGE_RC" -ne 0 ]] || fail "a conflicting merge should not report success"
+  assert_contains "$MERGE_OUTPUT" "✗ merge conflict" "a conflict should be marked with a cross"
+  assert_ref_exists "$repo" refs/heads/feature
+}
+
+test_marks_are_plain_when_output_is_captured() {
+  local repo feature_wt
+  repo="$(new_repo plain-glyph)"
+  feature_wt="$WORK/plain glyph worktree"
+  add_feature_worktree "$repo" feature "$feature_wt"
+
+  run_merge "$repo" feature "merge without a terminal" --offline
+
+  assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
+  assert_contains "$MERGE_OUTPUT" "✓" "the mark itself must survive capture so output stays greppable"
+  assert_not_contains "$MERGE_OUTPUT" "$(printf '\033')" "a non-interactive stream must not receive colour escapes"
+}
+
+# Guards the trap that command substitution sets: computing a mark inside $(...) makes
+# `[ -t 1 ]` false regardless of the caller's stream, which silently drops the colour.
+test_forced_colour_reaches_both_marks() {
+  local repo feature_wt
+  repo="$(new_repo forced-colour)"
+  feature_wt="$WORK/forced colour worktree"
+  add_feature_worktree "$repo" feature "$feature_wt"
+
+  export FORCE_COLOR=1
+  run_merge "$repo" feature "merge with forced colour" --offline
+  assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
+  assert_contains "$MERGE_OUTPUT" "$(printf '\033[32m✓\033[0m')" "forced colour should reach the success mark"
+
+  run_merge "$repo" absent "merge with forced colour" --offline
+  assert_contains "$MERGE_OUTPUT" "$(printf '\033[31m✗\033[0m')" "forced colour should reach the failure mark"
+  unset FORCE_COLOR
+}
+
+test_no_colour_wins_over_forced_colour() {
+  local repo
+  repo="$(new_repo no-colour-precedence)"
+
+  export NO_COLOR=1 FORCE_COLOR=1
+  run_merge "$repo" absent "merge without colour" --offline
+  unset NO_COLOR FORCE_COLOR
+
+  assert_contains "$MERGE_OUTPUT" "✗" "the glyph must survive with colour disabled"
+  assert_not_contains "$MERGE_OUTPUT" "$(printf '\033')" "NO_COLOR must win over FORCE_COLOR"
+}
+
 run_test() {
   local name="$1"
   local function_name="$2"
@@ -431,6 +527,12 @@ run_test hook-failure test_non_conflict_merge_failure_is_not_mislabeled
 run_test helper-lock test_repository_lock_blocks_parallel_helper
 run_test tracked-feature test_tracked_feature_branch_is_deleted_safely
 run_test invoked-from-source test_invocation_from_source_worktree_succeeds
+run_test success-glyph test_success_is_marked_with_a_check
+run_test failure-glyph test_failure_is_marked_with_a_cross
+run_test conflict-glyph test_conflict_is_marked_with_a_cross
+run_test plain-glyph test_marks_are_plain_when_output_is_captured
+run_test forced-colour test_forced_colour_reaches_both_marks
+run_test no-colour-precedence test_no_colour_wins_over_forced_colour
 
 if [[ -n "$FILTER" && $FAILURES -eq 0 ]]; then
   echo "OK: selected merge.sh test passed"
