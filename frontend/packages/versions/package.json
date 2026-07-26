@@ -7,6 +7,9 @@
     "bin/check.mjs",
     "bin/platform-bump.sh"
   ],
+  "scripts": {
+    "test": "bash test/check-overrides.test.sh && bash test/apply-canon.test.sh"
+  },
   "exports": {
     ".": "./versions.json",
     "./versions.json": "./versions.json"
