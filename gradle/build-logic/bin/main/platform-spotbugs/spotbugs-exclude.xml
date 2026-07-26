@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Ignore EI_EXPOSE_REP and EI_EXPOSE_REP2 in DTOs and Records -->
+    <!-- These are data transfer objects where defensive copying is often overkill for internal use -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Or>
+            <Class name="~.*\.dto\..*"/>
+            <!-- Records are immutable by design of their components, but SpotBugs still flags mutable components like Lists -->
+            <Source name="~.*Dto\.java"/>
+            <Source name="~.*Command\.java"/>
+            <Source name="~.*Query\.java"/>
+        </Or>
+    </Match>
+</FindBugsFilter>
