@@ -3,6 +3,8 @@
 # Repo konsumenckie NIE trzymają kopii logiki — wołają go przez cienki stub -> node_modules/.../bin.
 # Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @dominiksienkiewicz/*) do
 # NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu z versions.json.
+# Obie operacje obejmują też sekcję `overrides` w package.json (piny CVE paczek transytywnych,
+# np. overrides.next.postcss) — pomijając referencje npm w formie "$nazwa".
 #
 # Token (PAT classic, read:packages): z env GPR_TOKEN lub GITHUB_TOKEN, albo gpr.key z ~/.gradle/gradle.properties.
 # Użycie (z dowolnego miejsca w repo):
@@ -11,6 +13,12 @@
 #
 # Backend gradle.lockfile jest regenerowany AUTOMATYCZNIE na końcu (--write-locks) — analogicznie do
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
+#
+# UWAGA (bootstrap): stub konsumenta odpala ZAINSTALOWANĄ wersję tego skryptu, a kanon bierze ze
+# ŚWIEŻO pobranego tarballa. Repo, które ma jeszcze wydanie bez obsługi `overrides`, po pierwszym
+# bumpie zaktualizuje tylko dependencies/devDependencies — guard w CI zgłosi wtedy dryf w overrides.
+# Lekarstwo: po `npm ci` (już z nową wersją paczki) uruchom platform-bump PONOWNIE. Kolejne bumpy
+# działają jednoprzebiegowo.
 set -euo pipefail
 
 # Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
@@ -44,11 +52,25 @@ echo "==> Podbijam piny Platform do: $TARGET"
 # --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---
 if [[ -f frontend/package.json ]]; then
   python3 - "$TARGET" <<'PY'
+# platform-bump:pins — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
+
+# npm `overrides`: wartość to wersja (string) albo zagnieżdżony obiekt zawężający kontekst.
+# Klucz "." oznacza paczkę nadrzędną, wartość "$nazwa" to referencja npm (nie ruszamy jej).
+def walk(node, path, parent, visit):
+    for k, v in list(node.items()):
+        name = parent if k == "." else k
+        at = path if k == "." else f"{path}.{k}"
+        if isinstance(v, dict): walk(v, at, name, visit)
+        elif isinstance(v, str) and name and not v.startswith("$"): visit(node, k, name, v, at)
+
 t=sys.argv[1]; p="frontend/package.json"; d=json.load(open(p))
+def to_target(node, key, name, version, at):
+    if name.startswith("@dominiksienkiewicz/"): node[key]=t
 for sec in ("dependencies","devDependencies"):
     for k in list(d.get(sec,{})):
         if k.startswith("@dominiksienkiewicz/"): d[sec][k]=t
+walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
 
@@ -57,13 +79,29 @@ PY
   if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>&1 ); then
     tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
+# platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
+
+# npm `overrides`: wartość to wersja (string) albo zagnieżdżony obiekt zawężający kontekst
+# (overrides.next.postcss = "postcss tylko pod next"). Klucz "." oznacza paczkę nadrzędną,
+# wartość "$nazwa" to referencja npm — npm rozwija ją sam, więc nie wolno jej przepisywać.
+def walk(node, path, parent, visit):
+    for k, v in list(node.items()):
+        name = parent if k == "." else k
+        at = path if k == "." else f"{path}.{k}"
+        if isinstance(v, dict): walk(v, at, name, visit)
+        elif isinstance(v, str) and name and not v.startswith("$"): visit(node, k, name, v, at)
+
 canon=json.load(open(sys.argv[1]))["versions"]
 p="frontend/package.json"; d=json.load(open(p)); changed=[]
+def to_canon(node, key, name, version, at):
+    if name in canon and version!=canon[name]:
+        node[key]=canon[name]; changed.append(f"{at}: {version} -> {canon[name]}")
 for sec in ("dependencies","devDependencies"):
     for k,v in list(d.get(sec,{}).items()):
         if k in canon and v!=canon[k]:
             d[sec][k]=canon[k]; changed.append(f"{k}: {v} -> {canon[k]}")
+walk(d.get("overrides",{}), "overrides", None, to_canon)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
 PY
