@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.5.16")
+version = providers.gradleProperty("platformVersion").getOrElse("1.5.17")
 
 catalog {
 	versionCatalog {
@@ -15,7 +15,7 @@ catalog {
 		// Dynamiczny pin platformy — NIE do wyrażenia w statycznym TOML. Nadpisuje placeholder z TOML;
 		// wpisy z version.ref="platform" (platform-test-fixtures, platform-security-starter,
 		// convention pluginy) podchwytują tę wstrzykniętą wartość. Publish ustawia ją przez -PplatformVersion.
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.5.16"))
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.5.17"))
 	}
 }
 
