@@ -32,7 +32,7 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 
 | Plugin | Co wnosi | Skąd 1:1 |
 |---|---|---|
-| `seniordev.java-conventions` | toolchain 25, Spotless (Google Java Format), Checkstyle (maxWarnings=0), JaCoCo + bramka z **ratchetem** | BookOfStyling |
+| `seniordev.java-conventions` | toolchain 25, Spotless (Google Java Format), Checkstyle (maxWarnings=0), JaCoCo (pokrycie sumowane z `test` **i** `integrationTest`) + bramka z **ratchetem** | BookOfStyling |
 | `seniordev.quality-conventions` | PIT (mutation), SpotBugs (report-only na JDK25), CycloneDX (SBOM) | BookOfStyling / SkillSprintPlus |
 | `seniordev.spring-modulith-conventions` | BOM-y (Boot/Modulith/Spring AI **GA**), wspólne deps testowe (Modulith-test, Testcontainers, ArchUnit), **enforced junit-bom**, **taksonomia unit ‖ integration** | Attestate (split) + SkillSprintPlus (junit pin) |
 

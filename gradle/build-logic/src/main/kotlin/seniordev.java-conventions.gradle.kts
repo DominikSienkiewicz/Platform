@@ -12,7 +12,8 @@ import java.io.File
  *   - toolchain Java 26 (non-LTS; baseline portfolio 2026-07)
  *   - Spotless (Google Java Format) — jeden formatter dla wszystkich repo
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
- *   - JaCoCo + bramka pokrycia z RATCHETEM (start 0.00 → cel 0.80, sterowany -PcoverageMinimum)
+ *   - JaCoCo + bramka pokrycia z RATCHETEM (start 0.00 → cel 0.80, sterowany -PcoverageMinimum);
+ *     pokrycie sumowane z `test` I `integrationTest`, raport i bramka wiszą na `check`
  *
  * Źródło 1:1: najlepsze części z BookOfStyling (googleJavaFormat + checkstyle) ujednolicone
  * dla Attestate (brak narzędzi) i SkillSprintPlus (sam importOrder).
@@ -83,20 +84,28 @@ tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
 }
 
+// Pokrycie liczy się z OBU zestawów. `jacocoTestReport` domyślnie czyta wyłącznie `test.exec`, więc
+// w repo z osobnym taskiem integracyjnym (spring-modulith-conventions) cały wysiłek Testcontainers
+// był wykonywany i wyrzucany: adapter przetestowany ITką raportował 0% pokrycia, a SonarCloud
+// pokazywał liczbę zaniżoną o kilka punktów. Wiązanie po NAZWIE, bo `integrationTest` rejestruje
+// późniejszy plugin; `modelTest` (pobiera wagi modelu, poza `check`) świadomie zostaje poza sumą,
+// żeby wynik lokalny i wynik CI były tą samą liczbą.
+val coverageProducers = tasks.matching { it.name == "test" || it.name == "integrationTest" }
+val coverageExecutionData =
+	fileTree(layout.buildDirectory).include("jacoco/test.exec", "jacoco/integrationTest.exec")
+
 tasks.named<JacocoReport>("jacocoTestReport") {
-	dependsOn(tasks.named("test"))
+	dependsOn(coverageProducers)
+	executionData.setFrom(coverageExecutionData)
 	reports {
 		xml.required.set(true)
 		html.required.set(true)
 	}
 }
 
-tasks.named("test") {
-	finalizedBy(tasks.named("jacocoTestReport"))
-}
-
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-	dependsOn(tasks.named("test"))
+	dependsOn(coverageProducers)
+	executionData.setFrom(coverageExecutionData)
 	violationRules {
 		rule {
 			limit {
@@ -108,8 +117,11 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 	}
 }
 
+// ŚWIADOMIE bez `test { finalizedBy(jacocoTestReport) }`: raport zależy teraz też od
+// `integrationTest`, więc finalizer na `test` ciągnąłby Testcontainers przy każdym `./gradlew test`.
+// Raport i bramka wiszą na `check` — a tam oba zestawy i tak się wykonują.
 tasks.named("check") {
-	dependsOn(tasks.named("jacocoTestCoverageVerification"))
+	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"))
 }
 
 // === Governance wersji: KAŻDA wersja biblioteki pochodzi z platform-catalog ====================
