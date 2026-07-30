@@ -12,7 +12,7 @@ docker compose --profile ai up -d   # + Ollama
 | Usługa | Obraz | Port (default) |
 |---|---|---|
 | postgres | `pgvector/pgvector:0.8.2-pg18` | 5432 |
-| ollama (profil `ai`) | `ollama/ollama:0.30.6` | 11434 |
+| ollama (profil `ai`) | `ollama/ollama:0.32.3` | 11434 |
 
 `postgres/init/01-extensions.sql` tworzy rozszerzenie `vector` przy pierwszej inicjalizacji wolumenu.
 

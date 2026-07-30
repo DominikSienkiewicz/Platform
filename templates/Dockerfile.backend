@@ -3,7 +3,7 @@
 # Świadomie NIE budujemy Gradle'em w obrazie — local-first ciągnie artefakty Platform z
 # mavenLocal/GitHub Packages, a poświadczenia nie powinny trafiać do warstwy build kontenera.
 # Build:  ./gradlew bootJar && docker build -t <obraz> backend
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:26-jre
 WORKDIR /app
 RUN groupadd --system spring && useradd --system --gid spring --uid 1001 spring
 ARG JAR_FILE=build/libs/*.jar
