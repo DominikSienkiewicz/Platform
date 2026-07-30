@@ -1,2 +1,5 @@
 packages:
   - "packages/*"
+allowBuilds:
+  msw: false
+  unrs-resolver: true
