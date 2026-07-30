@@ -15,12 +15,21 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "@eslint/compat": "^2.1.0"
   },
+  "devDependencies": {
+    "eslint": "10.8.0",
+    "eslint-config-next": "16.2.12",
+    "next": "16.2.12"
+  },
   "peerDependencies": {
     "eslint": "^9 || ^10",
-    "eslint-config-next": "^16"
+    "eslint-config-next": "^16",
+    "next": "^16"
   },
   "repository": {
     "type": "git",

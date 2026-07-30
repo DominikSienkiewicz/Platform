@@ -65,10 +65,10 @@ jobs:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
-          version: 9
+          version: 11.18.0
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm -r --if-present lint
       - run: pnpm -r --if-present test

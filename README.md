@@ -32,7 +32,7 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 
 | Plugin | Co wnosi | Skąd 1:1 |
 |---|---|---|
-| `seniordev.java-conventions` | toolchain 25, Spotless (Google Java Format), Checkstyle (maxWarnings=0), JaCoCo (pokrycie sumowane z `test` **i** `integrationTest`) + bramka z **ratchetem** | BookOfStyling |
+| `seniordev.java-conventions` | toolchain 26, Spotless (Google Java Format), Checkstyle (maxWarnings=0), JaCoCo (pokrycie sumowane z `test` **i** `integrationTest`) + bramka z **ratchetem** | BookOfStyling |
 | `seniordev.quality-conventions` | PIT (mutation), SpotBugs (report-only na JDK25), CycloneDX (SBOM) | BookOfStyling / SkillSprintPlus |
 | `seniordev.spring-modulith-conventions` | BOM-y (Boot/Modulith/Spring AI **GA**), wspólne deps testowe (Modulith-test, Testcontainers, ArchUnit), **enforced junit-bom**, **taksonomia unit ‖ integration** | Attestate (split) + SkillSprintPlus (junit pin) |
 
@@ -52,6 +52,8 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 
 ## Bootstrap (lokalnie)
 
+Wymagania dla frontendu: Node.js >= 22.13 (repo używa Node 24) oraz pnpm 11.18.0.
+
 ```bash
 # Gradle — publikacja do lokalnego repo (smoke test bez registry):
 cd gradle/build-logic && ./gradlew publishToMavenLocal
@@ -69,6 +71,13 @@ gpr.user=TWOJ_GITHUB_LOGIN
 gpr.key=ghp_xxx   # PAT z zakresem read:packages / write:packages
 gpr.owner=DominikSienkiewicz
 gpr.repo=Platform
+```
+
+Dla publikacji paczek frontendu pnpm 11 wymaga tokenu w zaufanym `~/.npmrc`
+(nie w commitowanym `frontend/.npmrc`):
+
+```properties
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
 > ⚠️ Dla **GitHub Packages npm** scope (`@dominiksienkiewicz`) musi równać się właścicielowi repo
@@ -160,6 +169,9 @@ pitest { targetClasses.set(listOf("pl.seniordeveloper.skillsprintplus.*")) }
 ```js
 export { default } from "@dominiksienkiewicz/eslint-config/next";
 ```
+
+Pakiet konfiguracyjny wymaga peer dependencies `eslint`, `eslint-config-next` i `next`;
+ich wersje należy pobierać z `@dominiksienkiewicz/versions`.
 
 `src/app/globals.css`:
 

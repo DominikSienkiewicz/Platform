@@ -13,7 +13,7 @@ public final class PlatformImages {
   public static final String PGVECTOR = "pgvector/pgvector:0.8.2-pg18";
 
   /** Ollama (local-first AI — np. Attestate). */
-  public static final String OLLAMA = "ollama/ollama:0.30.6";
+  public static final String OLLAMA = "ollama/ollama:0.32.3";
 
   private PlatformImages() {}
 }

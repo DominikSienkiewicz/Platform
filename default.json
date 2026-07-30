@@ -46,12 +46,6 @@
       "matchPackageNames": ["@dominiksienkiewicz/**", "pl.seniordeveloper:platform-catalog", "seniordev.**"],
       "groupName": "platform (DominikSienkiewicz)",
       "addLabels": ["platform"]
-    },
-    {
-      "description": "ESLint 10 łamie eslint-config-next 16.2.7 (usunięte context.getFilename()). Blokuj major do czasu wsparcia.",
-      "matchPackageNames": ["eslint"],
-      "matchUpdateTypes": ["major"],
-      "enabled": false
     }
   ],
   "customManagers": [

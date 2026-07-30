@@ -22,8 +22,9 @@ dependencies {
 	// Natywne platformy Gradle zamiast io.spring.dependency-management — dzięki temu publikowane
 	// Gradle Module Metadata jest POPRAWNE (zależności bez wersji są pokryte referencją do platformy,
 	// a BOM-y eksportują się tranzytywnie do konsumenta). Wersje = lustro gradle/catalog.
-	api(platform("org.springframework.boot:spring-boot-dependencies:4.0.6"))
-	api(platform("org.springframework.modulith:spring-modulith-bom:2.0.6"))
+	api(platform("org.springframework.boot:spring-boot-dependencies:4.1.0"))
+	api(platform("org.springframework.modulith:spring-modulith-bom:2.1.0"))
+	api(platform("org.junit:junit-bom:6.1.0"))
 
 	api("org.springframework.boot:spring-boot-testcontainers")
 	api("org.springframework.boot:spring-boot-test")               // @TestConfiguration
