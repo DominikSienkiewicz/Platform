@@ -170,6 +170,9 @@ pitest { targetClasses.set(listOf("pl.seniordeveloper.skillsprintplus.*")) }
 export { default } from "@dominiksienkiewicz/eslint-config/next";
 ```
 
+Pakiet konfiguracyjny wymaga peer dependencies `eslint`, `eslint-config-next` i `next`;
+ich wersje należy pobierać z `@dominiksienkiewicz/versions`.
+
 `src/app/globals.css`:
 
 ```css
