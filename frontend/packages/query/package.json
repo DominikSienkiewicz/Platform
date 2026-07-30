@@ -18,6 +18,11 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "devDependencies": {
+    "@tanstack/react-query": "5.101.0",
+    "@tanstack/react-query-devtools": "5.101.0",
+    "react": "19.2.7"
+  },
   "peerDependencies": {
     "react": "^19",
     "@tanstack/react-query": "^5",

@@ -2,9 +2,9 @@
   "name": "@dominiksienkiewicz/platform-frontend",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@11.18.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "scripts": {
     "build:registry": "pnpm --filter @dominiksienkiewicz/ui build",
@@ -12,6 +12,6 @@
     "publish:all": "pnpm -r publish --no-git-checks"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "6.0.3"
   }
 }

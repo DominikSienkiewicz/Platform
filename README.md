@@ -52,6 +52,8 @@ To jedyna czysta droga cross-repo — `buildSrc` / composite build działają ty
 
 ## Bootstrap (lokalnie)
 
+Wymagania dla frontendu: Node.js >= 22.13 (repo używa Node 24) oraz pnpm 11.18.0.
+
 ```bash
 # Gradle — publikacja do lokalnego repo (smoke test bez registry):
 cd gradle/build-logic && ./gradlew publishToMavenLocal
@@ -69,6 +71,13 @@ gpr.user=TWOJ_GITHUB_LOGIN
 gpr.key=ghp_xxx   # PAT z zakresem read:packages / write:packages
 gpr.owner=DominikSienkiewicz
 gpr.repo=Platform
+```
+
+Dla publikacji paczek frontendu pnpm 11 wymaga tokenu w zaufanym `~/.npmrc`
+(nie w commitowanym `frontend/.npmrc`):
+
+```properties
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
 > ⚠️ Dla **GitHub Packages npm** scope (`@dominiksienkiewicz`) musi równać się właścicielowi repo
