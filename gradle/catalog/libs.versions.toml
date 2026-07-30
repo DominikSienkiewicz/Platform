@@ -16,22 +16,22 @@ archunit = "1.4.2"
 resilience4j = "2.4.0"
 bucket4j = "8.19.0"
 shedlock = "7.7.0"
-javers = "7.11.1"
-spotless = "8.6.0"
+javers = "7.11.6"
+spotless = "8.9.0"
 pitest = "1.19.0"
 pitestJunit5 = "1.2.3"
-cyclonedx = "3.2.4"
+cyclonedx = "3.3.0"
 jacoco = "0.8.15"
 foojayResolver = "1.0.0"                 # lustro: implementation foojay-resolver w build-logic
 mapstruct = "1.6.3"
-jsoup = "1.18.3"
-wiremock = "3.13.1"
+jsoup = "1.22.2"
+wiremock = "3.13.2"
 sonarqube = "7.3.1.8318"                 # lustro: build-logic (plugin aplikowany w quality-conventions)
-openrewrite = "8.56.1"                   # Pragma (OpenRewrite AST/codegen)
-jimfs = "1.3.0"                          # Pragma (in-memory FS testów AST)
-javaDiffUtils = "4.12"                   # Pragma (diff/patch)
-openaiJavaClient = "4.36.0"              # Pragma (ChatClientFactory buduje klienta OkHttp ręcznie — Spring AI GA nie eksponuje go na compile)
-anthropicJavaClient = "2.34.0"           # Pragma (jw.)
+openrewrite = "8.87.7"                   # Pragma (OpenRewrite AST/codegen)
+jimfs = "1.3.1"                          # Pragma (in-memory FS testów AST)
+javaDiffUtils = "4.17"                   # Pragma (diff/patch)
+openaiJavaClient = "4.39.1"              # Pragma (ChatClientFactory buduje klienta OkHttp ręcznie — Spring AI GA nie eksponuje go na compile)
+anthropicJavaClient = "2.40.1"           # Pragma (jw.)
 
 [libraries]
 # --- BOM-y ---
