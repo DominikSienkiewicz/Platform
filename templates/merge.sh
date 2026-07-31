@@ -18,6 +18,12 @@
 # the target is not a local branch, origin/<target> is ahead or diverged, another
 # merge helper is running, or the source is protected (main/master/develop/release/**).
 #
+# "Unsafe to touch" excludes regenerable build output (build/, node_modules/, .gradle/,
+# … — see REGENERABLE_IGNORED_RE). Those are ignored paths that a rebuild recreates, so
+# they are removed with the worktree and reported, never treated as work to preserve.
+# Every other ignored file — .env.local, credentials, anything irreplaceable — still
+# blocks until you pass --discard-worktree-changes.
+#
 # Arguments:
 #   <branch>          local feature branch to merge and delete (required)
 #   <message>         merge commit message (required and not blank)
@@ -55,6 +61,25 @@ MSG_SET=0
 PARSE_OPTIONS=1
 LOCK_HELD=0
 LOCK_DIR=""
+
+# Ignored paths that a rebuild recreates. The worktree guard must distinguish these from
+# irreplaceable local data: a lint or build run inside the worktree is MANDATORY in this
+# workflow, so treating its output as "work to preserve" made the guard fire on every
+# single handoff and trained callers to pass --discard-worktree-changes reflexively —
+# which is precisely how a real .env.local eventually gets discarded unread.
+#
+# Matched per path segment against `git status --porcelain --ignored=matching` lines, so
+# `backend/build/`, `frontend/node_modules/` and `gradle/x/build/libs/a.jar` all qualify.
+# Keep this list conservative: anything absent from it keeps blocking, which is the safe
+# direction to be wrong in.
+REGENERABLE_IGNORED_RE='^!! (.*/)?((build|dist|target|bin|node_modules|coverage|test-results|playwright-report|__pycache__|\.gradle|\.next|\.turbo|\.venv|\.pytest_cache)(/.*)?|tsconfig\.tsbuildinfo)$'
+
+# Status lines that must block the merge: everything except regenerable build output.
+# Tracked modifications and untracked non-ignored files are never filtered.
+blocking_status() {
+  [ -n "$1" ] || return 0
+  printf '%s\n' "$1" | grep -Ev "$REGENERABLE_IGNORED_RE" || true
+}
 
 # Outcome marks. The glyph is always emitted so captured output stays greppable;
 # colour is added only for an interactive stream. NO_COLOR suppresses colour entirely
@@ -259,8 +284,9 @@ if [ -n "$BRANCH_WT" ] && [ "$BRANCH_WT" != "$MAIN_WT" ]; then
   if [ "$BRANCH_WT_LOCKED" -eq 1 ]; then
     die "source worktree is locked and cannot be cleaned up: $BRANCH_WT"
   fi
-  SOURCE_STATUS="$(git -C "$BRANCH_WT" status --porcelain --untracked-files=all --ignored=matching)" ||
+  SOURCE_STATUS_ALL="$(git -C "$BRANCH_WT" status --porcelain --untracked-files=all --ignored=matching)" ||
     die "cannot inspect source worktree: $BRANCH_WT"
+  SOURCE_STATUS="$(blocking_status "$SOURCE_STATUS_ALL")"
   if [ -n "$SOURCE_STATUS" ]; then
     if [ "$DISCARD_WORKTREE_CHANGES" -ne 1 ]; then
       echo "source worktree ($BRANCH_WT) has local or ignored files:" >&2
@@ -269,6 +295,9 @@ if [ -n "$BRANCH_WT" ] && [ "$BRANCH_WT" != "$MAIN_WT" ]; then
     fi
     echo "warning: source worktree local and ignored files will be discarded after a successful merge:" >&2
     printf '%s\n' "$SOURCE_STATUS" >&2
+  elif [ -n "$SOURCE_STATUS_ALL" ]; then
+    echo ">> source worktree holds only regenerable build output; it goes with the worktree:" >&2
+    printf '%s\n' "$SOURCE_STATUS_ALL" >&2
   fi
 fi
 
@@ -337,14 +366,21 @@ if [ -n "$BRANCH_WT" ] && [ "$BRANCH_WT" != "$MAIN_WT" ]; then
       die "merge succeeded, but source worktree cleanup failed; branch '$BRANCH' was preserved"
     fi
   else
-    CURRENT_SOURCE_STATUS="$(git -C "$BRANCH_WT" status --porcelain --untracked-files=all --ignored=matching)" ||
+    CURRENT_SOURCE_STATUS_ALL="$(git -C "$BRANCH_WT" status --porcelain --untracked-files=all --ignored=matching)" ||
       die "merge succeeded, but source worktree can no longer be inspected; branch '$BRANCH' was preserved"
+    CURRENT_SOURCE_STATUS="$(blocking_status "$CURRENT_SOURCE_STATUS_ALL")"
     if [ -n "$CURRENT_SOURCE_STATUS" ]; then
       echo "merge succeeded, but source worktree changed during the merge; cleanup was skipped:" >&2
       printf '%s\n' "$CURRENT_SOURCE_STATUS" >&2
       die "branch '$BRANCH' and source worktree were preserved"
     fi
-    if ! git worktree remove "$BRANCH_WT"; then
+    # Build output never blocks the merge, but `git worktree remove` still refuses to
+    # delete a tree that holds it, so the removal itself has to be forced.
+    if [ -n "$CURRENT_SOURCE_STATUS_ALL" ]; then
+      if ! git worktree remove --force "$BRANCH_WT"; then
+        die "merge succeeded, but source worktree cleanup failed; branch '$BRANCH' was preserved"
+      fi
+    elif ! git worktree remove "$BRANCH_WT"; then
       die "merge succeeded, but source worktree cleanup failed; branch '$BRANCH' was preserved"
     fi
   fi
