@@ -169,6 +169,47 @@ test_ignored_source_file_is_rejected_before_merge() {
   [[ -e "$feature_wt/.env.local" ]] || fail "ignored source data must be preserved"
 }
 
+test_ignored_build_output_does_not_block_merge() {
+  local repo feature_wt
+  repo="$(new_repo build-output)"
+  printf 'build/\n.gradle/\nnode_modules/\n.env.local\n' >"$repo/.gitignore"
+  git -C "$repo" add .gitignore
+  git -C "$repo" commit -q -m "ignore build output and local environment"
+  feature_wt="$WORK/build output worktree"
+  add_feature_worktree "$repo" feature "$feature_wt"
+  mkdir -p "$feature_wt/backend/build" "$feature_wt/backend/.gradle" "$feature_wt/frontend/node_modules"
+  printf 'stale\n' >"$feature_wt/backend/build/app.jar"
+  printf 'cache\n' >"$feature_wt/backend/.gradle/cache.bin"
+  printf 'dep\n' >"$feature_wt/frontend/node_modules/index.js"
+
+  run_merge "$repo" feature "merge with build output" --offline
+
+  assert_eq 0 "$MERGE_RC" "regenerable build output must not block the merge"
+  assert_ref_missing "$repo" refs/heads/feature
+  [[ ! -d "$feature_wt" ]] || fail "worktree holding only build output should still be removed"
+}
+
+test_ignored_secret_still_blocks_alongside_build_output() {
+  local repo feature_wt before
+  repo="$(new_repo build-output-and-secret)"
+  printf 'build/\n.env.local\n' >"$repo/.gitignore"
+  git -C "$repo" add .gitignore
+  git -C "$repo" commit -q -m "ignore build output and local environment"
+  feature_wt="$WORK/build output and secret worktree"
+  add_feature_worktree "$repo" feature "$feature_wt"
+  mkdir -p "$feature_wt/build"
+  printf 'stale\n' >"$feature_wt/build/app.jar"
+  printf 'SECRET=preserve-me\n' >"$feature_wt/.env.local"
+  before="$(git -C "$repo" rev-parse main)"
+
+  run_merge "$repo" feature "merge with secret" --offline
+
+  [[ $MERGE_RC -ne 0 ]] || fail "an irreplaceable ignored file must still block, even next to build output"
+  assert_contains "$MERGE_OUTPUT" ".env.local" "error should name the file that blocks"
+  assert_eq "$before" "$(git -C "$repo" rev-parse main)" "secret must be rejected before main moves"
+  [[ -e "$feature_wt/.env.local" ]] || fail "ignored source data must be preserved"
+}
+
 test_discard_flag_is_explicit_and_effective() {
   local repo feature_wt
   repo="$(new_repo discard-source)"
@@ -515,6 +556,8 @@ run_test protected-release test_release_is_protected
 run_test local-target test_target_must_be_a_local_branch
 run_test dirty-source test_dirty_source_is_rejected_before_merge
 run_test ignored-source test_ignored_source_file_is_rejected_before_merge
+run_test build-output test_ignored_build_output_does_not_block_merge
+run_test build-output-and-secret test_ignored_secret_still_blocks_alongside_build_output
 run_test discard-source test_discard_flag_is_explicit_and_effective
 run_test force-alias test_force_remains_a_deprecated_alias
 run_test locked-source test_locked_source_is_rejected_before_merge
