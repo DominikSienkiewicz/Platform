@@ -27,6 +27,7 @@ assert_eq() {
   local actual="$2"
   local message="$3"
   [[ "$actual" == "$expected" ]] || fail "$message (expected '$expected', got '$actual')"
+  return $?
 }
 
 assert_contains() {
@@ -34,18 +35,21 @@ assert_contains() {
   local expected="$2"
   local message="$3"
   grep -Fq -- "$expected" <<<"$text" || fail "$message (missing '$expected')"
+  return $?
 }
 
 assert_ref_exists() {
   local repo="$1"
   local ref="$2"
   git -C "$repo" show-ref --verify --quiet "$ref" || fail "expected ref '$ref' to exist"
+  return $?
 }
 
 assert_ref_missing() {
   local repo="$1"
   local ref="$2"
   ! git -C "$repo" show-ref --verify --quiet "$ref" || fail "expected ref '$ref' to be absent"
+  return $?
 }
 
 new_repo() {
@@ -57,6 +61,7 @@ new_repo() {
   git -C "$repo" config user.email "$TEST_AUTHOR_EMAIL"
   git -C "$repo" commit -q --allow-empty -m initial
   printf '%s\n' "$repo"
+  return $?
 }
 
 add_feature_worktree() {
@@ -66,6 +71,7 @@ add_feature_worktree() {
   local start_ref="${4:-main}"
   git -C "$repo" worktree add -q -b "$branch" "$worktree" "$start_ref"
   git -C "$worktree" commit -q --allow-empty -m "feature commit"
+  return $?
 }
 
 run_merge() {
@@ -73,6 +79,7 @@ run_merge() {
   shift
   MERGE_RC=0
   MERGE_OUTPUT="$(cd "$repo" && GIT_MERGE_AUTOEDIT=no bash "$CANON" "$@" 2>&1)" || MERGE_RC=$?
+  return $?
 }
 
 test_message_is_required() {
@@ -86,6 +93,7 @@ test_message_is_required() {
   assert_eq 2 "$MERGE_RC" "missing merge message should be a usage error"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "missing message must not move main"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_platform_delegate_exposes_canonical_help() {
@@ -94,6 +102,7 @@ test_platform_delegate_exposes_canonical_help() {
 
   assert_contains "$output" "merge.sh — safely integrate" "Platform root delegate should execute the canonical helper"
   assert_contains "$output" "--discard-worktree-changes" "Platform root delegate should expose canonical options"
+  return $?
 }
 
 test_whitespace_message_is_rejected() {
@@ -105,6 +114,7 @@ test_whitespace_message_is_rejected() {
 
   assert_eq 2 "$MERGE_RC" "whitespace-only merge message should be rejected"
   assert_contains "$MERGE_OUTPUT" "merge message is required" "message error should be explicit"
+  return $?
 }
 
 test_release_is_protected() {
@@ -119,6 +129,7 @@ test_release_is_protected() {
   assert_contains "$MERGE_OUTPUT" "protected branch 'release'" "release rejection should explain protection"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "release rejection must not move main"
   assert_ref_exists "$repo" refs/heads/release
+  return $?
 }
 
 test_target_must_be_a_local_branch() {
@@ -136,6 +147,7 @@ test_target_must_be_a_local_branch() {
   assert_eq main "$(git -C "$repo" symbolic-ref --short HEAD)" "target rejection must keep main checked out"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "target rejection must not move main"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_dirty_source_is_rejected_before_merge() {
@@ -153,6 +165,7 @@ test_dirty_source_is_rejected_before_merge() {
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "dirty source must be rejected before main moves"
   assert_ref_exists "$repo" refs/heads/feature
   [[ -e "$feature_wt/uncommitted.txt" ]] || fail "dirty source data must be preserved"
+  return $?
 }
 
 test_ignored_source_file_is_rejected_before_merge() {
@@ -173,6 +186,7 @@ test_ignored_source_file_is_rejected_before_merge() {
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "ignored source must be rejected before main moves"
   assert_ref_exists "$repo" refs/heads/feature
   [[ -e "$feature_wt/.env.local" ]] || fail "ignored source data must be preserved"
+  return $?
 }
 
 test_ignored_build_output_does_not_block_merge() {
@@ -193,6 +207,7 @@ test_ignored_build_output_does_not_block_merge() {
   assert_eq 0 "$MERGE_RC" "regenerable build output must not block the merge"
   assert_ref_missing "$repo" refs/heads/feature
   [[ ! -d "$feature_wt" ]] || fail "worktree holding only build output should still be removed"
+  return $?
 }
 
 test_ignored_secret_still_blocks_alongside_build_output() {
@@ -214,6 +229,7 @@ test_ignored_secret_still_blocks_alongside_build_output() {
   assert_contains "$MERGE_OUTPUT" ".env.local" "error should name the file that blocks"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "secret must be rejected before main moves"
   [[ -e "$feature_wt/.env.local" ]] || fail "ignored source data must be preserved"
+  return $?
 }
 
 test_discard_flag_is_explicit_and_effective() {
@@ -228,6 +244,7 @@ test_discard_flag_is_explicit_and_effective() {
   assert_eq 0 "$MERGE_RC" "explicit discard should allow merge and cleanup"
   assert_ref_missing "$repo" refs/heads/feature
   [[ ! -d "$feature_wt" ]] || fail "discard should remove the source worktree"
+  return $?
 }
 
 test_force_remains_a_deprecated_alias() {
@@ -242,6 +259,7 @@ test_force_remains_a_deprecated_alias() {
   assert_eq 0 "$MERGE_RC" "legacy --force alias should remain compatible"
   assert_contains "$MERGE_OUTPUT" "deprecated" "legacy --force should advertise the safer option name"
   assert_ref_missing "$repo" refs/heads/feature
+  return $?
 }
 
 test_locked_source_is_rejected_before_merge() {
@@ -258,6 +276,7 @@ test_locked_source_is_rejected_before_merge() {
   assert_contains "$MERGE_OUTPUT" "locked" "locked-source error should explain the blocker"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "locked source must be rejected before main moves"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_dry_run_has_no_worktree_or_ref_side_effects() {
@@ -274,6 +293,7 @@ test_dry_run_has_no_worktree_or_ref_side_effects() {
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "dry-run must not move main"
   assert_ref_exists "$repo" refs/heads/feature
   [[ -d "$feature_wt" ]] || fail "dry-run must keep the source worktree"
+  return $?
 }
 
 test_origin_is_required_without_offline_mode() {
@@ -290,6 +310,7 @@ test_origin_is_required_without_offline_mode() {
   assert_contains "$MERGE_OUTPUT" "remote 'origin' is not configured" "missing-origin error should explain --offline"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "missing origin must not move main"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_remote_ahead_is_rejected() {
@@ -317,6 +338,7 @@ test_remote_ahead_is_rejected() {
   assert_contains "$MERGE_OUTPUT" "behind or diverged" "remote freshness error should explain the state"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "freshness failure must not move main"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_local_target_ahead_of_remote_is_allowed() {
@@ -344,6 +366,7 @@ test_local_target_ahead_of_remote_is_allowed() {
   assert_eq "$source_oid" "$(git -C "$repo" rev-parse main^2)" "merge second parent should be the source tip"
   assert_eq "merge exact message" "$(git -C "$repo" log -1 --format=%s main)" "merge subject should preserve the requested message"
   assert_ref_missing "$repo" refs/heads/feature
+  return $?
 }
 
 test_conflict_is_reported_and_preserved() {
@@ -367,6 +390,7 @@ test_conflict_is_reported_and_preserved() {
   assert_ref_exists "$repo" refs/heads/feature
   [[ -d "$feature_wt" ]] || fail "conflict must preserve the source worktree"
   [[ ! -d "$(git -C "$repo" rev-parse --absolute-git-dir)/merge-helper.lock" ]] || fail "conflict must release the helper lock"
+  return $?
 }
 
 test_non_conflict_merge_failure_is_not_mislabeled() {
@@ -387,6 +411,7 @@ test_non_conflict_merge_failure_is_not_mislabeled() {
   assert_ref_exists "$repo" refs/heads/feature
   [[ -d "$feature_wt" ]] || fail "merge failure must preserve the source worktree"
   [[ ! -d "$(git -C "$repo" rev-parse --absolute-git-dir)/merge-helper.lock" ]] || fail "merge failure must release the helper lock"
+  return $?
 }
 
 test_repository_lock_blocks_parallel_helper() {
@@ -404,6 +429,7 @@ test_repository_lock_blocks_parallel_helper() {
   assert_contains "$MERGE_OUTPUT" "another merge helper" "lock error should explain concurrent execution"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "lock failure must not move main"
   [[ -d "$lock_dir" ]] || fail "a lock owned by another process must not be removed"
+  return $?
 }
 
 test_tracked_feature_branch_is_deleted_safely() {
@@ -429,6 +455,7 @@ test_tracked_feature_branch_is_deleted_safely() {
   git -C "$repo" merge-base --is-ancestor origin/main main || fail "merged main should retain remote history"
   ! git -C "$repo" config --get-regexp '^branch\.feature\.' >/dev/null 2>&1 ||
     fail "successful branch deletion should remove branch.feature configuration"
+  return $?
 }
 
 test_invocation_from_source_worktree_succeeds() {
@@ -443,6 +470,7 @@ test_invocation_from_source_worktree_succeeds() {
   assert_eq 0 "$MERGE_RC" "helper should remain operational after removing its original working directory"
   assert_ref_missing "$repo" refs/heads/feature
   [[ ! -d "$feature_wt" ]] || fail "invocation from source should still clean up its worktree"
+  return $?
 }
 
 assert_not_contains() {
@@ -450,6 +478,7 @@ assert_not_contains() {
   local unexpected="$2"
   local message="$3"
   ! grep -Fq -- "$unexpected" <<<"$text" || fail "$message (unexpected '$unexpected')"
+  return $?
 }
 
 test_success_is_marked_with_a_check() {
@@ -463,6 +492,7 @@ test_success_is_marked_with_a_check() {
   assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
   assert_contains "$MERGE_OUTPUT" "✓ merged feature into main" "success should be marked with a check"
   assert_not_contains "$MERGE_OUTPUT" "✗" "a successful merge must not emit a failure mark"
+  return $?
 }
 
 test_failure_is_marked_with_a_cross() {
@@ -477,6 +507,7 @@ test_failure_is_marked_with_a_cross() {
   assert_contains "$MERGE_OUTPUT" "✗ merge message is required" "failure should be marked with a cross"
   assert_not_contains "$MERGE_OUTPUT" "✓" "a failed run must not emit a success mark"
   assert_eq "$before" "$(git -C "$repo" rev-parse main)" "a failed run must not move main"
+  return $?
 }
 
 test_conflict_is_marked_with_a_cross() {
@@ -496,6 +527,7 @@ test_conflict_is_marked_with_a_cross() {
   [[ "$MERGE_RC" -ne 0 ]] || fail "a conflicting merge should not report success"
   assert_contains "$MERGE_OUTPUT" "✗ merge conflict" "a conflict should be marked with a cross"
   assert_ref_exists "$repo" refs/heads/feature
+  return $?
 }
 
 test_marks_are_plain_when_output_is_captured() {
@@ -509,6 +541,7 @@ test_marks_are_plain_when_output_is_captured() {
   assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
   assert_contains "$MERGE_OUTPUT" "✓" "the mark itself must survive capture so output stays greppable"
   assert_not_contains "$MERGE_OUTPUT" "$(printf '\033')" "a non-interactive stream must not receive colour escapes"
+  return $?
 }
 
 # Guards the trap that command substitution sets: computing a mark inside $(...) makes
@@ -527,6 +560,7 @@ test_forced_colour_reaches_both_marks() {
   run_merge "$repo" absent "merge with forced colour" --offline
   assert_contains "$MERGE_OUTPUT" "$(printf '\033[31m✗\033[0m')" "forced colour should reach the failure mark"
   unset FORCE_COLOR
+  return $?
 }
 
 test_no_colour_wins_over_forced_colour() {
@@ -539,6 +573,7 @@ test_no_colour_wins_over_forced_colour() {
 
   assert_contains "$MERGE_OUTPUT" "✗" "the glyph must survive with colour disabled"
   assert_not_contains "$MERGE_OUTPUT" "$(printf '\033')" "NO_COLOR must win over FORCE_COLOR"
+  return $?
 }
 
 run_test() {

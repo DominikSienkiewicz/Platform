@@ -9,6 +9,7 @@ check() {
   local name="$1" expected="$2" actual="$3"
   if [[ "$expected" == "$actual" ]]; then echo "ok  - $name"
   else echo "NIE - $name: oczekiwano '$expected', jest '$actual'"; fails=$((fails+1)); fi
+  return $?
 }
 
 # 1) Domyślnie: COMPOSE_FILE=docker-compose.prod.yml, base env=.env.prod

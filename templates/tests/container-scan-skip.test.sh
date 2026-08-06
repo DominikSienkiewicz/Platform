@@ -46,6 +46,7 @@ run_classifier() { # $1=mode  -> ustawia globalne: RC, OUTFILE
   PATH="$WORK/bin:$PATH" FAKE_DOCKER_MODE="$1" IMAGE="ghcr.io/o/app-backend:latest" \
     GITHUB_OUTPUT="$OUTFILE" bash "$CLASSIFY" >/dev/null 2>&1
   RC=$?
+  return $?
 }
 
 # --- 1) Obraz opublikowany -> present=true, exit 0 ---

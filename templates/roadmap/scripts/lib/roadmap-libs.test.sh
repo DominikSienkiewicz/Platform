@@ -57,6 +57,7 @@ echo
     else
       printf '  ✗ %s (%s) != %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"; arr_fail=1
     fi
+    return $?
   }
   ns="${#ROADMAP_STATUSES[@]}"
   eq "#STATUSES" "$ns" "#STATUS_COLORS"       "${#ROADMAP_STATUS_COLORS[@]}"
