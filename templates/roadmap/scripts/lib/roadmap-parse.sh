@@ -31,9 +31,9 @@ ROADMAP_PARSE_ROOT="$(cd "$(dirname "$_RP_SELF")/../.." && pwd)"
 
 # Resolve the roadmap doc path: env ROADMAP wins, then config ROADMAP_DOC_PATH
 # (relative to repo root), then the historical default.
-if [ -n "${ROADMAP:-}" ]; then
+if [[ -n "${ROADMAP:-}" ]]; then
   ROADMAP_DEFAULT="$ROADMAP"
-elif [ -n "${ROADMAP_DOC_PATH:-}" ]; then
+elif [[ -n "${ROADMAP_DOC_PATH:-}" ]]; then
   case "$ROADMAP_DOC_PATH" in
     /*) ROADMAP_DEFAULT="$ROADMAP_DOC_PATH" ;;
     *)  ROADMAP_DEFAULT="$ROADMAP_PARSE_ROOT/$ROADMAP_DOC_PATH" ;;
@@ -44,11 +44,11 @@ fi
 
 # Resolve the EN titles sidecar: env ROADMAP_TITLES_EN wins, then config ROADMAP_TITLES_TSV
 # (relative to repo root; "" disables), then the historical default.
-if [ -n "${ROADMAP_TITLES_EN:-}" ]; then
+if [[ -n "${ROADMAP_TITLES_EN:-}" ]]; then
   : # explicit env override kept as-is
-elif [ -n "${ROADMAP_TITLES_TSV+x}" ]; then
+elif [[ -n "${ROADMAP_TITLES_TSV+x}" ]]; then
   # config var is defined (possibly empty → sidecar disabled)
-  if [ -n "$ROADMAP_TITLES_TSV" ]; then
+  if [[ -n "$ROADMAP_TITLES_TSV" ]]; then
     case "$ROADMAP_TITLES_TSV" in
       /*) ROADMAP_TITLES_EN="$ROADMAP_TITLES_TSV" ;;
       *)  ROADMAP_TITLES_EN="$ROADMAP_PARSE_ROOT/$ROADMAP_TITLES_TSV" ;;
@@ -62,7 +62,7 @@ fi
 
 roadmap_tsv() {
   local file="${1:-$ROADMAP_DEFAULT}"
-  [ -f "$file" ] || { echo "roadmap-parse: roadmap file not found: $file" >&2; return 1; }
+  [[ -f "$file" ]] || { echo "roadmap-parse: roadmap file not found: $file" >&2; return 1; }
   # Two passes over the same file: (1) FNR==NR builds stream[ID]; (2) parses item blocks.
   awk '
     function boardstatus(s) {
@@ -153,30 +153,32 @@ roadmap_tsv() {
 # Footer marker: CANONICAL idempotency key and dependency source for automation
 # (it reads the marker, not the API). Usage: roadmap_marker ID CHANGE_ID STREAM DEPENDS_ON STATUS_BOARD
 roadmap_marker() {
+  local id="$1" change_id="${2:-}" stream="${3:-}" depends_on="${4:-}" status_board="${5:-}"
   printf '<!-- roadmap-id: %s | change-id: %s | stream: %s | depends-on: %s | status: %s -->' \
-    "$1" "${2:-}" "${3:-}" "${4:-}" "${5:-}"
+    "$id" "$change_id" "$stream" "$depends_on" "$status_board"
 }
 
 # Anchored membership: is ID in the list "A,B,C" (S-1 != S-12, F-0 != F-01).
 roadmap_depends_contains() {
-  case ",${1}," in
-    *,"$2",*) return 0 ;;
-    *)        return 1 ;;
+  local list="$1" id="$2"
+  case ",${list}," in
+    *,"$id",*) return 0 ;;
+    *)         return 1 ;;
   esac
 }
 
 # EN title from the sidecar (ID<TAB>title); no entry → fallback (e.g. the roadmap's own title).
 roadmap_title_en() {
   local id="$1" fallback="${2:-}"
-  if [ -n "$ROADMAP_TITLES_EN" ] && [ -f "$ROADMAP_TITLES_EN" ]; then
+  if [[ -n "$ROADMAP_TITLES_EN" ]] && [[ -f "$ROADMAP_TITLES_EN" ]]; then
     local hit
     hit="$(awk -F '\t' -v id="$id" '$1==id {sub(/^[^\t]*\t/,""); print; exit}' "$ROADMAP_TITLES_EN")"
-    [ -n "$hit" ] && { printf '%s' "$hit"; return 0; }
+    [[ -n "$hit" ]] && { printf '%s' "$hit"; return 0; }
   fi
   printf '%s' "$fallback"
 }
 
 # Direct execution → TSV to stdout.
-if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+if [[ "${BASH_SOURCE[0]}" = "${0}" ]]; then
   roadmap_tsv "${1:-}"
 fi

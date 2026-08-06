@@ -70,7 +70,8 @@ jobs:
                            [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" \
                            [security-starter]="pl.seniordeveloper.platform-security-starter" )
           version_exists() {
-            curl -fsSL -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
+            curl -fsSL --proto '=https' --proto-redir '=https' \
+              -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
               "https://api.github.com/users/$GPR_OWNER/packages/maven/$1/versions" 2>/dev/null \
               | python3 -c "import sys,json; print(any(v['name']=='$V' for v in json.load(sys.stdin)))" 2>/dev/null
           }

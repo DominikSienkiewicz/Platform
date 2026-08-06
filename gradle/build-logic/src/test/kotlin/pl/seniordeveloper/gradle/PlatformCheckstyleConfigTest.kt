@@ -64,13 +64,21 @@ class PlatformCheckstyleConfigTest {
 
 		val errors = mutableListOf<AuditEvent>()
 		val listener = object : AuditListener {
-			override fun auditStarted(event: AuditEvent) { }
+			override fun auditStarted(event: AuditEvent) {
+				// Granica całego audytu — zdarzenie cyklu życia, nie niesie naruszenia.
+			}
 
-			override fun auditFinished(event: AuditEvent) { }
+			override fun auditFinished(event: AuditEvent) {
+				// Granica całego audytu — zdarzenie cyklu życia, nie niesie naruszenia.
+			}
 
-			override fun fileStarted(event: AuditEvent) { }
+			override fun fileStarted(event: AuditEvent) {
+				// Granica pojedynczego pliku — zdarzenie cyklu życia, nie niesie naruszenia.
+			}
 
-			override fun fileFinished(event: AuditEvent) { }
+			override fun fileFinished(event: AuditEvent) {
+				// Granica pojedynczego pliku — zdarzenie cyklu życia, nie niesie naruszenia.
+			}
 
 			override fun addError(event: AuditEvent) {
 				errors += event

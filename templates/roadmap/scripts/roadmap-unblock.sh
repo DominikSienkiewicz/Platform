@@ -27,7 +27,7 @@ source "$ROOT/scripts/lib/roadmap-lib.sh"
 source "$ROOT/scripts/lib/roadmap-parse.sh"
 
 DRY_RUN=0; CLOSED=""; PROJECT="${ROADMAP_PROJECT_NUMBER:-}"
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)   DRY_RUN=1 ;;
     --closed)    CLOSED="${2:-}"; shift ;;
@@ -38,7 +38,7 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
-[ -n "$CLOSED" ] || { echo "Pass --closed <number of the closed issue>." >&2; exit 1; }
+[[ -n "$CLOSED" ]] || { echo "Pass --closed <number of the closed issue>." >&2; exit 1; }
 
 command -v gh >/dev/null || { echo "gh CLI missing." >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq missing." >&2; exit 1; }
@@ -58,26 +58,26 @@ RAW="$(gh issue list --repo "$REPO" --state all --limit 200 --json number,state,
       | ($b | capture("roadmap-id: (?<rid>[^ |]+)[^\n]*?depends-on: (?<dep>[^|]*)\\|[^\n]*?status: (?<sta>[^ ]+) -->")) as $m
       | [ (.number|tostring), .state, $m.rid, ($m.dep | gsub("[[:space:]]";"")), $m.sta ] | @tsv
   ')"
-[ -n "$RAW" ] || { say "No issues with a roadmap marker — nothing to do."; exit 0; }
+[[ -n "$RAW" ]] || { say "No issues with a roadmap marker — nothing to do."; exit 0; }
 
 # lookup helpers over RAW (columns: 1=number 2=state 3=rid 4=deps 5=status)
-by_rid()    { awk -F'\t' -v r="$1" '$3==r{print; exit}' <<< "$RAW"; }
-by_number() { awk -F'\t' -v n="$1" '$1==n{print; exit}' <<< "$RAW"; }
-col()       { cut -f"$2" <<< "$1"; }
+by_rid()    { local rid="$1"; awk -F'\t' -v r="$rid" '$3==r{print; exit}' <<< "$RAW"; }
+by_number() { local number="$1"; awk -F'\t' -v n="$number" '$1==n{print; exit}' <<< "$RAW"; }
+col()       { local row="$1" index="$2"; cut -f"$index" <<< "$row"; }
 
 closed_row="$(by_number "$CLOSED")"
-[ -n "$closed_row" ] || { say "Issue #$CLOSED has no roadmap marker — skipping."; exit 0; }
+[[ -n "$closed_row" ]] || { say "Issue #$CLOSED has no roadmap marker — skipping."; exit 0; }
 CLOSED_RID="$(col "$closed_row" 3)"
 say "Closed prerequisite: #$CLOSED ($CLOSED_RID)"
 say ""
 
 # ---- project (to move Status on the board) ----
-if [ -z "$PROJECT" ]; then
+if [[ -z "$PROJECT" ]]; then
   PROJECT="$(gh project list --owner "$OWNER" --format json --limit 100 \
     | jq -r --arg t "$TITLE" '.projects[] | select(.title==$t) | .number' | head -1 || true)"
 fi
 PROJECT_NODE_ID=""; FID_STATUS=""; READY_OPT=""; ITEMS_JSON="[]"
-if [ -n "$PROJECT" ]; then
+if [[ -n "$PROJECT" ]]; then
   PROJECT_NODE_ID="$(gh project list --owner "$OWNER" --format json --limit 100 \
     | jq -r --arg n "$PROJECT" '.projects[] | select((.number|tostring)==$n) | .id' | head -1)"
   FJSON="$(gh project field-list "$PROJECT" --owner "$OWNER" --format json --limit 100)"
@@ -85,25 +85,25 @@ if [ -n "$PROJECT" ]; then
   READY_OPT="$(printf '%s' "$FJSON" | jq -r '.fields[]|select(.name=="Status").options[]|select(.name=="ready").id')"
   ITEMS_JSON="$(gh project item-list "$PROJECT" --owner "$OWNER" --format json --limit 200 2>/dev/null || echo '{"items":[]}')"
 fi
-item_id_for() { printf '%s' "$ITEMS_JSON" | jq -r --argjson n "$1" '.items[]? | select(.content.number==$n) | .id' | head -1; }
+item_id_for() { local number="$1"; printf '%s' "$ITEMS_JSON" | jq -r --argjson n "$number" '.items[]? | select(.content.number==$n) | .id' | head -1; }
 
 # ---- find dependents and check whether ALL of their prereqs are closed ----
 unblocked=0
 while IFS=$'\t' read -r num state rid deps status; do
   roadmap_depends_contains "$deps" "$CLOSED_RID" || continue        # depends on the closed one?
-  [ "$state" = "OPEN" ] || { note "→ $rid (#$num): skip (issue $state)"; continue; }
+  [[ "$state" = "OPEN" ]] || { note "→ $rid (#$num): skip (issue $state)"; continue; }
   case "$status" in backlog|blocked) : ;; *) note "→ $rid (#$num): skip (status '$status' outside backlog/blocked)"; continue ;; esac
 
   # all prerequisites closed?
   all_closed=1; pending=""; done_list=""
   for dep in ${deps//,/ }; do
     drow="$(by_rid "$dep")"
-    if [ -z "$drow" ]; then all_closed=0; pending="$pending $dep(no-issue)"; continue; fi
+    if [[ -z "$drow" ]]; then all_closed=0; pending="$pending $dep(no-issue)"; continue; fi
     dstate="$(col "$drow" 2)"; dnum="$(col "$drow" 1)"
-    if [ "$dstate" = "CLOSED" ]; then done_list="$done_list #$dnum($dep)"; else all_closed=0; pending="$pending #$dnum($dep)"; fi
+    if [[ "$dstate" = "CLOSED" ]]; then done_list="$done_list #$dnum($dep)"; else all_closed=0; pending="$pending #$dnum($dep)"; fi
   done
 
-  if [ "$all_closed" != 1 ]; then
+  if [[ "$all_closed" != 1 ]]; then
     note "→ $rid (#$num): still blocked — waiting on:$pending"
     continue
   fi
@@ -114,15 +114,15 @@ while IFS=$'\t' read -r num state rid deps status; do
 - Closed prerequisites:$done_list
 - Change: Projects Status → \`ready\`, label \`status:ready\` (was \`$status\`)."
 
-  if [ "$DRY_RUN" = 1 ]; then
+  if [[ "$DRY_RUN" = 1 ]]; then
     note "→ $rid (#$num): UNBLOCK ✅  (closed prereqs:$done_list)"
     note "    [dry-run] label status:$status → status:ready; Projects Status → ready; audit comment"
   else
     note "→ $rid (#$num): UNBLOCK ✅"
     gh issue edit "$num" --repo "$REPO" --remove-label "status:$status" --add-label "status:ready" >/dev/null 2>&1 || true
-    if [ -n "$PROJECT_NODE_ID" ] && [ -n "$FID_STATUS" ] && [ -n "$READY_OPT" ]; then
+    if [[ -n "$PROJECT_NODE_ID" ]] && [[ -n "$FID_STATUS" ]] && [[ -n "$READY_OPT" ]]; then
       item="$(item_id_for "$num")"
-      [ -n "$item" ] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" \
+      [[ -n "$item" ]] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" \
         --field-id "$FID_STATUS" --single-select-option-id "$READY_OPT" >/dev/null 2>&1 \
         || note "    (could not set Projects Status — check token scope project)"
     else

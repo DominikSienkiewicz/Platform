@@ -23,33 +23,33 @@ source "$ROOT/scripts/lib/roadmap-lib.sh"
 source "$ROOT/scripts/lib/roadmap-parse.sh"
 
 DRY_RUN=0
-[ "${1:-}" = "--dry-run" ] && DRY_RUN=1
+[[ "${1:-}" = "--dry-run" ]] && DRY_RUN=1
 
 command -v gh >/dev/null || { echo "gh CLI missing. https://cli.github.com/" >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq missing." >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "gh not logged in — run: gh auth login" >&2; exit 1; }
 
 OWNER="${GH_OWNER:-$(gh repo view --json owner -q .owner.login 2>/dev/null || true)}"
-[ -n "$OWNER" ] || { echo "Owner not detected. Set GH_OWNER=login." >&2; exit 1; }
+[[ -n "$OWNER" ]] || { echo "Owner not detected. Set GH_OWNER=login." >&2; exit 1; }
 TITLE="$ROADMAP_PROJECT_TITLE"
 say() { printf '%s\n' "$*"; }
-run() { if [ "$DRY_RUN" = 1 ]; then say "DRY  $*"; else say "RUN  $*"; "$@"; fi; }
+run() { if [[ "$DRY_RUN" = 1 ]]; then say "DRY  $*"; else say "RUN  $*"; "$@"; fi; }
 
 say "Owner:   $OWNER"
 say "Project: $TITLE"
-say "Mode:    $([ "$DRY_RUN" = 1 ] && echo DRY-RUN || echo APPLY)"
+say "Mode:    $([[ "$DRY_RUN" = 1 ]] && echo DRY-RUN || echo APPLY)"
 say ""
 
 # --- 1. Find or create the project -----------------------------------------------
 existing="$(gh project list --owner "$OWNER" --format json --limit 100 \
   | jq -r --arg t "$TITLE" '.projects[] | select(.title==$t) | "\(.number)\t\(.id)"' | head -1)"
 
-if [ -n "$existing" ]; then
+if [[ -n "$existing" ]]; then
   NUMBER="$(printf '%s' "$existing" | cut -f1)"
   NODE_ID="$(printf '%s' "$existing" | cut -f2)"
   say "✓ Project exists: #$NUMBER ($NODE_ID)"
 else
-  if [ "$DRY_RUN" = 1 ]; then
+  if [[ "$DRY_RUN" = 1 ]]; then
     say "DRY  gh project create --owner $OWNER --title \"$TITLE\"  (skipped the rest — project does not exist yet)"
     say ""
     say "After really creating it, re-run without --dry-run to configure the fields."
@@ -64,18 +64,18 @@ fi
 # --- 2. Fetch fields once ---------------------------------------------------------
 FIELDS_JSON="$(gh project field-list "$NUMBER" --owner "$OWNER" --format json --limit 100)"
 STATUS_FID="$(printf '%s' "$FIELDS_JSON" | jq -r '.fields[] | select(.name=="Status") | .id')"
-[ -n "$STATUS_FID" ] && [ "$STATUS_FID" != "null" ] || { echo "Status field not found in the project." >&2; exit 1; }
+[[ -n "$STATUS_FID" ]] && [[ "$STATUS_FID" != "null" ]] || { echo "Status field not found in the project." >&2; exit 1; }
 
 # --- 3. Rewrite Status options (preserve id by name) ------------------------------
 literal=""
 i=0
-while [ "$i" -lt "${#ROADMAP_STATUSES[@]}" ]; do
+while [[ "$i" -lt "${#ROADMAP_STATUSES[@]}" ]]; do
   name="${ROADMAP_STATUSES[$i]}"
   color="${ROADMAP_STATUS_COLORS[$i]}"
   desc="${ROADMAP_STATUS_DESCS[$i]}"
   oid="$(printf '%s' "$FIELDS_JSON" \
     | jq -r --arg n "$name" '.fields[] | select(.name=="Status") | .options[]? | select(.name==$n) | .id' | head -1)"
-  if [ -n "$oid" ] && [ "$oid" != "null" ]; then
+  if [[ -n "$oid" ]] && [[ "$oid" != "null" ]]; then
     opt="{id: \"$oid\", name: \"$name\", color: $color, description: \"$desc\"}"
   else
     opt="{name: \"$name\", color: $color, description: \"$desc\"}"
@@ -86,7 +86,7 @@ done
 
 MUTATION="mutation { updateProjectV2Field(input: { fieldId: \"$STATUS_FID\", singleSelectOptions: [ $literal ] }) { projectV2Field { __typename ... on ProjectV2SingleSelectField { id options { id name } } } } }"
 
-if [ "$DRY_RUN" = 1 ]; then
+if [[ "$DRY_RUN" = 1 ]]; then
   say "DRY  updateProjectV2Field Status → [$(printf '%s ' "${ROADMAP_STATUSES[@]}")]"
   say "     (preserved ids: $(printf '%s' "$FIELDS_JSON" | jq -r '.fields[]|select(.name=="Status").options[]?.name' | tr '\n' ' '))"
 else
@@ -103,7 +103,7 @@ ensure_field() { # ensure_field NAME DATA_TYPE [single-select-options]
     say "✓ Field '$fname' already exists"
     return 0
   fi
-  if [ "$dtype" = "SINGLE_SELECT" ]; then
+  if [[ "$dtype" = "SINGLE_SELECT" ]]; then
     run gh project field-create "$NUMBER" --owner "$OWNER" --name "$fname" --data-type "$dtype" --single-select-options "$opts"
   else
     run gh project field-create "$NUMBER" --owner "$OWNER" --name "$fname" --data-type "$dtype"

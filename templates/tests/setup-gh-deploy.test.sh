@@ -48,7 +48,7 @@ EOF
 
 PATH="$BIN:$PATH" GH_REPO=owner/fake-repo "$REPO/scripts/setup-gh-deploy.sh" >/dev/null 2>&1
 
-fail() { echo "FAIL: $1"; exit 1; }
+fail() { local message="$1"; echo "FAIL: $message"; exit 1; }
 
 # 1) wszystkie sekrety kontraktu pushnięte (po nazwie)
 for s in GPR_USER GPR_KEY NPM_GH_TOKEN SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS; do

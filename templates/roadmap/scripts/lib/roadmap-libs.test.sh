@@ -36,7 +36,7 @@ for s in roadmap-project-setup.sh roadmap-to-issues.sh roadmap-unblock.sh; do
       if ! declare -F "$f" >/dev/null 2>&1; then printf '%s ' "$f"; fi
     done
   )"
-  if [ -n "${missing// /}" ]; then
+  if [[ -n "${missing// /}" ]]; then
     printf '  ✗ %-26s undefined helpers: %s\n' "$s" "$missing"; fails=$((fails+1))
   else
     printf '  ✓ %-26s all roadmap_* helpers defined, config+lib+parse sourced\n' "$s"
@@ -50,11 +50,12 @@ echo
   # shellcheck disable=SC1091
   source "$TEMPLATE_ROOT/examples/roadmap-config.bookofstyling.sh"
   arr_fail=0
-  eq() { # eq NAME_A LEN_A NAME_B LEN_B
-    if [ "$2" = "$4" ]; then
-      printf '  ✓ %s (%s) == %s (%s)\n' "$1" "$2" "$3" "$4"
+  eq() {
+    local name_a="$1" len_a="$2" name_b="$3" len_b="$4"
+    if [[ "$len_a" = "$len_b" ]]; then
+      printf '  ✓ %s (%s) == %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"
     else
-      printf '  ✗ %s (%s) != %s (%s)\n' "$1" "$2" "$3" "$4"; arr_fail=1
+      printf '  ✗ %s (%s) != %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"; arr_fail=1
     fi
   }
   ns="${#ROADMAP_STATUSES[@]}"
@@ -67,4 +68,4 @@ echo
 ) || fails=$((fails+1))
 
 echo
-if [ "$fails" -eq 0 ]; then echo "OK: PASS"; else echo "FAIL ($fails checks)"; exit 1; fi
+if [[ "$fails" -eq 0 ]]; then echo "OK: PASS"; else echo "FAIL ($fails checks)"; exit 1; fi

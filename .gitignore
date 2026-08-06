@@ -17,6 +17,8 @@ Thumbs.db
 .gradle/
 **/build/
 !src/**/build/
+# Wyjście Buildship/Eclipse (bin/main, bin/test) — kopia src/, generowana przy imporcie do IDE.
+gradle/*/bin/
 
 # === Node / pnpm ===
 node_modules/

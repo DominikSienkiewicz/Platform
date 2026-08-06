@@ -16,7 +16,7 @@ export class ApiError extends Error {
 
 function resolveBaseUrl(explicit) {
   if (explicit != null) return explicit;
-  if (typeof process !== "undefined" && process.env && process.env.NEXT_PUBLIC_API_BASE_URL) {
+  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }
   return "";
@@ -36,7 +36,7 @@ export function createApiClient(options = {}) {
       headers: {
         "Content-Type": "application/json",
         ...defaultHeaders,
-        ...(init.headers ?? {}),
+        ...init.headers,
       },
     });
 

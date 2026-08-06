@@ -36,7 +36,8 @@ fi
 TARGET="${1:-}"
 if [[ -z "$TARGET" ]]; then
   echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
-  TARGET="$(curl -fsSL -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  TARGET="$(curl -fsSL --proto '=https' --proto-redir '=https' \
+    -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
     "https://api.github.com/users/$OWNER/packages/maven/$CATALOG_PKG/versions" \
     | python3 -c "import sys,json,re; vs=[v['name'] for v in json.load(sys.stdin)]; vs=[v for v in vs if re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',v)]; vs.sort(key=lambda s:list(map(int,s.split('.')))); print(vs[-1] if vs else '')")"
 fi
@@ -110,7 +111,7 @@ PY
   fi
   rm -rf "$TMPD"
 
-  ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only )
+  ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
 fi
 
 # --- Backend: regen ZAMROŻONEGO STANU (analogicznie do `npm install --package-lock-only` dla frontu) ---

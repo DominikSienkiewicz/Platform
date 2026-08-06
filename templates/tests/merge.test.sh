@@ -11,8 +11,14 @@ trap 'rm -rf "$WORK"' EXIT
 FAILURES=0
 FILTER="${1:-}"
 
+# Tożsamość commitów w atrapach repozytoriów — ustawiana w każdym świeżym klonie,
+# bo `git clone` nie dziedziczy user.name/user.email z repozytorium źródłowego.
+readonly TEST_AUTHOR_NAME="Merge Test"
+readonly TEST_AUTHOR_EMAIL="merge-test@example.invalid"
+
 fail() {
-  echo "FAIL: $1" >&2
+  local message="$1"
+  echo "FAIL: $message" >&2
   exit 1
 }
 
@@ -47,8 +53,8 @@ new_repo() {
   local repo="$WORK/$name"
   mkdir -p "$repo"
   git -C "$repo" init -q -b main
-  git -C "$repo" config user.name "Merge Test"
-  git -C "$repo" config user.email "merge-test@example.invalid"
+  git -C "$repo" config user.name "$TEST_AUTHOR_NAME"
+  git -C "$repo" config user.email "$TEST_AUTHOR_EMAIL"
   git -C "$repo" commit -q --allow-empty -m initial
   printf '%s\n' "$repo"
 }
@@ -297,8 +303,8 @@ test_remote_ahead_is_rejected() {
 
   repo="$WORK/remote-ahead-clone"
   git clone -q "$origin" "$repo"
-  git -C "$repo" config user.name "Merge Test"
-  git -C "$repo" config user.email "merge-test@example.invalid"
+  git -C "$repo" config user.name "$TEST_AUTHOR_NAME"
+  git -C "$repo" config user.email "$TEST_AUTHOR_EMAIL"
   feature_wt="$WORK/remote ahead feature"
   add_feature_worktree "$repo" feature "$feature_wt" origin/main
   git -C "$seed" commit -q --allow-empty -m "remote advanced"
@@ -323,8 +329,8 @@ test_local_target_ahead_of_remote_is_allowed() {
   git --git-dir="$origin" symbolic-ref HEAD refs/heads/main
   repo="$WORK/local-ahead-clone"
   git clone -q "$origin" "$repo"
-  git -C "$repo" config user.name "Merge Test"
-  git -C "$repo" config user.email "merge-test@example.invalid"
+  git -C "$repo" config user.name "$TEST_AUTHOR_NAME"
+  git -C "$repo" config user.email "$TEST_AUTHOR_EMAIL"
   git -C "$repo" commit -q --allow-empty -m "local target ahead"
   feature_wt="$WORK/local ahead feature"
   add_feature_worktree "$repo" feature "$feature_wt" main
@@ -410,8 +416,8 @@ test_tracked_feature_branch_is_deleted_safely() {
   git --git-dir="$origin" symbolic-ref HEAD refs/heads/main
   repo="$WORK/tracked-clone"
   git clone -q "$origin" "$repo"
-  git -C "$repo" config user.name "Merge Test"
-  git -C "$repo" config user.email "merge-test@example.invalid"
+  git -C "$repo" config user.name "$TEST_AUTHOR_NAME"
+  git -C "$repo" config user.email "$TEST_AUTHOR_EMAIL"
   feature_wt="$WORK/tracked feature worktree"
   add_feature_worktree "$repo" feature "$feature_wt" origin/main
 

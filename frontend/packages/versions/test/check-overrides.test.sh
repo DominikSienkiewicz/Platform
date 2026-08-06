@@ -40,7 +40,7 @@ run_case() {
   OUT="$( ( cd "$dir" && node "$PKG/bin/check.mjs" ) 2>&1 )" || RC=$?
 }
 
-fail() { echo "FAIL: $1"; echo "--- wyjście ---"; echo "$OUT"; fails=1; }
+fail() { local message="$1"; echo "FAIL: $message"; echo "--- wyjście ---"; echo "$OUT"; fails=1; }
 
 # --- 1) Baseline: same dependencies zgodne z kanonem -> zielono (brak fałszywych alarmów) ---
 run_case baseline '{

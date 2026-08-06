@@ -16,7 +16,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # Wycina ciało heredoca od linii z markerem do terminatora `PY` (bez niego).
-extract() { awk -v m="$1" 'index($0, m) { f = 1 } f && $0 == "PY" { exit } f' "$SRC"; }
+extract() { local marker="$1"; awk -v m="$marker" 'index($0, m) { f = 1 } f && $0 == "PY" { exit } f' "$SRC"; }
 
 extract '# platform-bump:pins'  > "$WORK/pins.py"
 extract '# platform-bump:canon' > "$WORK/canon.py"
@@ -35,13 +35,14 @@ cat > "$WORK/versions.json" <<'JSON'
 JSON
 
 fails=0
-fail() { echo "FAIL: $1"; echo "--- package.json ---"; cat "$REPO/frontend/package.json"; fails=1; }
+fail() { local message="$1"; echo "FAIL: $message"; echo "--- package.json ---"; cat "$REPO/frontend/package.json"; fails=1; }
 
 # Przygotowuje atrapę repo konsumenta i zwraca ścieżkę w globalnym REPO.
 setup_repo() {
-  REPO="$WORK/repo-$1"
+  local case_name="$1" package_json="$2"
+  REPO="$WORK/repo-$case_name"
   mkdir -p "$REPO/frontend"
-  printf '%s\n' "$2" > "$REPO/frontend/package.json"
+  printf '%s\n' "$package_json" > "$REPO/frontend/package.json"
 }
 
 # Odczytuje wartość spod ścieżki kluczy w package.json (np. overrides next postcss).
