@@ -18,9 +18,9 @@ export function createQueryClient(options = {}) {
       queries: {
         staleTime: 60_000,
         refetchOnWindowFocus: false,
-        ...(options.queries ?? {}),
+        ...options.queries,
       },
-      ...(options.defaultOptions ?? {}),
+      ...options.defaultOptions,
     },
   });
 }
