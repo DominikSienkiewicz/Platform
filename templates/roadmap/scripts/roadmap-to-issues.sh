@@ -256,6 +256,8 @@ while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns 
     case "$c" in
       type:*|stream:*|status:*)
         case " $desired " in *" $c "*) : ;; *) lrem+=(--remove-label "$c") ;; esac ;;
+      # Etykiety spoza zarządzanych przestrzeni nazw należą do kogoś innego — nie ruszamy ich.
+      *) : ;;
     esac
   done <<< "$cur"
   if [[ ${#ladd[@]} -gt 0 ]] || [[ ${#lrem[@]} -gt 0 ]]; then
