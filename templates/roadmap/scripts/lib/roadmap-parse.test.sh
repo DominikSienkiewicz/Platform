@@ -17,13 +17,14 @@ fails=0
 TSV="$(roadmap_tsv "$FIXTURE")"
 
 # cell value: cell ID COLUMN_INDEX (1-based, per the TSV header)
-cell() { printf '%s\n' "$TSV" | awk -F'\t' -v id="$1" -v c="$2" '$1==id{print $c; exit}'; }
+cell() { local id="$1" column="$2"; printf '%s\n' "$TSV" | awk -F'\t' -v id="$id" -v c="$column" '$1==id{print $c; exit}'; }
 
-check() { # check DESC EXPECTED ACTUAL
-  if [[ "$2" = "$3" ]]; then
-    printf '  ✓ %s\n' "$1"
+check() {
+  local desc="$1" expected="$2" actual="$3"
+  if [[ "$expected" = "$actual" ]]; then
+    printf '  ✓ %s\n' "$desc"
   else
-    printf '  ✗ %s — expected [%s], got [%s]\n' "$1" "$2" "$3"; fails=$((fails+1))
+    printf '  ✗ %s — expected [%s], got [%s]\n' "$desc" "$expected" "$actual"; fails=$((fails+1))
   fi
 }
 

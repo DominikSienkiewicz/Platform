@@ -61,9 +61,9 @@ RAW="$(gh issue list --repo "$REPO" --state all --limit 200 --json number,state,
 [[ -n "$RAW" ]] || { say "No issues with a roadmap marker — nothing to do."; exit 0; }
 
 # lookup helpers over RAW (columns: 1=number 2=state 3=rid 4=deps 5=status)
-by_rid()    { awk -F'\t' -v r="$1" '$3==r{print; exit}' <<< "$RAW"; }
-by_number() { awk -F'\t' -v n="$1" '$1==n{print; exit}' <<< "$RAW"; }
-col()       { cut -f"$2" <<< "$1"; }
+by_rid()    { local rid="$1"; awk -F'\t' -v r="$rid" '$3==r{print; exit}' <<< "$RAW"; }
+by_number() { local number="$1"; awk -F'\t' -v n="$number" '$1==n{print; exit}' <<< "$RAW"; }
+col()       { local row="$1" index="$2"; cut -f"$index" <<< "$row"; }
 
 closed_row="$(by_number "$CLOSED")"
 [[ -n "$closed_row" ]] || { say "Issue #$CLOSED has no roadmap marker — skipping."; exit 0; }
@@ -85,7 +85,7 @@ if [[ -n "$PROJECT" ]]; then
   READY_OPT="$(printf '%s' "$FJSON" | jq -r '.fields[]|select(.name=="Status").options[]|select(.name=="ready").id')"
   ITEMS_JSON="$(gh project item-list "$PROJECT" --owner "$OWNER" --format json --limit 200 2>/dev/null || echo '{"items":[]}')"
 fi
-item_id_for() { printf '%s' "$ITEMS_JSON" | jq -r --argjson n "$1" '.items[]? | select(.content.number==$n) | .id' | head -1; }
+item_id_for() { local number="$1"; printf '%s' "$ITEMS_JSON" | jq -r --argjson n "$number" '.items[]? | select(.content.number==$n) | .id' | head -1; }
 
 # ---- find dependents and check whether ALL of their prereqs are closed ----
 unblocked=0

@@ -89,7 +89,7 @@ if [[ -z "$PREVIEW" ]]; then
   [[ -n "$ONLY" ]] && say "Filter:   --only $ONLY"
   say ""
 fi
-opt_id() { printf '%s' "${FIELDS_JSON:-}" | jq -r --arg f "$1" --arg n "$2" '.fields[]|select(.name==$f).options[]?|select(.name==$n).id' | head -1; }
+opt_id() { local field="$1" option="$2"; printf '%s' "${FIELDS_JSON:-}" | jq -r --arg f "$field" --arg n "$option" '.fields[]|select(.name==$f).options[]?|select(.name==$n).id' | head -1; }
 
 # ---- working data ---------------------------------------------------------------
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/roadmap-issues.XXXXXX")"
@@ -101,10 +101,10 @@ roadmap_tsv > "$TSV"
 # Rewrite to US (0x1F, NOT whitespace) so `read` keeps empty fields (e.g. missing depends_on).
 tr $'\t' $'\037' < "$TSV" > "$TSVU"
 
-in_only() { [[ -z "$ONLY" ]] && return 0; roadmap_depends_contains "$ONLY" "$1"; }
-num_of()  { awk -F'\t' -v id="$1" '$1==id{print $2; exit}' "$MAP_NUM"; }
-item_of() { awk -F'\t' -v id="$1" '$1==id{print $2; exit}' "$MAP_ITEM"; }
-emit_split() { awk -v sep="$1" -v p="$2" -v t="$3" 'BEGIN{n=split(t,a,sep); for(i=1;i<=n;i++){gsub(/^[ \t]+|[ \t]+$/,"",a[i]); if(length(a[i])) print p a[i]}}'; }
+in_only() { local id="$1"; [[ -z "$ONLY" ]] && return 0; roadmap_depends_contains "$ONLY" "$id"; }
+num_of()  { local id="$1"; awk -F'\t' -v id="$id" '$1==id{print $2; exit}' "$MAP_NUM"; }
+item_of() { local id="$1"; awk -F'\t' -v id="$id" '$1==id{print $2; exit}' "$MAP_ITEM"; }
+emit_split() { local sep="$1" prefix="$2" text="$3"; awk -v sep="$sep" -v p="$prefix" -v t="$text" 'BEGIN{n=split(t,a,sep); for(i=1;i<=n;i++){gsub(/^[ \t]+|[ \t]+$/,"",a[i]); if(length(a[i])) print p a[i]}}'; }
 
 # ---- labels (idempotent; skipped in --preview) ----------------------------------
 if [[ -z "$PREVIEW" ]]; then
@@ -124,8 +124,9 @@ else
   ALL_ISSUES_JSON='[]'
 fi
 find_issue_by_id() {
+  local id="$1"
   printf '%s' "$ALL_ISSUES_JSON" \
-    | jq -r --arg m "roadmap-id: $1 |" '.[] | select((.body // "") | contains($m)) | .number' | head -1
+    | jq -r --arg m "roadmap-id: $id |" '.[] | select((.body // "") | contains($m)) | .number' | head -1
 }
 
 # ---- issue body -----------------------------------------------------------------

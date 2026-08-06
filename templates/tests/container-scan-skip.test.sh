@@ -18,7 +18,7 @@ YAML="$ROOT/.github/workflows/container-scan.yml"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-fail() { echo "FAIL: $1"; exit 1; }
+fail() { local message="$1"; echo "FAIL: $message"; exit 1; }
 
 # --- Wytnij blok klasyfikatora z YAML-a (wcięcie z bloku `run:` jest nieszkodliwe dla basha) ---
 CLASSIFY="$WORK/classify.sh"

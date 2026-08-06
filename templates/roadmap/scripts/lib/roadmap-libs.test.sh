@@ -50,11 +50,12 @@ echo
   # shellcheck disable=SC1091
   source "$TEMPLATE_ROOT/examples/roadmap-config.bookofstyling.sh"
   arr_fail=0
-  eq() { # eq NAME_A LEN_A NAME_B LEN_B
-    if [[ "$2" = "$4" ]]; then
-      printf '  ✓ %s (%s) == %s (%s)\n' "$1" "$2" "$3" "$4"
+  eq() {
+    local name_a="$1" len_a="$2" name_b="$3" len_b="$4"
+    if [[ "$len_a" = "$len_b" ]]; then
+      printf '  ✓ %s (%s) == %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"
     else
-      printf '  ✗ %s (%s) != %s (%s)\n' "$1" "$2" "$3" "$4"; arr_fail=1
+      printf '  ✗ %s (%s) != %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"; arr_fail=1
     fi
   }
   ns="${#ROADMAP_STATUSES[@]}"

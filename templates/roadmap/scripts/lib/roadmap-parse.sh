@@ -153,15 +153,17 @@ roadmap_tsv() {
 # Footer marker: CANONICAL idempotency key and dependency source for automation
 # (it reads the marker, not the API). Usage: roadmap_marker ID CHANGE_ID STREAM DEPENDS_ON STATUS_BOARD
 roadmap_marker() {
+  local id="$1" change_id="${2:-}" stream="${3:-}" depends_on="${4:-}" status_board="${5:-}"
   printf '<!-- roadmap-id: %s | change-id: %s | stream: %s | depends-on: %s | status: %s -->' \
-    "$1" "${2:-}" "${3:-}" "${4:-}" "${5:-}"
+    "$id" "$change_id" "$stream" "$depends_on" "$status_board"
 }
 
 # Anchored membership: is ID in the list "A,B,C" (S-1 != S-12, F-0 != F-01).
 roadmap_depends_contains() {
-  case ",${1}," in
-    *,"$2",*) return 0 ;;
-    *)        return 1 ;;
+  local list="$1" id="$2"
+  case ",${list}," in
+    *,"$id",*) return 0 ;;
+    *)         return 1 ;;
   esac
 }
 

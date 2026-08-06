@@ -5,9 +5,10 @@
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT="$HERE/deploy-remote.sh"
 fails=0
-check() { # name expected actual
-  if [[ "$2" == "$3" ]]; then echo "ok  - $1"
-  else echo "NIE - $1: oczekiwano '$2', jest '$3'"; fails=$((fails+1)); fi
+check() {
+  local name="$1" expected="$2" actual="$3"
+  if [[ "$expected" == "$actual" ]]; then echo "ok  - $name"
+  else echo "NIE - $name: oczekiwano '$expected', jest '$actual'"; fails=$((fails+1)); fi
 }
 
 # 1) Domyślnie: COMPOSE_FILE=docker-compose.prod.yml, base env=.env.prod
