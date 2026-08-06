@@ -23,7 +23,7 @@ fail() { echo "FAIL: $1"; exit 1; }
 # --- Wytnij blok klasyfikatora z YAML-a (wcięcie z bloku `run:` jest nieszkodliwe dla basha) ---
 CLASSIFY="$WORK/classify.sh"
 awk '/# >>> classify-image-presence/{f=1;next} /# <<< classify-image-presence/{f=0} f' "$YAML" > "$CLASSIFY"
-[ -s "$CLASSIFY" ] \
+[[ -s "$CLASSIFY" ]] \
   || fail "nie znaleziono bloku klasyfikatora (sentinele classify-image-presence) w $YAML"
 
 # --- Atrapa `docker`: tryb sterowany przez FAKE_DOCKER_MODE (ok|notfound|auth) ---
@@ -50,16 +50,16 @@ run_classifier() { # $1=mode  -> ustawia globalne: RC, OUTFILE
 
 # --- 1) Obraz opublikowany -> present=true, exit 0 ---
 run_classifier ok
-[ "$RC" -eq 0 ] || fail "present: oczekiwano exit 0, było $RC"
+[[ "$RC" -eq 0 ]] || fail "present: oczekiwano exit 0, było $RC"
 grep -qx 'present=true' "$OUTFILE" || fail "present: brak 'present=true' w GITHUB_OUTPUT"
 
 # --- 2) Obraz jeszcze nieopublikowany (manifest unknown) -> czysty SKIP: present=false, exit 0 ---
 run_classifier notfound
-[ "$RC" -eq 0 ] || fail "notfound: brak obrazu ma być SKIP-em (exit 0), było $RC"
+[[ "$RC" -eq 0 ]] || fail "notfound: brak obrazu ma być SKIP-em (exit 0), było $RC"
 grep -qx 'present=false' "$OUTFILE" || fail "notfound: brak 'present=false' w GITHUB_OUTPUT"
 
 # --- 3) Błąd auth (NIE brak manifestu) -> twardy fail, żeby nie maskować zepsutego deployu ---
 run_classifier auth
-[ "$RC" -ne 0 ] || fail "auth: błąd inny niż brak manifestu musi failować (exit != 0), było $RC"
+[[ "$RC" -ne 0 ]] || fail "auth: błąd inny niż brak manifestu musi failować (exit != 0), było $RC"
 
 echo "OK: preflight klasyfikuje present/absent, skipuje nieopublikowane, failuje na realnych błędach"

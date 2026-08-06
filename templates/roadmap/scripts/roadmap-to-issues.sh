@@ -35,7 +35,7 @@ source "$ROOT/scripts/lib/roadmap-parse.sh"
 
 # ---- flags ----------------------------------------------------------------------
 DRY_RUN=0; PROJECT=""; ONLY=""; ASSIGNEE=""; NATIVE_DEPS=1; PREVIEW=""
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)        DRY_RUN=1 ;;
     --project)        PROJECT="${2:-}"; shift ;;
@@ -59,20 +59,20 @@ gh auth status >/dev/null 2>&1 || { echo "gh not logged in." >&2; exit 1; }
 
 REPO="${GH_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 OWNER="${GH_OWNER:-$(gh repo view --json owner -q .owner.login)}"
-[ -n "$ASSIGNEE" ] || ASSIGNEE="${ROADMAP_DEFAULT_ASSIGNEE:-}"
-[ -n "$ASSIGNEE" ] || ASSIGNEE="$OWNER"
+[[ -n "$ASSIGNEE" ]] || ASSIGNEE="${ROADMAP_DEFAULT_ASSIGNEE:-}"
+[[ -n "$ASSIGNEE" ]] || ASSIGNEE="$OWNER"
 TITLE="$ROADMAP_PROJECT_TITLE"
 
 say()  { printf '%s\n' "$*"; }
 note() { printf '  %s\n' "$*"; }
 
 # ---- project + fields (skipped in --preview mode) -------------------------------
-if [ -z "$PREVIEW" ]; then
-  if [ -z "$PROJECT" ]; then
+if [[ -z "$PREVIEW" ]]; then
+  if [[ -z "$PROJECT" ]]; then
     PROJECT="$(gh project list --owner "$OWNER" --format json --limit 100 \
       | jq -r --arg t "$TITLE" '.projects[] | select(.title==$t) | .number' | head -1)"
   fi
-  [ -n "$PROJECT" ] || { echo "Project '$TITLE' not found. Run roadmap-project-setup.sh first or pass --project N." >&2; exit 1; }
+  [[ -n "$PROJECT" ]] || { echo "Project '$TITLE' not found. Run roadmap-project-setup.sh first or pass --project N." >&2; exit 1; }
 
   PROJECT_NODE_ID="$(gh project list --owner "$OWNER" --format json --limit 100 \
     | jq -r --arg t "$TITLE" --arg n "$PROJECT" '.projects[] | select((.number|tostring)==$n or .title==$t) | .id' | head -1)"
@@ -85,8 +85,8 @@ if [ -z "$PREVIEW" ]; then
   say "Owner:    $OWNER"
   say "Project:  #$PROJECT ($PROJECT_NODE_ID)"
   say "Assignee: $ASSIGNEE"
-  say "Mode:     $([ "$DRY_RUN" = 1 ] && echo DRY-RUN || echo APPLY)"
-  [ -n "$ONLY" ] && say "Filter:   --only $ONLY"
+  say "Mode:     $([[ "$DRY_RUN" = 1 ]] && echo DRY-RUN || echo APPLY)"
+  [[ -n "$ONLY" ]] && say "Filter:   --only $ONLY"
   say ""
 fi
 opt_id() { printf '%s' "${FIELDS_JSON:-}" | jq -r --arg f "$1" --arg n "$2" '.fields[]|select(.name==$f).options[]?|select(.name==$n).id' | head -1; }
@@ -101,24 +101,24 @@ roadmap_tsv > "$TSV"
 # Rewrite to US (0x1F, NOT whitespace) so `read` keeps empty fields (e.g. missing depends_on).
 tr $'\t' $'\037' < "$TSV" > "$TSVU"
 
-in_only() { [ -z "$ONLY" ] && return 0; roadmap_depends_contains "$ONLY" "$1"; }
+in_only() { [[ -z "$ONLY" ]] && return 0; roadmap_depends_contains "$ONLY" "$1"; }
 num_of()  { awk -F'\t' -v id="$1" '$1==id{print $2; exit}' "$MAP_NUM"; }
 item_of() { awk -F'\t' -v id="$1" '$1==id{print $2; exit}' "$MAP_ITEM"; }
 emit_split() { awk -v sep="$1" -v p="$2" -v t="$3" 'BEGIN{n=split(t,a,sep); for(i=1;i<=n;i++){gsub(/^[ \t]+|[ \t]+$/,"",a[i]); if(length(a[i])) print p a[i]}}'; }
 
 # ---- labels (idempotent; skipped in --preview) ----------------------------------
-if [ -z "$PREVIEW" ]; then
+if [[ -z "$PREVIEW" ]]; then
   say "== Labels =="
   while IFS= read -r lbl; do
     color="$(roadmap_label_color "$lbl")"; desc="$(roadmap_label_desc "$lbl")"
-    if [ "$DRY_RUN" = 1 ]; then note "DRY  label $lbl (#$color)"
+    if [[ "$DRY_RUN" = 1 ]]; then note "DRY  label $lbl (#$color)"
     else gh label create "$lbl" --color "$color" --description "$desc" --force >/dev/null 2>&1 && note "✓ $lbl"; fi
   done < <(roadmap_all_labels)
   say ""
 fi
 
 # ---- snapshot of existing issues (marker lookup) --------------------------------
-if [ -z "$PREVIEW" ]; then
+if [[ -z "$PREVIEW" ]]; then
   ALL_ISSUES_JSON="$(gh issue list --state all --limit 200 --json number,body 2>/dev/null || echo '[]')"
 else
   ALL_ISSUES_JSON='[]'
@@ -139,25 +139,25 @@ build_body() { # uses loop variables: id change type stream sr sb deps prd outco
   echo ""
   echo "## Acceptance criteria"
   emit_split "; " "- [ ] " "$outcome"
-  [ -n "$prd" ] && echo "- [ ] Meets PRD requirements: $prd"
+  [[ -n "$prd" ]] && echo "- [ ] Meets PRD requirements: $prd"
   echo ""
   echo "## Dependencies"
-  if [ -n "$deps" ]; then
+  if [[ -n "$deps" ]]; then
     local d n
     for d in ${deps//,/ }; do
       n="$(num_of "$d")"
-      if [ -n "$n" ]; then echo "- ⛓️ Blocked by #$n ($d)"; else echo "- ⛓️ Blocked by $d (issue TBD)"; fi
+      if [[ -n "$n" ]]; then echo "- ⛓️ Blocked by #$n ($d)"; else echo "- ⛓️ Blocked by $d (issue TBD)"; fi
     done
   else
     echo "- None — ready to start (foundation / no prerequisites)."
   fi
   echo ""
-  if [ "$sb" = "blocked" ]; then
+  if [[ "$sb" = "blocked" ]]; then
     echo "## ⛔ Blocked (why)"
-    [ -n "$blockers" ] && emit_split " ¶ " "- " "$blockers"
-    [ -n "$unknowns" ] && emit_split " ¶ " "- Open question: " "$unknowns"
+    [[ -n "$blockers" ]] && emit_split " ¶ " "- " "$blockers"
+    [[ -n "$unknowns" ]] && emit_split " ¶ " "- Open question: " "$unknowns"
     echo ""
-  elif [ -n "$unknowns" ]; then
+  elif [[ -n "$unknowns" ]]; then
     echo "## Open questions / unknowns"
     emit_split " ¶ " "- " "$unknowns"
     echo ""
@@ -170,10 +170,10 @@ build_body() { # uses loop variables: id change type stream sr sb deps prd outco
 }
 
 # ---- preview one ID (read-only, no project/mutation) ----------------------------
-if [ -n "$PREVIEW" ]; then
+if [[ -n "$PREVIEW" ]]; then
   found=0
   while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
-    [ "$id" = "$PREVIEW" ] || continue
+    [[ "$id" = "$PREVIEW" ]] || continue
     found=1
     echo "===== PREVIEW issue: $id ====="
     echo "TITLE: $id: $(roadmap_title_en "$id" "$change")"
@@ -182,7 +182,7 @@ if [ -n "$PREVIEW" ]; then
     build_body
     break
   done < "$TSVU"
-  [ "$found" = 1 ] || { echo "Roadmap item '$PREVIEW' not found." >&2; exit 1; }
+  [[ "$found" = 1 ]] || { echo "Roadmap item '$PREVIEW' not found." >&2; exit 1; }
   exit 0
 fi
 
@@ -192,16 +192,16 @@ fi
 say "== PASS 1: upsert issues + ID→number map =="
 CREATED=0; UPDATED=0
 while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
-  [ "$id" = "id" ] && continue
+  [[ "$id" = "id" ]] && continue
   in_only "$id" || continue
   title="$id: $(roadmap_title_en "$id" "$change")"
   existing="$(find_issue_by_id "$id")"
-  if [ -n "$existing" ]; then
+  if [[ -n "$existing" ]]; then
     UPDATED=$((UPDATED+1)); num="$existing"
     note "UPDATE #$num  $id"
   else
     CREATED=$((CREATED+1))
-    if [ "$DRY_RUN" = 1 ]; then
+    if [[ "$DRY_RUN" = 1 ]]; then
       num="TBD"; note "CREATE       $id   \"$title\""
     else
       # minimal body with marker (PASS 2 overwrites with the full one); marker makes the issue findable
@@ -214,7 +214,7 @@ while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns 
   printf '%s\t%s\n' "$id" "$num" >> "$MAP_NUM"
 
   # add to board (idempotent — one item per content)
-  if [ "$DRY_RUN" = 1 ] || [ "$num" = "TBD" ]; then
+  if [[ "$DRY_RUN" = 1 ]] || [[ "$num" = "TBD" ]]; then
     printf '%s\t%s\n' "$id" "TBD" >> "$MAP_ITEM"
   else
     iurl="https://github.com/$REPO/issues/$num"
@@ -229,14 +229,14 @@ say ""
 # =================================================================================
 say "== PASS 2: body + labels + board fields + dependencies =="
 while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
-  [ "$id" = "id" ] && continue
+  [[ "$id" = "id" ]] && continue
   in_only "$id" || continue
   num="$(num_of "$id")"; item="$(item_of "$id")"
   title="$id: $(roadmap_title_en "$id" "$change")"
 
-  if [ "$DRY_RUN" = 1 ]; then
+  if [[ "$DRY_RUN" = 1 ]]; then
     depline=""
-    if [ -n "$deps" ]; then for d in ${deps//,/ }; do depline="$depline #$(num_of "$d"):$d"; done; fi
+    if [[ -n "$deps" ]]; then for d in ${deps//,/ }; do depline="$depline #$(num_of "$d"):$d"; done; fi
     note "$id → labels[type:$type, stream:$stream, status:$sb]  board[Status=$sb, Stream=$stream]  deps[${depline:- none}]"
     continue
   fi
@@ -244,7 +244,7 @@ while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns 
   # body
   bodyfile="$TMP/body.$id"; build_body > "$bodyfile"
   gh issue edit "$num" --repo "$REPO" --title "$title" --body-file "$bodyfile" >/dev/null
-  [ -n "$ASSIGNEE" ] && gh issue edit "$num" --repo "$REPO" --add-assignee "$ASSIGNEE" >/dev/null 2>&1 || true
+  [[ -n "$ASSIGNEE" ]] && gh issue edit "$num" --repo "$REPO" --add-assignee "$ASSIGNEE" >/dev/null 2>&1 || true
 
   # labels — convergence (add missing, remove stale in managed namespaces)
   desired="type:$type stream:$stream status:$sb"
@@ -257,27 +257,27 @@ while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns 
         case " $desired " in *" $c "*) : ;; *) lrem+=(--remove-label "$c") ;; esac ;;
     esac
   done <<< "$cur"
-  if [ ${#ladd[@]} -gt 0 ] || [ ${#lrem[@]} -gt 0 ]; then
+  if [[ ${#ladd[@]} -gt 0 ]] || [[ ${#lrem[@]} -gt 0 ]]; then
     gh issue edit "$num" --repo "$REPO" ${ladd[@]+"${ladd[@]}"} ${lrem[@]+"${lrem[@]}"} >/dev/null
   fi
 
   # board fields
-  if [ -n "$item" ] && [ "$item" != "TBD" ]; then
+  if [[ -n "$item" ]] && [[ "$item" != "TBD" ]]; then
     soid="$(opt_id Status "$sb")"
-    [ -n "$soid" ] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" --field-id "$FID_STATUS" --single-select-option-id "$soid" >/dev/null
-    if [ -n "$stream" ]; then
+    [[ -n "$soid" ]] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" --field-id "$FID_STATUS" --single-select-option-id "$soid" >/dev/null
+    if [[ -n "$stream" ]]; then
       stoid="$(opt_id Stream "$stream")"
-      [ -n "$stoid" ] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" --field-id "$FID_STREAM" --single-select-option-id "$stoid" >/dev/null
+      [[ -n "$stoid" ]] && gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" --field-id "$FID_STREAM" --single-select-option-id "$stoid" >/dev/null
     fi
     gh project item-edit --id "$item" --project-id "$PROJECT_NODE_ID" --field-id "$FID_ROADMAP" --text "$id" >/dev/null
   fi
 
   # native blocked_by (best-effort; marker stays canonical)
-  if [ "$NATIVE_DEPS" = 1 ] && [ -n "$deps" ]; then
+  if [[ "$NATIVE_DEPS" = 1 ]] && [[ -n "$deps" ]]; then
     for d in ${deps//,/ }; do
-      pnum="$(num_of "$d")"; [ -n "$pnum" ] && [ "$pnum" != "TBD" ] || continue
+      pnum="$(num_of "$d")"; [[ -n "$pnum" ]] && [[ "$pnum" != "TBD" ]] || continue
       pdb="$(gh api "repos/$REPO/issues/$pnum" --jq .id 2>/dev/null || true)"
-      [ -n "$pdb" ] || continue
+      [[ -n "$pdb" ]] || continue
       if gh api --method POST "repos/$REPO/issues/$num/dependencies/blocked_by" -F issue_id="$pdb" >/dev/null 2>&1; then
         note "native: #$num blocked_by #$pnum ($d) ✓"
       else
@@ -291,7 +291,7 @@ done < "$TSVU"
 
 say ""
 say "================================================================"
-say " Summary: CREATE=$CREATED  UPDATE=$UPDATED  (mode: $([ "$DRY_RUN" = 1 ] && echo DRY-RUN || echo APPLY))"
+say " Summary: CREATE=$CREATED  UPDATE=$UPDATED  (mode: $([[ "$DRY_RUN" = 1 ]] && echo DRY-RUN || echo APPLY))"
 say " Verify:  gh issue list --state all --limit 100"
 say "          gh project item-list $PROJECT --owner $OWNER --limit 100 --format json | jq '.items[]|{title,status:.status,stream:.stream}'"
 say "================================================================"
