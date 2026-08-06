@@ -54,8 +54,14 @@ jobs:
     env:
       SNYK_TOKEN: ${{ secrets.snyk_token }}
     steps:
+      # Sekret trafia do kroku przez `env`, nie przez interpolację `${{ }}` w treści `run`:
+      # interpolacja wkleja wartość do skryptu shella (widoczna w trace, podatna na wstrzyknięcie
+      # przez zawartość podstawianą obok), `env` przekazuje ją procesowi bez przechodzenia przez parser.
       - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
       # Obraz powstaje dopiero przy PIERWSZYM deployu (push do `release`). Zanim to nastąpi, :latest
       # nie istnieje w GHCR i cotygodniowy monitoring nie ma czego skanować — traktujemy to jako czysty
