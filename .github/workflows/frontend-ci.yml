@@ -63,5 +63,7 @@ jobs:
       - name: E2E (Playwright)
         if: ${{ inputs.run-e2e }}
         run: |
-          npx playwright install --with-deps chromium
+          # --no: użyj Playwrighta z node_modules (npm ci wyżej) i przerwij, jeśli go nie ma.
+          # Bez tego npx pobrałby dowolną wersję z rejestru i wykonał jej skrypty instalacyjne.
+          npx --no playwright install --with-deps chromium
           npm run test:e2e --if-present
