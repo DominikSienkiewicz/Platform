@@ -49,7 +49,8 @@ publish_gradle "test-fixtures"
 if [[ "$SKIP_FRONTEND" -eq 0 ]]; then
   if command -v pnpm >/dev/null 2>&1; then
     log "Frontend: pnpm install (paczki współdzielone)"
-    ( cd "$ROOT/frontend" && pnpm install )
+    # --ignore-scripts: spójnie z CI — instalacja nie odpala skryptów lifecycle zależności.
+    ( cd "$ROOT/frontend" && pnpm install --ignore-scripts )
     if [[ "$WITH_REGISTRY" -eq 1 ]]; then
       log "Frontend: shadcn build (public/r/*.json)"
       ( cd "$ROOT/frontend" && pnpm --filter @dominiksienkiewicz/ui build )

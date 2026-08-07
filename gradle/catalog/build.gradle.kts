@@ -6,6 +6,13 @@ plugins {
 group = "pl.seniordeveloper"
 version = providers.gradleProperty("platformVersion").getOrElse("1.5.20")
 
+// Dependency locking — spójnie z build-logic/test-fixtures/security-starter. Ten moduł publikuje
+// metadane i nie ma grafu zależności, więc lockfile jest pusty; trzymamy go, żeby każdy moduł
+// Gradle w repo miał jednakowy, weryfikowalny stan rozwiązywania zależności.
+dependencyLocking {
+	lockAllConfigurations()
+}
+
 catalog {
 	versionCatalog {
 		// KANON wersji backendu = plain-plik libs.versions.toml (edytowalny, Renovate-friendly,

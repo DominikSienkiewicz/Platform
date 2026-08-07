@@ -34,8 +34,8 @@ bump_semver() {
     echo "$action"
     return
   fi
-  local IFS=.
-  read -r major minor patch <<<"$current"
+  # IFS jako prefiks polecenia: rozdziela "X.Y.Z" tylko na czas tego `read`, bez zmiennej pomocniczej.
+  IFS=. read -r major minor patch <<<"$current"
   case "$action" in
     major) echo "$((major + 1)).0.0" ;;
     minor) echo "${major}.$((minor + 1)).0" ;;

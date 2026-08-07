@@ -26,9 +26,12 @@ opublikuj, podbij pin w repo konsumenta.
 
 ## Zasady (twarde)
 
-1. **Wersje bibliotek/pluginów → `gradle/catalog`.** Jedyny wyjątek: BOM-y/narzędzia powielone w
-   `build-logic` (oznaczone komentarzem "lustro gradle/catalog") — bo precompiled script plugin nie
-   czyta zewnętrznego katalogu w czasie kompilacji. Bump = zmień OBA miejsca.
+1. **Wersje bibliotek/pluginów → `gradle/catalog`.** `build-logic` dołącza ten sam
+   `libs.versions.toml` przez swoje `settings.gradle.kts`, więc marker-artefakty pluginów biorą wersje
+   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: `toolVersion` w ŹRÓDŁACH convention pluginów
+   (checkstyle/jacoco w `java-conventions`, spotbugs w `quality-conventions`) — precompiled script
+   plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie i przy bumpie
+   zmieniasz oba miejsca.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
    build konsumenta, gdy zadeklarowana zależność ma jawną wersję spoza katalogu lub inną niż katalog.
    Bez wersji = zarządzane BOM-ami platformy (OK). Nowa biblioteka = najpierw wpis tu + `./release.sh`.
@@ -53,7 +56,7 @@ opublikuj, podbij pin w repo konsumenta.
    Przy kolejnym bumpie Boota sprawdź propercje BOM-a i dodaj pin tylko jeśli CVE wróci.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
-   (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = katalog + lustro `build-logic`.
+   (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.
 9. **Bundle'e katalogu** grupują powielane startery (Boot/Modulith). Konsument: `libs.bundles.modulith.web`
    (+ `.tests`, + `dev.docker.compose`). Członkowie są `withoutVersion()` — wersje z BOM-ów.
 
@@ -71,5 +74,5 @@ bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`)
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
-- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza udokumentowanym lustrem w build-logic).
+- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza `toolVersion` w źródłach convention pluginów).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).

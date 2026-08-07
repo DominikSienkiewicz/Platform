@@ -69,6 +69,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: "24"
-      - run: pnpm install --frozen-lockfile
+      # --ignore-scripts: żadna paczka w monorepo ani w jej drzewie zależności nie wymaga
+      # skryptu lifecycle (binaria napi/sharp przychodzą jako optionalDependencies).
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm -r --if-present lint
       - run: pnpm -r --if-present test

@@ -27,22 +27,23 @@ dependencyLocking {
 
 dependencies {
 	// Pluginy aplikowane WEWNĄTRZ convention pluginów muszą być na classpath build-logic
-	// jako zwykłe zależności (marker-artefakty pluginów). Wersje = lustro gradle/catalog
-	// (jedyna świadoma duplikacja — patrz README, sekcja "Dlaczego wersje są w dwóch miejscach").
-	implementation("io.spring.gradle:dependency-management-plugin:1.1.7")
-	implementation("com.diffplug.spotless:spotless-plugin-gradle:8.9.0")
-	implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.9")
-	implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.19.0")
-	implementation("org.cyclonedx:cyclonedx-gradle-plugin:3.3.0")
-	implementation("org.sonarqube:org.sonarqube.gradle.plugin:7.3.1.8318")
+	// jako zwykłe zależności (marker-artefakty pluginów). Wersje pochodzą z kanonu
+	// (gradle/catalog/libs.versions.toml) dołączonego w settings.gradle.kts.
+	implementation("io.spring.gradle:dependency-management-plugin:${libs.versions.springDependencyManagement.get()}")
+	implementation("com.diffplug.spotless:spotless-plugin-gradle:${libs.versions.spotless.get()}")
+	implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:${libs.versions.spotbugsPlugin.get()}")
+	implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:${libs.versions.pitest.get()}")
+	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
+	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")
 	// Settings plugin (toolchain auto-provisioning) — aplikowany przez seniordev.settings-conventions.
-	implementation("org.gradle.toolchains:foojay-resolver:1.0.0")
+	implementation("org.gradle.toolchains:foojay-resolver:${libs.versions.foojayResolver.get()}")
 
 	// Testy configów platformy (guard checkstyle ↔ google-java-format).
-	// Checkstyle = lustro toolVersion w seniordev.java-conventions (te same reguły co u konsumenta).
-	// JUnit = lustro gradle/catalog (version "junit").
-	testImplementation("com.puppycrawl.tools:checkstyle:13.5.0")
-	testImplementation(platform("org.junit:junit-bom:6.1.0"))
+	// Checkstyle = lustro toolVersion w seniordev.java-conventions (te same reguły co u konsumenta);
+	// precompiled script plugin nie czyta katalogu w czasie kompilacji, więc lustro zostaje TAM,
+	// a tu bierzemy tę samą wartość z kanonu.
+	testImplementation("com.puppycrawl.tools:checkstyle:${libs.versions.checkstyle.get()}")
+	testImplementation(platform("org.junit:junit-bom:${libs.versions.junit.get()}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
