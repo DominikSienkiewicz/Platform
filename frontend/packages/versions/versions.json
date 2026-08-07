@@ -1,5 +1,5 @@
 {
-  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* (pin platformy, podbijany przez platform-bump.sh).",
+  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./scripts/platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* (pin platformy, podbijany przez platform-bump.sh).",
   "versions": {
     "next": "16.2.12",
     "react": "19.2.7",
