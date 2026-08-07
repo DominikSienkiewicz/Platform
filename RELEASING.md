@@ -54,9 +54,9 @@ jest bezpieczny. Wersje są **immutable** — nie nadpiszesz istniejącej; błą
 ## Konsumenci — jak skorzystać z nowej wersji
 
 ```bash
-cd <Attestate|SkillSprintPlus|BookOfStyling>
-./platform-bump.sh            # podbija piny (catalog + pluginy + npm) do najnowszej z GitHub Packages
-# albo: ./platform-bump.sh 1.2.0   (konkretna wersja)
+cd <Attestate|Azimuth|SkillSprintPlus|BookOfStyling>
+./scripts/platform-bump.sh            # podbija piny (catalog + pluginy + npm) do najnowszej z GitHub Packages
+# albo: ./scripts/platform-bump.sh 1.2.0   (konkretna wersja)
 git add -A && git commit -m "build: Platform -> X.Y.Z" && git push
 ```
 
