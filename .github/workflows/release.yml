@@ -112,7 +112,8 @@ jobs:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
           scope: "@dominiksienkiewicz"
-      - run: pnpm install --frozen-lockfile
+      # --ignore-scripts: publikacja nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Ustaw wersję na wszystkich paczkach
         run: pnpm -r exec npm pkg set version="$V"
       - name: Build registry (shadcn)

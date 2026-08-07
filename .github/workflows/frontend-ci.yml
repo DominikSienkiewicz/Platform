@@ -43,7 +43,10 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ inputs.working-directory }}/package-lock.json
 
-      - run: npm ci
+      # --ignore-scripts: instalacja nie odpala skryptów lifecycle zależności (supply chain).
+      # Binaria platformowe (sharp, unrs-resolver) przychodzą jako optionalDependencies, więc
+      # działają bez postinstall. Repo konsumenckie, które WYMAGA skryptu, musi to zgłosić tutaj.
+      - run: npm ci --ignore-scripts
 
       # Guard kanonu wersji Platform (@dominiksienkiewicz/versions). Tolerancyjny jak reszta
       # kroków: repo bez paczki = guard pominięty (notice), repo z paczką = dryf failuje build.

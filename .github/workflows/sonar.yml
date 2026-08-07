@@ -80,7 +80,8 @@ jobs:
         env:
           # PAT read:packages do scoped @dominiksienkiewicz/* (fallback: automatyczny GITHUB_TOKEN).
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
-        run: npm ci
+        # --ignore-scripts: spójnie z frontend-ci.yml — bez skryptów lifecycle zależności.
+        run: npm ci --ignore-scripts
       - name: Test + coverage (lcov)
         if: ${{ env.SONAR_TOKEN != '' }}
         working-directory: frontend
