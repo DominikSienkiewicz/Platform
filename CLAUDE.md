@@ -52,8 +52,10 @@ opublikuj, podbij pin w repo konsumenta.
    Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym,
    CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
 7. **Nadpisania CVE nad BOM-em Boota** (propercje `tomcat.version`/`netty.version`/`postgresql.version`
-   przez `ext` w `spring-modulith-conventions`) — **USUNIĘTE** przy bumpie na Boot 4.1.0 (BOM dogonił fixy).
-   Przy kolejnym bumpie Boota sprawdź propercje BOM-a i dodaj pin tylko jeśli CVE wróci.
+   przez `ext` w `spring-modulith-conventions`) — **AKTYWNE dla `netty` 4.2.16.Final i `postgresql`
+   42.7.12**: CVE High wyszły po GA BOM-a Boot 4.1.0, więc wersje BOM-owe (4.2.15.Final / 42.7.11)
+   są dziś podatne. `tomcat` bez pinu — BOM-owy 11.0.22 jest czysty (pinujemy tylko to, co realnie
+   podatne). Przy kolejnym bumpie Boota sprawdź propercje BOM-a i zdejmij pin, gdy BOM dogoni te wersje.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.
