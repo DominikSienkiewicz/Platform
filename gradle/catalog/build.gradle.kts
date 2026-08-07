@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.5.21")
+version = providers.gradleProperty("platformVersion").getOrElse("1.5.22")
 
 // Dependency locking — spójnie z build-logic/test-fixtures/security-starter. Ten moduł publikuje
 // metadane i nie ma grafu zależności, więc lockfile jest pusty; trzymamy go, żeby każdy moduł
@@ -22,7 +22,7 @@ catalog {
 		// Dynamiczny pin platformy — NIE do wyrażenia w statycznym TOML. Nadpisuje placeholder z TOML;
 		// wpisy z version.ref="platform" (platform-test-fixtures, platform-security-starter,
 		// convention pluginy) podchwytują tę wstrzykniętą wartość. Publish ustawia ją przez -PplatformVersion.
-		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.5.21"))
+		version("platform", providers.gradleProperty("platformVersion").getOrElse("1.5.22"))
 	}
 }
 
