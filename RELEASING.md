@@ -64,6 +64,12 @@ git add -A && git commit -m "build: Platform -> X.Y.Z" && git push
 `backend/settings.gradle.kts`, `backend/build.gradle.kts` i `frontend/package.json`, oraz regeneruje
 `package-lock.json`. Token bierze z `GPR_TOKEN`/`GITHUB_TOKEN` lub `gpr.key`.
 
+Na koniec regeneruje też zamrożony stan backendu: `gradle.lockfile`, a w repo z włączoną weryfikacją
+zależności — `gradle/verification-metadata.xml`. Ten drugi wariant leci z `--refresh-dependencies`,
+więc **trwa wyraźnie dłużej** (pełne pobranie metadanych). To celowe: przy ciepłym cache Gradle nie
+dotyka plików `.module`, ich checksumy nie trafiłyby do metadanych, a CI na zimnym cache wywaliłby się
+na `Dependency verification failed`. Skrypt nie commituje — diff zostaje do recenzji.
+
 Pierwszy build po bumpie pobiera artefakty z GitHub Packages **raz** i cache'uje je w
 `~/.gradle/caches` (Gradle) / `node_modules` + lockfile (npm). Kolejne buildy idą z cache — bez sieci.
 **Nie ma `mavenLocal` ani `npm link`** (publish-only: zero driftu local↔CI).

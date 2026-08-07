@@ -8,7 +8,7 @@
     "bin/platform-bump.sh"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/apply-canon.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh"
   },
   "exports": {
     ".": "./versions.json",
