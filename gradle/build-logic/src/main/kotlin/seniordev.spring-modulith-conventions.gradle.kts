@@ -29,9 +29,17 @@ val springAiVersion = "2.0.0" // GA 2026-06-12 (lustro gradle/catalog)
 val archunitVersion = "1.4.2"
 val junitVersion = "6.1.0"
 
-// CVE-piny tomcat/netty/postgresql USUNIĘTE przy bumpie na Boot 4.1.0: BOM spring-boot-dependencies:4.1.0
-// ma już tomcat 11.0.22 / netty 4.2.15.Final / postgresql 42.7.11 (zweryfikowane na POM GA 2026-06-10),
-// więc nadpisania ext[] były redundantne. Przy kolejnym bumpie Boota sprawdź propercje BOM-a ponownie.
+// TYMCZASOWE nadpisania CVE ponad BOM Boot 4.1.0 — PRZYWRÓCONE, bo CVE wyszły już po GA BOM-a
+// (2026-06-10): pinowane tam netty 4.2.15.Final i postgresql 42.7.11 są dziś podatne.
+// Mechanizm: io.spring.dependency-management honoruje nadpisanie propercji wersji z BOM-a przez ext.
+// USUŃ przy bumpie springBoot, gdy BOM dogoni te wersje (sprawdź propercje w spring-boot-dependencies).
+// Tomcat 11.0.22 z BOM-a jest czysty — świadomie bez pinu (pinujemy tylko to, co realnie podatne).
+//   netty 4.2.16.Final  — GHSA-jppx-w49h-x2qq, GHSA-mvh2-crg5-v77c, GHSA-6jqx-86gh-f27w (codec-http),
+//                         GHSA-hpcc-26xq-25fv (http3), GHSA-93wv-jw9v-4972 (http2),
+//                         GHSA-558v-64gr-wgg4 (codec-compression) — wszystkie High
+//   postgresql 42.7.12  — GHSA-j92g-9f8w-j867 (High)
+ext["netty.version"] = "4.2.16.Final"
+ext["postgresql.version"] = "42.7.12"
 
 dependencyManagement {
 	imports {
