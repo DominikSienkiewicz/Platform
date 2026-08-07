@@ -233,18 +233,26 @@ npm run platform:unlink   # przed commitem (wraca na wersje z registry)
 
 ---
 
-## Dlaczego wersje są w dwóch miejscach (świadoma decyzja)
+## Gdzie żyją wersje (po dedupie)
 
-Wersje BOM-ów i narzędzi żyją **i** w `gradle/catalog` (dla konsumentów) **i** w `gradle/build-logic`
-(bo precompiled script plugin nie potrafi czytać zewnętrznego, jeszcze nieopublikowanego katalogu w czasie
-kompilacji). To jedyna duplikacja w repo. Trzymana świadomie; opcjonalny dedup w przyszłości = współdzielony
-`libs.versions.toml` dołączany do obu buildów przez `settings.gradle.kts`. Na teraz: przy bumpie zmieniasz
-oba miejsca (oznaczone komentarzem "lustro gradle/catalog").
+`gradle/catalog/libs.versions.toml` jest jedynym miejscem, w którym deklarujesz wersję biblioteki lub
+pluginu. `gradle/build-logic` **dołącza ten sam plik** przez swoje `settings.gradle.kts`
+(`versionCatalogs { create("libs") { from(files("../catalog/libs.versions.toml")) } }` — z pliku, bo
+opublikowany artefakt `platform-catalog` w czasie kompilacji build-logic jeszcze nie istnieje), więc
+marker-artefakty pluginów na classpath build-logic biorą wersje wprost z kanonu. Bump = **jedno miejsce**.
 
-> **Dependency locking:** `gradle/build-logic` i `gradle/test-fixtures` mają `gradle.lockfile` (powtarzalne
-> rozwiązywanie zależności). Po bumpie którejkolwiek wersji w tych modułach **zregeneruj lockfile**:
-> `cd gradle/<moduł> && ./gradlew dependencies --write-locks` i zacommituj diff. `gradle/catalog` nie ma
-> lockfile — version catalog publikuje metadane, nie ma grafu zależności do zablokowania.
+Została jedna, węższa duplikacja: `toolVersion` w ŹRÓDŁACH convention pluginów
+(`checkstyle`/`jacoco` w `java-conventions`, `spotbugs` w `quality-conventions`). Precompiled script plugin
+nie czyta katalogu w czasie kompilacji, więc te wartości muszą stać w kodzie. Kanon trzyma odpowiedniki
+`checkstyle` i `jacoco` — przy ich bumpie zmieniasz oba miejsca. `spotbugs` (toolVersion `4.9.8`) wpisu
+w kanonie nie ma; `spotbugsPlugin` to wersja pluginu Gradle, nie samego SpotBugs.
+
+> **Dependency locking:** `gradle/build-logic`, `gradle/test-fixtures` i `gradle/security-starter` mają
+> `gradle.lockfile` (powtarzalne rozwiązywanie zależności). Po bumpie którejkolwiek wersji w tych modułach
+> **zregeneruj lockfile**: `cd gradle/<moduł> && ./gradlew dependencies --write-locks` i zacommituj diff.
+> `gradle/catalog` trzyma lockfile pusty i **napisany ręcznie**: moduł `version-catalog` nie ma
+> rozwiązywalnej konfiguracji, więc `--write-locks` kończy się sukcesem, ale pliku nie tworzy. Plik istnieje
+> po to, żeby każdy moduł Gradle w repo miał lockfile — nie regeneruj go, nie ma czego zablokować.
 
 ---
 
