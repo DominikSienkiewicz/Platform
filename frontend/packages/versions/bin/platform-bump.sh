@@ -13,6 +13,8 @@
 #
 # Backend gradle.lockfile jest regenerowany AUTOMATYCZNIE na końcu (--write-locks) — analogicznie do
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
+# Repo z verification-metadata.xml dostaje dodatkowo --refresh-dependencies, więc ten krok pobiera
+# metadane od nowa i trwa wyraźnie dłużej niż sam bump pinów — to celowe, powód niżej przy bloku.
 #
 # UWAGA (bootstrap): stub konsumenta odpala ZAINSTALOWANĄ wersję tego skryptu, a kanon bierze ze
 # ŚWIEŻO pobranego tarballa. Repo, które ma jeszcze wydanie bez obsługi `overrides`, po pierwszym
@@ -116,16 +118,25 @@ fi
 
 # --- Backend: regen ZAMROŻONEGO STANU (analogicznie do `npm install --package-lock-only` dla frontu) ---
 # --write-locks przelicza CAŁY graf (też transytywny: checker-qual itp.), nie tylko podbite wpisy.
-# Gdy jest verification-metadata: OBIE flagi RAZEM — osobno = deadlock (lock chce nowych artefaktów,
-# verification je blokuje). --write-verification-metadata dorzuca checksumy nowych wersji (netty/jackson po CVE).
+# Gdy jest verification-metadata: WSZYSTKIE TRZY flagi RAZEM.
+#   --write-locks + --write-verification-metadata muszą iść w parze — osobno = deadlock (lock chce
+#     nowych artefaktów, verification je blokuje); verification dorzuca checksumy nowych wersji.
+#   --refresh-dependencies jest tu OBOWIĄZKOWE, nie optymalizacją: przy CIEPŁYM cache Gradle serwuje
+#     metadane modułu ze swojego magazynu i w ogóle nie dotyka pliku `.module`, więc jego checksum
+#     NIE trafia do verification-metadata.xml — mimo że flaga zapisu jest włączona. Efekt: lokalnie
+#     build zielony, a CI (zimny cache) pobiera `.module` i failuje `Dependency verification failed`.
+#     Realny przypadek: junit-bom 5.14.4 zapisany tylko jako `.pom` (BookOfStyling/SkillSprintPlus,
+#     bump 1.5.4 -> 1.5.22). Kosztem jest jedno pełne przeliczenie na bump — bumpy są rzadkie.
+# platform-bump:gradle
 if [[ -f backend/settings.gradle.kts ]]; then
   echo "==> Backend: regeneracja zamrożonego stanu (--write-locks)"
   if [[ -f backend/gradle/verification-metadata.xml ]]; then
-    ( cd backend && ./gradlew build --write-locks --write-verification-metadata sha256 --no-daemon )
+    ( cd backend && ./gradlew build --write-locks --write-verification-metadata sha256 --refresh-dependencies --no-daemon )
   else
     ( cd backend && ./gradlew dependencies --write-locks --no-daemon )
   fi
 fi
+# platform-bump:gradle-end
 
 echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
 git --no-pager diff --stat
