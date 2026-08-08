@@ -57,6 +57,18 @@ val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmen
 val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentVariable("GPR_REPO")).getOrElse("Platform")
 
 publishing {
+	publications {
+		withType<MavenPublication>().configureEach {
+			pom {
+				licenses {
+					license {
+						name.set("MIT License")
+						url.set("https://github.com/DominikSienkiewicz/Platform/blob/main/LICENSE")
+					}
+				}
+			}
+		}
+	}
 	repositories {
 		maven {
 			name = "GitHubPackages"

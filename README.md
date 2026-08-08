@@ -263,3 +263,13 @@ w kanonie nie ma; `spotbugsPlugin` to wersja pluginu Gradle, nie samego SpotBugs
 3. Frontend: `tsconfig` + `eslint-config` → `tailwind-preset` → `ui-registry`.
 
 Każdy krok = osobny PR per repo, semver, rollback = pin starej wersji.
+
+---
+
+## Licencja
+
+[MIT](LICENSE) — Copyright (c) 2026 Dominik Sienkiewicz.
+
+Licencja jest też deklarowana w metadanych POM każdego publikowanego artefaktu (`catalog`,
+`build-logic`, `test-fixtures`, `security-starter`), żeby skanery zależności po stronie
+konsumenta widziały ją bez zaglądania do repozytorium.

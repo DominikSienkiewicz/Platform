@@ -38,6 +38,16 @@ val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentV
 publishing {
 	publications {
 		create<MavenPublication>("maven") { from(components["java"]) }
+		withType<MavenPublication>().configureEach {
+			pom {
+				licenses {
+					license {
+						name.set("MIT License")
+						url.set("https://github.com/DominikSienkiewicz/Platform/blob/main/LICENSE")
+					}
+				}
+			}
+		}
 	}
 	repositories {
 		maven {
