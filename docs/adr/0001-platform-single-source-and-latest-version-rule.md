@@ -1,61 +1,66 @@
-# ADR-0001: Platform jako jedyne źródło współdzielonych artefaktów + reguła „najnowsza-w-portfolio"
+# ADR-0001: Platform as the single source of shared artifacts, and the latest-in-portfolio rule
 
 ## Status
 
 Accepted — 2026-07-05
 
-## Kontekst
+## Context
 
-Portfolio to pięć repo produktowych (Attestate, Azimuth, BookOfStyling, Pragma, SkillSprintPlus) konsumujących współdzielone repo **Platform**. Platform publikuje już convention pluginy Gradle (`seniordev.*`), version catalog (`pl.seniordeveloper:platform-catalog`), test-fixtures (`platform-test-fixtures`) oraz paczki npm frontendu (`@dominiksienkiewicz/*`).
+Several product repositories consume this platform, which already publishes Gradle
+convention plugins (`seniordev.*`), a version catalog (`pl.seniordeveloper:platform-catalog`),
+test fixtures (`platform-test-fixtures`) and frontend npm packages (`@dominiksienkiewicz/*`).
 
-Mimo to audyt (2026-07) wykazał, że część elementów była nadal kopiowana „w tle" między repo — z realnym dryfem wersji:
+An audit in July 2026 found that a number of elements were still being copied between
+repositories rather than consumed, and that the copies had drifted. The same tool appeared
+at up to four different versions across the portfolio at once — the platform pin, the
+Gradle wrapper, the Sonar plugin and the frontend Node base image each had two or more
+live variants, and in one case the platform itself trailed its own consumers.
 
-- pin Platformy w **4 wariantach**: `1.3.5` / `1.3.12` / `1.4.1` / `1.4.3`,
-- Gradle wrapper w **3**: `9.3.1` / `9.5.1` / `9.6.1` (w tym sama Platform za konsumentami),
-- Sonar plugin w **2**: `7.2.3.7755` (Pragma) vs `7.3.1.8318`,
-- Node (frontend Dockerfile) w **2**: `22-slim` vs `24-alpine`.
+Scripts had drifted the same way: consumers kept forked copies of automation the platform
+already ships as a reusable workflow, and one repository had hand-rebuilt a test container
+that the published test fixtures provide — pinning an older database image in the process.
 
-Repo forkowały też skrypty, które Platform już serwuje: SkillSprintPlus trzymał martwy `scripts/deploy-remote.sh`, mimo że reusable `deploy.yml@v1` dostarcza kanon; `platform-bump.sh` miał 3 różne wersje (BoS/SSP nadal z grubą logiką przeniesioną wcześniej do bina `@dominiksienkiewicz/versions`); Azimuth ręcznie odtworzył `PlatformPostgresContainer`, dryfując obraz na `pgvector/pgvector:pg16` zamiast kanonicznego `:0.8.2-pg18`.
+Version drift between repositories is **cost without benefit**: a divergent dependency
+graph, builds that cannot be reproduced, and the entire "works on my machine" class of
+failure.
 
-Dryf wersji między repo to **koszt bez korzyści**: rozbieżny graf zależności, niepowtarzalne buildy, klasa błędów „u mnie działa".
+## Decision
 
-## Decyzja
+1. **Anything duplicated across two or more repositories is moved into the platform and
+   consumed** — as a catalog entry, convention plugin, test fixture, npm package or
+   template — never copied. A fork of a script or config the platform already provides is
+   debt to be removed.
+2. **Latest-in-portfolio rule.** When the same tool or library exists at different versions
+   across repositories, the newest one wins. It lands in the platform as the single source
+   and every repository consumes it through the platform pin. Exceptions must be
+   **documented** — for example, the `build-logic` toolchain is deliberately held one
+   release back to keep the Kotlin and Java targets consistent.
+3. **Version changes flow through a platform release plus a bump in the consumer**, never
+   through a manual per-repository edit. A new library means a catalog entry and a release
+   first, and only then a bump downstream.
 
-1. **Każdy element powielany między ≥2 repo jest wynoszony do Platform i konsumowany** (catalog / convention plugin / test-fixtures / paczka npm / template) — nigdy kopiowany. Fork skryptu/configu, który Platform już posiada, jest traktowany jak dług do usunięcia.
-2. **Reguła najnowszej-w-portfolio:** gdy to samo narzędzie/biblioteka ma różne wersje między repo, obowiązuje **najnowsza**. Ląduje w Platform jako jedyne źródło (catalog / `versions.json` / mirror build-logic), a wszystkie repo konsumują ją przez pin Platformy. Wyjątki muszą być **udokumentowane** (np. toolchain `build-logic` celowo na Java 25 — spójność targetu Kotlin/Java, patrz komentarz w `gradle/build-logic/build.gradle.kts`).
-3. **Zmiany wersji spływają przez release Platformy + `platform-bump` w repo** — nie przez ręczny edit per-repo. Nowa biblioteka = najpierw wpis w Platform + `./release.sh`, dopiero potem `platform-bump.sh` w konsumencie.
+## Consequences
 
-## Zakres wdrożenia — P0 (2026-07-05)
+- (+) One dependency graph, reproducible builds, and a smaller forked surface.
+- (+) Governance is enforced by tooling rather than convention: `platformDependencyCheck`
+  (Gradle) and `platform-versions-check` (npm) fail the build on a version outside the
+  canonical set.
+- (−) Changing a version costs a release-and-bump cycle. This is a deliberate trade for
+  consistency.
+- (−) A consumer's pin can sit briefly behind the platform's published HEAD. That is the
+  normal flow, closed by Renovate and the bump script.
 
-| Obszar | Akcja | Repo |
-| --- | --- | --- |
-| Re-sync forków | `platform-bump.sh` → template (5/5 identyczne) | Attestate, Azimuth, BoS, SSP |
-| | usunięto osierocony `deploy-remote.sh` | SSP |
-| | `backend/Dockerfile` → `templates/Dockerfile.backend` | Azimuth, SSP |
-| | `setup-gh-deploy.sh` (ujednolicona nazwa) + usunięto stare warianty | BoS, SSP |
-| | `merge.sh`, `.secrets.local.example` → template | Azimuth, BoS |
-| Reguła najnowszej wersji | pin Platformy → `1.4.3` | 5 repo (settings + FE) |
-| | Gradle wrapper → `9.6.1` | 5 repo + Platform (build-logic/catalog/test-fixtures) |
-| | Sonar → `7.3.1.8318` | Pragma |
-| | Java toolchain → `26` | Pragma |
-| | Node (FE Docker) → `24-slim` | Azimuth |
-| Konsumpcja fixtures | `libs.platform.test.fixtures` + `@Import(PlatformPostgresContainer)` (koniec `pg16`) | Azimuth |
-| Kanon FE | carety → EXACT; `react-hook-form`/`react-markdown`/`remark-gfm` dodane do `versions.json` | Pragma + Platform |
+## What this decision does not cover
 
-## Świadome wyłączenia (nie P0)
+Two categories were deliberately excluded when the rule was adopted, and the reasoning is
+worth keeping: a shared preset is **not** adopted where it is not drop-in compatible with a
+consumer's existing design tokens, and a dependency is **not** bumped from a milestone to a
+GA release blindly, because the API can change across that boundary. In both cases the
+platform side is harmonised first, and the consumer migrates afterwards.
 
-- **Attestate → `tailwind-preset`:** nie jest drop-in — preset nie ma tokenów `--popover` ani bloku `@theme inline`, ma inny dark `--primary` i dokłada `--color-brand`/fonty. Najpierw harmonizacja presetu (zmiana w Platform + release), potem migracja.
-- **Pragma inline Spring AI `2.0.0-M2` / Modulith `2.0.3`:** stale vs katalog; bump wchodzi razem z migracją Pragmy na convention pluginy (P1) — nie na ślepo (ryzyko API-break milestone→GA).
-- **`lucide-react 0.577 → 1.17` (Pragma):** major bump zgodny z regułą, wymaga smoke-testu ikon.
-- **`.sdkmanrc` `25` vs toolchain `26`:** wartość jednolita między repo (nie dryf *między projektami*); decyzja `25↔26` osobno (dostępność Temurin 26).
+## Next
 
-## Konsekwencje
-
-- (+) Jeden graf zależności, powtarzalne buildy, mniejsza powierzchnia forka.
-- (+) Governance wymuszony narzędziowo: `platformDependencyCheck` (Gradle) i `platform-versions-check` (npm) failują build przy wersji spoza kanonu.
-- (−) Zmiana wersji wymaga cyklu **release + bump** — świadomy koszt za spójność.
-- (−) Pin repo bywa chwilowo za publikowanym HEAD Platformy (normalny flow, domykany przez Renovate/`platform-bump`).
-
-## Następne (P1)
-
-Bundle'e version-catalogu (kręgosłup web+modulith powielany w 4 konsumentach), Sonar wyniesiony do `seniordev.quality-conventions` (koniec inline `id("org.sonarqube")` + bloków `sonar{}`), paczki `@dominiksienkiewicz/api-client` (4 zdryfowane wrappery fetch) i `@dominiksienkiewicz/query` (współdzielony QueryClient + provider).
+Version-catalog bundles for the dependency spine repeated across consumers; moving Sonar
+into `seniordev.quality-conventions` so consumers stop declaring it inline; and shared
+`@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` packages to replace the
+per-repository fetch wrappers and query clients that have drifted apart.

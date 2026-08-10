@@ -1,7 +1,8 @@
-# ADR — Platform
+# Architecture decision records — Platform
 
-Rejestr decyzji architektonicznych repo **Platform** (współdzielona platforma build/jakość/wersje/frontend). Format: MADR-lite (`Status` / `Kontekst` / `Decyzja` / `Konsekwencje`).
+Decisions taken for this repository, in MADR-lite format: `Status` / `Context` / `Decision`
+/ `Consequences`.
 
-| # | Decyzja | Status |
+| # | Decision | Status |
 | --- | --- | --- |
-| [0001](0001-platform-single-source-and-latest-version-rule.md) | Platform jako jedyne źródło współdzielonych artefaktów + reguła „najnowsza-w-portfolio" | Accepted |
+| [0001](0001-platform-single-source-and-latest-version-rule.md) | Platform as the single source of shared artifacts, and the latest-in-portfolio rule | Accepted |
