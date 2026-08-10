@@ -65,10 +65,28 @@ git add -A && git commit -m "build: Platform -> X.Y.Z" && git push
 `package-lock.json`. Token bierze z `GPR_TOKEN`/`GITHUB_TOKEN` lub `gpr.key`.
 
 Na koniec regeneruje też zamrożony stan backendu: `gradle.lockfile`, a w repo z włączoną weryfikacją
-zależności — `gradle/verification-metadata.xml`. Ten drugi wariant leci z `--refresh-dependencies`,
-więc **trwa wyraźnie dłużej** (pełne pobranie metadanych). To celowe: przy ciepłym cache Gradle nie
-dotyka plików `.module`, ich checksumy nie trafiłyby do metadanych, a CI na zimnym cache wywaliłby się
-na `Dependency verification failed`. Skrypt nie commituje — diff zostaje do recenzji.
+zależności — `gradle/verification-metadata.xml`. Ten drugi wariant leci **dwoma przebiegami Gradle**,
+oba z `--refresh-dependencies`, więc **trwa wyraźnie dłużej** (pełne pobranie metadanych):
+
+| przebieg | rola |
+| --- | --- |
+| `build --write-locks --write-verification-metadata sha256` | pobiera artefakty, więc jako jedyny zapisuje checksumy **jarów** — ale widzi tylko konfiguracje z grafu `build` |
+| `dependencies --write-locks --write-verification-metadata sha256` | rozwiązuje **wszystkie** resolvable konfiguracje, więc domyka **metadane** (`.pom`/`.module`) także poza grafem `build`; jako report task nie pobiera jarów |
+
+Oba `--refresh-dependencies` są celowe: przy ciepłym cache Gradle nie dotyka plików `.module`, ich
+checksumy nie trafiłyby do metadanych, a CI na zimnym cache wywaliłby się na
+`Dependency verification failed`. Drugi przebieg jest równie celowy: `junit-bom-<wersja>.pom` pobiera
+dopiero detached configuration tworzona przez `io.spring.dependency-management` przy ustalaniu
+zależności `:integrationTest` — poza grafem `build`, więc sam pierwszy przebieg zostawiał dziurę
+(Azimuth i SkillSprintPlus, bump 1.5.26). Ta sama klasa błędu dotyczyła wcześniej konfiguracji
+narzędziowych (Spotless, JaCoCo, CycloneDX), dlatego przebieg NIE jest zawężony `--configuration`.
+
+⚠️ Nigdy nie dokładaj do tych wywołań `--dry-run`: Gradle odkłada wtedy wynik do
+`verification-metadata.dryrun.xml`, prawdziwego pliku nie rusza i kończy się `BUILD SUCCESSFUL`.
+
+Pierwszy bump po wprowadzeniu drugiego przebiegu poszerzy `gradle.lockfile` o konfiguracje, których
+graf `build` nie dotykał (`pitest`, `cyclonedxBom`) — to jednorazowy, oczekiwany diff. Skrypt nie
+commituje — diff zostaje do recenzji.
 
 Pierwszy build po bumpie pobiera artefakty z GitHub Packages **raz** i cache'uje je w
 `~/.gradle/caches` (Gradle) / `node_modules` + lockfile (npm). Kolejne buildy idą z cache — bez sieci.
