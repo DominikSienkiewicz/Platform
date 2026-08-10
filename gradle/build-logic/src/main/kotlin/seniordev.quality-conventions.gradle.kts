@@ -55,7 +55,7 @@ val extractSpotbugsConfig = tasks.register("extractSpotbugsConfig") {
 }
 
 spotbugs {
-	toolVersion.set("4.9.8")
+	toolVersion.set("4.10.3")
 	// Report-only dopóki wsparcie bytecode JDK 25 w SpotBugs nie jest w pełni zielone.
 	// Konsument może przełączyć: spotbugs { ignoreFailures.set(false) }
 	ignoreFailures.set(true)

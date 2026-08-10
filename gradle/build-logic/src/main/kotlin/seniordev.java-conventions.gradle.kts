@@ -64,7 +64,7 @@ val extractCheckstyleConfig = tasks.register("extractCheckstyleConfig") {
 }
 
 checkstyle {
-	toolVersion = "13.5.0"
+	toolVersion = "13.10.0"
 	maxWarnings = 0
 	configDirectory.set(layout.buildDirectory.dir("platform-config/checkstyle"))
 	config = resources.text.fromFile(File(checkstyleDir, "checkstyle.xml"))

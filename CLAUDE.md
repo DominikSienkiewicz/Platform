@@ -47,10 +47,20 @@ opublikuj, podbij pin w repo konsumenta.
    (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: zależność bez wpisu
    w kanonie albo z inną wersją = czerwony build. `platform-bump` (bin pakietu `versions`) nakłada kanon.
    Governance obejmuje `dependencies`, `devDependencies` **oraz `overrides`** (płaskie i zagnieżdżone,
-   np. `overrides.next.postcss` — tam żyją piny CVE paczek transytywnych). Wyjątek: referencje npm
-   w formie `"$nazwa"` (np. `"typescript": "$typescript"`) — rozwija je npm, guard i bump ich nie ruszają.
-   Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga: kanon trzyma WERSJE — o tym,
-   CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
+   np. `overrides.openapi-typescript.js-yaml` — tam żyją piny CVE paczek transytywnych). Wyjątek:
+   referencje npm w formie `"$nazwa"` (np. `"typescript": "$typescript"`) — rozwija je npm, guard
+   i bump ich nie ruszają. Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga:
+   kanon trzyma WERSJE — o tym, CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
+
+   **Override to ostateczność, nie domyślne lekarstwo na CVE w tranzytywnej.** npm zostawia raz
+   rozwiązaną paczkę tranzytywną na wersji z lockfile'a, dopóki ta spełnia zakres — caret, który
+   *mógłby* sięgnąć po łatkę, po cichu tego nie robi, więc skan świeci na czerwono bez żadnego dryfu
+   w manifeście. Domyślna naprawa to `npm update <paczka> --package-lock-only` + commit lockfile'a.
+   Override zakładaj tylko wtedy, gdy rodzic pinuje DOKŁADNĄ podatną wersję (`@redocly/openapi-core`
+   → `js-yaml@4.3.0`), i zdejmuj go, gdy upstream się naprawi — piny `postcss`/`sharp` przeżyły
+   w czterech repo o wydanie dłużej, niż były potrzebne. Uwaga: `platform-bump` NIE usuwa override'a,
+   który wypadł z kanonu — zostawia go nietkniętego, a guard zgłosi wtedy „paczka bez wpisu w kanonie".
+   Kasowanie takiego pinu w konsumentach jest ręczne i musi iść w tym samym wydaniu co zmiana kanonu.
 7. **Nadpisania CVE nad BOM-em Boota** (propercje `tomcat.version`/`netty.version`/`postgresql.version`
    przez `ext` w `spring-modulith-conventions`) — **AKTYWNE dla `netty` 4.2.16.Final i `postgresql`
    42.7.12**: CVE High wyszły po GA BOM-a Boot 4.1.0, więc wersje BOM-owe (4.2.15.Final / 42.7.11)
