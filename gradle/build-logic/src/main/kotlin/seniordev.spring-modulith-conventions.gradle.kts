@@ -23,11 +23,15 @@ plugins {
 
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
+// LUSTRA gradle/catalog — precompiled script plugin nie czyta katalogu w czasie kompilacji,
+// więc każdy bump w libs.versions.toml musi ruszyć te stałe RAZEM z nim. Rozjazd nie psuje
+// buildu Platform (te wersje trafiają dopiero na classpath konsumenta), tylko wywala guard
+// governance w backendzie konsumenta: „wersja spoza platformy … kanon platformy: X".
 val springBootVersion = "4.1.0"
 val springModulithVersion = "2.1.0"
-val springAiVersion = "2.0.0" // GA 2026-06-12 (lustro gradle/catalog)
-val archunitVersion = "1.4.2"
-val junitVersion = "6.1.0"
+val springAiVersion = "2.0.0" // GA 2026-06-12
+val archunitVersion = "1.5.0"
+val junitVersion = "6.1.3"
 
 // TYMCZASOWE nadpisania CVE ponad BOM Boot 4.1.0 — PRZYWRÓCONE, bo CVE wyszły już po GA BOM-a
 // (2026-06-10): pinowane tam netty 4.2.15.Final i postgresql 42.7.11 są dziś podatne.
