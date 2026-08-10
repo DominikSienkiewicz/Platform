@@ -1,0 +1,40 @@
+# Where versions are declared
+
+`gradle/catalog/libs.versions.toml` is the only place a library or plugin version is
+declared. `gradle/build-logic` includes **that same file** through its own
+`settings.gradle.kts`:
+
+```kotlin
+versionCatalogs { create("libs") { from(files("../catalog/libs.versions.toml")) } }
+```
+
+It reads the file rather than the published artifact because `platform-catalog` does not
+yet exist at the time `build-logic` is compiled. The plugin marker artifacts on the
+`build-logic` classpath therefore take their versions straight from the canonical file, and
+a bump is a one-place edit.
+
+## The one remaining duplication
+
+`toolVersion` values inside the **sources** of the convention plugins — `checkstyle` and
+`jacoco` in `java-conventions`, `spotbugs` in `quality-conventions` — cannot come from the
+catalog. A precompiled script plugin does not read a version catalog at compile time, so
+these values have to be literals in the code.
+
+The canonical file holds matching entries for `checkstyle` and `jacoco`, so bumping either
+means editing both places. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
+`spotbugsPlugin` is the Gradle plugin version, which is a different thing.
+
+## Dependency locking
+
+`gradle/build-logic`, `gradle/test-fixtures` and `gradle/security-starter` each carry a
+`gradle.lockfile` for reproducible resolution. After bumping any version in those modules,
+regenerate the lockfile and commit the diff:
+
+```bash
+cd gradle/<module> && ./gradlew dependencies --write-locks
+```
+
+`gradle/catalog` keeps an **empty, hand-written** lockfile. A `version-catalog` module has
+no resolvable configuration, so `--write-locks` succeeds without creating a file. The file
+exists so that every Gradle module in the repository has one — there is nothing to lock, so
+do not try to regenerate it.
