@@ -3,8 +3,14 @@
 # `platform` jest PLACEHOLDEREM — nadpisywanym injectem (platformVersion z gradle.properties/-P) w build.gradle.kts,
 # bo statyczny TOML nie wyrazi dynamicznej wersji. Wpisy z version.ref="platform" biorą wstrzykniętą wartość.
 # build-logic dołącza TEN plik przez swoje settings.gradle.kts, więc marker-artefakty pluginów biorą wersje stąd.
-# Lustro zostaje tylko w ŹRÓDŁACH convention-pluginów (toolVersion checkstyle/jacoco/spotbugs) — precompiled
-# script plugin nie czyta katalogu w czasie kompilacji (reguła #1 CLAUDE.md).
+# Lustro zostaje w ŹRÓDŁACH convention-pluginów — precompiled script plugin nie czyta katalogu w czasie
+# kompilacji (reguła #1 CLAUDE.md). PEŁNA lista luster do ruszenia RAZEM z wpisem tutaj:
+#   java-conventions:            toolVersion checkstyle, toolVersion jacoco
+#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle)
+#   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
+#                                archunitVersion, junitVersion
+# Rozjazd luster NIE psuje buildu Platform (te wersje trafiają na classpath konsumenta) — wywala dopiero
+# guard governance w backendzie konsumenta. Po bumpie katalogu regeneruj też gradle.lockfile (--write-locks).
 
 [versions]
 platform = "1.4.3"                       # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts
