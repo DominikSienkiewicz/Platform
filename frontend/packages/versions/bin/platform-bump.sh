@@ -13,8 +13,10 @@
 #
 # Backend gradle.lockfile jest regenerowany AUTOMATYCZNIE na końcu (--write-locks) — analogicznie do
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
-# Repo z verification-metadata.xml dostaje dodatkowo --refresh-dependencies, więc ten krok pobiera
-# metadane od nowa i trwa wyraźnie dłużej niż sam bump pinów — to celowe, powód niżej przy bloku.
+# Repo z verification-metadata.xml dostaje DWA przebiegi Gradle (`build`, potem `dependencies`), oba
+# z --refresh-dependencies, więc ten krok pobiera metadane od nowa i trwa wyraźnie dłużej niż sam bump
+# pinów — to celowe, powody niżej przy bloku. Pierwszy bump po dodaniu drugiego przebiegu poszerza
+# gradle.lockfile o konfiguracje spoza grafu `build` (pitest, cyclonedxBom) — jednorazowy, celowy diff.
 #
 # UWAGA (bootstrap): stub konsumenta odpala ZAINSTALOWANĄ wersję tego skryptu, a kanon bierze ze
 # ŚWIEŻO pobranego tarballa. Repo, które ma jeszcze wydanie bez obsługi `overrides`, po pierwszym
@@ -127,11 +129,32 @@ fi
 #     build zielony, a CI (zimny cache) pobiera `.module` i failuje `Dependency verification failed`.
 #     Realny przypadek: junit-bom 5.14.4 zapisany tylko jako `.pom` (BookOfStyling/SkillSprintPlus,
 #     bump 1.5.4 -> 1.5.22). Kosztem jest jedno pełne przeliczenie na bump — bumpy są rzadkie.
+#   NIGDY z --dry-run: Gradle odkłada wtedy wynik do verification-metadata.dryrun.xml, prawdziwego
+#     pliku nie rusza i kończy się BUILD SUCCESSFUL — cicha awaria wyglądająca na sukces.
+#
+# DWA PRZEBIEGI o rozłącznych rolach — żaden sam nie domyka pliku:
+#   1. `build` POBIERA artefakty, więc jako jedyny zapisuje checksumy JARÓW, ale widzi wyłącznie
+#      konfiguracje z grafu tego zadania.
+#   2. `dependencies` (bez --configuration) rozwiązuje WSZYSTKIE resolvable konfiguracje, ale jako
+#      report task nie pobiera artefaktów — domyka więc metadane (.pom/.module), nie jary.
+#      Sedno: `junit-bom-<wersja>.pom` jest pobierany dopiero w detached configuration, którą
+#      io.spring.dependency-management (MavenPomResolver.resolvePomsLeniently) tworzy przy ustalaniu
+#      zależności `:integrationTest`. `.module` tej samej wersji leci normalną ścieżką, więc plik
+#      wygląda na kompletny — a CI failuje `One artifact failed verification: junit-bom-6.1.3.pom`
+#      (Azimuth/SkillSprintPlus, bump 1.5.26: junit 6.1.0 -> 6.1.3). Ta sama klasa błędu wracała
+#      wcześniej dla konfiguracji narzędziowych (Spotless, JaCoCo, CycloneDX) — stąd BRAK zawężenia
+#      do `--configuration testRuntimeClasspath`, które domknęłoby wprawdzie junit-bom, ale nie tamte.
+#      --write-locks jest tu OBOWIĄZKOWE: lockfile konsumenta (lockAllConfigurations) ma wpisy dla
+#      konfiguracji spoza grafu `build` (pitest, cyclonedxBom), więc bez przepisania locka ten
+#      przebieg wywracałby bump na niezgodności lock state. Musi iść DRUGI — przy --write-locks
+#      wygrywa ostatni przebieg, a jego zbiór konfiguracji jest nadzbiorem zbioru `build`.
 # platform-bump:gradle
 if [[ -f backend/settings.gradle.kts ]]; then
   echo "==> Backend: regeneracja zamrożonego stanu (--write-locks)"
   if [[ -f backend/gradle/verification-metadata.xml ]]; then
     ( cd backend && ./gradlew build --write-locks --write-verification-metadata sha256 --refresh-dependencies --no-daemon )
+    echo "==> Backend: domykanie metadanych weryfikacji dla wszystkich konfiguracji (dependencies)"
+    ( cd backend && ./gradlew dependencies --write-locks --write-verification-metadata sha256 --refresh-dependencies --no-daemon )
   else
     ( cd backend && ./gradlew dependencies --write-locks --no-daemon )
   fi
