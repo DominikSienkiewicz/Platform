@@ -7,7 +7,7 @@
 # kompilacji (reguła #1 CLAUDE.md). PEŁNA lista luster do ruszenia RAZEM z wpisem tutaj:
 #   java-conventions:            toolVersion checkstyle, toolVersion jacoco, googleJavaFormat(...),
 #                                toolchain languageVersion (java)
-#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle)
+#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle), pitestVersion (pitestTool)
 #   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
 #                                archunitVersion, junitVersion, ext["lombok.version"] (lombok)
 # Rozjazd luster NIE psuje buildu Platform (te wersje trafiają na classpath konsumenta) — wywala dopiero
@@ -31,7 +31,8 @@ spotless = "8.9.0"
 googleJavaFormat = "1.36.1"              # lustro: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs (toolVersion 4.10.3) żyje w quality-conventions
 checkstyle = "13.10.0"                   # lustro: toolVersion w java-conventions (guard configów czyta stąd)
-pitest = "1.19.0"
+pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; SAM PIT to pitestTool
+pitestTool = "1.30.0"                    # lustro: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
 pitestJunit5 = "1.2.3"
 cyclonedx = "3.3.0"
 jacoco = "0.8.15"

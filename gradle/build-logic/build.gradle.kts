@@ -54,16 +54,21 @@ tasks.withType<Test>().configureEach {
 	val javaConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.java-conventions.gradle.kts")
 	val springModulithConventions =
 		layout.projectDirectory.file("src/main/kotlin/seniordev.spring-modulith-conventions.gradle.kts")
+	val qualityConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.quality-conventions.gradle.kts")
 	inputs.file(javaConventions)
 	inputs.file(springModulithConventions)
+	inputs.file(qualityConventions)
 	inputs.property("canonGoogleJavaFormat", libs.versions.googleJavaFormat.get())
 	inputs.property("canonJava", libs.versions.java.get())
 	inputs.property("canonLombok", libs.versions.lombok.get())
+	inputs.property("canonPitestTool", libs.versions.pitestTool.get())
 	systemProperty("platform.javaConventions", javaConventions.asFile.absolutePath)
 	systemProperty("platform.springModulithConventions", springModulithConventions.asFile.absolutePath)
 	systemProperty("platform.canon.googleJavaFormat", libs.versions.googleJavaFormat.get())
 	systemProperty("platform.canon.java", libs.versions.java.get())
 	systemProperty("platform.canon.lombok", libs.versions.lombok.get())
+	systemProperty("platform.qualityConventions", qualityConventions.asFile.absolutePath)
+	systemProperty("platform.canon.pitestTool", libs.versions.pitestTool.get())
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

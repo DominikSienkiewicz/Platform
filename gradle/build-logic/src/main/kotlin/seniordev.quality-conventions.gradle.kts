@@ -25,9 +25,10 @@ plugins {
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
 pitest {
-	// Wersje przypięte jawnie pod toolchain Java 25.
+	// Wersje przypięte jawnie. PIT >= 1.30.0 czyta class-file 71 (toolchain 27); 1.25.3 niosło ASM 9.9.1
+	// i padało na „Unsupported class file major version 71". Lustro gradle/catalog: version("pitestTool").
 	junit5PluginVersion.set("1.2.3")
-	pitestVersion.set("1.25.3")
+	pitestVersion.set("1.30.0")
 	timestampedReports.set(false)
 	outputFormats.set(listOf("HTML", "XML"))
 }

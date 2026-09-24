@@ -16,6 +16,7 @@ class PlatformToolVersionMirrorTest {
 	private val javaConventions = File(System.getProperty("platform.javaConventions")).readText()
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
+	private val qualityConventions = File(System.getProperty("platform.qualityConventions")).readText()
 
 	@Test
 	fun `googleJavaFormat w java-conventions jest zgodny z kanonem katalogu`() {
@@ -36,6 +37,13 @@ class PlatformToolVersionMirrorTest {
 		val mirrored = mirrors(springModulithConventions, """ext\["lombok\.version"]\s*=\s*"([^"]+)"""")
 
 		assertEquals(listOf(canon("lombok")), mirrored, "ext[\"lombok.version\"] w spring-modulith-conventions musi równać się kanonowi")
+	}
+
+	@Test
+	fun `pitestVersion w quality-conventions jest zgodny z kanonem katalogu`() {
+		val mirrored = mirrors(qualityConventions, """pitestVersion\.set\("([^"]+)"\)""")
+
+		assertEquals(listOf(canon("pitestTool")), mirrored, "pitestVersion.set(...) w quality-conventions musi równać się kanonowi")
 	}
 
 	private fun canon(name: String): String = System.getProperty("platform.canon.$name")

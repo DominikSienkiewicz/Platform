@@ -24,8 +24,9 @@ these values have to be literals in the code.
 The canonical file holds matching entries for `checkstyle`, `jacoco` and `googleJavaFormat`,
 so bumping any of them means editing both places. `PlatformToolVersionMirrorTest` in
 `build-logic` fails when the `googleJavaFormat` literal, the toolchain `JavaLanguageVersion.of(…)`
-in `java-conventions` (catalog `java`) or the `ext["lombok.version"]` override in
-`spring-modulith-conventions` (catalog `lombok`) drifts from the catalog. The formatter
+in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
+`spring-modulith-conventions` (catalog `lombok`) or `pitestVersion` in `quality-conventions`
+(catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog. The formatter
 version is pinned rather than left to Spotless because Spotless picks its default from the JVM
 that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
 `spotbugsPlugin` is the Gradle plugin version, which is a different thing.
@@ -38,6 +39,14 @@ compatibility — the Boot 4.1.0 BOM pins Lombok 1.18.46, which fails on javac 2
 toolchain of `java-conventions`. Drop each override once the Boot BOM catches up. Consumers
 that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`
 after taking a platform version that changes an override.
+
+## Entry condition for the JDK 27 toolchain
+
+The toolchain 27 change is held back from a release until both hold, in the same change:
+
+- the `eclipse-temurin:27-jre` image exists on Docker Hub (bytecode 27 needs a runtime of at
+  least 27, and the consumers' images derive from `templates/Dockerfile.backend`);
+- `templates/Dockerfile.backend` moves from `26-jre` to `27-jre`.
 
 ## Dependency locking
 
