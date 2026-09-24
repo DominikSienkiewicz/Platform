@@ -9,7 +9,8 @@ import java.io.File
  * seniordev.java-conventions
  * --------------------------
  * Bazowy "agent-friendly" plugin dla każdego modułu Java w organizacji:
- *   - toolchain Java 26 (non-LTS; baseline portfolio 2026-07)
+ *   - toolchain Java 27 (non-LTS; baseline portfolio 2026-09). Wymaga Lomboka >= 1.18.48 (nadpisanie
+ *     BOM-a w spring-modulith-conventions) i google-java-format >= 1.35.0 (pin niżej)
  *   - Spotless (Google Java Format) — jeden formatter dla wszystkich repo
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
  *   - JaCoCo + bramka pokrycia z RATCHETEM (start 0.00 → cel 0.80, sterowany -PcoverageMinimum);
@@ -30,9 +31,10 @@ plugins {
 // (dependencyResolutionManagement: mavenLocal + mavenCentral + GitHub Packages). Deklaracja repo
 // na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform z mavenLocal/GitHub.
 
+// Lustro gradle/catalog: version("java"). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(26)
+		languageVersion = JavaLanguageVersion.of(27)
 	}
 }
 
@@ -78,7 +80,7 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 jacoco {
-	// 0.8.15 = najnowsza stabilna; 0.8.14+ = class-file Java 25, 0.8.15 dodał EKSPERYMENTALNE wsparcie 26 (gate pokrycia działa, status nieoficjalny).
+	// 0.8.15 = najnowsza stabilna; 0.8.14+ = class-file Java 25, 0.8.15 dodał EKSPERYMENTALNE wsparcie 26; class-file 27 również nieoficjalne (zweryfikowane w Azimuth).
 	// Lustro gradle/catalog: version("jacoco").
 	toolVersion = "0.8.15"
 }

@@ -5,21 +5,41 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * Guard lustra wersji google-java-format.
+ * Guard luster wersji wpisanych w źródłach convention pluginów.
  *
- * Precompiled script plugin nie czyta katalogu w czasie kompilacji, więc wersja formatera stoi
- * w źródle seniordev.java-conventions i w gradle/catalog jednocześnie. Rozjazd nie psuje buildu
- * Platform, a formater konsumenta wybiera wtedy wersję, której kanon nie opisuje.
+ * Precompiled script plugin nie czyta katalogu w czasie kompilacji, więc te wersje stoją
+ * w źródłach convention pluginów i w gradle/catalog jednocześnie. Rozjazd nie psuje buildu
+ * Platform, a konsument dostaje wtedy wersję, której kanon nie opisuje.
  */
 class PlatformToolVersionMirrorTest {
 
+	private val javaConventions = File(System.getProperty("platform.javaConventions")).readText()
+	private val springModulithConventions =
+		File(System.getProperty("platform.springModulithConventions")).readText()
+
 	@Test
 	fun `googleJavaFormat w java-conventions jest zgodny z kanonem katalogu`() {
-		val canon = System.getProperty("platform.canon.googleJavaFormat")
-		val source = File(System.getProperty("platform.javaConventions")).readText()
+		val mirrored = mirrors(javaConventions, """googleJavaFormat\("([^"]+)"\)""")
 
-		val mirrored = Regex("""googleJavaFormat\("([^"]+)"\)""").findAll(source).map { it.groupValues[1] }.toList()
-
-		assertEquals(listOf(canon), mirrored, "googleJavaFormat(...) w java-conventions musi równać się kanonowi")
+		assertEquals(listOf(canon("googleJavaFormat")), mirrored, "googleJavaFormat(...) w java-conventions musi równać się kanonowi")
 	}
+
+	@Test
+	fun `toolchain w java-conventions jest zgodny z kanonem katalogu`() {
+		val mirrored = mirrors(javaConventions, """JavaLanguageVersion\.of\((\d+)\)""")
+
+		assertEquals(listOf(canon("java")), mirrored, "JavaLanguageVersion.of(...) w java-conventions musi równać się kanonowi")
+	}
+
+	@Test
+	fun `nadpisanie lombok_version w spring-modulith-conventions jest zgodne z kanonem katalogu`() {
+		val mirrored = mirrors(springModulithConventions, """ext\["lombok\.version"]\s*=\s*"([^"]+)"""")
+
+		assertEquals(listOf(canon("lombok")), mirrored, "ext[\"lombok.version\"] w spring-modulith-conventions musi równać się kanonowi")
+	}
+
+	private fun canon(name: String): String = System.getProperty("platform.canon.$name")
+
+	private fun mirrors(source: String, pattern: String): List<String> =
+		Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
 }

@@ -52,10 +52,18 @@ tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
 	// Guard luster wersji: test porównuje wersje wpisane w źródłach convention pluginów z kanonem.
 	val javaConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.java-conventions.gradle.kts")
+	val springModulithConventions =
+		layout.projectDirectory.file("src/main/kotlin/seniordev.spring-modulith-conventions.gradle.kts")
 	inputs.file(javaConventions)
+	inputs.file(springModulithConventions)
 	inputs.property("canonGoogleJavaFormat", libs.versions.googleJavaFormat.get())
+	inputs.property("canonJava", libs.versions.java.get())
+	inputs.property("canonLombok", libs.versions.lombok.get())
 	systemProperty("platform.javaConventions", javaConventions.asFile.absolutePath)
+	systemProperty("platform.springModulithConventions", springModulithConventions.asFile.absolutePath)
 	systemProperty("platform.canon.googleJavaFormat", libs.versions.googleJavaFormat.get())
+	systemProperty("platform.canon.java", libs.versions.java.get())
+	systemProperty("platform.canon.lombok", libs.versions.lombok.get())
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---
