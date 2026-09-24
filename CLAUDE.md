@@ -29,7 +29,7 @@ opublikuj, podbij pin w repo konsumenta.
 1. **Wersje bibliotek/pluginów → `gradle/catalog`.** `build-logic` dołącza ten sam
    `libs.versions.toml` przez swoje `settings.gradle.kts`, więc marker-artefakty pluginów biorą wersje
    z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: `toolVersion` w ŹRÓDŁACH convention pluginów
-   (checkstyle/jacoco w `java-conventions`, spotbugs w `quality-conventions`) — precompiled script
+   (checkstyle/jacoco + `googleJavaFormat("…")` w `java-conventions`, spotbugs w `quality-conventions`) — precompiled script
    plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie i przy bumpie
    zmieniasz oba miejsca.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
