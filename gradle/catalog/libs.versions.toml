@@ -5,7 +5,7 @@
 # build-logic dołącza TEN plik przez swoje settings.gradle.kts, więc marker-artefakty pluginów biorą wersje stąd.
 # Lustro zostaje w ŹRÓDŁACH convention-pluginów — precompiled script plugin nie czyta katalogu w czasie
 # kompilacji (reguła #1 CLAUDE.md). PEŁNA lista luster do ruszenia RAZEM z wpisem tutaj:
-#   java-conventions:            toolVersion checkstyle, toolVersion jacoco
+#   java-conventions:            toolVersion checkstyle, toolVersion jacoco, googleJavaFormat(...)
 #   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle)
 #   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
 #                                archunitVersion, junitVersion
@@ -26,6 +26,7 @@ bucket4j = "8.19.0"
 shedlock = "7.7.0"
 javers = "7.11.7"
 spotless = "8.9.0"
+googleJavaFormat = "1.36.1"              # lustro: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs (toolVersion 4.10.3) żyje w quality-conventions
 checkstyle = "13.10.0"                   # lustro: toolVersion w java-conventions (guard configów czyta stąd)
 pitest = "1.19.0"

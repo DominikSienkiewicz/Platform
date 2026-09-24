@@ -50,6 +50,12 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
+	// Guard luster wersji: test porównuje wersje wpisane w źródłach convention pluginów z kanonem.
+	val javaConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.java-conventions.gradle.kts")
+	inputs.file(javaConventions)
+	inputs.property("canonGoogleJavaFormat", libs.versions.googleJavaFormat.get())
+	systemProperty("platform.javaConventions", javaConventions.asFile.absolutePath)
+	systemProperty("platform.canon.googleJavaFormat", libs.versions.googleJavaFormat.get())
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

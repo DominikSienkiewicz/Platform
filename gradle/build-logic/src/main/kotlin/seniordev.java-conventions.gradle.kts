@@ -38,7 +38,10 @@ java {
 
 spotless {
 	java {
-		googleJavaFormat()
+		// Wersja JAWNIE: domyślna Spotless zależy od JVM demona Gradle i na JDK 27 wybierała 1.28.0,
+		// która pada na javac 27 (NoSuchFieldError JCCompilationUnit.endPositions); 1.34.x z kolei
+		// odrzuca `var`. Lustro gradle/catalog: version("googleJavaFormat").
+		googleJavaFormat("1.36.1")
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()

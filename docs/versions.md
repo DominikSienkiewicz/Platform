@@ -16,12 +16,16 @@ a bump is a one-place edit.
 ## The one remaining duplication
 
 `toolVersion` values inside the **sources** of the convention plugins — `checkstyle` and
-`jacoco` in `java-conventions`, `spotbugs` in `quality-conventions` — cannot come from the
+`jacoco` in `java-conventions`, `spotbugs` in `quality-conventions` — and the
+`googleJavaFormat("…")` formatter version in `java-conventions` cannot come from the
 catalog. A precompiled script plugin does not read a version catalog at compile time, so
 these values have to be literals in the code.
 
-The canonical file holds matching entries for `checkstyle` and `jacoco`, so bumping either
-means editing both places. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
+The canonical file holds matching entries for `checkstyle`, `jacoco` and `googleJavaFormat`,
+so bumping any of them means editing both places. `PlatformToolVersionMirrorTest` in
+`build-logic` fails when the `googleJavaFormat` literal drifts from the catalog. The formatter
+version is pinned rather than left to Spotless because Spotless picks its default from the JVM
+that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
 `spotbugsPlugin` is the Gradle plugin version, which is a different thing.
 
 ## Dependency locking
