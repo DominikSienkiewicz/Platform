@@ -25,7 +25,8 @@ The canonical file holds matching entries for `checkstyle`, `jacoco` and `google
 so bumping any of them means editing both places. `PlatformToolVersionMirrorTest` in
 `build-logic` fails when the `googleJavaFormat` literal, the toolchain `JavaLanguageVersion.of(…)`
 in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
-`spring-modulith-conventions` (catalog `lombok`) or `pitestVersion` in `quality-conventions`
+`spring-modulith-conventions` (catalog `lombok`), the `archunitVersion` literal there (catalog
+`archunit`) or `pitestVersion` in `quality-conventions`
 (catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog,
 and so does the `toolchain-java-version` default of the reusable workflows (catalog `java`). The formatter
 version is pinned rather than left to Spotless because Spotless picks its default from the JVM
@@ -37,7 +38,20 @@ that runs Gradle, and on JDK 27 it picked a release that crashes on the new java
 `spring-modulith-conventions` overrides BOM version properties through `ext[...]`:
 `netty.version` and `postgresql.version` for CVEs, and `lombok.version` `1.18.48` for
 compatibility — the Boot 4.1.0 BOM pins Lombok 1.18.46, which fails on javac 27, the
-toolchain of `java-conventions`. Drop each override once the Boot BOM catches up. Consumers
+toolchain of `java-conventions`. Drop each override once the Boot BOM catches up.
+
+ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
+`spring-modulith-core` 2.1.0 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
+read class-file major 71 (javac 27). Spring Modulith builds `ApplicationModules` at application start,
+so on the runtime classpath it imports no classes and the context fails with "No classes found in
+packages". Tests never saw it, because `archunit-junit5` pulls the catalog version onto the test
+classpaths only. The convention therefore declares `com.tngtech.archunit:archunit` in
+`dependencyManagement.dependencies` at `archunitVersion` (catalog `archunit`), which applies to every
+configuration, transitive dependencies included. Drop it once `spring-modulith-core` itself depends on
+an ArchUnit that reads Java 27 class files (1.5.0 or later). `PlatformToolVersionMirrorTest` guards
+both the version mirror and the presence of this managed dependency.
+
+Consumers
 that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`
 after taking a platform version that changes an override.
 

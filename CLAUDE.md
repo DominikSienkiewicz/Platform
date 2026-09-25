@@ -69,6 +69,10 @@ opublikuj, podbij pin w repo konsumenta.
    Tym samym mechanizmem, ale z powodu **kompatybilności**, nie CVE: `lombok.version` 1.18.48 —
    BOM-owy 1.18.46 pada na javac 27 (toolchain `java-conventions`). Zdejmij, gdy BOM Boota ≥ 1.18.48.
    Lustro w katalogu (`lombok`, `java`) pilnuje `PlatformToolVersionMirrorTest`.
+   **ArchUnit** (kompatybilność, inny mechanizm): żaden BOM nim nie zarządza, a `spring-modulith-core`
+   2.1.0 ciągnie 1.4.2, które nie czyta class-file 71 → Modulith przy starcie aplikacji „No classes found".
+   Dlatego `dependencyManagement { dependencies { dependency("…archunit:$archunitVersion") } }` — działa
+   na wszystkich konfiguracjach, także `runtimeClasspath`. Zdejmij, gdy `spring-modulith-core` przypnie ≥ 1.5.0.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.

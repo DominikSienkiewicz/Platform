@@ -58,6 +58,17 @@ dependencyManagement {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:$springModulithVersion")
 		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
 	}
+	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.0 deklaruje ArchUnit 1.4.2
+	// jako zależność compile, a żaden BOM (Boot/Modulith) nie zarządza ArchUnit — nie ma propercji do
+	// nadpisania przez ext. ArchUnit 1.4.2 nie czyta class-file 71 (javac 27, toolchain java-conventions),
+	// więc ApplicationModules budowane przy starcie aplikacji nie importuje żadnej klasy i kontekst pada
+	// z „No classes found in packages". Testy tego nie łapią: archunit-junit5 niżej wciąga wersję z kanonu
+	// tylko na testowe classpathy. Zarządzana zależność działa na WSZYSTKICH konfiguracjach, w tym tranzytywnie.
+	// USUŃ, gdy spring-modulith-core przypnie ArchUnit >= 1.5.0 (sprawdź pom spring-modulith-core).
+	// Lustro gradle/catalog: version("archunit"); pilnuje PlatformToolVersionMirrorTest.
+	dependencies {
+		dependency("com.tngtech.archunit:archunit:$archunitVersion")
+	}
 }
 
 dependencies {
