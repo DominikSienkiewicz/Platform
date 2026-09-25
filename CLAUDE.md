@@ -66,6 +66,9 @@ opublikuj, podbij pin w repo konsumenta.
    42.7.12**: CVE High wyszły po GA BOM-a Boot 4.1.0, więc wersje BOM-owe (4.2.15.Final / 42.7.11)
    są dziś podatne. `tomcat` bez pinu — BOM-owy 11.0.22 jest czysty (pinujemy tylko to, co realnie
    podatne). Przy kolejnym bumpie Boota sprawdź propercje BOM-a i zdejmij pin, gdy BOM dogoni te wersje.
+   Tym samym mechanizmem, ale z powodu **kompatybilności**, nie CVE: `lombok.version` 1.18.48 —
+   BOM-owy 1.18.46 pada na javac 27 (toolchain `java-conventions`). Zdejmij, gdy BOM Boota ≥ 1.18.48.
+   Lustro w katalogu (`lombok`, `java`) pilnuje `PlatformToolVersionMirrorTest`.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.

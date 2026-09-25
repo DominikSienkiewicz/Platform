@@ -5,17 +5,19 @@
 # build-logic dołącza TEN plik przez swoje settings.gradle.kts, więc marker-artefakty pluginów biorą wersje stąd.
 # Lustro zostaje w ŹRÓDŁACH convention-pluginów — precompiled script plugin nie czyta katalogu w czasie
 # kompilacji (reguła #1 CLAUDE.md). PEŁNA lista luster do ruszenia RAZEM z wpisem tutaj:
-#   java-conventions:            toolVersion checkstyle, toolVersion jacoco, googleJavaFormat(...)
-#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle)
+#   java-conventions:            toolVersion checkstyle, toolVersion jacoco, googleJavaFormat(...),
+#                                toolchain languageVersion (java)
+#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle), pitestVersion (pitestTool)
 #   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
-#                                archunitVersion, junitVersion
+#                                archunitVersion, junitVersion, ext["lombok.version"] (lombok)
 # Rozjazd luster NIE psuje buildu Platform (te wersje trafiają na classpath konsumenta) — wywala dopiero
 # guard governance w backendzie konsumenta. Po bumpie katalogu regeneruj też gradle.lockfile (--write-locks).
 
 [versions]
 platform = "1.4.3"                       # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts
-java = "26"                              # non-LTS; baseline portfolio (2026-07). JaCoCo 0.8.15: class-file 26 EKSPERYMENTALNE
+java = "27"                              # lustro: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
 springBoot = "4.1.0"                     # GA 2026-06-10
+lombok = "1.18.48"                       # lustro: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
 springDependencyManagement = "1.1.7"
 springModulith = "2.1.0"
 springAi = "2.0.0"                       # GA 2026-06-12 (po bumpie: --write-verification-metadata u konsumenta)
@@ -29,7 +31,8 @@ spotless = "8.9.0"
 googleJavaFormat = "1.36.1"              # lustro: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs (toolVersion 4.10.3) żyje w quality-conventions
 checkstyle = "13.10.0"                   # lustro: toolVersion w java-conventions (guard configów czyta stąd)
-pitest = "1.19.0"
+pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; SAM PIT to pitestTool
+pitestTool = "1.30.0"                    # lustro: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
 pitestJunit5 = "1.2.3"
 cyclonedx = "3.3.0"
 jacoco = "0.8.15"

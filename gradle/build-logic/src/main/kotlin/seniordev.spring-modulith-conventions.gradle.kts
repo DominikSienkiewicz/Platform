@@ -45,6 +45,13 @@ val junitVersion = "6.1.3"
 ext["netty.version"] = "4.2.16.Final"
 ext["postgresql.version"] = "42.7.12"
 
+// Nadpisanie KOMPATYBILNOŚCI (nie CVE) ponad BOM Boot 4.1.0: BOM-owy Lombok 1.18.46 pada na javac 27
+// (ClassNotFoundException com.sun.tools.javac.tree.EndPosTable w lombok.javac.Javac), a toolchain
+// w java-conventions to 27. 1.18.48 kompiluje na javac 27 (zweryfikowane w Azimuth).
+// USUŃ, gdy BOM Boota przypnie lombok.version >= 1.18.48 (propercja w spring-boot-dependencies).
+// Lustro gradle/catalog: version("lombok"); pilnuje PlatformToolVersionMirrorTest.
+ext["lombok.version"] = "1.18.48"
+
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")

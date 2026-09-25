@@ -23,10 +23,54 @@ these values have to be literals in the code.
 
 The canonical file holds matching entries for `checkstyle`, `jacoco` and `googleJavaFormat`,
 so bumping any of them means editing both places. `PlatformToolVersionMirrorTest` in
-`build-logic` fails when the `googleJavaFormat` literal drifts from the catalog. The formatter
+`build-logic` fails when the `googleJavaFormat` literal, the toolchain `JavaLanguageVersion.of(…)`
+in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
+`spring-modulith-conventions` (catalog `lombok`) or `pitestVersion` in `quality-conventions`
+(catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog,
+and so does the `toolchain-java-version` default of the reusable workflows (catalog `java`). The formatter
 version is pinned rather than left to Spotless because Spotless picks its default from the JVM
 that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
 `spotbugsPlugin` is the Gradle plugin version, which is a different thing.
+
+## Overrides above the Spring Boot BOM
+
+`spring-modulith-conventions` overrides BOM version properties through `ext[...]`:
+`netty.version` and `postgresql.version` for CVEs, and `lombok.version` `1.18.48` for
+compatibility — the Boot 4.1.0 BOM pins Lombok 1.18.46, which fails on javac 27, the
+toolchain of `java-conventions`. Drop each override once the Boot BOM catches up. Consumers
+that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`
+after taking a platform version that changes an override.
+
+## Runtime image for the JDK 27 toolchain
+
+Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from
+`templates/Dockerfile.backend`, so the toolchain and the runtime image move together.
+
+On 2026-09-25 the toolchain 27 entry condition was met with `sapmachine:27-jre`, not
+`eclipse-temurin:27-jre`: ten days after the JDK 27 GA, Docker Hub still had no Temurin 27
+image. SapMachine is an official Docker Hub image (SAP's OpenJDK build) based on Ubuntu 24.04, and it runs the template unchanged: `groupadd`/`useradd`, `bash` and `sh` are
+present, `/usr/bin/pebble` is not. At the switch neither image carried a Critical or High
+vulnerability (Docker Scout, `linux/amd64`); SapMachine carried 34 Medium and 2 Low, Temurin 26
+none, because its base is the older Ubuntu LTS.
+
+Move back to `eclipse-temurin:27-jre` when that tag exists and a Grype scan of it passes the
+`container-scan.yml` gate (`high`, `only-fixed`). Change only the `FROM` line; the rest of the
+template is image-neutral.
+
+## JDK 27 toolchain on CI
+
+The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
+`actions/setup-java` (input `toolchain-java-version`, default `27`) and register it through
+`org.gradle.java.installations.paths` in the Gradle user home. Gradle itself still runs on
+the `java-version` JDK (25), because `build-logic` is compiled to Java 25 bytecode.
+
+Foojay is bypassed on CI on purpose. On 2026-09-25 it indexed Temurin 27 for Linux only as the
+Alpine (musl) build; the resolver prefers Temurin, picked that archive on the glibc runner and
+Gradle rejected it ("Unpacked JDK archive does not contain a Java home"). `setup-java` reads the
+Adoptium API directly and gets the glibc build. The `toolchain-java-version` default mirrors
+the catalog `java` entry; `PlatformToolVersionMirrorTest` fails when it drifts in any workflow
+under `.github/workflows/`, or when one of the three workflows loses the input. `security-scan.yml` runs only `cyclonedxBom`, which does not
+compile, and keeps a single JDK.
 
 ## Dependency locking
 

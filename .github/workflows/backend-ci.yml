@@ -11,6 +11,10 @@ on:
       java-version:
         type: string
         default: "25"
+      toolchain-java-version:
+        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        type: string
+        default: "27"
       gradle-task:
         type: string
         default: "build"
@@ -34,12 +38,27 @@ jobs:
         with:
           persist-credentials: false
 
+      # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
+      # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
+      # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
+      - uses: actions/setup-java@v5
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.toolchain-java-version }}
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      - name: Expose the toolchain JDK to Gradle
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
 
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
       # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).

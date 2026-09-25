@@ -40,9 +40,9 @@ own schedule and rolls back by pinning an older version.
 
 | Plugin | What it brings |
 |---|---|
-| `seniordev.java-conventions` | toolchain 26, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a ratcheting gate |
+| `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a ratcheting gate |
 | `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only on JDK 25), CycloneDX (SBOM) |
-| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA), shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
 
 ## Documentation
 
@@ -57,8 +57,11 @@ own schedule and rolls back by pinning an older version.
 
 ## Requirements
 
-JDK 26 for the Gradle modules. Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for
-the frontend packages.
+JDK 25 or newer to run Gradle: `build-logic`, `test-fixtures` and `security-starter` compile
+to Java 25 bytecode. Consumers compile on toolchain 27, which Foojay provisions locally when it
+is not installed; the reusable CI workflows install it with `setup-java` instead
+([`docs/versions.md`](docs/versions.md)). The backend runtime image is `sapmachine:27-jre`.
+Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages.
 
 ## License
 
