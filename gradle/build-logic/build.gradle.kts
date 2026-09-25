@@ -58,6 +58,8 @@ tasks.withType<Test>().configureEach {
 	inputs.file(javaConventions)
 	inputs.file(springModulithConventions)
 	inputs.file(qualityConventions)
+	val workflows = layout.projectDirectory.dir("../../.github/workflows")
+	inputs.dir(workflows)
 	inputs.property("canonGoogleJavaFormat", libs.versions.googleJavaFormat.get())
 	inputs.property("canonJava", libs.versions.java.get())
 	inputs.property("canonLombok", libs.versions.lombok.get())
@@ -69,6 +71,7 @@ tasks.withType<Test>().configureEach {
 	systemProperty("platform.canon.lombok", libs.versions.lombok.get())
 	systemProperty("platform.qualityConventions", qualityConventions.asFile.absolutePath)
 	systemProperty("platform.canon.pitestTool", libs.versions.pitestTool.get())
+	systemProperty("platform.workflows", workflows.asFile.absolutePath)
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

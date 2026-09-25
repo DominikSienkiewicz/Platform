@@ -26,7 +26,8 @@ so bumping any of them means editing both places. `PlatformToolVersionMirrorTest
 `build-logic` fails when the `googleJavaFormat` literal, the toolchain `JavaLanguageVersion.of(…)`
 in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
 `spring-modulith-conventions` (catalog `lombok`) or `pitestVersion` in `quality-conventions`
-(catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog. The formatter
+(catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog,
+and so does the `toolchain-java-version` default of the reusable workflows (catalog `java`). The formatter
 version is pinned rather than left to Spotless because Spotless picks its default from the JVM
 that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
 `spotbugsPlugin` is the Gradle plugin version, which is a different thing.
@@ -67,8 +68,8 @@ Foojay is bypassed on CI on purpose. On 2026-09-25 it indexed Temurin 27 for Lin
 Alpine (musl) build; the resolver prefers Temurin, picked that archive on the glibc runner and
 Gradle rejected it ("Unpacked JDK archive does not contain a Java home"). `setup-java` reads the
 Adoptium API directly and gets the glibc build. The `toolchain-java-version` default mirrors
-the catalog `java` entry and is not covered by `PlatformToolVersionMirrorTest`, so bump it
-together with the toolchain. `security-scan.yml` runs only `cyclonedxBom`, which does not
+the catalog `java` entry; `PlatformToolVersionMirrorTest` fails when it drifts in any workflow
+under `.github/workflows/`, or when one of the three workflows loses the input. `security-scan.yml` runs only `cyclonedxBom`, which does not
 compile, and keeps a single JDK.
 
 ## Dependency locking

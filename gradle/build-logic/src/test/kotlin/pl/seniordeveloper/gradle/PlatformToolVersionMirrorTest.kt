@@ -17,6 +17,7 @@ class PlatformToolVersionMirrorTest {
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
 	private val qualityConventions = File(System.getProperty("platform.qualityConventions")).readText()
+	private val workflows = File(System.getProperty("platform.workflows"))
 
 	@Test
 	fun `googleJavaFormat w java-conventions jest zgodny z kanonem katalogu`() {
@@ -46,8 +47,31 @@ class PlatformToolVersionMirrorTest {
 		assertEquals(listOf(canon("pitestTool")), mirrored, "pitestVersion.set(...) w quality-conventions musi równać się kanonowi")
 	}
 
+	@Test
+	fun `domyslny toolchain-java-version w reusable workflowach jest zgodny z kanonem katalogu`() {
+		val mirrored =
+			workflows
+				.listFiles { file -> file.name.endsWith(".yml") }
+				.orEmpty()
+				.sortedBy { it.name }
+				.flatMap { file ->
+					mirrors(file.readText(), TOOLCHAIN_INPUT_DEFAULT).map { version -> file.name to version }
+				}
+
+		assertEquals(
+			TOOLCHAIN_WORKFLOWS.map { it to canon("java") },
+			mirrored,
+			"toolchain-java-version.default w reusable workflowach musi równać się kanonowi java",
+		)
+	}
+
 	private fun canon(name: String): String = System.getProperty("platform.canon.$name")
 
 	private fun mirrors(source: String, pattern: String): List<String> =
 		Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
+
+	private companion object {
+		const val TOOLCHAIN_INPUT_DEFAULT = """\n {6}toolchain-java-version:(?:\n {8}[^\n]*)*?\n {8}default: "([^"]+)""""
+		val TOOLCHAIN_WORKFLOWS = listOf("backend-ci.yml", "deploy.yml", "sonar.yml")
+	}
 }
