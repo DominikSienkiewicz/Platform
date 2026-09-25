@@ -56,6 +56,21 @@ Move back to `eclipse-temurin:27-jre` when that tag exists and a Grype scan of i
 `container-scan.yml` gate (`high`, `only-fixed`). Change only the `FROM` line; the rest of the
 template is image-neutral.
 
+## JDK 27 toolchain on CI
+
+The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
+`actions/setup-java` (input `toolchain-java-version`, default `27`) and register it through
+`org.gradle.java.installations.paths` in the Gradle user home. Gradle itself still runs on
+the `java-version` JDK (25), because `build-logic` is compiled to Java 25 bytecode.
+
+Foojay is bypassed on CI on purpose. On 2026-09-25 it indexed Temurin 27 for Linux only as the
+Alpine (musl) build; the resolver prefers Temurin, picked that archive on the glibc runner and
+Gradle rejected it ("Unpacked JDK archive does not contain a Java home"). `setup-java` reads the
+Adoptium API directly and gets the glibc build. The `toolchain-java-version` default mirrors
+the catalog `java` entry and is not covered by `PlatformToolVersionMirrorTest`, so bump it
+together with the toolchain. `security-scan.yml` runs only `cyclonedxBom`, which does not
+compile, and keeps a single JDK.
+
 ## Dependency locking
 
 `gradle/build-logic`, `gradle/test-fixtures` and `gradle/security-starter` each carry a

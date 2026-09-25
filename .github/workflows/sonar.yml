@@ -21,6 +21,10 @@ on:
         description: "JDK do uruchomienia Gradle (skan backendu)."
         type: string
         default: "25"
+      toolchain-java-version:
+        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        type: string
+        default: "27"
       node-version:
         description: "Node do testów + coverage (skan frontendu)."
         type: string
@@ -43,10 +47,24 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # pełna historia -> poprawne new-code & blame
+      # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
+      # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
+      # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
+      - uses: actions/setup-java@v5
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.toolchain-java-version }}
+      - name: Expose the toolchain JDK to Gradle
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: ${{ inputs.java-version }} # uruchamia Gradle; toolchain aplikacji dociąga Foojay
+          java-version: ${{ inputs.java-version }} # uruchamia Gradle; toolchain aplikacji z kroku toolchain-jdk
       # Testcontainers: Docker jest na runnerze. Testy -> JaCoCo XML -> skan.
       - name: Test + JaCoCo + Sonar
         if: ${{ env.SONAR_TOKEN != '' }}

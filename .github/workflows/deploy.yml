@@ -39,6 +39,10 @@ on:
         description: "JDK do builda. Pluginy Platform są kompilowane na JVM 25 -> Gradle MUSI działać na 25."
         type: string
         default: "25"
+      toolchain-java-version:
+        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        type: string
+        default: "27"
       has-migrate:
         description: "Buduj/uruchamiaj osobny obraz migracji. Aplikacje z migracją na starcie (Flyway) -> false."
         type: boolean
@@ -150,6 +154,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+      # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
+      # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
+      # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
+      - uses: actions/setup-java@v5
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.toolchain-java-version }}
+      - name: Expose the toolchain JDK to Gradle
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
       - uses: actions/setup-java@v5
         with:
           distribution: temurin

@@ -2,7 +2,7 @@
  * seniordev.settings-conventions
  * ------------------------------
  * Convention plugin dla settings.gradle.kts konsumenta:
- *   - foojay-resolver-convention (auto-provisioning JDK pod toolchain 25) — wersja z classpath
+ *   - foojay-resolver-convention (lokalny auto-provisioning JDK pod toolchain z java-conventions) — wersja z classpath
  *     build-logic (lustro gradle/catalog), znika hardkod "version 1.0.0" z 3 repo
  *   - dependencyResolutionManagement.repositories: mavenCentral + GitHub Packages (Platform)
  *     z tym samym wiring-iem poświadczeń co dotychczas (gpr.user/gpr.key lub GITHUB_ACTOR/GITHUB_TOKEN)
