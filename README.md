@@ -42,7 +42,7 @@ own schedule and rolls back by pinning an older version.
 |---|---|
 | `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a ratcheting gate |
 | `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only on JDK 25), CycloneDX (SBOM) |
-| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok, runtime ArchUnit) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
 
 ## Documentation
 
