@@ -41,6 +41,25 @@ class PlatformToolVersionMirrorTest {
 	}
 
 	@Test
+	fun `archunitVersion w spring-modulith-conventions jest zgodny z kanonem katalogu`() {
+		val mirrored = mirrors(springModulithConventions, """val archunitVersion\s*=\s*"([^"]+)"""")
+
+		assertEquals(listOf(canon("archunit")), mirrored, "archunitVersion w spring-modulith-conventions musi równać się kanonowi")
+	}
+
+	@Test
+	fun `spring-modulith-conventions zarzadza ArchUnit na wszystkich konfiguracjach, nie tylko testowych`() {
+		val managed = mirrors(springModulithConventions, ARCHUNIT_MANAGED_EVERYWHERE)
+
+		assertEquals(
+			listOf("\$archunitVersion"),
+			managed,
+			"spring-modulith-core ciągnie ArchUnit 1.4.2 na runtimeClasspath (nie czyta class-file 71 z JDK 27); " +
+				"dependencyManagement musi przypiąć com.tngtech.archunit:archunit do archunitVersion",
+		)
+	}
+
+	@Test
 	fun `pitestVersion w quality-conventions jest zgodny z kanonem katalogu`() {
 		val mirrored = mirrors(qualityConventions, """pitestVersion\.set\("([^"]+)"\)""")
 
@@ -72,6 +91,8 @@ class PlatformToolVersionMirrorTest {
 
 	private companion object {
 		const val TOOLCHAIN_INPUT_DEFAULT = """\n {6}toolchain-java-version:(?:\n {8}[^\n]*)*?\n {8}default: "([^"]+)""""
+		const val ARCHUNIT_MANAGED_EVERYWHERE =
+			"""dependencyManagement\s*\{(?:[^{}]|\{[^{}]*})*?dependencies\s*\{[^{}]*?dependency\("com\.tngtech\.archunit:archunit:(\${'$'}archunitVersion)"\)"""
 		val TOOLCHAIN_WORKFLOWS = listOf("backend-ci.yml", "deploy.yml", "sonar.yml")
 	}
 }
