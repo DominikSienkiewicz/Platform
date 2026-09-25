@@ -3,7 +3,9 @@
 # Świadomie NIE budujemy Gradle'em w obrazie — local-first ciągnie artefakty Platform z
 # mavenLocal/GitHub Packages, a poświadczenia nie powinny trafiać do warstwy build kontenera.
 # Build:  ./gradlew bootJar && docker build -t <obraz> backend
-FROM eclipse-temurin:26-jre
+# SapMachine, bo eclipse-temurin:27-jre nie istnieje (stan 2026-09-25); bytecode 27 wymaga runtime >= 27.
+# Powrót na Temurin: docs/versions.md -> "Runtime image for the JDK 27 toolchain".
+FROM sapmachine:27-jre
 WORKDIR /app
 RUN groupadd --system spring && useradd --system --gid spring --uid 1001 spring
 ARG JAR_FILE=build/libs/*.jar

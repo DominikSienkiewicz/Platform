@@ -59,8 +59,8 @@ own schedule and rolls back by pinning an older version.
 
 JDK 25 or newer to run Gradle: `build-logic`, `test-fixtures` and `security-starter` compile
 to Java 25 bytecode. Consumers compile on toolchain 27, which Foojay provisions when it is not
-installed. Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for
-the frontend packages.
+installed. The backend runtime image is `sapmachine:27-jre` ([`docs/versions.md`](docs/versions.md)).
+Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages.
 
 ## License
 

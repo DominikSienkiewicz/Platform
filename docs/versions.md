@@ -40,13 +40,21 @@ toolchain of `java-conventions`. Drop each override once the Boot BOM catches up
 that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`
 after taking a platform version that changes an override.
 
-## Entry condition for the JDK 27 toolchain
+## Runtime image for the JDK 27 toolchain
 
-The toolchain 27 change is held back from a release until both hold, in the same change:
+Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from
+`templates/Dockerfile.backend`, so the toolchain and the runtime image move together.
 
-- the `eclipse-temurin:27-jre` image exists on Docker Hub (bytecode 27 needs a runtime of at
-  least 27, and the consumers' images derive from `templates/Dockerfile.backend`);
-- `templates/Dockerfile.backend` moves from `26-jre` to `27-jre`.
+On 2026-09-25 the toolchain 27 entry condition was met with `sapmachine:27-jre`, not
+`eclipse-temurin:27-jre`: ten days after the JDK 27 GA, Docker Hub still had no Temurin 27
+image. SapMachine is an official Docker Hub image (SAP's OpenJDK build) based on Ubuntu 24.04, and it runs the template unchanged: `groupadd`/`useradd`, `bash` and `sh` are
+present, `/usr/bin/pebble` is not. At the switch neither image carried a Critical or High
+vulnerability (Docker Scout, `linux/amd64`); SapMachine carried 34 Medium and 2 Low, Temurin 26
+none, because its base is the older Ubuntu LTS.
+
+Move back to `eclipse-temurin:27-jre` when that tag exists and a Grype scan of it passes the
+`container-scan.yml` gate (`high`, `only-fixed`). Change only the `FROM` line; the rest of the
+template is image-neutral.
 
 ## Dependency locking
 

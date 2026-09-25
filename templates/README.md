@@ -9,7 +9,7 @@ Pliki, których **nie da się** dystrybuować przez registry (są per-repo z nat
 | `gitignore/root.gitignore` | OS/IDE/env/logs | `<repo>/.gitignore` |
 | `gitignore/backend.gitignore` | Java/Gradle | `<repo>/backend/.gitignore` |
 | `gitignore/frontend.gitignore` | Next.js/Node/Playwright | `<repo>/frontend/.gitignore` |
-| `Dockerfile.backend` | runtime-only (jar z `bootJar`) | `<repo>/backend/Dockerfile` |
+| `Dockerfile.backend` | runtime-only (jar z `bootJar`) na `sapmachine:27-jre` — powód i warunek powrotu na Temurin w [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` |
 | `platform-bump.sh` | **stub** delegujący do binu `platform-bump` z `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); logika bumpu żyje w pakiecie npm, nie tutaj — drift-proof. Wymaga pinu `@dominiksienkiewicz/versions` ≥ 1.3.8 | `<repo>/scripts/platform-bump.sh` |
 | `merge.sh` | bezpieczna integracja lokalnej gałęzi feature z wymaganym komunikatem merge; preflight worktree (także plików ignored) i lokalnego targetu, kontrola świeżości `origin/<target>`, blokada równoległych uruchomień, `--dry-run`, jawny tryb `--offline`, atomowy cleanup oraz jednoznaczny wynik: zielone `✓` przy sukcesie, czerwone `✗` przy każdej porażce (`NO_COLOR` wyłącza kolor, `FORCE_COLOR` wymusza go poza terminalem) | `<repo>/scripts/merge.sh` |
 | `setup-gh-deploy.sh` | bootstrap sekretów+zmiennych Actions dla reusable `deploy.yml@v1` z lokalnego `.secrets.local` (bezpieczny parser, wartości przez stdin, `SSH_KNOWN_HOSTS` z ssh-keyscan; opcje `--gen-key`, `--with-release`) | `<repo>/scripts/setup-gh-deploy.sh` |

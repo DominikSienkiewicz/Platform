@@ -1,7 +1,7 @@
 name: Container scan (reusable)
 
 # Reusable skan OPUBLIKOWANYCH obrazów (ścieżka MONITORINGU) — łapie CVE w warstwie bazowej
-# obrazu (pakiety OS bazy: eclipse-temurin/node), których SBOM+Grype na zależnościach nie widzi.
+# obrazu (pakiety OS bazy: sapmachine/eclipse-temurin/node), których SBOM+Grype na zależnościach nie widzi.
 # Grype = bramka fail-build (severity-cutoff). Snyk = druga opinia + `monitor` -> dashboard (nieblokujący).
 #
 # Obrazy budowane są runtime-only (jar/bundle na hoście), więc NIE odbudowujemy ich tutaj —
