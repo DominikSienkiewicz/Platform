@@ -27,25 +27,15 @@ plugins {
 // więc każdy bump w libs.versions.toml musi ruszyć te stałe RAZEM z nim. Rozjazd nie psuje
 // buildu Platform (te wersje trafiają dopiero na classpath konsumenta), tylko wywala guard
 // governance w backendzie konsumenta: „wersja spoza platformy … kanon platformy: X".
-val springBootVersion = "4.1.0"
-val springModulithVersion = "2.1.0"
-val springAiVersion = "2.0.0" // GA 2026-06-12
+val springBootVersion = "4.1.1"
+val springModulithVersion = "2.1.1"
+val springAiVersion = "2.0.1"
 val archunitVersion = "1.5.0"
 val junitVersion = "6.1.3"
 
-// TYMCZASOWE nadpisania CVE ponad BOM Boot 4.1.0 — PRZYWRÓCONE, bo CVE wyszły już po GA BOM-a
-// (2026-06-10): pinowane tam netty 4.2.15.Final i postgresql 42.7.11 są dziś podatne.
-// Mechanizm: io.spring.dependency-management honoruje nadpisanie propercji wersji z BOM-a przez ext.
-// USUŃ przy bumpie springBoot, gdy BOM dogoni te wersje (sprawdź propercje w spring-boot-dependencies).
-// Tomcat 11.0.22 z BOM-a jest czysty — świadomie bez pinu (pinujemy tylko to, co realnie podatne).
-//   netty 4.2.16.Final  — GHSA-jppx-w49h-x2qq, GHSA-mvh2-crg5-v77c, GHSA-6jqx-86gh-f27w (codec-http),
-//                         GHSA-hpcc-26xq-25fv (http3), GHSA-93wv-jw9v-4972 (http2),
-//                         GHSA-558v-64gr-wgg4 (codec-compression) — wszystkie High
-//   postgresql 42.7.12  — GHSA-j92g-9f8w-j867 (High)
-ext["netty.version"] = "4.2.16.Final"
-ext["postgresql.version"] = "42.7.12"
+// Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13; no CVE overrides needed.
 
-// Nadpisanie KOMPATYBILNOŚCI (nie CVE) ponad BOM Boot 4.1.0: BOM-owy Lombok 1.18.46 pada na javac 27
+// Nadpisanie KOMPATYBILNOŚCI (nie CVE) ponad BOM Boot 4.1.1: BOM-owy Lombok 1.18.46 pada na javac 27
 // (ClassNotFoundException com.sun.tools.javac.tree.EndPosTable w lombok.javac.Javac), a toolchain
 // w java-conventions to 27. 1.18.48 kompiluje na javac 27 (zweryfikowane w Azimuth).
 // USUŃ, gdy BOM Boota przypnie lombok.version >= 1.18.48 (propercja w spring-boot-dependencies).
@@ -58,7 +48,7 @@ dependencyManagement {
 		mavenBom("org.springframework.modulith:spring-modulith-bom:$springModulithVersion")
 		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
 	}
-	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.0 deklaruje ArchUnit 1.4.2
+	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.1 deklaruje ArchUnit 1.4.2
 	// jako zależność compile, a żaden BOM (Boot/Modulith) nie zarządza ArchUnit — nie ma propercji do
 	// nadpisania przez ext. ArchUnit 1.4.2 nie czyta class-file 71 (javac 27, toolchain java-conventions),
 	// więc ApplicationModules budowane przy starcie aplikacji nie importuje żadnej klasy i kontekst pada

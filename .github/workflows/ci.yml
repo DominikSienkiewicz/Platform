@@ -18,16 +18,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Trzy moduły (build-logic, catalog, test-fixtures) w JEDNYM jobie zamiast matrix po 3.
+  # Moduły publikowane do Maven są sprawdzane sekwencyjnie w jednym jobie.
   # Każdy jest krótki (~40 s), a matrix powielał stały narzut (checkout + setup-java + setup-gradle)
   # ×3 i naliczał 3 pełne minuty za ~2 min realnej pracy (najgorszy stosunek podatku od zaokrąglania
   # w całym koncie). Sekwencyjnie w jednym runnerze = jeden narzut zamiast trzech. `fail-fast: false`
   # zachowane przez `|| fail=1` + `exit $fail` — wszystkie moduły próbują się zbudować, raport zbiorczy.
   gradle:
-    name: Gradle — build-logic + catalog + test-fixtures
+    name: Gradle — build-logic + catalog + test-fixtures + security-starter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        id: toolchain
+        with:
+          distribution: temurin
+          java-version: "27"
+      - name: Register consumer toolchain
+        env:
+          TOOLCHAIN_JAVA_HOME: ${{ steps.toolchain.outputs.path }}
+        run: |
+          mkdir -p "$HOME/.gradle"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JAVA_HOME" >> "$HOME/.gradle/gradle.properties"
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -37,7 +48,7 @@ jobs:
         run: |
           set -uo pipefail
           fail=0
-          for m in build-logic catalog test-fixtures; do
+          for m in build-logic catalog test-fixtures security-starter; do
             echo "::group::gradle/$m — build"
             ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon build ) || fail=1
             echo "::endgroup::"
@@ -52,6 +63,9 @@ jobs:
       - run: bash templates/tests/platform-bump.test.sh
       - run: bash templates/tests/container-scan-skip.test.sh
       - run: bash templates/tests/merge.test.sh
+      - run: bash templates/tests/release-registry-failure.test.sh
+      - run: bash templates/tests/agent-gradle.test.sh
+      - run: bash templates/tests/frontend-ci-strict.test.sh
 
   frontend:
     name: Frontend — install + lint + test

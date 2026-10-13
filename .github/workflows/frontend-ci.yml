@@ -1,7 +1,6 @@
 name: Frontend CI (reusable)
 
-# Reusable workflow dla frontendów Next.js. Kroki tolerancyjne (`--if-present`), więc działa
-# niezależnie od tego, które skrypty repo definiuje (lint/typecheck/test/build).
+# Backward-compatible by default; strict mode requires all standard checks.
 on:
   workflow_call:
     inputs:
@@ -11,6 +10,10 @@ on:
       node-version:
         type: string
         default: "24"
+      strict:
+        description: "Require the Platform guard and lint/typecheck/test/build scripts."
+        type: boolean
+        default: false
       run-e2e:
         type: boolean
         default: false
@@ -48,12 +51,34 @@ jobs:
       # działają bez postinstall. Repo konsumenckie, które WYMAGA skryptu, musi to zgłosić tutaj.
       - run: npm ci --ignore-scripts
 
+      - name: Require standard scripts
+        if: ${{ inputs.strict }}
+        env:
+          REQUIRE_E2E: ${{ inputs.run-e2e }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const { scripts = {} } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const required = ['lint', 'typecheck', 'test', 'build'];
+          if (process.env.REQUIRE_E2E === 'true') required.push('test:e2e');
+          const missing = required.filter(name => typeof scripts[name] !== 'string' || !scripts[name].trim());
+          if (missing.length) {
+            console.error(`Missing required scripts: ${missing.join(', ')}`);
+            process.exit(1);
+          }
+          NODE
+
       # Guard kanonu wersji Platform (@dominiksienkiewicz/versions). Tolerancyjny jak reszta
       # kroków: repo bez paczki = guard pominięty (notice), repo z paczką = dryf failuje build.
       - name: Platform versions guard
+        env:
+          STRICT: ${{ inputs.strict }}
         run: |
           if [ -e node_modules/.bin/platform-versions-check ]; then
             node node_modules/@dominiksienkiewicz/versions/bin/check.mjs
+          elif [ "$STRICT" = "true" ]; then
+            echo "::error::Missing @dominiksienkiewicz/versions; strict CI cannot skip the version guard"
+            exit 1
           else
             echo "::notice::brak @dominiksienkiewicz/versions w zależnościach — guard kanonu pominięty"
           fi

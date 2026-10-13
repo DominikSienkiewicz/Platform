@@ -30,18 +30,18 @@ in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
 (catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog,
 and so does the `toolchain-java-version` default of the reusable workflows (catalog `java`). The formatter
 version is pinned rather than left to Spotless because Spotless picks its default from the JVM
-that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.9.8`) has no canonical entry;
+that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.10.3`) has no canonical entry;
 `spotbugsPlugin` is the Gradle plugin version, which is a different thing.
 
 ## Overrides above the Spring Boot BOM
 
-`spring-modulith-conventions` overrides BOM version properties through `ext[...]`:
-`netty.version` and `postgresql.version` for CVEs, and `lombok.version` `1.18.48` for
-compatibility — the Boot 4.1.0 BOM pins Lombok 1.18.46, which fails on javac 27, the
-toolchain of `java-conventions`. Drop each override once the Boot BOM catches up.
+Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the previous
+`netty.version` and `postgresql.version` overrides have been removed. Keeping them
+would force versions older than the BOM. The `lombok.version` override remains at
+`1.18.48`: the BOM still pins 1.18.46, incompatible with javac 27.
 
 ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
-`spring-modulith-core` 2.1.0 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
+`spring-modulith-core` 2.1.1 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
 read class-file major 71 (javac 27). Spring Modulith builds `ApplicationModules` at application start,
 so on the runtime classpath it imports no classes and the context fails with "No classes found in
 packages". Tests never saw it, because `archunit-junit5` pulls the catalog version onto the test
@@ -100,3 +100,24 @@ cd gradle/<module> && ./gradlew dependencies --write-locks
 no resolvable configuration, so `--write-locks` succeeds without creating a file. The file
 exists so that every Gradle module in the repository has one — there is nothing to lock, so
 do not try to regenerate it.
+
+## Foundation refresh (2026-10-13)
+
+The backend baseline is Gradle 9.8.1, Boot 4.1.1, Modulith 2.1.1 and Spring AI 2.0.1.
+The frontend canon and the ESLint compatibility consumer use Next / eslint-config-next
+16.4.0. Wrapper distributions include the official SHA-256 checksum. Security-starter
+and test-fixtures now import the same source catalog for their BOMs.
+
+Upstream references: [Gradle 9.8.1](https://docs.gradle.org/9.8.1/release-notes.html),
+[Next 16.4.0](https://github.com/vercel/next.js/releases/tag/v16.4.0),
+[Boot 4.1.1 BOM](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom),
+[Modulith 2.1.1 POM](https://repo.maven.apache.org/maven2/org/springframework/modulith/spring-modulith-core/2.1.1/spring-modulith-core-2.1.1.pom).
+
+Java 27 remains the consumer toolchain. Gradle's Java 27 support does not establish
+compatibility for every analyzer or framework; the consumer TestKit suite is the
+verification gate. This change does not claim a completed runtime compatibility run.
+
+pnpm 12 and Vitest 5 remain separate major migrations; the current release retains
+pnpm 11.18.0 and Vitest 4 peers. A full OpenAPI validation/generation/freshness/breaking-change
+pipeline remains a separate extension: its baseline source and consumer migration
+contract must be defined before adoption.

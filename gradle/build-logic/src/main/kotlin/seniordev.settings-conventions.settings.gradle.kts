@@ -19,6 +19,9 @@ plugins {
 
 dependencyResolutionManagement {
 	repositories {
+		providers.gradleProperty("platformRepository").orNull?.let { repository ->
+			maven { url = uri(repository) }
+		}
 		mavenCentral()
 		maven {
 			name = "GitHubPackages"

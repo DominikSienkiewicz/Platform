@@ -5,6 +5,8 @@ Pliki, których **nie da się** dystrybuować przez registry (są per-repo z nat
 
 | Plik | Cel | Gdzie kopiować |
 |---|---|---|
+| `jvm/java-library/`, `jvm/spring-app/` | minimalne projekty konsumujące opublikowane pluginy i katalog; sprawdzane przez Gradle TestKit | root nowego repo; instrukcja w [consuming.md](../docs/consuming.md) |
+| `agent-gradle.sh` | opt-in limity workerów przy `AI_AGENT=1/true` | `<repo>/scripts/agent-gradle.sh` |
 | `.editorconfig` | spójny styl IDE/OS | root każdego repo |
 | `gitignore/root.gitignore` | OS/IDE/env/logs | `<repo>/.gitignore` |
 | `gitignore/backend.gitignore` | Java/Gradle | `<repo>/backend/.gitignore` |

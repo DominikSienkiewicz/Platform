@@ -3,80 +3,63 @@
 Everything below is what a consuming repository declares. Nothing here needs to be copied
 into the platform itself.
 
-## Backend — `settings.gradle.kts`
+## Backend
 
-`mavenLocal()` is listed first, so after `publishToMavenLocal` in the platform a consumer
-builds against the local version without touching GitHub. The GitHub Packages repository is
-added **only** when credentials are present (CI, or a local build that pushes), which keeps
-an offline build from failing on an unreachable registry.
+Start from [`templates/jvm/java-library`](../templates/jvm/java-library) for a pure
+library or [`templates/jvm/spring-app`](../templates/jvm/spring-app) for a minimal
+Spring application. These are the inputs to `PlatformConsumerFunctionalTest`, which
+publishes the current plugins and catalog to an isolated local Maven repository and
+then compiles, lints and tests consumers through Gradle TestKit. The Spring check
+also packages `bootJar` and starts an application context. No database is needed.
 
-```kotlin
-pluginManagement {
-    repositories {
-        mavenLocal()
-        gradlePluginPortal()
-        mavenCentral()
-        val u = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-        val k = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
-        if (u != null && k != null) maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
-            credentials { username = u; password = k }
-        }
-    }
-}
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-}
-dependencyResolutionManagement {
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        val u = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-        val k = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
-        if (u != null && k != null) maven {
-            name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
-            credentials { username = u; password = k }
-        }
-    }
-    versionCatalogs {
-        create("libs") { from("pl.seniordeveloper:platform-catalog:1.0.0") }
-    }
-}
-```
+Copy the selected directory to the product repository. Copy `gradlew`, `gradlew.bat`
+and `gradle/wrapper/` from `gradle/catalog/` to give it the same pinned Gradle distribution.
+Set `platformVersion` in the consumer's `gradle.properties` to an **already published**
+Platform release; the template's checked-in version is only the current repository
+baseline. The new template requires a release containing these changes. Add your own
+package name, group and project name, then replace the example code. For these standalone
+JVM layouts, update `platformVersion` directly; the existing `platform-bump` command
+targets product repositories with `backend/` and `frontend/` directories.
 
-## Backend — `build.gradle.kts`
-
-Only domain dependencies belong here. Toolchain, formatting, linting, the test split and
-the BOMs all arrive with the convention plugins.
+The settings plugin and catalog read the same `platformVersion` property. The project
+applies the Java / quality / Spring convention plugins without repeating a version:
+the settings plugin has already loaded their shared implementation. The Spring Boot
+plugin still comes from `alias(libs.plugins.spring.boot)`.
 
 ```kotlin
 plugins {
     alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.dependency.management)
-    id("seniordev.java-conventions") version "1.0.0"
-    id("seniordev.quality-conventions") version "1.0.0"
-    id("seniordev.spring-modulith-conventions") version "1.0.0"
+    id("seniordev.java-conventions")
+    id("seniordev.quality-conventions")
+    id("seniordev.spring-modulith-conventions")
 }
-
-group = "pl.seniordeveloper"
-version = "0.0.1-SNAPSHOT"
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-webmvc")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation(libs.resilience4j.spring.boot4)
-    implementation(libs.bucket4j.core)
-    implementation(libs.shedlock.spring)
-    runtimeOnly("org.postgresql:postgresql")
+    implementation(libs.boot.starter.webmvc)
+    implementation(libs.modulith.starter.core)
 }
-
-pitest { targetClasses.set(listOf("pl.seniordeveloper.<module>.*")) }
 ```
 
-A consumer's `build.gradle.kts` drops from roughly 80 lines to roughly 15 purely domain
-ones.
+For local Platform development, set `-PplatformRepository=file:///absolute/maven/repository`
+explicitly. Both plugin resolution and ordinary dependencies put this repository before
+remote repositories. For `publishToMavenLocal`, point it to your Maven local repository.
+Without the property, resolution uses Maven Central / Gradle Plugin Portal and GitHub
+Packages; provide `gpr.user` / `gpr.key` or `GITHUB_ACTOR` / `GITHUB_TOKEN` for private artifacts.
+An authenticated remote lookup may still occur when an artifact is missing locally.
+
+## Agent resource profile
+
+Only `AI_AGENT=1` or `AI_AGENT=true` opts in. Java test tasks use one fork, a 2 GiB
+maximum heap and at most four cached Spring contexts. A shared Gradle build service
+serializes test tasks across projects in the same build. This does not coordinate
+separate Gradle invocations or agents: run the machine preflight before dispatching them.
+
+Copy [`templates/agent-gradle.sh`](../templates/agent-gradle.sh) to
+`scripts/agent-gradle.sh` and invoke `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`.
+The launcher adds `--max-workers=2 --no-parallel` before Gradle starts. Settings plugins
+cannot reliably resize services that Gradle already created. Without `AI_AGENT`, the
+launcher passes through the ordinary Gradle defaults. The Vitest preset likewise caps
+workers at two only in agent mode. See [HTTP client and frontend budget](http-client-and-agent-budget.md).
 
 ## Frontend
 
@@ -131,3 +114,31 @@ Postgres with pgvector, and optionally Ollama:
 ```bash
 cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
 ```
+
+## Strict frontend CI
+
+Existing callers retain optional checks. New consumers should opt into the complete
+contract explicitly:
+
+```yaml
+jobs:
+  frontend:
+    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v1
+    with:
+      strict: true
+```
+
+Strict mode requires nonempty `lint`, `typecheck`, `test` and `build` scripts and the
+`@dominiksienkiewicz/versions` guard. `run-e2e: true` additionally requires `test:e2e`.
+Missing checks fail the job instead of producing a successful partial pipeline.
+
+## Security starter CORS
+
+`platform.cors.allowed-origins` opts into the Platform CORS source. The security
+chain preserves Spring Security’s precedence for a user `CorsFilter` named `corsFilter`.
+Otherwise it uses an explicit application source in preference to MVC infrastructure,
+regardless of its bean name. Without an explicit source, MVC's existing CORS mapping
+remains the fallback; without MVC or CORS configuration, the starter does not add a
+CORS filter. An application-provided `SecurityFilterChain` still replaces the
+Platform chain. Multiple explicit sources require an unambiguous primary source
+or an application-owned chain; the starter does not silently choose one.

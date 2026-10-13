@@ -56,3 +56,10 @@ publishing {
 		}
 	}
 }
+
+providers.gradleProperty("functionalTestRepository").orNull?.let { repository ->
+	publishing.repositories.maven {
+		name = "FunctionalTest"
+		url = uri(repository)
+	}
+}

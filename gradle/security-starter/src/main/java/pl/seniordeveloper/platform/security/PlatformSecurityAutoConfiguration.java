@@ -1,5 +1,8 @@
 package pl.seniordeveloper.platform.security;
 
+import java.util.Map;
+import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -21,8 +24,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * konsument nadpisuje własnym, gdy potrzebuje.
  *
  * <p>Świadomie NIE zamraża postawy: domyślne wartości są bezpieczne (authenticated + csrf on), a
- * BookOfStyling odtwarza swoje zachowanie przez {@code platform.security.mode=permit-all},
- * {@code stateless=true}, {@code csrf=false} + {@code platform.cors.allowed-origins}.
+ * BookOfStyling odtwarza swoje zachowanie przez {@code platform.security.mode=permit-all}, {@code
+ * stateless=true}, {@code csrf=false} + {@code platform.cors.allowed-origins}.
  */
 @AutoConfiguration
 @ConditionalOnClass(SecurityFilterChain.class)
@@ -32,10 +35,29 @@ public class PlatformSecurityAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public SecurityFilterChain platformSecurityFilterChain(
-      HttpSecurity http, PlatformSecurityProperties props) throws Exception {
+      HttpSecurity http,
+      PlatformSecurityProperties props,
+      ListableBeanFactory beanFactory,
+      ObjectProvider<CorsConfigurationSource> corsSources)
+      throws Exception {
 
-    // Podpina bean CorsConfigurationSource, jeśli istnieje (patrz platformCorsConfigurationSource).
-    http.cors(Customizer.withDefaults());
+    if (beanFactory.containsBean("corsFilter")) {
+      http.cors(Customizer.withDefaults());
+    } else {
+      // MVC supplies a fallback source; an explicit application source takes precedence.
+      var explicitCorsSources =
+          beanFactory.getBeansOfType(CorsConfigurationSource.class).entrySet().stream()
+              .filter(entry -> !entry.getKey().equals("mvcHandlerMappingIntrospector"))
+              .map(Map.Entry::getValue)
+              .toList();
+      var corsSource =
+          explicitCorsSources.size() == 1
+              ? explicitCorsSources.getFirst()
+              : corsSources.getIfAvailable();
+      if (corsSource != null) {
+        http.cors(cors -> cors.configurationSource(corsSource));
+      }
+    }
 
     if (!props.isCsrf()) {
       http.csrf(csrf -> csrf.disable());
@@ -61,7 +83,9 @@ public class PlatformSecurityAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean
+  @ConditionalOnMissingBean(
+      value = CorsConfigurationSource.class,
+      ignoredType = "org.springframework.web.servlet.handler.HandlerMappingIntrospector")
   @ConditionalOnProperty(prefix = "platform.cors", name = "allowed-origins")
   public CorsConfigurationSource platformCorsConfigurationSource(PlatformCorsProperties cors) {
     var config = new CorsConfiguration();

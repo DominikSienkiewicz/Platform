@@ -117,7 +117,7 @@ jobs:
       - name: Ustaw wersję na wszystkich paczkach
         run: pnpm -r exec npm pkg set version="$V"
       - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build || echo "registry build skipped"
+        run: pnpm --filter @dominiksienkiewicz/ui build
       # Idempotentnie, per-paczka (lustro logiki z joba gradle): wersja już opublikowana
       # (np. re-run po częściowym wydaniu) — pomijamy i publikujemy RESZTĘ. `pnpm -r publish`
       # wywala się na pierwszym konflikcie i zostawia partial release.

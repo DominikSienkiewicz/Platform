@@ -4,7 +4,7 @@
 //
 // Zależy wyłącznie od globalnego `fetch` (Node 24 / przeglądarka) — brak zależności runtime.
 
-/** Błąd HTTP niosący status i (jeśli był) sparsowane ciało odpowiedzi. */
+/** Błąd HTTP niosący status i ciało odpowiedzi (JSON, surowy tekst lub null). */
 export class ApiError extends Error {
   constructor(status, message, body) {
     super(message);
@@ -43,7 +43,15 @@ export function createApiClient(options = {}) {
     if (res.status === 204) return null;
 
     const text = await res.text();
-    const body = text ? JSON.parse(text) : null;
+    let body = null;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch (error) {
+        if (res.ok) throw error;
+        body = text;
+      }
+    }
 
     if (!res.ok) {
       const message =

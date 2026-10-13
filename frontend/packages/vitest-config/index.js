@@ -21,6 +21,7 @@ export const baseConfig = defineConfig({
     setupFiles: ["@dominiksienkiewicz/vitest-config/setup"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     css: false,
+    ...(process.env.AI_AGENT === "1" || process.env.AI_AGENT === "true" ? { maxWorkers: 2 } : {}),
   },
 });
 

@@ -18,8 +18,8 @@ dependencyLocking {
 }
 
 dependencies {
-	// Natywna platforma Gradle (poprawne Gradle Module Metadata). Wersja = lustro gradle/catalog (Boot 4.1.0).
-	api(platform("org.springframework.boot:spring-boot-dependencies:4.1.0"))
+	// Natywna platforma Gradle (poprawne Gradle Module Metadata). Wersja z gradle/catalog.
+	api(platform(libs.spring.boot.bom))
 
 	// Starter wnosi Spring Security do konsumenta (api) + spring-web dla klas CORS. Wersje z BOM-a.
 	api("org.springframework.boot:spring-boot-starter-security")
@@ -28,8 +28,13 @@ dependencies {
 	compileOnly("org.springframework.boot:spring-boot-autoconfigure")
 	// Konfiguracja annotationProcessor nie dziedziczy BOM-a z api/implementation — trzeba jej podać platformę
 	// osobno, inaczej spring-boot-configuration-processor rozwiązuje się bez wersji (build fail).
-	annotationProcessor(platform("org.springframework.boot:spring-boot-dependencies:4.1.0"))
+	annotationProcessor(platform(libs.spring.boot.bom))
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+	testImplementation(platform(libs.junit.bom))
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("jakarta.servlet:jakarta.servlet-api")
+	testImplementation("org.springframework:spring-webmvc")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")
@@ -60,3 +65,5 @@ publishing {
 		}
 	}
 }
+
+tasks.withType<Test>().configureEach { useJUnitPlatform() }
