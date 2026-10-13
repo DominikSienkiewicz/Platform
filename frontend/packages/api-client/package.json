@@ -22,5 +22,8 @@
     "type": "git",
     "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
     "directory": "frontend/packages/api-client"
+  },
+  "scripts": {
+    "test": "node --test"
   }
 }

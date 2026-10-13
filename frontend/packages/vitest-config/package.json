@@ -26,5 +26,8 @@
     "type": "git",
     "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
     "directory": "frontend/packages/vitest-config"
+  },
+  "scripts": {
+    "test": "node --test"
   }
 }
