@@ -44,8 +44,8 @@ published artifacts.**
 
 | Layer | Locally, without GitHub | CI / after push |
 |---|---|---|
-| Gradle (plugins + catalog) | `mavenLocal()` comes first, so after `publishToMavenLocal` the build resolves locally. The GitHub repository is **not even added** when `gpr.user` / `gpr.key` are absent | `GITHUB_ACTOR` / `GITHUB_TOKEN` are present, so GitHub Packages is added as a fallback |
-| npm (frontend packages) | `npm run platform:link` symlinks to `../../Platform/frontend/packages/*` — the live local source | dependencies resolve from the registry at `^1.0.0` |
+| Gradle (plugins + catalog) | Set `-PplatformRepository=file:///absolute/path/to/.m2/repository` after `publishToMavenLocal`; the explicit local repository comes first | GitHub Packages uses `GITHUB_ACTOR` / `GITHUB_TOKEN` |
+| npm (frontend packages) | `npm run platform:link` symlinks to `../../Platform/frontend/packages/*` — the live local source | dependencies resolve from the registry at the exact Platform version |
 
 ```bash
 # Once, in the platform — builds and publishes locally (Gradle → mavenLocal, frontend → pnpm install):
@@ -56,7 +56,6 @@ npm run platform:link     # before working locally
 npm run platform:unlink   # before committing — restores registry versions
 ```
 
-> Gradle local-first is automatic: repository order plus absent credentials means GitHub is
-> never contacted. npm has no native local-first-with-fallback, so local work uses
-> `npm link` (Verdaccio would give full transparency). CI always publishes to and consumes
-> from GitHub Packages.
+> Local resolution is explicit in the current settings convention. Missing artifacts may
+> still require remote access. Product repositories with older custom settings may behave
+> differently; use the [current consumer wiring](consuming.md) when adopting this release.

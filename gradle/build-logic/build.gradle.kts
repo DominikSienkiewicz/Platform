@@ -42,6 +42,7 @@ dependencies {
 	// Checkstyle = lustro toolVersion w seniordev.java-conventions (te same reguły co u konsumenta);
 	// precompiled script plugin nie czyta katalogu w czasie kompilacji, więc lustro zostaje TAM,
 	// a tu bierzemy tę samą wartość z kanonu.
+	testImplementation(gradleTestKit())
 	testImplementation("com.puppycrawl.tools:checkstyle:${libs.versions.checkstyle.get()}")
 	testImplementation(platform("org.junit:junit-bom:${libs.versions.junit.get()}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
@@ -103,4 +104,31 @@ publishing {
 			}
 		}
 	}
+}
+
+val functionalTestRepository = layout.buildDirectory.dir("functional-test-repository")
+publishing.repositories.maven {
+	name = "FunctionalTest"
+	url = uri(functionalTestRepository)
+}
+
+val publishFunctionalTestCatalog = tasks.register<GradleBuild>("publishFunctionalTestCatalog") {
+	dir = file("../catalog")
+	tasks = listOf("publishAllPublicationsToFunctionalTestRepository")
+	startParameter.projectProperties = mapOf(
+		"platformVersion" to project.version.toString(),
+		"functionalTestRepository" to functionalTestRepository.get().asFile.absolutePath,
+	)
+}
+
+tasks.named<Test>("test") {
+	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog)
+	val templates = layout.projectDirectory.dir("../../templates/jvm")
+	inputs.dir(templates)
+	inputs.file(layout.projectDirectory.file("../catalog/libs.versions.toml"))
+	inputs.file(layout.projectDirectory.file("../catalog/build.gradle.kts"))
+	systemProperty("platform.templates", templates.asFile.absolutePath)
+	systemProperty("platform.testRepository", functionalTestRepository.get().asFile.toURI().toString())
+	systemProperty("platform.version", project.version.toString())
+	systemProperty("platform.javaInstallations", providers.gradleProperty("org.gradle.java.installations.paths").getOrElse(""))
 }

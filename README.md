@@ -23,8 +23,9 @@ own schedule and rolls back by pinning an older version.
 
 | Path | Artifact | Published to |
 |---|---|---|
-| `gradle/build-logic/` | three convention plugins (`seniordev.*-conventions`) | GitHub Packages (Maven) |
+| `gradle/build-logic/` | four convention plugins (`seniordev.*-conventions`, including settings) | GitHub Packages (Maven) |
 | `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`) | GitHub Packages (Maven) |
+| `gradle/security-starter/` | configurable SecurityFilterChain and CORS | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases) | GitHub Packages (Maven) |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
@@ -43,6 +44,14 @@ own schedule and rolls back by pinning an older version.
 | `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a ratcheting gate |
 | `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only on JDK 25), CycloneDX (SBOM) |
 | `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok, runtime ArchUnit) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+
+## Reference consumers
+
+[`templates/jvm/`](templates/jvm/) contains a pure Java library and a minimal Spring
+application. Gradle TestKit consumes locally published plugins and catalog artifacts
+using these templates. Main CI includes all four published Maven modules; a failed
+UI registry build blocks npm publication. Consumers can opt into mandatory frontend
+checks with `strict: true`.
 
 ## Documentation
 

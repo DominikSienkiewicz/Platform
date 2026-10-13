@@ -1,3 +1,4 @@
+import pl.seniordeveloper.gradle.AgentTestBudget
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
@@ -83,6 +84,19 @@ jacoco {
 	// 0.8.15 = najnowsza stabilna; 0.8.14+ = class-file Java 25, 0.8.15 dodał EKSPERYMENTALNE wsparcie 26; class-file 27 również nieoficjalne (zweryfikowane w Azimuth).
 	// Lustro gradle/catalog: version("jacoco").
 	toolVersion = "0.8.15"
+}
+
+val agentMode = providers.environmentVariable("AI_AGENT").map { it == "1" || it == "true" }.getOrElse(false)
+if (agentMode) {
+	val testBudget = gradle.sharedServices.registerIfAbsent("platformAgentTestBudget", AgentTestBudget::class) {
+		maxParallelUsages.set(1)
+	}
+	tasks.withType<Test>().configureEach {
+		maxParallelForks = 1
+		maxHeapSize = "2g"
+		systemProperty("spring.test.context.cache.maxSize", "4")
+		usesService(testBudget)
+	}
 }
 
 tasks.withType<Test>().configureEach {

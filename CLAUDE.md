@@ -61,18 +61,13 @@ opublikuj, podbij pin w repo konsumenta.
    w czterech repo o wydanie dłużej, niż były potrzebne. Uwaga: `platform-bump` NIE usuwa override'a,
    który wypadł z kanonu — zostawia go nietkniętego, a guard zgłosi wtedy „paczka bez wpisu w kanonie".
    Kasowanie takiego pinu w konsumentach jest ręczne i musi iść w tym samym wydaniu co zmiana kanonu.
-7. **Nadpisania CVE nad BOM-em Boota** (propercje `tomcat.version`/`netty.version`/`postgresql.version`
-   przez `ext` w `spring-modulith-conventions`) — **AKTYWNE dla `netty` 4.2.16.Final i `postgresql`
-   42.7.12**: CVE High wyszły po GA BOM-a Boot 4.1.0, więc wersje BOM-owe (4.2.15.Final / 42.7.11)
-   są dziś podatne. `tomcat` bez pinu — BOM-owy 11.0.22 jest czysty (pinujemy tylko to, co realnie
-   podatne). Przy kolejnym bumpie Boota sprawdź propercje BOM-a i zdejmij pin, gdy BOM dogoni te wersje.
-   Tym samym mechanizmem, ale z powodu **kompatybilności**, nie CVE: `lombok.version` 1.18.48 —
-   BOM-owy 1.18.46 pada na javac 27 (toolchain `java-conventions`). Zdejmij, gdy BOM Boota ≥ 1.18.48.
-   Lustro w katalogu (`lombok`, `java`) pilnuje `PlatformToolVersionMirrorTest`.
-   **ArchUnit** (kompatybilność, inny mechanizm): żaden BOM nim nie zarządza, a `spring-modulith-core`
-   2.1.0 ciągnie 1.4.2, które nie czyta class-file 71 → Modulith przy starcie aplikacji „No classes found".
-   Dlatego `dependencyManagement { dependencies { dependency("…archunit:$archunitVersion") } }` — działa
-   na wszystkich konfiguracjach, także `runtimeClasspath`. Zdejmij, gdy `spring-modulith-core` przypnie ≥ 1.5.0.
+7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.1 zarządza Netty 4.2.17.Final i PostgreSQL
+   42.7.13 — usunięto starsze piny CVE. Nie przywracaj ich bez sprawdzenia BOM-a.
+   Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
+   z javac 27. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
+   zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
+   Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje. Lustra pilnuje
+   `PlatformToolVersionMirrorTest`.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.

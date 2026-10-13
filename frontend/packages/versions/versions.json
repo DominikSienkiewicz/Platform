@@ -1,10 +1,10 @@
 {
-  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./scripts/platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* (pin platformy, podbijany przez platform-bump.sh). UWAGA: postcss i sharp NIE są tu wpisane celowo — Next 16.3.0 bundluje postcss 8.5.23 i sharp ^0.35.3, więc override'y w konsumentach zostały usunięte; nie przywracaj pinów bez sprawdzenia, co bundluje aktualny Next.",
+  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./scripts/platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* (pin platformy, podbijany przez platform-bump.sh). Nie dodawaj override postcss/sharp bez sprawdzenia zależności aktualnego Next.",
   "versions": {
-    "next": "16.3.0",
+    "next": "16.4.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "eslint-config-next": "16.3.0",
+    "eslint-config-next": "16.4.0",
     "typescript": "6.0.3",
     "eslint": "10.8.1",
     "@eslint/compat": "2.1.0",
