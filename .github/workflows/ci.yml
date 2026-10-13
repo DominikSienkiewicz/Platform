@@ -66,6 +66,8 @@ jobs:
       - run: bash templates/tests/release-registry-failure.test.sh
       - run: bash templates/tests/agent-gradle.test.sh
       - run: bash templates/tests/frontend-ci-strict.test.sh
+      - run: bash templates/tests/backend-ci-packages.test.sh
+      - run: bash templates/tests/backend-ci-arguments.test.sh
 
   frontend:
     name: Frontend — install + lint + test

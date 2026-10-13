@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -63,7 +64,9 @@ jobs:
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
       # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).
       - name: ./gradlew ${{ inputs.gradle-task }}
-        run: ./gradlew $GRADLE_TASK --no-daemon --stacktrace
+        run: |
+          read -r -a gradle_tasks <<< "$GRADLE_TASK"
+          ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
           GITHUB_ACTOR: ${{ github.actor }}
