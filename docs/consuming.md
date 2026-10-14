@@ -47,6 +47,17 @@ Without the property, resolution uses Maven Central / Gradle Plugin Portal and G
 Packages; provide `gpr.user` / `gpr.key` or `GITHUB_ACTOR` / `GITHUB_TOKEN` for private artifacts.
 An authenticated remote lookup may still occur when an artifact is missing locally.
 
+The reusable backend CI workflow uses its `gpr_token` secret when supplied, otherwise
+its automatic `GITHUB_TOKEN`. Callers must allow `contents: read` and `packages: read`.
+The token must also have access to Platform's packages: these scopes alone do not
+provide access across repositories. Grant the consuming repository Actions read
+access where the package registry supports it, or pass a `gpr_token` with
+`read:packages` and access to Platform's private packages.
+
+Pass `gradle-task` as one line of whitespace-separated task arguments, for example
+`lint test :app:integrationTest :app:bootJar`. Wildcard characters are passed
+literally to Gradle; the input does not interpret shell quoting or commands.
+
 ## Agent resource profile
 
 Only `AI_AGENT=1` or `AI_AGENT=true` opts in. Java test tasks use one fork, a 2 GiB
