@@ -1,4 +1,5 @@
 # Platform
+**Designed and maintained by [Dominik](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change.
 
 A shared build platform for a multi-repository JVM and frontend organisation. Build
 configuration, quality gates, dependency versions and frontend presets live here once,
