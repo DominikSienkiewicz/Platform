@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/ui",
   "version": "1.0.0",
   "description": "Prywatne shadcn registry — wspólny design system (komponenty + tokeny).",
+  "license": "MIT",
   "private": false,
   "type": "module",
   "scripts": {

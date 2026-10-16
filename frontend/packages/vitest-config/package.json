@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/vitest-config",
   "version": "1.0.0",
   "description": "Współdzielona baza konfiguracji Vitest + setup Testing Library (jsdom, React).",
+  "license": "MIT",
   "type": "module",
   "main": "index.js",
   "exports": {

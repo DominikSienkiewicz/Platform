@@ -5,7 +5,9 @@ A shared build platform for a multi-repository JVM and frontend organisation. Bu
 configuration, quality gates, dependency versions and frontend presets live here once,
 are published as versioned artifacts, and are consumed like any other dependency.
 
-> Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm**.
+> Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
+> consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
+> and `platform-bump` updates that lockfile.
 
 ## Why this exists
 
@@ -77,6 +79,6 @@ Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend package
 
 [MIT](LICENSE) — Copyright (c) 2026 Dominik Sienkiewicz.
 
-The licence is also declared in the POM metadata of every published artifact (`catalog`,
-`build-logic`, `test-fixtures`, `security-starter`), so a consumer's dependency scanner
-sees it without reading this repository.
+The licence is also declared in the POM metadata of every published Maven artifact (`catalog`,
+`build-logic`, `test-fixtures`, `security-starter`) and in the `license` field of every npm
+package, so a consumer's dependency scanner sees it without reading this repository.

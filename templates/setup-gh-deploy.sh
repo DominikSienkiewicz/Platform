@@ -2,7 +2,8 @@
 # setup-gh-deploy.sh — push the GitHub Actions secrets + variables that the reusable
 # deploy workflow (DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1) needs,
 # from a LOCAL git-ignored file. Secret VALUES never pass through an agent and are never
-# echoed — you fill `.secrets.local` and run this yourself.
+# echoed — you fill `.secrets.local` and run this yourself. Inside a git work tree the script
+# refuses to run unless `git check-ignore` confirms that the file is ignored.
 #
 # CANON: this file lives in Platform/templates/setup-gh-deploy.sh — do not edit per-repo
 # copies; edit here and re-sync to each consumer's scripts/ (see templates/README.md).
@@ -44,6 +45,20 @@ ENVFILE="${ENVFILE:-$ROOT/.secrets.local}"
 command -v gh >/dev/null || { echo "Brak gh CLI. https://cli.github.com/" >&2; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "gh nie zalogowany — uruchom: gh auth login" >&2; exit 1; }
 [ -f "$ENVFILE" ] || { echo "Brak $ENVFILE — skopiuj z .secrets.local.example i wypełnij." >&2; exit 1; }
+
+# `git add -A` must never pick up the PATs. A file outside every work tree cannot be committed,
+# so the guard applies only when ENVFILE lies inside one.
+ENVDIR="$(cd "$(dirname "$ENVFILE")" && pwd -P)"
+if [ "$(git -C "$ENVDIR" rev-parse --is-inside-work-tree 2>/dev/null)" = true ] \
+  && ! git -C "$ENVDIR" check-ignore -q -- "$(basename "$ENVFILE")"; then
+  cat >&2 <<EOF
+BŁĄD: git nie ignoruje $ENVFILE — \`git add -A\` wciągnąłby PAT-y do historii.
+  - dodaj regułę '.secrets.local' do .gitignore (kanon: Platform/templates/gitignore/root.gitignore)
+  - sprawdź:             git check-ignore -v "$ENVFILE"
+  - plik już śledzony?   git rm --cached "$ENVFILE", potem zrotuj tokeny
+EOF
+  exit 1
+fi
 
 REPO="${GH_REPO:-$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)}"
 [ -n "$REPO" ] || { echo "Nie wykryto repo. Ustaw: GH_REPO=owner/repo $0" >&2; exit 1; }

@@ -1,5 +1,53 @@
-.gradle/
-build/
+# Single-layer JVM repository: the rules of templates/gitignore/root.gitignore followed by
+# templates/gitignore/backend.gitignore, in the same order. Change the canon files first and
+# mirror the change here (guarded by templates/tests/jvm-starter-gitignore.test.sh).
+
+# === OS junk ===
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+
+# === IDE / editors ===
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# === Environment / secrets ===
+.env
+.env.*
+!.env.example
+# Values for scripts/setup-gh-deploy.sh (PATs); .secrets.local.example stays tracked
+.secrets.local
+
+# === Logs ===
+*.log
+
+# === Local tooling ===
+/.claude/
 
 # Local project concepts
 /docs/concepts/
+
+# === Gradle ===
+.gradle/
+build/
+# The Gradle wrapper jar MUST be committed so ./gradlew works on a fresh clone.
+# (do not add a blanket "*.jar" here — it would swallow the wrapper)
+!gradle/wrapper/gradle-wrapper.jar
+
+# === Java ===
+*.class
+hs_err_pid*
+replay_pid*
+
+# === IntelliJ build output ===
+out/
+
+# === Eclipse / Buildship build output (bin/main, bin/test — a copy of src/) ===
+bin/

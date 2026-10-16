@@ -67,12 +67,17 @@ separate Gradle invocations or agents: run the machine preflight before dispatch
 
 Copy [`templates/agent-gradle.sh`](../templates/agent-gradle.sh) to
 `scripts/agent-gradle.sh` and invoke `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`.
-The launcher adds `--max-workers=2 --no-parallel` before Gradle starts. Settings plugins
+It runs `./gradlew` from the repository root, or `backend/gradlew` from `backend/` when the
+root has no wrapper. The launcher adds `--max-workers=2 --no-parallel` before Gradle starts. Settings plugins
 cannot reliably resize services that Gradle already created. Without `AI_AGENT`, the
 launcher passes through the ordinary Gradle defaults. The Vitest preset likewise caps
 workers at two only in agent mode. See [HTTP client and frontend budget](http-client-and-agent-budget.md).
 
 ## Frontend
+
+Install the packages with npm and commit `package-lock.json`: the reusable `frontend-ci` runs
+`npm ci` and `platform-bump` refreshes the lockfile with npm, so a consumer on pnpm or Yarn fails
+CI even though Platform builds its own packages with pnpm.
 
 `tsconfig.json`:
 
