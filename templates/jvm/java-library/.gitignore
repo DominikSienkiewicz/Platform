@@ -1,2 +1,5 @@
 .gradle/
 build/
+
+# Local project concepts
+/docs/concepts/

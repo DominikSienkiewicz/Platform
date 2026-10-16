@@ -90,3 +90,9 @@ bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`)
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
 - ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza `toolVersion` w źródłach convention pluginów).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).
+
+## Lokalne koncepcje
+
+Nowe koncepcje, propozycje funkcji, plany i analizy zapisuj w ignorowanym
+`docs/concepts/`. Utrzymywana dokumentacja techniczna oraz przyjęte ADR-y
+pozostają wersjonowane w pozostałej części `docs/`.
