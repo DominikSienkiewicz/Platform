@@ -9,14 +9,20 @@ on:
   workflow_dispatch:
   push:
     # Tylko tagi wersji X.Y.Z (kropki wymagane) — ruchomy tag `v1` (reusable workflows) NIE może
-    # triggerować wydania: release.sh pcha v1.3.2 i v1 w tej samej sekundzie, a dwa równoległe
-    # publish'e tej samej wersji to race (źródło partial release 1.3.1).
+    # triggerować wydania: dwa równoległe publish'e tej samej wersji to race (źródło partial
+    # release 1.3.1). `v1` przesuwa job move-v1 dopiero po publikacji.
     tags: ["v*.*.*"]
+
+permissions:
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# Bramka wydania: version (tag == platformVersion) → verify (pełne CI na otagowanym commicie)
+# + registry-build → gradle + npm (packages: write) → move-v1 (contents: write). Czerwony job
+# zatrzymuje wszystko za nim: nic nie trafia do GitHub Packages, a v1 zostaje na miejscu.
 jobs:
   version:
     runs-on: ubuntu-latest
@@ -26,20 +32,63 @@ jobs:
       version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - id: v
         run: |
           V=$(grep '^platformVersion=' gradle/build-logic/gradle.properties | cut -d= -f2 | tr -d ' ')
+          # Bijekcja tag ↔ wersja: publikujemy wyłącznie z taga równego platformVersion, więc każda
+          # wersja w GitHub Packages ma swój tag i odwrotnie. Dispatch z gałęzi kończy się tutaj.
+          # >>> tag-version-bijection
+          if [ "$GITHUB_REF" != "refs/tags/v$V" ]; then
+            echo "::error::Release publikuje tylko z taga v$V (platformVersion), a uruchomiono go z $GITHUB_REF. Wydawaj przez ./release.sh."
+            exit 1
+          fi
+          # <<< tag-version-bijection
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Wersja release: $V (z gradle.properties — jedno źródło: local == GitHub == pin)"
 
-  gradle:
+  verify:
     needs: version
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
+  # Rejestr shadcn budowany osobno, bez packages: write: narzędzie i jego zależności nie widzą
+  # tokenu publikacji. Wynik nie jest publikowany — job jest wyłącznie bramką.
+  registry-build:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+        with:
+          version: 11.18.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      # --ignore-scripts: build rejestru nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build registry (shadcn)
+        run: pnpm --filter @dominiksienkiewicz/ui build
+
+  gradle:
+    needs: [version, verify, registry-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -89,8 +138,9 @@ jobs:
             fi
           done
 
+  # Job z packages: write nie uruchamia żadnego builda — rejestr sprawdza registry-build.
   npm:
-    needs: version
+    needs: [version, verify, registry-build]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,6 +154,8 @@ jobs:
       V: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 11.18.0
@@ -116,8 +168,6 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Ustaw wersję na wszystkich paczkach
         run: pnpm -r exec npm pkg set version="$V"
-      - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
       # Idempotentnie, per-paczka (lustro logiki z joba gradle): wersja już opublikowana
       # (np. re-run po częściowym wydaniu) — pomijamy i publikujemy RESZTĘ. `pnpm -r publish`
       # wywala się na pierwszym konflikcie i zostawia partial release.
@@ -149,6 +199,47 @@ jobs:
             fi
           done
           exit $FAIL
+
+  # Ruchomy v1 (reusable workflows konsumentów) idzie za wydaniem dopiero po obu zielonych
+  # publikacjach i tylko do przodu: re-run starszego taga go nie cofa, a v1 spoza historii
+  # wydawanego commita zostaje na miejscu do decyzji człowieka. Do wygaszenia, gdy konsumenci
+  # przejdą na referencje exact vX.Y.Z.
+  move-v1:
+    needs: [gradle, npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Przesuń v1 do wydanego commita (tylko do przodu)
+        run: |
+          # >>> move-v1-forward
+          set -euo pipefail
+          target=$(git rev-parse --verify "${GITHUB_SHA}^{commit}")
+          lease="refs/tags/v1:"
+          if git ls-remote --exit-code --tags origin refs/tags/v1 >/dev/null; then
+            git fetch --quiet --no-tags origin "+refs/tags/v1:refs/tags/v1"
+            current=$(git rev-parse --verify "refs/tags/v1^{commit}")
+            if [ "$current" = "$target" ]; then
+              echo "::notice::v1 już wskazuje $target ($GITHUB_REF)"
+              exit 0
+            fi
+            if git merge-base --is-ancestor "$target" "$current"; then
+              echo "::notice::v1 ($current) jest nowszy niż $GITHUB_REF ($target) — nie cofam"
+              exit 0
+            fi
+            if ! git merge-base --is-ancestor "$current" "$target"; then
+              echo "::error::v1 ($current) nie leży w historii $GITHUB_REF ($target) — nie przesuwam"
+              exit 1
+            fi
+            lease="refs/tags/v1:$(git rev-parse --verify refs/tags/v1)"
+          fi
+          git tag -f v1 "$target"
+          git push --force-with-lease="$lease" origin refs/tags/v1
+          echo "::notice::v1 → $target ($GITHUB_REF)"
+          # <<< move-v1-forward
 
   # Brak auto-prune: przy deliberate versioning + exact pin konsumenta przycięcie mogłoby skasować
   # wersję, którą ktoś pinuje. Storage Packages jest współdzielony z Actions, ale przy tej skali

@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # release.sh — świadome wydanie Platform (publish-only, deliberate versioning).
 #
-# Bumpuje platformVersion we wszystkich miejscach, commituje TWOIM message, taguje vX.Y.Z,
-# pcha branch + tag (Release publikuje Maven+npm) i przesuwa ruchomy tag v1 (reusable workflows).
+# Bumpuje platformVersion we wszystkich miejscach, commituje TWOIM message, taguje vX.Y.Z
+# i pcha main + tag. Release publikuje Maven+npm dopiero po zielonym CI na tym commicie
+# i wtedy sam przesuwa ruchomy tag v1 (job move-v1).
+#
+# Odmawia przed jakąkolwiek zmianą, gdy drzewo robocze nie jest czyste, bieżąca gałąź to nie
+# main albo HEAD różni się od origin/main — commit wydania zawiera wyłącznie pliki wersji.
 #
 # Użycie:
 #   ./release.sh "fix: opis zmiany"            # patch +0.0.1 od aktualnej wersji
@@ -16,7 +20,23 @@ VERSION="${2:-}"
 [[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
 
 PROP="gradle/build-logic/gradle.properties"
-[[ -f "$PROP" ]] || { echo "Brak $PROP — uruchom z roota repo Platform."; exit 1; }
+PROPERTY_FILES=("$PROP" gradle/catalog/gradle.properties gradle/test-fixtures/gradle.properties)
+CATALOG_BUILD="gradle/catalog/build.gradle.kts"
+for f in "${PROPERTY_FILES[@]}" "$CATALOG_BUILD"; do
+  [[ -f "$f" ]] || { echo "Brak $f — uruchom z roota repo Platform."; exit 1; }
+done
+
+BR="$(git rev-parse --abbrev-ref HEAD)"
+[[ "$BR" == "main" ]] || { echo "Wydanie tylko z main — bieżąca gałąź: $BR."; exit 1; }
+if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "Drzewo robocze nie jest czyste — commit wydania może zawierać wyłącznie podbicie wersji:"
+  git status --short --untracked-files=all
+  exit 1
+fi
+git fetch --quiet origin main
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
+  || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
+
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
 # Wersja: jawna (arg 2) albo patch +0.0.1 od aktualnej.
@@ -33,7 +53,6 @@ if git rev-parse "v$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags
   echo "Tag v$VERSION już istnieje (wersje immutable). Podaj wyższą."; exit 1
 fi
 
-BR="$(git rev-parse --abbrev-ref HEAD)"
 echo "Plan: $CUR -> $VERSION   branch: $BR   commit: \"$MSG\""
 if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
   read -r -p "Kontynuować (commit + tag v$VERSION + push)? [y/N] " ans
@@ -41,24 +60,24 @@ if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
 fi
 
 # Bump: 3× gradle.properties + lustro defaultu w catalogu.
-for f in gradle/build-logic/gradle.properties gradle/catalog/gradle.properties gradle/test-fixtures/gradle.properties; do
-  [[ -f "$f" ]] && sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f" && rm -f "$f.bak"
+for f in "${PROPERTY_FILES[@]}"; do
+  sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f"
+  rm -f "$f.bak"
 done
-[[ -f gradle/catalog/build.gradle.kts ]] && \
-  sed -i.bak -E "s/getOrElse\(\"[0-9]+\.[0-9]+\.[0-9]+\"\)/getOrElse(\"$VERSION\")/g" gradle/catalog/build.gradle.kts \
-  && rm -f gradle/catalog/build.gradle.kts.bak
+sed -i.bak -E "s/getOrElse\(\"[0-9]+\.[0-9]+\.[0-9]+\"\)/getOrElse(\"$VERSION\")/g" "$CATALOG_BUILD"
+rm -f "$CATALOG_BUILD.bak"
 
-git add -A
+git add -- "${PROPERTY_FILES[@]}" "$CATALOG_BUILD"
 git commit -m "$MSG"
-git push
-git tag "v$VERSION" && git push origin "v$VERSION"
-git tag -f v1 && git push -f origin v1
+git push origin main
+git tag "v$VERSION"
+git push origin "v$VERSION"
 
 echo ""
 echo "════════════════════════════════════════════════"
 echo "  Platform podbity: $CUR → $VERSION"
-echo "  Tag: v$VERSION (+ przesunięty ruchomy v1)"
+echo "  Tag: v$VERSION (v1 przesunie Release po zielonej publikacji)"
 echo "  Branch: $BR   Commit: \"$MSG\""
 echo "════════════════════════════════════════════════"
-echo "==> Release publikuje z taga: Actions → Release."
+echo "==> Release weryfikuje CI i publikuje z taga: Actions → Release."
 echo "==> U konsumenta: ./scripts/platform-bump.sh $VERSION   (podbije piny do $VERSION)"

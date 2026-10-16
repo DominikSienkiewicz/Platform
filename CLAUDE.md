@@ -85,6 +85,10 @@ bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`)
 - `./release.sh "feat: opis" 1.2.0` — konkretna wersja
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
 
+Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main` albo `HEAD` ≠ `origin/main`, i commituje
+wyłącznie pliki wersji. `release.yml` publikuje dopiero po zielonym CI (`verify` = `ci.yml`) na otagowanym
+commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do przodu) — nie pchaj `v1` ręcznie.
+
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
