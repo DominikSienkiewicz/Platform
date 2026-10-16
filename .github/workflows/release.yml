@@ -1,10 +1,10 @@
-name: Release (auto-version on push)
+name: Release (version tag)
 
-# Na każdy push do main, który zmienia PLATFORMĘ (gradle/** lub frontend/packages/**):
-#   1) wylicz wersję 1.0.<run_number> (major.minor z gradle.properties, patch = numer runu — zawsze unikalny),
-#   2) opublikuj artefakty Maven (build-logic, catalog, test-fixtures) i npm (5 paczek),
-#   3) przytnij do 3 najnowszych wersji każdego pakietu.
-# Konsumenci trzymają DOKŁADNE piny (powtarzalność); Renovate podbija je do najnowszej.
+# Świadome wydanie: push taga vX.Y.Z (albo ręczny workflow_dispatch) publikuje platformVersion
+# z gradle/build-logic/gradle.properties — bez auto-bumpu i bez auto-prune:
+#   - Maven: build-logic (+ markery pluginów), catalog, test-fixtures, security-starter,
+#   - npm: każda paczka z frontend/packages/* bez "private": true.
+# Procedura i idempotencja per rejestr: RELEASING.md. Konsumenci trzymają DOKŁADNE piny.
 on:
   workflow_dispatch:
   push:

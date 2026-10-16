@@ -13,7 +13,8 @@ import org.gradle.api.tasks.testing.Test
  * per-repo i deklaruje je konsument przez współdzielony version catalog (`libs`).
  * Konsument NADAL aplikuje plugin Spring Boot: alias(libs.plugins.spring.boot).
  *
- * Wersje BOM/ArchUnit = lustro gradle/catalog (świadoma duplikacja — patrz README).
+ * Wersje BOM/ArchUnit/JUnit = lustro gradle/catalog (świadoma duplikacja: precompiled script plugin nie
+ * czyta katalogu w czasie kompilacji — patrz docs/versions.md i zasada 1 w CLAUDE.md).
  */
 
 plugins {
@@ -62,9 +63,9 @@ dependencyManagement {
 }
 
 dependencies {
-	// Spring Boot 4.0.x ciągnie junit-bom 5.14.x (launcher 1.14.x), a Modulith/Spring AI/Testcontainers
-	// ciągną junit-bom 6.x → mieszany stos (launcher 1.14 vs platform 6.x) wywala każdy engine
-	// NoSuchMethodError. enforcedPlatform przypina cały JUnit do jednej wersji (fix realnego buga
+	// BOM-y Boota, Modulith, Spring AI i Testcontainers nie muszą zgadzać się co do linii JUnit (przy Boocie 4.0
+	// Boot dawał junit-bom 5.14 / launcher 1.14, reszta 6.x) → mieszany stos launcher vs platform wywala
+	// każdy engine NoSuchMethodError. enforcedPlatform przypina cały JUnit do jednej wersji (fix realnego buga
 	// ze SkillSprintPlus — teraz egzekwowany centralnie, nie per-repo).
 	"testImplementation"(enforcedPlatform("org.junit:junit-bom:$junitVersion"))
 	"testImplementation"("org.springframework.modulith:spring-modulith-starter-test")
