@@ -29,3 +29,6 @@ frontend/packages/ui-registry/public/r/
 # === Logs ===
 *.log
 /.claude/
+
+# Local project concepts
+/docs/concepts/
