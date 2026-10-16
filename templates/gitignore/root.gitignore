@@ -30,3 +30,6 @@ Desktop.ini
 
 # === Local tooling ===
 /.claude/
+
+# Local project concepts
+/docs/concepts/

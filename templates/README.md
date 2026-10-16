@@ -24,3 +24,7 @@ czemu własna kopia helpera nie może się rozjechać z kanonem.
 
 CI (reusable workflows), wersje (catalog), jakość (convention plugins), config lintera, paczki FE
 i Renovate-preset są dystrybuowane automatycznie (artefakty/`extends`) — nie ma ich tutaj.
+
+Project concepts, feature proposals, plans, and audits belong in local
+`docs/concepts/`. The root Git ignore templates exclude that directory;
+maintained technical documentation elsewhere under `docs/` stays versioned.
