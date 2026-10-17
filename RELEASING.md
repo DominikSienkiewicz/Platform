@@ -35,17 +35,26 @@ cd Platform
 ```
 
 `release.sh` bumpuje `platformVersion` we wszystkich miejscach (3× gradle.properties + lustro
-defaultu w catalogu), commituje TWOIM message, taguje `vX.Y.Z`, pcha branch + tag (Release publikuje
-Maven+npm) i przesuwa ruchomy `v1`. Pyta o potwierdzenie (tag = wersja immutable); `-y` pomija pytanie.
+defaultu w catalogu), commituje TWOIM message wyłącznie te pliki, taguje `vX.Y.Z` i pcha main + tag.
+Pyta o potwierdzenie (tag = wersja immutable); `-y` pomija pytanie. **Odmawia** przed jakąkolwiek
+zmianą, gdy drzewo robocze nie jest czyste (także pliki untracked), bieżąca gałąź to nie `main`
+albo `HEAD` różni się od `origin/main`.
 
 Ręcznie (równoważnie):
 
 ```bash
-# bump platformVersion w 3 gradle.properties + getOrElse("X.Y.Z") w gradle/catalog/build.gradle.kts
-git add -A && git commit -m "release: platform X.Y.Z" && git push
-git tag vX.Y.Z && git push origin vX.Y.Z        # albo: Actions → Release → Run workflow
-git tag -f v1  && git push -f origin v1          # ruchomy major dla reusable workflows
+# czysty main == origin/main; bump platformVersion w 3 gradle.properties + getOrElse("X.Y.Z") w gradle/catalog/build.gradle.kts
+git add gradle/{build-logic,catalog,test-fixtures}/gradle.properties gradle/catalog/build.gradle.kts
+git commit -m "release: platform X.Y.Z" && git push origin main
+git tag vX.Y.Z && git push origin vX.Y.Z
 ```
+
+**Bramka CI.** Release (`release.yml`) publikuje wyłącznie z taga równego `platformVersion`
+(`workflow_dispatch` z gałęzi kończy się błędem; re-run = Run workflow na tagu `vX.Y.Z`). Najpierw
+uruchamia pełne CI (`ci.yml` jako job `verify`) i build rejestru shadcn (`registry-build`, bez
+`packages: write`) na otagowanym commicie; Maven i npm wychodzą dopiero, gdy oba są zielone.
+Ruchomy `v1` przesuwa job `move-v1` po obu udanych publikacjach i tylko do przodu — tag na czerwonym
+commicie nie publikuje niczego i nie rusza `v1`. Nie przesuwaj `v1` ręcznie.
 
 Release publikuje Maven (`catalog`, `build-logic`, `test-fixtures`) + npm (5 paczek) w wersji
 `platformVersion`. Publish jest **idempotentny** (istniejąca wersja = 409 tolerowane), więc re-run

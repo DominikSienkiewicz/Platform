@@ -1,20 +1,23 @@
 name: CI
 
 # Walidacja pushy do main i PR-ów: czy build-logic / catalog / test-fixtures kompilują się
-# na JDK 25, czy paczki frontendu instalują się, lintują i przechodzą własne testy oraz czy testy
-# skryptów szablonowych (templates/tests) przechodzą. (Publish robi osobno release.yml.)
-# Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1),
-# czyli 3× na każde wydanie — ten sam commit jest już zwalidowany przez push do main.
+# na JDK 25, czy paczki frontendu instalują się, lintują, przechodzą własne testy i budują rejestr
+# shadcn oraz czy przechodzą wszystkie śledzone testy skryptów (*.test.sh poza frontend/).
+# Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
+# Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
+# (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
+# github.workflow rozdziela wywołanie z Release od zwykłego CI na tym samym refie.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -60,14 +63,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - run: bash templates/tests/platform-bump.test.sh
-      - run: bash templates/tests/container-scan-skip.test.sh
-      - run: bash templates/tests/merge.test.sh
-      - run: bash templates/tests/release-registry-failure.test.sh
-      - run: bash templates/tests/agent-gradle.test.sh
-      - run: bash templates/tests/frontend-ci-strict.test.sh
-      - run: bash templates/tests/backend-ci-packages.test.sh
-      - run: bash templates/tests/backend-ci-arguments.test.sh
+      # Każdy śledzony *.test.sh poza frontend/ (tamte odpala `pnpm -r test`) — nowy test nie
+      # wymaga dopisania do listy. Wszystkie biegną do końca, wynik zbiorczy jak w jobie gradle.
+      - name: Wszystkie testy skryptów
+        run: |
+          set -uo pipefail
+          mapfile -t tests < <(git ls-files '*.test.sh' ':!:frontend/**')
+          [ "${#tests[@]}" -gt 0 ] || { echo "::error::Nie znaleziono żadnego *.test.sh"; exit 1; }
+          fail=0
+          for test in "${tests[@]}"; do
+            echo "::group::$test"
+            bash "$test" || { echo "::error file=$test::$test nie przeszedł"; fail=1; }
+            echo "::endgroup::"
+          done
+          exit $fail
 
   frontend:
     name: Frontend — install + lint + test
@@ -90,3 +99,6 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm -r --if-present lint
       - run: pnpm -r --if-present test
+      # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
+      - name: Build registry (shadcn)
+        run: pnpm --filter @dominiksienkiewicz/ui build
