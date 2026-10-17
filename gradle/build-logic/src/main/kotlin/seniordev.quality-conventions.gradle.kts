@@ -3,7 +3,7 @@
  * -----------------------------
  * "Deep quality" — narzędzia, które budują sygnał dojrzałości (security/FinTech positioning):
  *   - PIT (mutation testing) — realna jakość testów, nie tylko pokrycie
- *   - SpotBugs — analiza statyczna (report-only na JDK 25, bo bytecode-support narzędzi dojrzewa)
+ *   - SpotBugs — analiza statyczna (report-only, dopóki SpotBugs nie czyta class-file 71 z JDK 27)
  *   - CycloneDX — SBOM (./gradlew cyclonedxBom) jako artefakt release
  *
  * targetClasses dla PIT ustawia KONSUMENT (zależy od groupId modułu), np.:
@@ -57,7 +57,7 @@ val extractSpotbugsConfig = tasks.register("extractSpotbugsConfig") {
 
 spotbugs {
 	toolVersion.set("4.10.3")
-	// Report-only dopóki wsparcie bytecode JDK 25 w SpotBugs nie jest w pełni zielone.
+	// Report-only, dopóki SpotBugs nie analizuje bez błędów class-file 71 (toolchain JDK 27).
 	// Konsument może przełączyć: spotbugs { ignoreFailures.set(false) }
 	ignoreFailures.set(true)
 	excludeFilter.set(layout.buildDirectory.file("platform-config/spotbugs/spotbugs-exclude.xml"))

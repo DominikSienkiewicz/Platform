@@ -16,7 +16,9 @@ Thumbs.db
 # === Gradle ===
 .gradle/
 **/build/
-!src/**/build/
+.kotlin/
+out/
+*.class
 # Wyjście Buildship/Eclipse (bin/main, bin/test) — kopia src/, generowana przy imporcie do IDE.
 gradle/*/bin/
 

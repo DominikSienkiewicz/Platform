@@ -1,110 +1,195 @@
 # Releasing Platform
 
-Model: **publish-only + deliberate versioning**. GitHub Packages to **jedyne źródło prawdy**
-(Maven + npm). Jedna wersja `platformVersion` w `gradle/build-logic/gradle.properties` — ta sama
-na GitHub Packages i w pinach konsumentów. `release.yml` publikuje **tę** wersję, wyzwalany
-**świadomie** (tag `v*` lub `workflow_dispatch`). Brak auto-bumpu i brak auto-prune.
+The model is **publish-only with deliberate versioning**. GitHub Packages (Maven and npm) is the
+only source of truth for released artifacts. A single `platformVersion` in
+`gradle/build-logic/gradle.properties` is the version of every artifact, on GitHub Packages and in
+consumers' pins alike. [`release.yml`](.github/workflows/release.yml) publishes that version and
+runs only when someone asks for it: a pushed `vX.Y.Z` tag or a manual `workflow_dispatch`. Nothing
+bumps versions automatically, and nothing prunes old versions automatically.
 
-Reusable workflows w repo konsumenckich wskazują **`@v1`** (ruchomy tag majora w gicie — niezależny
-od wersji artefaktów). Konsumenci trzymają **DOKŁADNE** piny; podbija je `platform-bump.sh` lub Renovate.
+There are two distribution channels, and they move differently:
 
-Aktualna wersja: **1.1.0**.
+- **Artifacts are pinned.** Consumers pin the exact platform version and move it with
+  `scripts/platform-bump.sh` (or Renovate). Nothing changes for them until they bump.
+- **Reusable workflows float.** Consumers call them as
+  `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@v1`. `v1` is a moving major tag
+  that `release.yml` moves forward after every successful release, so a workflow change reaches
+  every consumer on its next CI run.
 
-## Setup jednorazowy (raz na maszynę / repo)
-
-```bash
-# A) Lokalne poświadczenia do GitHub Packages (Gradle czyta je automatycznie):
-#    ~/.gradle/gradle.properties
-gpr.user=DominikSienkiewicz
-gpr.key=<PAT classic: read:packages>          # do publikacji dodaj też write:packages
-
-# B) npm lokalnie — token w env (project .npmrc czyta ${GITHUB_TOKEN}):
-export GITHUB_TOKEN=<PAT: read:packages>       # w ~/.zshrc lub sourcowanym, gitignorowanym pliku
-
-# C) Sekrety w repo konsumentów (CI): GPR_TOKEN = PAT (read:packages).
-# D) Ruchomy tag v1 dla reusable workflows (raz):
-git tag -f v1 && git push -f origin v1
-```
-
-## Wydanie (świadome) — jedną komendą
+The current version is not repeated here, because a copy goes stale. Read it from the source:
 
 ```bash
-cd Platform
-./release.sh "fix: opis zmiany"          # patch +0.0.1 od aktualnej wersji
-./release.sh "feat: opis" 1.2.0          # konkretna wersja
+grep '^platformVersion=' gradle/build-logic/gradle.properties
 ```
-
-`release.sh` bumpuje `platformVersion` we wszystkich miejscach (3× gradle.properties + lustro
-defaultu w catalogu), commituje TWOIM message wyłącznie te pliki, taguje `vX.Y.Z` i pcha main + tag.
-Pyta o potwierdzenie (tag = wersja immutable); `-y` pomija pytanie. **Odmawia** przed jakąkolwiek
-zmianą, gdy drzewo robocze nie jest czyste (także pliki untracked), bieżąca gałąź to nie `main`
-albo `HEAD` różni się od `origin/main`.
-
-Ręcznie (równoważnie):
 
 ```bash
-# czysty main == origin/main; bump platformVersion w 3 gradle.properties + getOrElse("X.Y.Z") w gradle/catalog/build.gradle.kts
-git add gradle/{build-logic,catalog,test-fixtures}/gradle.properties gradle/catalog/build.gradle.kts
-git commit -m "release: platform X.Y.Z" && git push origin main
-git tag vX.Y.Z && git push origin vX.Y.Z
+git tag --list 'v*.*.*' --sort=-v:refname | head -1
 ```
 
-**Bramka CI.** Release (`release.yml`) publikuje wyłącznie z taga równego `platformVersion`
-(`workflow_dispatch` z gałęzi kończy się błędem; re-run = Run workflow na tagu `vX.Y.Z`). Najpierw
-uruchamia pełne CI (`ci.yml` jako job `verify`) i build rejestru shadcn (`registry-build`, bez
-`packages: write`) na otagowanym commicie; Maven i npm wychodzą dopiero, gdy oba są zielone.
-Ruchomy `v1` przesuwa job `move-v1` po obu udanych publikacjach i tylko do przodu — tag na czerwonym
-commicie nie publikuje niczego i nie rusza `v1`. Nie przesuwaj `v1` ręcznie.
+## What a release publishes
 
-Release publikuje Maven (`catalog`, `build-logic`, `test-fixtures`) + npm (5 paczek) w wersji
-`platformVersion`. Publish jest **idempotentny** (istniejąca wersja = 409 tolerowane), więc re-run
-jest bezpieczny. Wersje są **immutable** — nie nadpiszesz istniejącej; błąd w wydaniu = nowa wersja.
+Every artifact below is published at the same `platformVersion`.
 
-## Konsumenci — jak skorzystać z nowej wersji
+| Source | Artifact | Registry |
+|---|---|---|
+| `gradle/build-logic/` | `pl.seniordeveloper.gradle:build-logic` plus plugin markers for `seniordev.java-conventions`, `seniordev.quality-conventions`, `seniordev.spring-modulith-conventions` and `seniordev.settings-conventions` | GitHub Packages (Maven) |
+| `gradle/catalog/` | `pl.seniordeveloper:platform-catalog` | GitHub Packages (Maven) |
+| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) |
+| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` | GitHub Packages (Maven) |
+| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
+| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
+| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` | GitHub Packages (npm) |
+| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
+| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` | GitHub Packages (npm) |
+| `frontend/packages/query/` | `@dominiksienkiewicz/query` | GitHub Packages (npm) |
+| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
+
+The npm job publishes every workspace package under `frontend/packages/` that is not marked
+`"private": true`, so a new package is released as soon as it exists. Update this table and the
+README in the same change.
+
+## One-time setup
 
 ```bash
-cd <Attestate|Azimuth|SkillSprintPlus|BookOfStyling>
-./scripts/platform-bump.sh            # podbija piny (catalog + pluginy + npm) do najnowszej z GitHub Packages
-# albo: ./scripts/platform-bump.sh 1.2.0   (konkretna wersja)
-git add -A && git commit -m "build: Platform -> X.Y.Z" && git push
+# A) Local GitHub Packages credentials, read by Gradle automatically, in ~/.gradle/gradle.properties:
+gpr.user=<your GitHub user>
+gpr.key=<classic PAT with read:packages>       # add write:packages only to publish from your machine
+
+# B) npm: the project .npmrc reads ${GITHUB_TOKEN}; keep it in your shell profile or an ignored file.
+export GITHUB_TOKEN=<classic PAT with read:packages>
+
+# C) Consumer repositories need a GPR_TOKEN secret (classic PAT with read:packages) for CI.
 ```
 
-`platform-bump.sh` odpytuje GitHub Packages o najnowszą wersję `catalog`, podmienia piny w
-`backend/settings.gradle.kts`, `backend/build.gradle.kts` i `frontend/package.json`, oraz regeneruje
-`package-lock.json`. Token bierze z `GPR_TOKEN`/`GITHUB_TOKEN` lub `gpr.key`.
+## Cutting a release
 
-Na koniec regeneruje też zamrożony stan backendu: `gradle.lockfile`, a w repo z włączoną weryfikacją
-zależności — `gradle/verification-metadata.xml`. Ten drugi wariant leci **dwoma przebiegami Gradle**,
-oba z `--refresh-dependencies`, więc **trwa wyraźnie dłużej** (pełne pobranie metadanych):
+```bash
+./release.sh "fix: short description"
+```
 
-| przebieg | rola |
+```bash
+./release.sh "feat: short description" 1.6.0
+```
+
+The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
+`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The commit message
+is required and must follow Conventional Commits in English.
+
+Before it changes anything, `release.sh` refuses to run when the working tree is not clean
+(untracked files included), the current branch is not `main`, or `HEAD` differs from `origin/main`.
+It also refuses a version whose tag already exists. It then bumps `platformVersion` in the module
+`gradle.properties` files and in the catalog's fallback default, commits only those files, pushes
+`main`, and creates and pushes the `vX.Y.Z` tag. It does not touch `v1`.
+
+The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
+because two publishes of the same version running in parallel once caused a partial release.
+
+To publish an existing tag again, run **Actions → Release (version tag) → Run workflow** on that
+tag. A dispatch from a branch fails, because a release runs only from the tag that equals
+`platformVersion`. Read the idempotency rules below first.
+
+## What `release.yml` does
+
+1. **`version`** reads `platformVersion` from `gradle/build-logic/gradle.properties` and fails
+   unless the run started from the tag `v<platformVersion>`, so every published version has its
+   tag and every tag has its version.
+2. **`verify`** runs the full CI (`ci.yml`) on the tagged commit, and **`registry-build`** builds
+   the shadcn registry without `packages: write`. Both must be green before anything is published.
+3. **`gradle`** and **`npm`** then run in parallel. One can fail while the other succeeds, so a
+   release can be complete in one registry and missing in the other. Check both jobs before you
+   announce a release.
+4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
+   forward: re-running an older tag never moves it back. Never move `v1` by hand.
+
+A red job stops every job after it. A tag on a commit with red CI publishes nothing and leaves `v1`
+where it was.
+
+### Idempotency, per registry
+
+Versions are immutable on GitHub Packages: a published version cannot be overwritten. A broken
+release is fixed by releasing a new version, or by deleting the broken version and re-running.
+
+**Maven (`gradle` job).** Before each module, the job asks the GitHub Packages API whether the
+version already exists.
+
+- If it exists, the whole module is skipped. `build-logic` is checked by its
+  `seniordev.settings-conventions` plugin marker, not by its main artifact: the main artifact is
+  uploaded first and can exist while the markers are missing, and the settings marker is the
+  artifact a consumer resolves first.
+- If it does not exist, the module is published and **any failure is fatal, including HTTP 409**.
+  A 409 on the `.pom` makes Gradle stop the module before it uploads the Gradle Module Metadata
+  (`.module`), which leaves an artifact without its catalog or plugin variant. Consumers then fail
+  with "No matching variant". Swallowing the 409 is what broke `platform-catalog:1.3.4`.
+
+Re-running after a successful Maven publish is safe: every module is skipped. **Re-running after a
+failed Maven publish is not.** If any file of the failed module was uploaded, the pre-check sees the
+version, skips the module and leaves the incomplete artifact in place. Before re-running, delete
+that version of the affected package on GitHub Packages, or release a higher version instead.
+
+**npm (`npm` job).** Each package is handled on its own:
+
+- packages marked `"private": true` are skipped;
+- if `npm view <name>@<version>` finds the version, the package is skipped;
+- otherwise the package is published; a version-conflict response (`E409`, `409 Conflict`,
+  `cannot publish over`) is treated as already published;
+- any other failure marks the job failed, but the remaining packages are still attempted.
+
+An npm package is published in a single request, so re-running the job after a partial failure is
+safe: it publishes only the packages that are still missing.
+
+## Consumers: adopting a new version
+
+In a consumer repository:
+
+```bash
+./scripts/platform-bump.sh
+```
+
+Without an argument the script bumps to the newest version on GitHub Packages; pass a version
+(`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
+`platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
+`GITHUB_TOKEN` or `gpr.key`, and:
+
+- rewrites the settings plugin and catalog pins in `backend/settings.gradle.kts` and
+  `backend/settings-gradle.lockfile`; convention plugins in `build.gradle.kts` carry no version;
+- applies the frontend version canon to `frontend/package.json`, including `overrides`, and
+  regenerates `package-lock.json`;
+- regenerates `gradle.lockfile` and, when the repository verifies dependencies,
+  `gradle/verification-metadata.xml`.
+
+The script does not commit; the diff is left for review.
+
+### Why dependency verification needs two Gradle passes
+
+With `gradle/verification-metadata.xml` present, the bump runs Gradle twice, both times with
+`--refresh-dependencies`, so it takes noticeably longer:
+
+| Pass | Purpose |
 | --- | --- |
-| `build --write-locks --write-verification-metadata sha256` | pobiera artefakty, więc jako jedyny zapisuje checksumy **jarów** — ale widzi tylko konfiguracje z grafu `build` |
-| `dependencies --write-locks --write-verification-metadata sha256` | rozwiązuje **wszystkie** resolvable konfiguracje, więc domyka **metadane** (`.pom`/`.module`) także poza grafem `build`; jako report task nie pobiera jarów |
+| `build --write-locks --write-verification-metadata sha256` | downloads artifacts, so it is the only pass that records **jar** checksums; it sees only the configurations in the `build` graph |
+| `dependencies --write-locks --write-verification-metadata sha256` | resolves **every** resolvable configuration, so it completes the **metadata** (`.pom`/`.module`) outside the `build` graph; as a report task it downloads no jars |
 
-Oba `--refresh-dependencies` są celowe: przy ciepłym cache Gradle nie dotyka plików `.module`, ich
-checksumy nie trafiłyby do metadanych, a CI na zimnym cache wywaliłby się na
-`Dependency verification failed`. Drugi przebieg jest równie celowy: `junit-bom-<wersja>.pom` pobiera
-dopiero detached configuration tworzona przez `io.spring.dependency-management` przy ustalaniu
-zależności `:integrationTest` — poza grafem `build`, więc sam pierwszy przebieg zostawiał dziurę
-(Azimuth i SkillSprintPlus, bump 1.5.26). Ta sama klasa błędu dotyczyła wcześniej konfiguracji
-narzędziowych (Spotless, JaCoCo, CycloneDX), dlatego przebieg NIE jest zawężony `--configuration`.
+Both `--refresh-dependencies` flags are deliberate. With a warm cache Gradle does not touch the
+`.module` files, their checksums never reach the metadata file, and CI on a cold cache fails with
+`Dependency verification failed`. The second pass is just as deliberate: `junit-bom-<version>.pom`
+is fetched only by the detached configuration that `io.spring.dependency-management` creates while
+resolving `:integrationTest`, outside the `build` graph, so the first pass alone left a gap (Azimuth
+and SkillSprintPlus, bump to 1.5.26). The same class of failure hit tool configurations earlier
+(Spotless, JaCoCo, CycloneDX), which is why the pass is not narrowed with `--configuration`.
 
-⚠️ Nigdy nie dokładaj do tych wywołań `--dry-run`: Gradle odkłada wtedy wynik do
-`verification-metadata.dryrun.xml`, prawdziwego pliku nie rusza i kończy się `BUILD SUCCESSFUL`.
+Never add `--dry-run` to these calls. Gradle then writes `verification-metadata.dryrun.xml`, leaves
+the real file untouched and still reports `BUILD SUCCESSFUL`.
 
-Pierwszy bump po wprowadzeniu drugiego przebiegu poszerzy `gradle.lockfile` o konfiguracje, których
-graf `build` nie dotykał (`pitest`, `cyclonedxBom`) — to jednorazowy, oczekiwany diff. Skrypt nie
-commituje — diff zostaje do recenzji.
+### Testing an unreleased change
 
-Pierwszy build po bumpie pobiera artefakty z GitHub Packages **raz** i cache'uje je w
-`~/.gradle/caches` (Gradle) / `node_modules` + lockfile (npm). Kolejne buildy idą z cache — bez sieci.
-**Nie ma `mavenLocal` ani `npm link`** (publish-only: zero driftu local↔CI).
+Do not release just to try a change in a consumer. Publish locally and point the consumer at that
+repository with `-PplatformRepository`, as described in
+[docs/local-development.md](docs/local-development.md).
 
-## Retencja pakietów
+## Package retention
 
-Brak auto-prune (ani w `release.yml`, ani z crona). Storage Packages jest współdzielony z Actions,
-ale przy tej skali (KB–MB) nieistotny. Sprzątanie świadome:
-**Actions → Cleanup old package versions → Run workflow** (`keep`, domyślnie 10). Wymaga sekretu
-`PACKAGES_ADMIN_TOKEN` (PAT classic: `read:packages` + `delete:packages`). ⚠️ Nie kasuj wersji, którą
-któryś konsument jeszcze pinuje.
+Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. Clean up
+deliberately with **Actions → Cleanup old package versions → Run workflow** (`keep`, default 10).
+It needs a `PACKAGES_ADMIN_TOKEN` secret (classic PAT with `read:packages` and `delete:packages`).
+Do not delete a version that a consumer still pins.

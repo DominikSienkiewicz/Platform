@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # buildAndPublishLocal.sh — buduje i publikuje artefakty Platform do LOKALNEGO repo, żeby repo
-# konsumenckie (Attestate / SkillSprintPlus / BookOfStyling) budowały się lokalnie BEZ GitHuba.
+# konsumenckie budowały się lokalnie BEZ GitHuba (lista konsumentów: CLAUDE.md).
 #
-#   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog
+#   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog + test-fixtures
 #   Frontend -> pnpm install (paczki gotowe); konsument linkuje je przez `npm run platform:link`
 #
-# Local-first: konsument ma mavenLocal() jako pierwszy + GitHub Packages tylko gdy są creds,
-# więc po tym skrypcie backendy resolvują platformę lokalnie i nie łączą się z GitHubem.
+# Konsument wskazuje to repo jawnie: -PplatformRepository=file:///<home>/.m2/repository (pierwsze
+# w kolejności rezolucji) — patrz docs/local-development.md.
 #
 # Użycie:
 #   ./buildAndPublishLocal.sh                 # Gradle + frontend
-#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (build-logic + catalog)
+#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (build-logic + catalog + test-fixtures)
 #   ./buildAndPublishLocal.sh --with-registry # dodatkowo `shadcn build` (public/r/*.json)
 #   ./buildAndPublishLocal.sh --help
 set -euo pipefail
