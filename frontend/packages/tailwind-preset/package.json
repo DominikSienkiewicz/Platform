@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/tailwind-preset",
   "version": "1.0.0",
   "description": "Współdzielone design tokens (Tailwind v4, CSS-first @theme).",
+  "license": "MIT",
   "exports": {
     "./theme.css": "./theme.css"
   },

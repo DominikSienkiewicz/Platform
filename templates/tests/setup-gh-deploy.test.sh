@@ -68,3 +68,33 @@ grep -q 'SSH_KNOWN_HOSTS=fakehost ssh-ed25519 AAAAC3NzaFAKEKEY' "$STDIN_LOG" \
   || fail "SSH_KNOWN_HOSTS nie pochodzi z ssh-keyscan"
 
 echo "OK: kontrakt sekretów/zmiennych pushnięty; wartości przez stdin; SSH_KNOWN_HOSTS z ssh-keyscan"
+
+# --- .secrets.local w work tree gita: zanim cokolwiek pójdzie do gh, git musi go ignorować ---
+GIT_REPO="$WORK/git-repo"; mkdir -p "$GIT_REPO/scripts"
+cp "$CANON" "$GIT_REPO/scripts/setup-gh-deploy.sh"; chmod +x "$GIT_REPO/scripts/setup-gh-deploy.sh"
+cp "$REPO/.secrets.local" "$GIT_REPO/.secrets.local"
+git -C "$GIT_REPO" init -q
+GIT_REPO_OUT="$WORK/git-repo.out"
+run_in_git_repo() {
+  : >"$ARGV_LOG"
+  PATH="$BIN:$PATH" GH_REPO=owner/fake-repo "$GIT_REPO/scripts/setup-gh-deploy.sh" >"$GIT_REPO_OUT" 2>&1
+}
+
+# 5) brak reguły w .gitignore → odmowa (exit ≠ 0) bez jakiegokolwiek `secret set`
+run_in_git_repo && fail "skrypt ruszył, choć git nie ignoruje .secrets.local"
+grep -q '^secret set' "$ARGV_LOG" && fail "sekret pushnięty, choć git nie ignoruje .secrets.local"
+grep -q 'git check-ignore' "$GIT_REPO_OUT" || fail "odmowa nie podpowiada git check-ignore"
+
+# 6) plik już śledzony → odmowa mimo reguły (git nie stosuje reguł ignore do śledzonych plików)
+printf '.secrets.local\n' > "$GIT_REPO/.gitignore"
+git -C "$GIT_REPO" add -f .secrets.local
+run_in_git_repo && fail "skrypt ruszył, choć .secrets.local jest śledzony"
+grep -q '^secret set' "$ARGV_LOG" && fail "sekret pushnięty, choć .secrets.local jest śledzony"
+
+# 7) kanoniczny root.gitignore ignoruje .secrets.local → kontrakt pushnięty
+git -C "$GIT_REPO" rm -q --cached .secrets.local
+cp "$(dirname "$CANON")/gitignore/root.gitignore" "$GIT_REPO/.gitignore"
+run_in_git_repo || fail "skrypt odmówił, choć kanoniczny root.gitignore ignoruje .secrets.local"
+grep -qE '^secret set GPR_KEY( |$)' "$ARGV_LOG" || fail "GPR_KEY nie pushnięty przy ignorowanym .secrets.local"
+
+echo "OK: nieignorowany lub śledzony .secrets.local blokuje push; kanoniczny root.gitignore go ignoruje"

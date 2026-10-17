@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/query",
   "version": "1.0.0",
   "description": "Współdzielony QueryClient (staleTime 60s, refetchOnWindowFocus off) + QueryProvider z Devtools. Likwiduje powielony provider w Attestate/Pragma.",
+  "license": "MIT",
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

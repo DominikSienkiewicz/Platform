@@ -10,8 +10,13 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 2
 
-# JVM — Spring Initializr generuje wcięcia tabami; trzymamy się tego
-[*.{java,kt,kts}]
+# Java — google-java-format (Spotless w seniordev.java-conventions) wymusza 2 spacje
+[*.java]
+indent_style = space
+indent_size = 2
+
+# Kotlin i skrypty Gradle w Kotlin DSL — taby
+[*.{kt,kts}]
 indent_style = tab
 tab_width = 4
 

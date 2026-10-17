@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/tsconfig",
   "version": "1.0.0",
   "description": "Współdzielone konfiguracje TypeScript (base + Next.js) dla repo organizacji.",
+  "license": "MIT",
   "files": [
     "base.json",
     "next.json"

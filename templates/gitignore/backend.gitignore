@@ -16,3 +16,6 @@ replay_pid*
 
 # === IntelliJ build output ===
 out/
+
+# === Eclipse / Buildship build output (bin/main, bin/test — a copy of src/) ===
+bin/

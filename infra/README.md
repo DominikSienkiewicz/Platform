@@ -16,5 +16,9 @@ docker compose --profile ai up -d   # + Ollama
 
 `postgres/init/01-extensions.sql` tworzy rozszerzenie `vector` przy pierwszej inicjalizacji wolumenu.
 
+Wolumen `postgres-data` jest montowany w `/var/lib/postgresql`, nie w `/var/lib/postgresql/data`:
+od PostgreSQL 18 oficjalny obraz ustawia `PGDATA=/var/lib/postgresql/18/docker`, więc przy starym
+punkcie montowania pg18 odmawia startu, a dane spoza wolumenu nie przetrwałyby `docker compose down`.
+
 > Jak używać: skopiuj `infra/` do repo konsumenta (lub trzymaj jako submodule) i nadpisz `.env`.
 > Wersje obrazów są jednym źródłem prawdy — bump tutaj, nie w każdym repo z osobna.

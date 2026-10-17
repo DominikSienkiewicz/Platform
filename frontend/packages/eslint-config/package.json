@@ -2,6 +2,7 @@
   "name": "@dominiksienkiewicz/eslint-config",
   "version": "1.0.0",
   "description": "Współdzielony ESLint flat config (Next core-web-vitals + TypeScript).",
+  "license": "MIT",
   "type": "module",
   "main": "index.js",
   "exports": {

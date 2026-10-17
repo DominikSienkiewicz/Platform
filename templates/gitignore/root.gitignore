@@ -24,6 +24,8 @@ Desktop.ini
 .env
 .env.*
 !.env.example
+# Values for scripts/setup-gh-deploy.sh (PATs); .secrets.local.example stays tracked
+.secrets.local
 
 # === Logs ===
 *.log
