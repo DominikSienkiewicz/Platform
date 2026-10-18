@@ -202,6 +202,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `platform-bump` rewrites a settings plugin pin with extra spaces around `version`, and fails when a
+  Platform pin in `backend/settings.gradle.kts` is written in a form it cannot rewrite, instead of moving
+  the catalog and leaving the plugin behind. An `npm pack` error other than a missing release (an E401,
+  a network failure) now stops the bump with npm's message; before, every error read as "an old
+  Platform release" and the bump went on without the frontend canon.
 - `@dominiksienkiewicz/api-client` keeps headers passed as a `Headers` instance or an array of pairs,
   which the object spread dropped, and a call's header replaces a default of the same name in any case.
 - `AbstractFlywayMigrationTest` checks every `db/migration` root on the classpath, jars included, with

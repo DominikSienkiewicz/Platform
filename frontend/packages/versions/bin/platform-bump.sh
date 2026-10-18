@@ -153,9 +153,23 @@ fi
 
 # --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
 #     i settings-gradle.lockfile; conventions w build.gradle.kts są BEZ wersji (classpath settings). ---
-[[ -f backend/settings.gradle.kts ]] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
-[[ -f backend/settings.gradle.kts ]] && sed -i.bak -E "s#(id\(\"seniordev\.settings-conventions\"\) version \")[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
+# platform-bump:backend-pins — test: frontend/packages/versions/test/backend-literal-pins.test.sh
+if [[ -f backend/settings.gradle.kts ]]; then
+  sed -i.bak -E \
+    -e "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" \
+    -e "s#(id\(\"seniordev\.settings-conventions\"\)[[:space:]]+version[[:space:]]+\")[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" \
+    backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
+  # Pin zapisany inaczej niż wzorzec zostałby na starej wersji, choć katalog poszedł dalej: zatrzymaj bump.
+  stale_pins="$(grep -nE 'seniordev\.settings-conventions"\)[^"]*"[0-9]+\.[0-9]+\.[0-9]+"|platform-catalog:[0-9]+\.[0-9]+\.[0-9]+' backend/settings.gradle.kts | grep -vF "$TARGET" || true)"
+  if [[ -n "$stale_pins" ]]; then
+    echo "A Platform pin in backend/settings.gradle.kts is written in a form platform-bump does not rewrite, so it stayed behind $TARGET." >&2
+    echo "Write it as id(\"seniordev.settings-conventions\") version \"X.Y.Z\" and run the bump again:" >&2
+    echo "$stale_pins" >&2
+    exit 1
+  fi
+fi
 [[ -f backend/settings-gradle.lockfile ]] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings-gradle.lockfile && rm -f backend/settings-gradle.lockfile.bak
+# platform-bump:backend-pins-end
 for props in ${PROPERTY_PINS[@]+"${PROPERTY_PINS[@]}"}; do
   sed -i.bak -E "s/^platformVersion=.*/platformVersion=$TARGET/" "$props" && rm -f "$props.bak"
 done
@@ -193,7 +207,9 @@ PY
 
   # Kanon: pobierz tarball versions@TARGET, nałóż versions.json na package.json (tylko wspólne klucze).
   TMPD="$(mktemp -d)"
-  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>&1 ); then
+  # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
+  # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
+  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
     tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
 # platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
@@ -222,8 +238,14 @@ walk(d.get("overrides",{}), "overrides", None, to_canon)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
 PY
+  elif grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
+    echo "WARNING: @dominiksienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
   else
-    echo "UWAGA: @dominiksienkiewicz/versions@$TARGET niedostępne — kanon nie nałożony (stare wydanie platformy?)"
+    echo "ERROR: npm pack @dominiksienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
+    cat "$TMPD/pack.err" >&2
+    echo "The frontend pins in frontend/package.json already point at $TARGET; fix the error above and run the bump again." >&2
+    rm -rf "$TMPD"
+    exit 1
   fi
   rm -rf "$TMPD"
 
