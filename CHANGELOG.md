@@ -205,6 +205,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- The platform Checkstyle config accepts an empty arrow `case` block, `case 1 -> {}`, which
+  google-java-format produces and `WhitespaceAround` rejected, so `spotlessApply` and `checkstyleMain`
+  no longer contradict each other on it. A corpus of formatter output now guards the pair.
 - `templates/bump-version.sh db new-migration` writes the repository name as the changeset author when it
   runs from a worktree such as `<repo>/.worktrees/<name>`; it wrote the worktree name. Sync the copy in
   `scripts/`.
