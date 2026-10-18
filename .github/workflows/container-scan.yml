@@ -15,10 +15,11 @@ name: Container scan (reusable)
 # Wołane przez repo (zwykle na cron):
 #   jobs:
 #     container-scan:
-#       uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@v1
+#       uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
 #       with:
 #         images: '["ghcr.io/owner/app-backend:latest","ghcr.io/owner/app-frontend:latest"]'
-#       secrets: inherit
+#       secrets:
+#         snyk_token: ${{ secrets.SNYK_TOKEN }}
 on:
   workflow_call:
     inputs:

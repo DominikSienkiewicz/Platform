@@ -149,9 +149,21 @@ SonarQube Cloud for a backend plus frontend monorepo. Both jobs are skipped unti
 a `SONAR_TOKEN` secret.
 
 - Permissions: `contents: read`, `packages: read`.
-- Secrets: `SONAR_TOKEN`, passed today with `secrets: inherit` because the workflow does not declare
-  it yet.
+- Secrets `SONAR_TOKEN` and `gpr_token`, both optional: without `SONAR_TOKEN` both jobs are skipped,
+  without `gpr_token` the automatic `GITHUB_TOKEN` resolves Platform's packages.
 - Inputs: [sonar.yml](../.github/workflows/sonar.yml).
+
+```yaml
+permissions:
+  contents: read
+  packages: read
+jobs:
+  sonar:
+    uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      gpr_token: ${{ secrets.GPR_TOKEN }}
+```
 
 ## roadmap-unblock.yml
 
@@ -159,9 +171,24 @@ Moves dependent roadmap items to ready when their prerequisite issues are closed
 repository provides `scripts/roadmap-unblock.sh`.
 
 - Permissions: `contents: read`.
-- Secret `ROADMAP_PROJECT_TOKEN` and variable `ROADMAP_PROJECT_NUMBER`, passed today with
-  `secrets: inherit` because the workflow does not declare the secret yet. Without the token the
-  job warns and does nothing.
+- Secret `ROADMAP_PROJECT_TOKEN` (optional): Projects v2 of a user account accept only a classic PAT
+  with the `project` and `repo` scopes. `repo` grants write access to every private repository of the
+  owner, so give the token 90 days at most. A fine-grained PAT is not verified for user-owned
+  Projects v2. Without the token the job warns and does nothing.
+- Variable `ROADMAP_PROJECT_NUMBER`: the number of the Projects v2 board.
+
+```yaml
+on:
+  issues:
+    types: [closed]
+permissions:
+  contents: read
+jobs:
+  unblock:
+    uses: DominikSienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@vX.Y.Z
+    secrets:
+      ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+```
 
 ## deploy.yml
 
@@ -169,7 +196,28 @@ Builds, scans (optionally), pushes and deploys the application images to a host 
 
 - Permissions: `contents: read`, `packages: write` (to push to GHCR).
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
-  `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`; passed today with `secrets: inherit`. Set them with
-  `templates/setup-gh-deploy.sh` from `templates/secrets.local.example`.
+  `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`. They are declared optional so that the `preflight` job,
+  not GitHub, names the missing ones. Set them with `templates/setup-gh-deploy.sh` from
+  `templates/secrets.local.example`.
 - Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required.
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+jobs:
+  deploy:
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+    with:
+      app-name: myapp
+    secrets:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY: ${{ secrets.GPR_KEY }}
+      NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+```

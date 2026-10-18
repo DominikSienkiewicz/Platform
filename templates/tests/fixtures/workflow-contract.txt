@@ -23,6 +23,14 @@ deploy.yml input scan-images type=boolean default=false
 deploy.yml input scan-severity type=string default=high
 deploy.yml input compose-file type=string default="docker-compose.prod.yml"
 deploy.yml input base-env type=string default=""
+deploy.yml secret GPR_USER required=false
+deploy.yml secret GPR_KEY required=false
+deploy.yml secret NPM_GH_TOKEN required=false
+deploy.yml secret SSH_HOST required=false
+deploy.yml secret SSH_USER required=false
+deploy.yml secret SSH_KEY required=false
+deploy.yml secret SSH_KNOWN_HOSTS required=false
+deploy.yml secret SNYK_TOKEN required=false
 deploy.yml job preflight permissions {}
 deploy.yml job versions permissions contents: read
 deploy.yml job build-push permissions contents: read
@@ -35,6 +43,7 @@ frontend-ci.yml input run-e2e type=boolean default=false
 frontend-ci.yml secret gpr_token required=false
 frontend-ci.yml permissions contents: read
 frontend-ci.yml permissions packages: read
+roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false
 roadmap-unblock.yml permissions contents: read
 scorecard.yml permissions contents: read
 scorecard.yml job analysis permissions security-events: write
@@ -52,5 +61,7 @@ semgrep.yml permissions contents: read
 sonar.yml input java-version type=string default="25"
 sonar.yml input toolchain-java-version type=string default="27"
 sonar.yml input node-version type=string default="24"
+sonar.yml secret SONAR_TOKEN required=false
+sonar.yml secret gpr_token required=false
 sonar.yml permissions contents: read
 sonar.yml permissions packages: read

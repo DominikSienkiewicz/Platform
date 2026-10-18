@@ -58,6 +58,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `deploy.yml`, `sonar.yml` and `roadmap-unblock.yml` declare the secrets they read, so callers can
+  pass them explicitly instead of handing every repository secret over with `secrets: inherit`;
+  `inherit` keeps working. `roadmap-unblock.yml` reads only `ROADMAP_PROJECT_TOKEN`, a classic PAT
+  valid for 90 days at most, and no longer persists the checkout token.
 - `@dominiksienkiewicz/tsconfig/next.json` no longer sets `include`, `exclude` or `paths`. TypeScript
   resolved them inside `node_modules/@dominiksienkiewicz/tsconfig`, so a consumer that did not
   redeclare them compiled nothing. Declare them in the consumer's `tsconfig.json` as

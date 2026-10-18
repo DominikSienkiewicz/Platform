@@ -1,7 +1,7 @@
 name: Backend CI (reusable)
 
 # Reusable workflow dla backendów Spring/Gradle. Kontrakt callera (uprawnienia, sekrety, snippet):
-# docs/reusable-workflows.md. Wołany z jawnym sekretem, nie `secrets: inherit`:
+# docs/reusable-workflows.md. Wołany z jawnym sekretem, nie `inherit`:
 #   jobs: { backend: { uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z,
 #                      secrets: { gpr_token: "${{ secrets.GPR_TOKEN }}" } } }
 on:

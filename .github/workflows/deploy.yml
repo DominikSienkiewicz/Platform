@@ -9,7 +9,9 @@ name: Deploy (reusable)
 #   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
 #
-# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1
+# Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
+#   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+#   secrets: { GPR_USER: ${{ secrets.GPR_USER }}, GPR_KEY: ${{ secrets.GPR_KEY }}, … }
 # Różnice między repo idą przez `with:` (app-name, compose-dir, has-worker, migrate-*).
 
 on:
@@ -63,7 +65,33 @@ on:
         description: "Base env file on the host; empty picks .env.prod, then .env."
         type: string
         default: ""
-    # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*, opcjonalnie SNYK_TOKEN) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
+    # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
+    # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
+    secrets:
+      GPR_USER:
+        description: "GitHub user owning GPR_KEY; the bootJar build resolves Platform's Gradle packages with them."
+        required: false
+      GPR_KEY:
+        description: "Classic PAT with read:packages for Platform's Gradle packages in the bootJar build."
+        required: false
+      NPM_GH_TOKEN:
+        description: "Classic PAT with read:packages, passed to the frontend image build as a BuildKit secret."
+        required: false
+      SSH_HOST:
+        description: "Host the deploy job connects to over SSH."
+        required: false
+      SSH_USER:
+        description: "SSH user on the deploy host."
+        required: false
+      SSH_KEY:
+        description: "Private SSH key of SSH_USER."
+        required: false
+      SSH_KNOWN_HOSTS:
+        description: "known_hosts entry of SSH_HOST, pinned at bootstrap by templates/setup-gh-deploy.sh."
+        required: false
+      SNYK_TOKEN:
+        description: "Snyk token for the advisory image scan. Without it the Snyk steps are skipped; Grype stays the gate."
+        required: false
 
 concurrency:
   group: deploy-${{ inputs.app-name }}

@@ -5,7 +5,8 @@ name: Security scan (reusable)
 # Triggery (push/PR z filtrem paths, cron) deklaruje CALLER — tu mieszka wyłącznie logika.
 # Tiering: CRITICAL/HIGH = fail, MODERATE/LOW = log-only.
 # Wołany przez repo:
-#   jobs: { scan: { uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@v1, secrets: inherit } }
+#   jobs: { scan: { uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z,
+#                   secrets: { gpr_token: "${{ secrets.GPR_TOKEN }}" } } }
 on:
   workflow_call:
     inputs:
