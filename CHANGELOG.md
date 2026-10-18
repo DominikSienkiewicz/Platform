@@ -82,6 +82,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- Platform's CI runs shellcheck on every tracked shell script, the ones copied into consumers and
+  run on the deploy host included; `bump-version.sh db new-migration` numbers changesets with a glob
+  instead of parsing `ls`.
 - `release.yml` fails unless every published artifact carries the released version (new
   `verify-published` job), and its tag guard reports in English.
 - The canon no longer ships known HIGH or CRITICAL CVEs with a fix: `seniordev.spring-modulith-conventions`

@@ -13,30 +13,33 @@ check() {
 }
 
 # 1) Domyślnie: COMPOSE_FILE=docker-compose.prod.yml, base env=.env.prod
-out="$( tmp="$(mktemp -d)"; cd "$tmp"; touch .env.prod
+out="$( tmp="$(mktemp -d)"; cd "$tmp" || exit 1; touch .env.prod
         unset COMPOSE_FILE BASE_ENV
+        # shellcheck source=deploy-remote.sh
         source "$SCRIPT"; set +euo pipefail
         printf '%s|%s' "$COMPOSE_FILE" "$(resolve_base_env)" )"
 check "default compose file" "docker-compose.prod.yml" "${out%%|*}"
 check "default base env"     ".env.prod"               "${out##*|}"
 
 # 2) Override: COMPOSE_FILE=docker-compose.dev.yml, BASE_ENV=.env.dev (istnieje)
-out="$( tmp="$(mktemp -d)"; cd "$tmp"; touch .env.dev
+out="$( tmp="$(mktemp -d)"; cd "$tmp" || exit 1; touch .env.dev
         export COMPOSE_FILE=docker-compose.dev.yml BASE_ENV=.env.dev
+        # shellcheck source=deploy-remote.sh
         source "$SCRIPT"; set +euo pipefail
         printf '%s|%s' "$COMPOSE_FILE" "$(resolve_base_env)" )"
 check "override compose file" "docker-compose.dev.yml" "${out%%|*}"
 check "override base env"     ".env.dev"               "${out##*|}"
 
 # 3) Fallback .env gdy brak .env.prod i BASE_ENV puste
-out="$( tmp="$(mktemp -d)"; cd "$tmp"; touch .env
+out="$( tmp="$(mktemp -d)"; cd "$tmp" || exit 1; touch .env
         unset COMPOSE_FILE BASE_ENV
+        # shellcheck source=deploy-remote.sh
         source "$SCRIPT"; set +euo pipefail
         resolve_base_env )"
 check "fallback to .env" ".env" "$out"
 
 # 4) Brak compose → wykonanie skryptu kończy się kodem !=0
-( tmp="$(mktemp -d)"; cd "$tmp"; touch .env.prod
+( tmp="$(mktemp -d)"; cd "$tmp" || exit 1; touch .env.prod
   COMPOSE_FILE=docker-compose.dev.yml bash "$SCRIPT" >/dev/null 2>&1 )
 check "missing compose exits nonzero" "nonzero" "$([[ $? -ne 0 ]] && echo nonzero || echo zero)"
 
