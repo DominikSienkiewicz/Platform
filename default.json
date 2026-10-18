@@ -8,6 +8,15 @@
     "helpers:pinGitHubActionDigests"
   ],
   "schedule": ["before 9am on monday"],
+  "minimumReleaseAge": "3 days",
+  "internalChecksFilter": "strict",
+  "vulnerabilityAlerts": {
+    "description": "Security fixes skip the cooling-off period and the Monday window.",
+    "labels": ["security"],
+    "minimumReleaseAge": null,
+    "schedule": ["at any time"]
+  },
+  "osvVulnerabilityAlerts": true,
   "labels": ["dependencies"],
   "prConcurrentLimit": 10,
   "packageRules": [
