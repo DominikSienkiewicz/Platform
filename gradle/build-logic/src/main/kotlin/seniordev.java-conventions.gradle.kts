@@ -70,6 +70,7 @@ val extractCheckstyleConfig = tasks.register("extractCheckstyleConfig") {
 }
 
 checkstyle {
+	// Lustro gradle/catalog: version("checkstyle").
 	toolVersion = "13.10.0"
 	maxWarnings = 0
 	configDirectory.set(layout.buildDirectory.dir("platform-config/checkstyle"))

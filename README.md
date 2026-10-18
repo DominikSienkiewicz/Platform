@@ -95,7 +95,7 @@ checks with `strict: true`.
 - **Building and publishing locally** → **[docs/local-development.md](docs/local-development.md)** —
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single
-  source of truth, the one remaining duplication, and dependency locking.
+  source of truth, the versions mirrored in convention plugin sources, and dependency locking.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **Design decisions** → [`docs/adr/`](docs/adr/).

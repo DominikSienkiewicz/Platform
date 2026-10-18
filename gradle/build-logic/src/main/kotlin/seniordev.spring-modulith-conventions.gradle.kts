@@ -25,9 +25,9 @@ plugins {
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
 // LUSTRA gradle/catalog — precompiled script plugin nie czyta katalogu w czasie kompilacji,
-// więc każdy bump w libs.versions.toml musi ruszyć te stałe RAZEM z nim. Rozjazd nie psuje
-// buildu Platform (te wersje trafiają dopiero na classpath konsumenta), tylko wywala guard
-// governance w backendzie konsumenta: „wersja spoza platformy … kanon platformy: X".
+// więc każdy bump w libs.versions.toml musi ruszyć te stałe RAZEM z nim. Rozjazd BOM-u jest
+// u konsumenta CICHY: platformDependencyCheck nie widzi importów mavenBom(...), więc runtime zostaje
+// na starym BOM-ie razem z jego poprawkami CVE. Pilnuje tego PlatformCatalogMirrorTest w build-logic.
 val springBootVersion = "4.1.1"
 val springModulithVersion = "2.1.1"
 val springAiVersion = "2.0.1"

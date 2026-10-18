@@ -29,10 +29,12 @@ opublikuj, podbij pin w repo konsumenta.
 
 1. **Wersje bibliotek/pluginów → `gradle/catalog`.** `build-logic` dołącza ten sam
    `libs.versions.toml` przez swoje `settings.gradle.kts`, więc marker-artefakty pluginów biorą wersje
-   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: `toolVersion` w ŹRÓDŁACH convention pluginów
-   (checkstyle/jacoco + `googleJavaFormat("…")` w `java-conventions`, spotbugs w `quality-conventions`) — precompiled script
-   plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie i przy bumpie
-   zmieniasz oba miejsca.
+   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: LUSTRA wersji w ŹRÓDŁACH convention pluginów
+   (toolVersion checkstyle/jacoco/spotbugs, `googleJavaFormat("…")`, toolchain, pitest, wersje BOM-ów
+   Spring/JUnit, lombok, archunit — pełna tabela w `docs/versions.md`, sekcja „Mirrored literals”) —
+   precompiled script plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie
+   i przy bumpie zmieniasz oba miejsca. Rozjazd wywala `PlatformToolVersionMirrorTest`
+   / `PlatformCatalogMirrorTest` w build-logic.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
    build konsumenta, gdy zadeklarowana zależność ma jawną wersję spoza katalogu lub inną niż katalog.
    Bez wersji = zarządzane BOM-ami platformy (OK). Nowa biblioteka = najpierw wpis tu + `./release.sh`.
@@ -94,7 +96,7 @@ commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do przodu) — nie pchaj 
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
-- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza `toolVersion` w źródłach convention pluginów).
+- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza lustrami z tabeli w `docs/versions.md`).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).
 
 ## Lokalne koncepcje
