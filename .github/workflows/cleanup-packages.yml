@@ -2,15 +2,24 @@ name: Cleanup old package versions
 
 # ŚWIADOME, RĘCZNE sprzątanie (tylko workflow_dispatch — brak crona).
 # Powód: przy deliberate versioning + exact pin u konsumenta automatyczne przycinanie mogłoby
-# skasować wersję, którą ktoś jeszcze pinuje. Storage Packages (współdzielony z Actions) przy tej
-# skali jest nieistotny, więc nie kasujemy nic automatycznie — uruchamiasz to ręcznie, gdy chcesz.
+# skasować wersję, którą ktoś jeszcze pinuje. Dlatego `protect` (piny konsumentów) jest wymagany,
+# a `dry_run` domyślnie włączony — logika i jej test: scripts/cleanup-packages.sh,
+# templates/tests/cleanup-packages.test.sh; zasady: RELEASING.md, "Package retention".
 on:
   workflow_dispatch:
     inputs:
+      protect:
+        description: "Versions consumers still pin, comma-separated (e.g. 1.5.26,1.5.31). They are never deleted."
+        type: string
+        required: true
       keep:
-        description: "Ile najnowszych wersji zostawić (per pakiet)"
+        description: "How many of the newest versions to keep per package"
         type: string
         default: "10"
+      dry_run:
+        description: "Only print the plan; nothing is deleted"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -19,40 +28,25 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Prune (keep last N per package)
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Prune (keep the newest N, never a protected version)
         env:
           # PAT konta (classic) z zakresami: read:packages + delete:packages.
           # WAŻNE: automatyczny GITHUB_TOKEN NIE zarządza pakietami KONTA użytkownika — potrzebny PAT.
           GH_TOKEN: ${{ secrets.PACKAGES_ADMIN_TOKEN }}
-          KEEP: ${{ inputs.keep || '10' }}
+          KEEP: ${{ inputs.keep }}
+          PROTECT: ${{ inputs.protect }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
-            echo "::error::Brak sekretu PACKAGES_ADMIN_TOKEN (PAT classic: read:packages + delete:packages)."
+            echo "::error::Missing secret PACKAGES_ADMIN_TOKEN (classic PAT: read:packages + delete:packages)."
             exit 1
           fi
-
-          # Filtr bezpieczeństwa: ruszamy TYLKO pakiety Platform (nie inne pakiety konta).
-          PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@dominiksienkiewicz/)'
-
-          for type in maven npm; do
-            echo "::group::typ=$type"
-            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
-              | grep -E "$PLATFORM_RE" || { echo "(brak pakietów $type)"; echo "::endgroup::"; continue; }
-            gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' \
-              | grep -E "$PLATFORM_RE" | while read -r pkg; do
-                enc=$(printf '%s' "$pkg" | jq -sRr @uri)
-                to_delete=$(gh api --paginate "/user/packages/$type/$enc/versions" --jq '.[]' \
-                  | jq -s --argjson keep "$KEEP" 'sort_by(.created_at) | reverse | .[$keep:] | .[].id')
-                if [ -z "$to_delete" ]; then
-                  echo "  $pkg: ≤ $KEEP wersji — nic do usunięcia"
-                  continue
-                fi
-                for id in $to_delete; do
-                  echo "  $pkg: usuwam wersję id=$id"
-                  gh api --method DELETE "/user/packages/$type/$enc/versions/$id"
-                done
-              done
-            echo "::endgroup::"
-          done
-          echo "Gotowe — zostawiono po $KEEP najnowszych wersji każdego pakietu Platform."
+          args=(--keep "$KEEP" --protect "$PROTECT")
+          if [ "$DRY_RUN" != "true" ]; then
+            args+=(--execute)
+          fi
+          bash scripts/cleanup-packages.sh "${args[@]}"

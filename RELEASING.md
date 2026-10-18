@@ -224,7 +224,19 @@ repository with `-PplatformRepository`, as described in
 
 ## Package retention
 
-Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. Clean up
-deliberately with **Actions → Cleanup old package versions → Run workflow** (`keep`, default 10).
-It needs a `PACKAGES_ADMIN_TOKEN` secret (classic PAT with `read:packages` and `delete:packages`).
-Do not delete a version that a consumer still pins.
+Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. The
+support rule is: **no version that a consumer still pins may be deleted**, and a consumer stays on
+a deleted version only by accident. Clean up deliberately with
+**Actions → Cleanup old package versions → Run workflow**:
+
+- `protect` (required): every version a consumer still pins, comma-separated, for example
+  `1.5.26,1.5.31`. Read the pins from each consumer's `backend/settings.gradle.kts` before the run.
+  Protected versions are never deleted, whatever their age.
+- `keep` (default `10`): how many of the newest versions of each package to keep.
+- `dry_run` (default `true`): print the plan only. Review it, then run again with `dry_run`
+  unticked to delete.
+
+The workflow runs [`scripts/cleanup-packages.sh`](scripts/cleanup-packages.sh), which touches only
+Platform packages and refuses to run without `protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret
+(classic PAT with `read:packages` and `delete:packages`). GitHub can restore a deleted package
+version for 30 days; after that it is gone.

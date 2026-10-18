@@ -22,7 +22,7 @@ opublikuj, podbij pin w repo konsumenta.
 | `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`api-client` = wrapper fetch; `query` = QueryClient+provider) |
 | `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
 | `.github/workflows/` | 9 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages` |
-| `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`) |
+| `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`); `changelog-section.sh` — sekcja wersji z `CHANGELOG.md` (dla `release.sh` i `release.yml`); `cleanup-packages.sh` — ręczne sprzątanie pakietów z wymaganym `--protect` i domyślnym dry-runem |
 | `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
 
 ## Zasady (twarde)
