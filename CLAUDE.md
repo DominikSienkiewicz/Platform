@@ -85,7 +85,8 @@ opublikuj, podbij pin w repo konsumenta.
    `PlatformCveOverrideMirrorTest`, zdejmij je, gdy BOM Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
    zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
    Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje. Lustra pilnuje
-   `PlatformToolVersionMirrorTest`.
+   `PlatformToolVersionMirrorTest`. Polityka nadpisań (ostateczność, warunek usunięcia przy każdym):
+   `docs/adr/0008-overrides-are-a-last-resort.md`; tag `integration` to kontrakt (ADR-0009), `AI_AGENT` — ADR-0010.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.
