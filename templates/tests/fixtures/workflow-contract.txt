@@ -37,6 +37,8 @@ deploy.yml job preflight permissions {}
 deploy.yml job versions permissions contents: read
 deploy.yml job build-push permissions contents: read
 deploy.yml job build-push permissions packages: write
+deploy.yml job snyk-advisory permissions contents: read
+deploy.yml job snyk-advisory permissions packages: read
 deploy.yml job deploy permissions contents: read
 frontend-ci.yml input working-directory type=string default=frontend
 frontend-ci.yml input node-version type=string default="24"

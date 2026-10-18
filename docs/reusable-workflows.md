@@ -192,7 +192,9 @@ jobs:
 
 ## deploy.yml
 
-Builds, scans (optionally), pushes and deploys the application images to a host over SSH.
+Builds, scans (optionally), pushes and deploys the application images to a host over SSH. With
+`scan-images: true`, Grype gates the deploy; Snyk runs in a separate advisory job with read-only
+package access, which the deploy does not wait for.
 
 - Permissions: `contents: read`, `packages: write` (to push to GHCR).
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
