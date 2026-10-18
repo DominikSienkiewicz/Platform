@@ -168,6 +168,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `AbstractFlywayMigrationTest` checks every `db/migration` root on the classpath, jars included, with
+  subdirectories, and reports duplicate versions. It read only the first root, so test resources hid the
+  production migrations, and it ignored subdirectories and failed on migrations packaged in a jar.
 - `platform-security-starter` fails at startup on `platform.cors.allowed-origins=*` with credentials
   allowed, instead of on the first CORS request. Its CORS-source choice, `http-basic=false` and the
   replacing `permitted-paths` are pinned by tests and documented.

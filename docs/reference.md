@@ -137,8 +137,10 @@ class ModulithVerificationTest extends AbstractModulithVerificationTest {
 Two Docker-free guards fail the fast `test` when Spring Boot would start without migrations.
 `AbstractLiquibaseChangelogTest` parses `db/changelog/db.changelog-master.yaml` with Liquibase, no
 database needed, and fails when it is missing, is not valid YAML, or includes a file that does not exist;
-the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. `AbstractFlywayMigrationTest` fails when `db/migration` is missing,
-holds no `.sql` file, or holds one not named `V<n>__<description>.sql` or `R__<description>.sql`:
+the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. `AbstractFlywayMigrationTest` checks every
+`db/migration` root on the classpath, main, test and jars, with subdirectories, as Flyway scans them: it
+fails when there is none or no `.sql` file, on a file not named `V<n>__<description>.sql` or
+`R__<description>.sql`, and on two migrations with one version (`V3__a` and `V3__b`, `V1.1` and `V1_1`):
 
 ```java
 class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }
