@@ -82,9 +82,9 @@ assert_needs() {
 extract_block() {
   local marker="$1"
   local target="$2"
-  awk -v open="# >>> $marker" -v close="# <<< $marker" '
-    index($0, open) { inside = 1; next }
-    index($0, close) { inside = 0 }
+  awk -v start_marker="# >>> $marker" -v end_marker="# <<< $marker" '
+    index($0, start_marker) { inside = 1; next }
+    index($0, end_marker) { inside = 0 }
     inside
   ' "$release" > "$target"
   [[ -s "$target" ]] || fail "release.yml has no '$marker' block between its markers"
