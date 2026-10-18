@@ -36,6 +36,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("org.springframework:spring-webmvc")
+	// ManagementWebSecurityAutoConfiguration w PlatformSecurityBootAutoConfigurationTest; wersja z BOM-a Boota.
+	testImplementation("org.springframework.boot:spring-boot-starter-actuator")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

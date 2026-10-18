@@ -70,8 +70,9 @@ plugin: the consumer adds `alias(libs.plugins.spring.boot)`.
 
 ## Security starter (*incubating*)
 
-`pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS unless the
-application defines its own. No consumer has adopted it yet, so treat these as provisional. Source:
+`pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS in a servlet web
+application unless the application defines its own. It is ordered before Spring Boot's default web and
+management security, which back off when it is present. No consumer has adopted it yet, so treat these as provisional. Source:
 [`PlatformSecurityProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformSecurityProperties.java)
 and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformCorsProperties.java).
 
