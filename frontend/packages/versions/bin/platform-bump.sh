@@ -31,6 +31,17 @@ set -euo pipefail
 # Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
 cd "$(git rev-parse --show-toplevel)"
 
+# Pin w stylu szablonu: platformVersion= w backend/gradle.properties (layout produktowy na wiringu
+# z templates/jvm) albo w gradle.properties roota (samodzielny layout JVM).
+PROPERTY_PINS=()
+for props in backend/gradle.properties gradle.properties; do
+  [[ -f "$props" ]] && grep -q '^platformVersion=' "$props" && PROPERTY_PINS+=("$props")
+done
+if [[ ! -f backend/settings.gradle.kts ]] && [[ ! -f frontend/package.json ]] && [[ "${#PROPERTY_PINS[@]}" -eq 0 ]]; then
+  echo "No Platform pin found in this layout: expected backend/settings.gradle.kts, frontend/package.json or platformVersion= in gradle.properties." >&2
+  exit 1
+fi
+
 OWNER="DominikSienkiewicz"
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"
 
@@ -49,6 +60,9 @@ trap 'rm -f "$VERSIONS_JSON" "$RELEASES_JSON" "$ACTIONS_FILE"' EXIT
 CURRENT=""
 if [[ -f backend/settings.gradle.kts ]]; then
   CURRENT="$(grep -oE 'pl\.seniordeveloper:platform-catalog:[0-9]+\.[0-9]+\.[0-9]+' backend/settings.gradle.kts | head -1 | sed 's/.*://' || true)"
+fi
+if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
+  CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
   CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
@@ -140,6 +154,15 @@ fi
 [[ -f backend/settings.gradle.kts ]] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
 [[ -f backend/settings.gradle.kts ]] && sed -i.bak -E "s#(id\(\"seniordev\.settings-conventions\"\) version \")[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings.gradle.kts && rm -f backend/settings.gradle.kts.bak
 [[ -f backend/settings-gradle.lockfile ]] && sed -i.bak -E "s#(pl\.seniordeveloper:platform-catalog:)[0-9]+\.[0-9]+\.[0-9]+#\1$TARGET#" backend/settings-gradle.lockfile && rm -f backend/settings-gradle.lockfile.bak
+for props in ${PROPERTY_PINS[@]+"${PROPERTY_PINS[@]}"}; do
+  sed -i.bak -E "s/^platformVersion=.*/platformVersion=$TARGET/" "$props" && rm -f "$props.bak"
+done
+# Backend bez żadnego pinu = nic nie zostało podbite; nie udawaj sukcesu.
+if [[ -f backend/settings.gradle.kts ]] && ! grep -qF "$TARGET" backend/settings.gradle.kts \
+  && ! { [[ -f backend/gradle.properties ]] && grep -qx "platformVersion=$TARGET" backend/gradle.properties; }; then
+  echo "No Platform pin found in backend/settings.gradle.kts or backend/gradle.properties; nothing was bumped to $TARGET." >&2
+  exit 1
+fi
 
 # --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---
 if [[ -f frontend/package.json ]]; then

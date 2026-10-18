@@ -66,8 +66,8 @@ jobs:
           mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
 
-      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
-      # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).
+      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
+      # Lokalnie konsument może dołożyć jawne -PplatformRepository (ADR-0003); tu działa GitHub Packages.
       - name: ./gradlew ${{ inputs.gradle-task }}
         run: |
           read -r -a gradle_tasks <<< "$GRADLE_TASK"

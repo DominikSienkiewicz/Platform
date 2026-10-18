@@ -83,9 +83,11 @@ dependency missing only at runtime fails it. No database is needed.
 The template is pinned to the latest Platform release: `release.sh` bumps its
 `platformVersion` together with every other version file. Keep `platformVersion` in the
 consumer's `gradle.properties` on an **already published** release. Add your own
-package name, group and project name, then replace the example code. For these standalone
-JVM layouts, update `platformVersion` directly; the existing `platform-bump` command
-targets product repositories with `backend/` and `frontend/` directories.
+package name, group and project name, then replace the example code. In a product repository
+with `backend/` and `frontend/`, `scripts/platform-bump.sh` bumps both the literal pins in
+`backend/settings.gradle.kts` and a `platformVersion=` pin in `backend/gradle.properties`, and fails
+when it finds no pin. A standalone JVM repository without `frontend/` cannot run the stub yet, so
+update `platformVersion` there directly.
 
 `settings.gradle.kts` reads `platformVersion` once, for the settings plugin and the catalog:
 
