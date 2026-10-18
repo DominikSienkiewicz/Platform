@@ -127,9 +127,13 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    announce a release.
 4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
    forward: re-running an older tag never moves it back. Never move `v1` by hand.
+5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
+   "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
+   `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
+   leaves an existing Release alone.
 
-A red job stops every job after it. A tag on a commit with red CI publishes nothing and leaves `v1`
-where it was.
+A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
+where it was and creates no GitHub Release.
 
 ### Idempotency, per registry
 

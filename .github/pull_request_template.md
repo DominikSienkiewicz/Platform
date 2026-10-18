@@ -26,6 +26,7 @@ None.
 - [ ] CI is green: every Gradle module, the frontend workspace and `templates/tests/*.test.sh`
 - [ ] A new library or version is declared in `gradle/catalog/libs.versions.toml` or
       `frontend/packages/versions/versions.json` first
+- [ ] `CHANGELOG.md` `[Unreleased]` entry for every published change, consumer action included
 - [ ] README, `RELEASING.md` or `docs/` updated when published artifacts, workflows or consumer
       behaviour change
 - [ ] Architectural decision → new ADR in `docs/adr/`
