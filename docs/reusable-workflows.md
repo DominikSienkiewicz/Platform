@@ -49,8 +49,8 @@ jobs:
 ## frontend-ci.yml
 
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
-Playwright tests. With `strict: true` the guard and the scripts `lint`, `typecheck`, `test` and
-`build` are required.
+Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
+`strict: true` the guard and the scripts `lint`, `typecheck`, `test` and `build` are required.
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.

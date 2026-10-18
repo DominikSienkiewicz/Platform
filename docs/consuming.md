@@ -178,7 +178,9 @@ jobs:
 ```
 
 `strict: true` requires nonempty `lint`, `typecheck`, `test` and `build` scripts and the
-`@dominiksienkiewicz/versions` guard; `run-e2e: true` additionally requires `test:e2e`. Missing
+`@dominiksienkiewicz/versions` guard; `run-e2e: true` additionally requires `test:e2e`, and uploads
+`playwright-report/` and `test-results/` (HTML report, traces, screenshots) as the artifact
+`playwright-report-<run id>`, kept for seven days, whether the tests pass or fail. Missing
 checks fail the job instead of producing a successful partial pipeline. Existing callers without
 `strict` keep the optional checks.
 
