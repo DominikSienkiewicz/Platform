@@ -88,9 +88,13 @@ jobs:
     needs: [version, verify, registry-build]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # id-token + attestations: atestacja provenance (SLSA) zbudowanych plików, weryfikowalna przez
+    # `gh attestation verify` u konsumenta (docs/consuming.md, „Verifying provenance”).
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -149,6 +153,15 @@ jobs:
               exit 1
             fi
           done
+      # Te same pliki, które Gradle właśnie wgrał (jary z build/libs, wygenerowany TOML katalogu). Moduł pominięty
+      # jako już opublikowany nie zostawia plików, więc re-run po sukcesie niczego nie atestuje drugi raz.
+      - name: Attest the provenance of the published files
+        if: hashFiles('gradle/*/build/libs/*.jar', 'gradle/catalog/build/version-catalog/*.toml') != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            gradle/*/build/libs/*.jar
+            gradle/catalog/build/version-catalog/*.toml
 
   # Job z packages: write nie uruchamia żadnego builda — rejestr sprawdza registry-build.
   npm:
@@ -158,6 +171,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     defaults:
       run:
         working-directory: frontend
@@ -187,10 +202,13 @@ jobs:
       # Detekcja "już istnieje": NAJPIERW pre-check `npm view` (pytamy registry, zamiast parsować
       # komunikaty błędów — registry zwraca różne warianty: "E409", "409 Conflict", "You cannot
       # publish over the previously published versions"), grep szeroki tylko jako fallback.
-      - name: Publish (idempotentny)
+      # Pakujemy, atestujemy i publikujemy TEN SAM tarball, więc digest w atestacji = digest w registry.
+      # Bloki testuje templates/tests/release-attest.test.sh.
+      - name: Pack the packages to publish
         run: |
-          set +e
-          FAIL=0
+          # >>> npm-pack
+          set -euo pipefail
+          mkdir -p dist
           for d in packages/*/; do
             [ -f "$d/package.json" ] || continue
             NAME=$(node -p "require('./$d/package.json').name")
@@ -200,18 +218,35 @@ jobs:
               echo "::notice::$NAME@$V już w registry — pomijam (publish idempotentny)"
               continue
             fi
-            echo "== publish $NAME@$V =="
-            ( cd "$d" && pnpm publish --no-git-checks ) 2>&1 | tee /tmp/pub-npm.log
+            ( cd "$d" && pnpm pack --pack-destination ../../dist >/dev/null )
+            echo "== packed $NAME@$V =="
+          done
+          # <<< npm-pack
+      - name: Attest the provenance of the tarballs
+        if: hashFiles('frontend/dist/*.tgz') != ''
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: frontend/dist/*.tgz
+      - name: Publish (idempotentny)
+        run: |
+          # >>> npm-publish
+          set +e
+          FAIL=0
+          for tgz in dist/*.tgz; do
+            [ -e "$tgz" ] || continue
+            echo "== publish $tgz =="
+            npm publish "$tgz" 2>&1 | tee /tmp/pub-npm.log
             rc=${PIPESTATUS[0]}
             if [ "$rc" -ne 0 ]; then
               if grep -qiE "E409|409 Conflict|cannot publish over" /tmp/pub-npm.log; then
-                echo "::notice::$NAME@$V już opublikowane (konflikt wersji) — pomijam"
+                echo "::notice::$tgz już opublikowane (konflikt wersji) — pomijam"
               else
-                echo "::error::publish $NAME@$V nie powiódł się (kod $rc)"; FAIL=1
+                echo "::error::publish $tgz nie powiódł się (kod $rc)"; FAIL=1
               fi
             fi
           done
           exit $FAIL
+          # <<< npm-publish
 
   # Bijekcja w drugą stronę: wydanie jest zielone dopiero, gdy KAŻDY publikowany artefakt ma $V w registry.
   # Joby publikujące pomijają wersje, które już istnieją (idempotencja), więc tylko tu widać, że komplet jest.

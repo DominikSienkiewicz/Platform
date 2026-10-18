@@ -133,7 +133,11 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    the shadcn registry without `packages: write`. Both must be green before anything is published.
 3. **`gradle`** and **`npm`** then run in parallel. One can fail while the other succeeds, so a
    release can be complete in one registry and missing in the other. Check both jobs before you
-   announce a release.
+   announce a release. Each attests the files it publishes with `actions/attest`: SLSA build
+   provenance for every jar and the catalog TOML the `gradle` job uploaded, and for every npm
+   tarball, which the `npm` job packs, attests and then publishes, so the attested digest is the one
+   in the registry. Consumers verify them as [docs/consuming.md](docs/consuming.md#verifying-provenance)
+   shows.
 4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
    forward: re-running an older tag never moves it back. Never move `v1` by hand.
 5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
@@ -174,7 +178,8 @@ that version of the affected package on GitHub Packages, or release a higher ver
 
 - packages marked `"private": true` are skipped;
 - if `npm view <name>@<version>` finds the version, the package is skipped;
-- otherwise the package is published; a version-conflict response (`E409`, `409 Conflict`,
+- otherwise the package is packed with `pnpm pack`, and once every tarball is attested, published
+  with `npm publish <tarball>`; a version-conflict response (`E409`, `409 Conflict`,
   `cannot publish over`) is treated as already published;
 - any other failure marks the job failed, but the remaining packages are still attempted.
 

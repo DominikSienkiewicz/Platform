@@ -66,6 +66,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Every published jar, the catalog TOML and every npm tarball carry a GitHub artifact attestation
+  (SLSA build provenance) from `release.yml`. Verify a file with
+  `gh attestation verify <file> --repo DominikSienkiewicz/Platform`, as `docs/consuming.md` shows.
 - `platform-templates-check`, a bin of `@dominiksienkiewicz/versions`, compares the scripts and the
   `.editorconfig` a repository copied from `templates/` with the canon of its pinned release and prints
   the command that restores each drifted or missing file. `platform-bump` runs it after every bump. It
