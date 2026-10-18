@@ -95,7 +95,7 @@ jobs:
           exit $fail
 
   frontend:
-    name: Frontend — install + lint + typecheck + test
+    name: Frontend — install + lint + typecheck + test + registry build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
