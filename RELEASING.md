@@ -66,14 +66,17 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 
 ## Cutting a release
 
-1. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
+1. Bump the pinned actions by hand. Every action in `.github/workflows/` is pinned by commit SHA
+   with a `# vX.Y.Z` comment, and Renovate does not run in Platform yet, so nothing moves them.
+   Check each one against its latest release and update SHA and comment together.
+2. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
    the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
    action means a MINOR, anything else a PATCH.
-2. Commit and push that change through the normal branch and merge flow, so `main` equals
+3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
-3. Release:
+4. Release:
 
 ```bash
 ./release.sh "fix: short description"

@@ -6,10 +6,13 @@ name: Deploy (reusable)
 #   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest) (z BoS)
 #   • workflow_dispatch — ręczny re-deploy                            (z BoS)
 #   • environment: production — druga bramka (required reviewer)        (z BoS)
-#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP)
+#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP); przypięty przy bootstrapie,
+#     sprawdzony względem SSH_HOST_KEY_SHA256, gdy go podano (templates/setup-gh-deploy.sh)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
 #
-# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1
+# Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
+#   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+#   secrets: { GPR_USER: ${{ secrets.GPR_USER }}, GPR_KEY: ${{ secrets.GPR_KEY }}, … }
 # Różnice między repo idą przez `with:` (app-name, compose-dir, has-worker, migrate-*).
 
 on:
@@ -63,11 +66,45 @@ on:
         description: "Base env file on the host; empty picks .env.prod, then .env."
         type: string
         default: ""
-    # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*, opcjonalnie SNYK_TOKEN) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.
+      platform-ref:
+        description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
+        type: string
+        default: "v1"
+    # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
+    # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
+    secrets:
+      GPR_USER:
+        description: "GitHub user owning GPR_KEY; the bootJar build resolves Platform's Gradle packages with them."
+        required: false
+      GPR_KEY:
+        description: "Classic PAT with read:packages for Platform's Gradle packages in the bootJar build."
+        required: false
+      NPM_GH_TOKEN:
+        description: "Classic PAT with read:packages, passed to the frontend image build as a BuildKit secret."
+        required: false
+      SSH_HOST:
+        description: "Host the deploy job connects to over SSH."
+        required: false
+      SSH_USER:
+        description: "SSH user on the deploy host."
+        required: false
+      SSH_KEY:
+        description: "Private SSH key of SSH_USER."
+        required: false
+      SSH_KNOWN_HOSTS:
+        description: "known_hosts entry of SSH_HOST, pinned at bootstrap by templates/setup-gh-deploy.sh."
+        required: false
+      SNYK_TOKEN:
+        description: "Snyk token for the advisory image scan. Without it the Snyk steps are skipped; Grype stays the gate."
+        required: false
 
 concurrency:
   group: deploy-${{ inputs.app-name }}
   cancel-in-progress: false # nie przerywaj trwającego deployu
+
+# W reusable workflow blok top-level tylko zawęża to, co przyznał caller; joby dostają resztę jawnie.
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -114,7 +151,9 @@ jobs:
       migrate: ${{ steps.v.outputs.migrate }}
       worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - id: v
         shell: bash
         env:
@@ -145,9 +184,11 @@ jobs:
       BACKEND_VER: ${{ needs.versions.outputs.backend }}
       FRONTEND_VER: ${{ needs.versions.outputs.frontend }}
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # opcjonalny; puste => kroki Snyk pominięte
     steps:
-      - uses: actions/checkout@v6
+      # Bez zapisanego tokenu: ten job trzyma packages: write, a dalej buduje kod repo.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
       - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
@@ -157,7 +198,7 @@ jobs:
       # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
       # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
       # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         id: toolchain-jdk
         with:
           distribution: temurin
@@ -168,7 +209,7 @@ jobs:
         run: |
           mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
@@ -244,7 +285,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:latest
 
       # ---- Opt-in gate: skan obrazów PO push, PRZED deployem. Grype-fail => job pada => deploy się nie ruszy.
-      #      Snyk nieblokujący (druga opinia), pomijany bez SNYK_TOKEN. Base-image OS CVE, tylko fixowalne.
+      #      Base-image OS CVE, tylko fixowalne. Snyk (druga opinia) biegnie w osobnym jobie snyk-advisory.
       - name: Grype scan — backend (gate)
         if: ${{ inputs.scan-images }}
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
@@ -263,20 +304,43 @@ jobs:
           severity-cutoff: ${{ inputs.scan-severity }}
           only-fixed: true
           output-format: table
-      - name: Snyk scan — backend (advisory)
-        if: ${{ inputs.scan-images && env.SNYK_TOKEN != '' }}
-        continue-on-error: true
-        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:${{ env.BACKEND_VER }}
-          args: --severity-threshold=high
-      - name: Snyk scan — frontend (advisory)
-        if: ${{ inputs.scan-images && env.SNYK_TOKEN != '' }}
-        continue-on-error: true
-        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
-          args: --severity-threshold=high
+
+  # ---- Snyk: druga opinia, nieblokująca, pomijana bez SNYK_TOKEN. Osobny job, bo obraz Snyka dostaje gniazdo
+  #      Dockera hosta: tu może co najwyżej CZYTAĆ GHCR, a w build-push miałby packages: write tuż przed
+  #      deployem. Deploy na ten job nie czeka.
+  snyk-advisory:
+    needs: [versions, build-push]
+    if: ${{ inputs.scan-images }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_PREFIX: ghcr.io/${{ needs.versions.outputs.owner }}/${{ inputs.app-name }}
+      BACKEND_VER: ${{ needs.versions.outputs.backend }}
+      FRONTEND_VER: ${{ needs.versions.outputs.frontend }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      # Obraz przypięty digestem, CLI wbudowany przy budowie (snyk/snyk-images 54dbb8b, stan 2026-10-18).
+      # Lustro: container-scan.yml.
+      SNYK_IMAGE: snyk/snyk:docker@sha256:d6595337edef7ce37eded247b8bb47ebb60681fd802c49e64c1b80b3a6963187
+    steps:
+      - name: Log in to GHCR
+        if: ${{ env.SNYK_TOKEN != '' }}
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+      - name: Snyk scan (advisory)
+        if: ${{ env.SNYK_TOKEN != '' }}
+        run: |
+          set -uo pipefail
+          for image in "$IMAGE_PREFIX-backend:$BACKEND_VER" "$IMAGE_PREFIX-frontend:$FRONTEND_VER"; do
+            docker pull "$image"
+            docker run --rm -e SNYK_TOKEN -v /var/run/docker.sock:/var/run/docker.sock \
+              "$SNYK_IMAGE" snyk container test "$image" --severity-threshold=high \
+              || echo "::warning title=Snyk (advisory)::Snyk reported issues in $image"
+          done
 
   # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
   deploy:
@@ -288,15 +352,19 @@ jobs:
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
     steps:
-      - uses: actions/checkout@v6 # repo wołające: compose + Caddyfile
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 — repo wołające: compose + Caddyfile
+        with:
+          persist-credentials: false
 
+      # Platform jest publiczny: checkout bez tokenu, więc PAT konsumenta nie ląduje w _platform/.git/config
+      # joba z dostępem SSH do produkcji. platform-ref = tag z `uses:`, żeby workflow i skrypt były z jednej wersji.
       - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: DominikSienkiewicz/Platform
-          ref: v1
+          ref: ${{ inputs.platform-ref }}
           path: _platform
-          token: ${{ secrets.GPR_KEY }}
+          persist-credentials: false
 
       - name: Plik z tagami (.env.deploy) — aliasy *_TAG i *_VER (compose SSP używa TAG, BoS VER)
         run: |
@@ -311,7 +379,8 @@ jobs:
             echo "MIGRATE_VER=${{ needs.versions.outputs.migrate }}"
           } > .env.deploy
 
-      - name: Konfiguracja SSH (known_hosts PINOWANE — bez MITM)
+      # known_hosts przypięty przy bootstrapie; setup-gh-deploy.sh sprawdza go względem SSH_HOST_KEY_SHA256, gdy podano.
+      - name: Konfiguracja SSH (known_hosts PINOWANE)
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}

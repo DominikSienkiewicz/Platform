@@ -11,7 +11,9 @@
 # Contract pushed (must match the reusable deploy.yml):
 #   secrets:   GPR_USER GPR_KEY NPM_GH_TOKEN SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS
 #   variables: GHCR_OWNER DEPLOY_PATH
-# SSH_KEY is read from a file (SSH_KEY_FILE); SSH_KNOWN_HOSTS is generated with ssh-keyscan.
+# SSH_KEY is read from a file (SSH_KEY_FILE); SSH_KNOWN_HOSTS is generated with ssh-keyscan and,
+# when SSH_HOST_KEY_SHA256 is set, verified against that fingerprint before anything is pushed.
+# Exits non-zero when any gh call fails, so a partial bootstrap never ends in "Gotowe".
 # GITHUB_TOKEN is provided automatically by Actions — not bootstrapped here.
 #
 # Usage:
@@ -89,19 +91,45 @@ while IFS= read -r line || [ -n "$line" ]; do
   export "VAL_$k=$v"
 done < "$ENVFILE"
 
+failures=0
+
+# ssh-keyscan alone trusts whatever key answers on the network path at bootstrap. With a fingerprint
+# from a trusted channel (the host's console, or ssh-keygen -lf on the box) a mismatch stops the script.
+verify_host_key() {
+  local known="$1" expected="${VAL_SSH_HOST_KEY_SHA256:-}" fingerprints
+  if [ -z "$expected" ]; then
+    echo "WARNING: SSH_HOST_KEY_SHA256 is empty, so SSH_KNOWN_HOSTS trusts whatever key answered ssh-keyscan (trust on first use)." >&2
+    return 0
+  fi
+  expected="SHA256:${expected#SHA256:}"
+  fingerprints="$(ssh-keygen -lf - <<<"$known" 2>/dev/null | awk '{ print $2 }' || true)"
+  if grep -qxF -- "$expected" <<<"$fingerprints"; then
+    echo "Host key of $VAL_SSH_HOST matches $expected."
+    return 0
+  fi
+  echo "ERROR: no key of $VAL_SSH_HOST matches SSH_HOST_KEY_SHA256 ($expected); ssh-keyscan returned: ${fingerprints:-nothing}. Nothing was pushed." >&2
+  return 1
+}
+
+known=""
+if [ -n "${VAL_SSH_HOST:-}" ]; then
+  known="$(ssh-keyscan -t ed25519,rsa "${VAL_SSH_HOST}" 2>/dev/null || true)"
+  if [ -n "$known" ]; then verify_host_key "$known" || exit 1; fi
+fi
+
 set_secret() { # name value — value via stdin, never on the command line
   local n="$1" val="${2:-}"
   [ -n "$val" ] || { echo "  secret   $n — pominięto (PUSTE w $ENVFILE)"; return; }
   if printf '%s' "$val" | gh secret set "$n" -R "$REPO" >/dev/null 2>&1; then
     echo "  secret   $n ✓"
-  else echo "  secret   $n — BŁĄD gh (dostęp/repo?)"; fi
+  else echo "  secret   $n — BŁĄD gh (dostęp/repo?)"; failures=$((failures + 1)); fi
 }
 set_var() {
   local n="$1" val="${2:-}"
   [ -n "$val" ] || { echo "  variable $n — pominięto (PUSTE w $ENVFILE)"; return; }
   if gh variable set "$n" -R "$REPO" --body "$val" >/dev/null 2>&1; then
     echo "  variable $n ✓"
-  else echo "  variable $n — BŁĄD gh (dostęp/repo?)"; fi
+  else echo "  variable $n — BŁĄD gh (dostęp/repo?)"; failures=$((failures + 1)); fi
 }
 
 # SSH key: expand a leading ~; optionally generate an ed25519 keypair if missing.
@@ -123,16 +151,15 @@ set_secret SSH_HOST     "${VAL_SSH_HOST:-}"
 set_secret SSH_USER     "${VAL_SSH_USER:-}"
 
 if [ -n "$keyfile" ] && [ -f "$keyfile" ]; then
-  if gh secret set SSH_KEY -R "$REPO" < "$keyfile" >/dev/null 2>&1; then echo "  secret   SSH_KEY ✓ (z pliku)"; else echo "  secret   SSH_KEY — BŁĄD gh"; fi
+  if gh secret set SSH_KEY -R "$REPO" < "$keyfile" >/dev/null 2>&1; then echo "  secret   SSH_KEY ✓ (z pliku)"; else echo "  secret   SSH_KEY — BŁĄD gh"; failures=$((failures + 1)); fi
 else
   echo "  secret   SSH_KEY — pominięto (ustaw SSH_KEY_FILE na istniejący klucz prywatny; --gen-key wygeneruje)"
 fi
 
-# SSH_KNOWN_HOSTS pinned from the host itself (no blind SSH in the deploy).
+# SSH_KNOWN_HOSTS pinned from the host itself (no blind SSH in the deploy), verified above.
 if [ -n "${VAL_SSH_HOST:-}" ]; then
-  known="$(ssh-keyscan -t ed25519,rsa "${VAL_SSH_HOST}" 2>/dev/null || true)"
   if [ -n "$known" ]; then
-    if printf '%s\n' "$known" | gh secret set SSH_KNOWN_HOSTS -R "$REPO" >/dev/null 2>&1; then echo "  secret   SSH_KNOWN_HOSTS ✓ (ssh-keyscan)"; else echo "  secret   SSH_KNOWN_HOSTS — BŁĄD gh"; fi
+    if printf '%s\n' "$known" | gh secret set SSH_KNOWN_HOSTS -R "$REPO" >/dev/null 2>&1; then echo "  secret   SSH_KNOWN_HOSTS ✓ (ssh-keyscan)"; else echo "  secret   SSH_KNOWN_HOSTS — BŁĄD gh"; failures=$((failures + 1)); fi
   else
     echo "  secret   SSH_KNOWN_HOSTS — pominięto (ssh-keyscan nic nie zwrócił dla $VAL_SSH_HOST)"
   fi
@@ -160,4 +187,8 @@ JSON
 fi
 
 echo
+if [ "$failures" -gt 0 ]; then
+  echo "ERROR: $failures gh call(s) failed; the secrets and variables above marked BŁĄD are not set or are stale." >&2
+  exit 1
+fi
 echo "Gotowe. Sprawdź:  gh secret list -R $REPO  ;  gh variable list -R $REPO"

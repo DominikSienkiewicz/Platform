@@ -6,7 +6,8 @@ name: Semgrep SAST (reusable)
 #
 # Triggery (push/PR/cron) deklaruje CALLER — tu mieszka wyłącznie logika.
 # Wołane przez repo:
-#   jobs: { semgrep: { uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@v1 } }
+#   jobs: { semgrep: { uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z } }
+# Platform skanuje nim siebie w self-scan.yml (domyślny zestaw reguł, ten sam co u konsumentów).
 #
 # Repo PRYWATNE bez GitHub Advanced Security: zakładka „Code scanning" (upload SARIF) jest
 # ZABLOKOWANA — dlatego wynik idzie jako tekst + fail-build (dokładnie jak Grype w security-scan.yml),
@@ -31,7 +32,7 @@ jobs:
     name: Semgrep — SAST scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
 

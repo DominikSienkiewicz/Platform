@@ -56,8 +56,35 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 - The frontend canon gains `@eslint/js` 10.0.1 and `globals` 17.13.0.
 
+- `docs/security-scanning.md`: the gates of every scan and a procedure for accepting a finding,
+  with `templates/grype.yaml`. `security-scan.yml` fails on a `.grype.yaml` entry whose
+  `# expires:` date has passed and warns on one without a date, and gains an `only-fixed` input
+  (default `false`, the behaviour so far).
+
+- Platform runs its own `scorecard.yml` and `semgrep.yml` on itself from `self-scan.yml`: Scorecard on
+  every push to `main` and weekly, with published results; Semgrep also on pull requests. A change
+  to either workflow now runs in Platform before consumers get it.
+
 ### Changed
 
+- `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new
+  `SSH_HOST_KEY_SHA256` before pushing anything, warns when it is empty, and exits non-zero when a
+  `gh` call fails instead of ending with "Gotowe". Sync the copy in `scripts/`.
+- Every GitHub-owned action in the reusable workflows is pinned by commit SHA with a version
+  comment, like the third-party ones; the versions run are the same as before.
+- Snyk runs from a digest-pinned `snyk/snyk:docker` image instead of the Snyk Docker action, which
+  executed the moving `:docker` tag whatever SHA it was pinned to. In `deploy.yml` it moves to an
+  advisory `snyk-advisory` job with `packages: read`, out of the job that pushes images.
+- `deploy.yml` checks Platform out without a token and takes `scripts/deploy-remote.sh` from the new
+  `platform-ref` input (default `v1`); set it to the tag in `uses:` so script and workflow come from
+  one release. Every checkout in `deploy.yml` drops its persisted credentials, and the workflow
+  declares read-only top-level permissions.
+- `frontend-ci.yml` exposes `GITHUB_TOKEN` to `npm ci` only; lint, typecheck, test and build run
+  without registry credentials.
+- `deploy.yml`, `sonar.yml` and `roadmap-unblock.yml` declare the secrets they read, so callers can
+  pass them explicitly instead of handing every repository secret over with `secrets: inherit`;
+  `inherit` keeps working. `roadmap-unblock.yml` reads only `ROADMAP_PROJECT_TOKEN`, a classic PAT
+  valid for 90 days at most, and no longer persists the checkout token.
 - `@dominiksienkiewicz/tsconfig/next.json` no longer sets `include`, `exclude` or `paths`. TypeScript
   resolved them inside `node_modules/@dominiksienkiewicz/tsconfig`, so a consumer that did not
   redeclare them compiled nothing. Declare them in the consumer's `tsconfig.json` as

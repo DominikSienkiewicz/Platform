@@ -143,6 +143,8 @@ checks with `strict: true`.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
 - **Design decisions** → [`docs/adr/`](docs/adr/), including the
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
+- **What the security scans gate and how to accept a finding** →
+  [docs/security-scanning.md](docs/security-scanning.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
 
 ## Requirements

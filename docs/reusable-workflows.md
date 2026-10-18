@@ -110,7 +110,9 @@ jobs:
 
 ## semgrep.yml
 
-Static analysis of the source code. ERROR findings fail the run.
+Static analysis of the source code. ERROR findings fail the run; accepting one is described in
+[security-scanning.md](security-scanning.md). Platform runs the default rulesets on itself from
+`self-scan.yml`, pull requests included.
 
 - Permissions: `contents: read`.
 - No secrets.
@@ -127,7 +129,9 @@ jobs:
 ## scorecard.yml
 
 OpenSSF Scorecard. It only makes sense in a public repository; private callers usually skip it
-with `if: ${{ !github.event.repository.private }}`.
+with `if: ${{ !github.event.repository.private }}`. Platform runs it on itself from
+[`self-scan.yml`](../.github/workflows/self-scan.yml) on every push to `main` and weekly, and
+publishes the result.
 
 - Permissions on the calling job: `contents: read`, `security-events: write`, `id-token: write`.
 - No secrets and no inputs.
@@ -149,9 +153,21 @@ SonarQube Cloud for a backend plus frontend monorepo. Both jobs are skipped unti
 a `SONAR_TOKEN` secret.
 
 - Permissions: `contents: read`, `packages: read`.
-- Secrets: `SONAR_TOKEN`, passed today with `secrets: inherit` because the workflow does not declare
-  it yet.
+- Secrets `SONAR_TOKEN` and `gpr_token`, both optional: without `SONAR_TOKEN` both jobs are skipped,
+  without `gpr_token` the automatic `GITHUB_TOKEN` resolves Platform's packages.
 - Inputs: [sonar.yml](../.github/workflows/sonar.yml).
+
+```yaml
+permissions:
+  contents: read
+  packages: read
+jobs:
+  sonar:
+    uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      gpr_token: ${{ secrets.GPR_TOKEN }}
+```
 
 ## roadmap-unblock.yml
 
@@ -159,17 +175,59 @@ Moves dependent roadmap items to ready when their prerequisite issues are closed
 repository provides `scripts/roadmap-unblock.sh`.
 
 - Permissions: `contents: read`.
-- Secret `ROADMAP_PROJECT_TOKEN` and variable `ROADMAP_PROJECT_NUMBER`, passed today with
-  `secrets: inherit` because the workflow does not declare the secret yet. Without the token the
-  job warns and does nothing.
+- Secret `ROADMAP_PROJECT_TOKEN` (optional): Projects v2 of a user account accept only a classic PAT
+  with the `project` and `repo` scopes. `repo` grants write access to every private repository of the
+  owner, so give the token 90 days at most. A fine-grained PAT is not verified for user-owned
+  Projects v2. Without the token the job warns and does nothing.
+- Variable `ROADMAP_PROJECT_NUMBER`: the number of the Projects v2 board.
+
+```yaml
+on:
+  issues:
+    types: [closed]
+permissions:
+  contents: read
+jobs:
+  unblock:
+    uses: DominikSienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@vX.Y.Z
+    secrets:
+      ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+```
 
 ## deploy.yml
 
-Builds, scans (optionally), pushes and deploys the application images to a host over SSH.
+Builds, scans (optionally), pushes and deploys the application images to a host over SSH. With
+`scan-images: true`, Grype gates the deploy; Snyk runs in a separate advisory job with read-only
+package access, which the deploy does not wait for.
 
 - Permissions: `contents: read`, `packages: write` (to push to GHCR).
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
-  `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`; passed today with `secrets: inherit`. Set them with
-  `templates/setup-gh-deploy.sh` from `templates/secrets.local.example`.
+  `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`. They are declared optional so that the `preflight` job,
+  not GitHub, names the missing ones. Set them with `templates/setup-gh-deploy.sh` from
+  `templates/secrets.local.example`; give it `SSH_HOST_KEY_SHA256` from a trusted channel, and it
+  refuses a scanned host key with another fingerprint instead of trusting it on first use.
 - Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
-- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required.
+- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
+  to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
+  workflow; its default `v1` is transitional.
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+jobs:
+  deploy:
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+    with:
+      app-name: myapp
+      platform-ref: vX.Y.Z
+    secrets:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY: ${{ secrets.GPR_KEY }}
+      NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+```

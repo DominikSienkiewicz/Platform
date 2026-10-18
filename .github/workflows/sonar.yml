@@ -2,7 +2,9 @@ name: Sonar (reusable)
 
 # Reusable: skan SonarQube Cloud dla monorepo (backend Gradle + frontend npm).
 # Zastępuje ~100 linii zduplikowanego inline-YAML z ci.yml obu repo (SkillSprintPlus, BookOfStyling).
-# Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@v1
+# Wołane z cienkiego callera z jawnymi sekretami:
+#   uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
+#   secrets: { SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}, gpr_token: ${{ secrets.GPR_TOKEN }} }
 #
 # Oba joby są POMIJANE dopóki nie istnieje sekret SONAR_TOKEN (guard krokowy `if: env.SONAR_TOKEN != ''`),
 # więc nigdy nie blokują CI zanim Sonar zostanie skonfigurowany. Backend: organizacja i plugin żyją
@@ -31,7 +33,13 @@ on:
         description: "Node.js version for the frontend tests and coverage."
         type: string
         default: "24"
-    # SONAR_TOKEN/GITHUB_TOKEN dostarcza caller przez `secrets: inherit`.
+    secrets:
+      SONAR_TOKEN:
+        description: "SonarQube Cloud token. Without it both jobs are skipped."
+        required: false
+      gpr_token:
+        description: "Classic PAT with read:packages for Platform's packages. Without it the caller's automatic GITHUB_TOKEN is used."
+        required: false
 
 permissions:
   contents: read
@@ -46,13 +54,13 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_HOST_URL: https://sonarcloud.io
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0 # pełna historia -> poprawne new-code & blame
       # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
       # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
       # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         id: toolchain-jdk
         with:
           distribution: temurin
@@ -63,7 +71,7 @@ jobs:
         run: |
           mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }} # uruchamia Gradle; toolchain aplikacji z kroku toolchain-jdk
@@ -86,10 +94,10 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SONAR_HOST_URL: https://sonarcloud.io
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm

@@ -15,10 +15,11 @@ name: Container scan (reusable)
 # Wołane przez repo (zwykle na cron):
 #   jobs:
 #     container-scan:
-#       uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@v1
+#       uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
 #       with:
 #         images: '["ghcr.io/owner/app-backend:latest","ghcr.io/owner/app-frontend:latest"]'
-#       secrets: inherit
+#       secrets:
+#         snyk_token: ${{ secrets.SNYK_TOKEN }}
 on:
   workflow_call:
     inputs:
@@ -53,6 +54,10 @@ jobs:
         image: ${{ fromJSON(inputs.images) }}
     env:
       SNYK_TOKEN: ${{ secrets.snyk_token }}
+      # Obraz Snyka przypięty digestem: tag :docker jest ruchomy, a dawna akcja Snyka dla Dockera uruchamiała właśnie
+      # ten tag, więc pin SHA akcji niczego nie przypinał. CLI jest wbudowany przy budowie obrazu
+      # (snyk/snyk-images 54dbb8b, stan 2026-10-18), więc digest przypina wykonywany kod. Lustro: deploy.yml.
+      SNYK_IMAGE: snyk/snyk:docker@sha256:d6595337edef7ce37eded247b8bb47ebb60681fd802c49e64c1b80b3a6963187
     steps:
       # Sekret trafia do kroku przez `env`, nie przez interpolację `${{ }}` w treści `run`:
       # interpolacja wkleja wartość do skryptu shella (widoczna w trace, podatna na wstrzyknięcie
@@ -109,15 +114,17 @@ jobs:
       - name: Snyk container test (advisory)
         if: ${{ steps.published.outputs.present == 'true' && env.SNYK_TOKEN != '' }}
         continue-on-error: true
-        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
-        with:
-          image: ${{ matrix.image }}
-          args: --severity-threshold=high
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker run --rm -e SNYK_TOKEN -v /var/run/docker.sock:/var/run/docker.sock \
+            "$SNYK_IMAGE" snyk container test "$IMAGE" --severity-threshold=high
 
       - name: Snyk container monitor (dashboard)
         if: ${{ steps.published.outputs.present == 'true' && env.SNYK_TOKEN != '' }}
         continue-on-error: true
-        uses: snyk/actions/docker@8e119fbb6c251787721d34ba683ed48eba792766 # master
-        with:
-          command: monitor
-          image: ${{ matrix.image }}
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          docker run --rm -e SNYK_TOKEN -v /var/run/docker.sock:/var/run/docker.sock \
+            "$SNYK_IMAGE" snyk container monitor "$IMAGE"

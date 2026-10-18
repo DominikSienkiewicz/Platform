@@ -24,7 +24,9 @@ Kolejność source w każdym skrypcie: `roadmap-config.sh` → `roadmap-lib.sh` 
 
 1. Skopiuj `templates/roadmap/scripts/**` do `scripts/**` repo (nadpisuje stare, rozjechane skrypty).
 2. Utwórz `scripts/lib/roadmap-config.sh` z `roadmap-config.sh.example` (BoS/SSP: użyj gotowca z `examples/`).
-3. Zostaw cienki caller `.github/workflows/roadmap-unblock.yml` (`uses: …/Platform/…@v1` + `secrets: inherit`) — kontrakt `--closed` się nie zmienia.
+3. Zostaw cienki caller `.github/workflows/roadmap-unblock.yml` z jawnym sekretem zamiast `inherit`:
+   `uses: …/Platform/…@vX.Y.Z` + `secrets: { ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }} }`
+   (classic PAT `project` + `repo`, ważny <= 90 dni) — kontrakt `--closed` się nie zmienia.
 4. **Self-heal markera** (bezpieczny): odpal `./scripts/roadmap-to-issues.sh --dry-run` (podgląd), potem bez `--dry-run`.
    Lookup po stabilnym `roadmap-id:` znajduje istniejące Issue → **update**, nie duplikat; przy okazji przepisuje marker do kanonicznego układu. Wymaga PAT `ROADMAP_PROJECT_TOKEN` (scope `project`).
 

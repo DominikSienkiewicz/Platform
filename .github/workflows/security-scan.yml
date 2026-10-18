@@ -5,7 +5,8 @@ name: Security scan (reusable)
 # Triggery (push/PR z filtrem paths, cron) deklaruje CALLER — tu mieszka wyłącznie logika.
 # Tiering: CRITICAL/HIGH = fail, MODERATE/LOW = log-only.
 # Wołany przez repo:
-#   jobs: { scan: { uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@v1, secrets: inherit } }
+#   jobs: { scan: { uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z,
+#                   secrets: { gpr_token: "${{ secrets.GPR_TOKEN }}" } } }
 on:
   workflow_call:
     inputs:
@@ -25,6 +26,10 @@ on:
         description: "Also scan frontend/package-lock.json. Use false for a backend without a frontend."
         type: boolean
         default: true
+      only-fixed:
+        description: "Fail only on vulnerabilities that have a fix. Accept a finding without a fix through .grype.yaml instead; see docs/security-scanning.md."
+        type: boolean
+        default: false
     secrets:
       gpr_token:
         description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
@@ -41,16 +46,51 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
 
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      # Wyjątki z .grype.yaml w roocie repo (Grype czyta go z katalogu roboczego akcji, obu skanów):
+      # każdy wpis ma komentarz `# expires: YYYY-MM-DD; tracking: <URL>; reason: …` (docs/security-scanning.md).
+      # Przeterminowany = fail, bez daty = ostrzeżenie. Blok testuje templates/tests/grype-exceptions.test.sh.
+      - name: Check Grype exceptions
+        working-directory: .
+        run: |
+          # >>> grype-exceptions
+          set -euo pipefail
+          config=.grype.yaml
+          if [ ! -f "$config" ]; then
+            echo "No $config: no accepted findings."
+            exit 0
+          fi
+          awk -v today="$(date -u +%F)" -v config="$config" '
+            /^[[:space:]]*#[[:space:]]*expires:/ {
+              expires = $0
+              sub(/^[[:space:]]*#[[:space:]]*expires:[[:space:]]*/, "", expires)
+              expires = substr(expires, 1, 10)
+              next
+            }
+            /^[[:space:]]*-[[:space:]]+(vulnerability|package|fix-state|namespace):/ {
+              entry = $0
+              sub(/^[[:space:]]*-[[:space:]]+/, "", entry)
+              if (expires !~ /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) {
+                printf "::warning file=%s,line=%d::Grype exception \"%s\" has no # expires: YYYY-MM-DD comment; see docs/security-scanning.md\n", config, NR, entry
+              } else if (expires < today) {
+                printf "::error file=%s,line=%d::Grype exception \"%s\" expired on %s; fix the finding, or renew the entry with a new date and tracking link\n", config, NR, entry, expires
+                expired++
+              }
+              expires = ""
+            }
+            END { exit expired > 0 }
+          ' "$config"
+          # <<< grype-exceptions
 
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
       - name: Generate CycloneDX SBOM
@@ -77,6 +117,7 @@ jobs:
           sbom: ${{ steps.sbom.outputs.path }}
           fail-build: true
           severity-cutoff: ${{ inputs.severity-cutoff }}
+          only-fixed: ${{ inputs.only-fixed }}
           output-format: table
 
   frontend-deps:
@@ -84,7 +125,7 @@ jobs:
     if: ${{ inputs.run-frontend }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
 
@@ -94,4 +135,5 @@ jobs:
           path: frontend
           fail-build: true
           severity-cutoff: ${{ inputs.severity-cutoff }}
+          only-fixed: ${{ inputs.only-fixed }}
           output-format: table
