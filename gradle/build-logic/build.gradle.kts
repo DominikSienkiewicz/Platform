@@ -61,6 +61,11 @@ tasks.withType<Test>().configureEach {
 	inputs.file(qualityConventions)
 	val workflows = layout.projectDirectory.dir("../../.github/workflows")
 	inputs.dir(workflows)
+	// PlatformReferenceDocTest: każde pokrętło czytane w src/main/kotlin musi stać w docs/reference.md.
+	val conventionSources = layout.projectDirectory.dir("src/main/kotlin")
+	val referenceDoc = layout.projectDirectory.file("../../docs/reference.md")
+	inputs.dir(conventionSources)
+	inputs.file(referenceDoc)
 	// Kanon każdego lustra z tabeli w docs/versions.md (PlatformToolVersionMirrorTest + PlatformCatalogMirrorTest).
 	mapOf(
 		"googleJavaFormat" to libs.versions.googleJavaFormat,
@@ -84,6 +89,8 @@ tasks.withType<Test>().configureEach {
 	systemProperty("platform.springModulithConventions", springModulithConventions.asFile.absolutePath)
 	systemProperty("platform.qualityConventions", qualityConventions.asFile.absolutePath)
 	systemProperty("platform.workflows", workflows.asFile.absolutePath)
+	systemProperty("platform.conventionSources", conventionSources.asFile.absolutePath)
+	systemProperty("platform.referenceDoc", referenceDoc.asFile.absolutePath)
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

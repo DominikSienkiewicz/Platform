@@ -5,8 +5,10 @@ name: Sonar (reusable)
 # Wołane z cienkiego callera:  uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@v1
 #
 # Oba joby są POMIJANE dopóki nie istnieje sekret SONAR_TOKEN (guard krokowy `if: env.SONAR_TOKEN != ''`),
-# więc nigdy nie blokują CI zanim Sonar zostanie skonfigurowany. Klucze projektów i organizacja
-# żyją per-repo w sonar-project.properties / build.gradle.kts — tu są tylko mechanika i wersje toolingu.
+# więc nigdy nie blokują CI zanim Sonar zostanie skonfigurowany. Backend: organizacja i plugin żyją
+# w seniordev.quality-conventions, klucz projektu = property `sonarProjectKey` w gradle.properties
+# (fallback DominikSienkiewicz_<rootProject.name>); repo NIE deklaruje id("org.sonarqube") ani sonar{}.
+# Frontend: klucz w sonar-project.properties katalogu frontendu. Tu są tylko mechanika i wersje toolingu.
 #
 # Jednorazowy setup w SonarCloud: utwórz oba projekty, włącz tryb monorepo, WYŁĄCZ Automatic Analysis
 # (Administration -> Analysis Method) — analiza automatyczna i CI-owa wykluczają się, a tylko skan z CI

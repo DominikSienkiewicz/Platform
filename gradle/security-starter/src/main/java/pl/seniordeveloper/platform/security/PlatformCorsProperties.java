@@ -11,9 +11,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "platform.cors")
 public class PlatformCorsProperties {
 
+  /** Allowed origins; setting it registers the Platform CORS configuration for every path. */
   private List<String> allowedOrigins = List.of();
+
+  /** Allowed HTTP methods. */
   private List<String> allowedMethods = List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+
+  /** Allowed request headers. */
   private List<String> allowedHeaders = List.of("*");
+
+  /** Whether the browser may send credentials, such as cookies, with a cross-origin request. */
   private boolean allowCredentials = true;
 
   public List<String> getAllowedOrigins() {

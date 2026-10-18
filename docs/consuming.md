@@ -1,7 +1,8 @@
 # Consuming the platform in a product repository
 
 Everything below is what a consuming repository declares. Nothing here needs to be copied
-into the platform itself.
+into the platform itself. Every task, property and default the plugins add is listed in
+[reference.md](reference.md).
 
 ## Prerequisites
 
@@ -205,7 +206,7 @@ runs an older Java than the toolchain the bytecode is compiled for (Java 27). Mo
 `FROM` to the image in [`templates/Dockerfile.backend`](../templates/Dockerfile.backend). A
 build without a Dockerfile, a non-JVM image or an image taken from a build argument is skipped
 with a log line. A repository-local test that compares the class-file version with the
-Dockerfile can be deleted once the consumer runs this release.
+Dockerfile is redundant once the consumer pins a Platform release that runs this gate.
 
 ## Coverage threshold
 
@@ -265,7 +266,8 @@ The component registry `@dominiksienkiewicz/ui` is *incubating*: it has no hoste
 consumer has adopted it. If you install it, also add an `@source` line that points from
 `globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@dominiksienkiewicz/ui";`
 in `app/globals.css`, or `@source "../../node_modules/@dominiksienkiewicz/ui";` in `src/app/globals.css`.
-Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.10.0 …`), never `@latest`.
+Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.10.0 …`), never an
+unpinned one.
 
 `vitest.config.ts`:
 

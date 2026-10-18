@@ -38,6 +38,11 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   `frontend/.npmrc`.
 - `docs/reusable-workflows.md`: the caller contract of every reusable workflow (permissions, secrets,
   variables and a snippet). Every workflow input and secret has an English description.
+- `docs/reference.md`: every task, property and default the convention plugins add, the security
+  starter properties and a snippet per test fixture. The README shows how a release reaches the
+  registries and the consumer pins.
+- `platform-test-fixtures` and `platform-security-starter` publish a sources jar, and every
+  `platform.security.*` and `platform.cors.*` property has an IDE description.
 - Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
   version tag carrying the same notes.
 - `platform-bump` prints the notes of every release it crosses and repeats their consumer

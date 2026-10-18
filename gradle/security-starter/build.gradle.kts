@@ -8,6 +8,8 @@ version = providers.gradleProperty("platformVersion").get()
 
 java {
 	toolchain { languageVersion = JavaLanguageVersion.of(25) }
+	// Sources jar obok binarki: IDE konsumenta pokazuje źródła i javadoc bez dekompilacji.
+	withSourcesJar()
 }
 
 repositories { mavenCentral() }

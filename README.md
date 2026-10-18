@@ -77,9 +77,47 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 
 | Plugin | What it brings |
 |---|---|
-| `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a configurable coverage threshold (`coverageMinimum`, default 0.00) |
-| `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only until it reads Java 27 class files, major version 71), CycloneDX (SBOM) |
-| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok, runtime ArchUnit) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+| `seniordev.settings-conventions` | applied in `settings.gradle.kts`: the Foojay toolchain resolver and the dependency repositories (an optional `platformRepository`, Maven Central, GitHub Packages) |
+| `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, a configurable coverage threshold (`coverageMinimum`, default 0.00), and the dependency version and runtime image gates |
+| `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only, see [ADR-0005](docs/adr/0005-spotbugs-report-only.md)), CycloneDX (SBOM), SonarQube Cloud |
+| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with JDK 27 compatibility overrides (Lombok, runtime ArchUnit), shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+
+Every task, property and default they add is listed in [docs/reference.md](docs/reference.md).
+
+## How it fits together
+
+```mermaid
+flowchart LR
+  release["./release.sh"] -->|annotated tag| tag(("vX.Y.Z"))
+  tag --> workflow["release.yml<br/>after green ci.yml"]
+  workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog,<br/>test-fixtures, security-starter")]
+  workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
+  workflow --> notes["GitHub Release<br/>CHANGELOG section"]
+  workflow -->|move-v1, forward only| v1(("v1"))
+
+  preset["default.json<br/>on main"]
+
+  subgraph consumer["Consumer repository"]
+    gradlePins["gradle.properties<br/>platformVersion"]
+    npmPins["frontend/package.json<br/>exact pins from versions.json"]
+    callers[".github/workflows<br/>uses: …@vX.Y.Z"]
+    renovate["renovate.json<br/>extends"]
+  end
+
+  maven -->|pinned| gradlePins
+  npm -->|pinned| npmPins
+  tag -->|pinned| callers
+  v1 -.->|floating, legacy| callers
+  preset -.->|floating| renovate
+  bump["scripts/platform-bump.sh"] -->|bumps| gradlePins
+  bump -->|bumps| npmPins
+```
+
+Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
+reusable workflows. `platform-bump` moves the first two and prints the notes of every release it
+crosses; a caller's `@vX.Y.Z` is moved by hand in the same change. Two references float: the
+Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
+is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
 ## Reference consumers
 
@@ -94,6 +132,8 @@ checks with `strict: true`.
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
+- **Every task, property and default the plugins add** → **[docs/reference.md](docs/reference.md)** —
+  with the security starter properties and the test fixtures.
 - **Building and publishing locally** → **[docs/local-development.md](docs/local-development.md)** —
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single
