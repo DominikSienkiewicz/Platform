@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./packages/tsconfig/base.json",
+  "compilerOptions": {
+    "checkJs": true,
+    "incremental": false,
+    "skipLibCheck": false,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@/registry/*": [
+        "./packages/ui-registry/registry/*"
+      ],
+      "@dominiksienkiewicz/api-client": [
+        "./packages/api-client/index.d.ts"
+      ],
+      "@dominiksienkiewicz/query": [
+        "./packages/query/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "packages/api-client/index.js",
+    "packages/query/index.js"
+  ],
+  "include": [
+    "packages/api-client/index.d.ts",
+    "packages/api-client/type-tests/consumer.ts",
+    "packages/query/index.d.ts",
+    "packages/query/type-tests/consumer.ts",
+    "packages/vitest-config/index.js",
+    "packages/vitest-config/setup.js",
+    "packages/versions/bin/check.mjs",
+    "packages/ui-registry/registry/**/*.ts",
+    "packages/ui-registry/registry/**/*.tsx"
+  ]
+}

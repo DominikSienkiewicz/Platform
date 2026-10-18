@@ -7,6 +7,9 @@
     "base.json",
     "next.json"
   ],
+  "scripts": {
+    "test": "node --test"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },

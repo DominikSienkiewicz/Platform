@@ -6,8 +6,7 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "build": "shadcn build",
-    "lint": "echo \"(registry — brak lintu)\""
+    "build": "shadcn build"
   },
   "files": [
     "registry",
@@ -18,14 +17,14 @@
     "registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
-    "shadcn": "^4"
+    "shadcn": "4.10.0"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^3.6.0",
-    "@radix-ui/react-slot": "^1.1.0",
-    "lucide-react": "^1.17.0"
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.6.0",
+    "@radix-ui/react-slot": "1.2.4",
+    "lucide-react": "1.17.0"
   },
   "repository": {
     "type": "git",

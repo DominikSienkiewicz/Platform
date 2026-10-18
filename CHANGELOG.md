@@ -31,6 +31,11 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
+- `platform-versions-check` now requires every `@dominiksienkiewicz/*` pin to be exact and equal to
+  the installed `@dominiksienkiewicz/versions` release, and it governs `optionalDependencies`. A
+  caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
+  fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits.
+
 ### Added
 
 - `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting
@@ -49,8 +54,22 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   actions at the end. The stub runs the installed copy of the bin, so the notes appear from the
   bump after the one that installs this release.
 
+- The frontend canon gains `@eslint/js` 10.0.1 and `globals` 17.13.0.
+
 ### Changed
 
+- `@dominiksienkiewicz/tsconfig/next.json` no longer sets `include`, `exclude` or `paths`. TypeScript
+  resolved them inside `node_modules/@dominiksienkiewicz/tsconfig`, so a consumer that did not
+  redeclare them compiled nothing. Declare them in the consumer's `tsconfig.json` as
+  `docs/consuming.md` shows; the one consumer of `next.json` already does.
+- Platform's own frontend packages follow the version canon: `@dominiksienkiewicz/eslint-config`
+  declares `@eslint/compat` and its `eslint`, `eslint-config-next` and `next` peers at the exact
+  canon version, and `@dominiksienkiewicz/ui` its runtime dependencies. A consumer on the canon
+  installs them unchanged; one off the canon gets a peer conflict from npm.
+- `platform-versions-check` names the canon release it read (`@dominiksienkiewicz/versions@X.Y.Z`),
+  reports drift in English and ends with a fix that exists in consumers: run
+  `scripts/platform-bump.sh X.Y.Z` from the repository root. It pointed at `./platform-bump.sh`, which
+  no consumer has, and at the Platform maintainer's `./release.sh`.
 - `platform-bump` also bumps a template-style `platformVersion=` pin in `backend/gradle.properties`
   (or a root `gradle.properties`) and fails when it finds no pin instead of reporting success.
 - `buildAndPublishLocal.sh` prints the consumer command with `-PplatformRepository`, and the docs

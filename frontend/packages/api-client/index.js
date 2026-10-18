@@ -6,6 +6,11 @@
 
 /** Błąd HTTP niosący status i ciało odpowiedzi (JSON, surowy tekst lub null). */
 export class ApiError extends Error {
+  /**
+   * @param {number} status
+   * @param {string} message
+   * @param {unknown} [body]
+   */
   constructor(status, message, body) {
     super(message);
     this.name = "ApiError";
@@ -14,6 +19,10 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * @param {string | undefined} explicit
+ * @returns {string}
+ */
 function resolveBaseUrl(explicit) {
   if (explicit != null) return explicit;
   if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE_URL) {
@@ -30,6 +39,10 @@ export function createApiClient(options = {}) {
   const baseUrl = resolveBaseUrl(options.baseUrl);
   const defaultHeaders = options.headers ?? {};
 
+  /**
+   * @param {string} path
+   * @param {RequestInit} [init]
+   */
   async function request(path, init = {}) {
     const res = await fetch(`${baseUrl}${path}`, {
       ...init,
@@ -61,7 +74,9 @@ export function createApiClient(options = {}) {
     return body;
   }
 
-  return {
+  // Adnotacja typem z index.d.ts: tsc sprawdza implementację względem publikowanych deklaracji.
+  /** @type {import("./index").ApiClient} */
+  const client = {
     request,
     get: (path, init) => request(path, { ...init, method: "GET" }),
     post: (path, data, init) =>
@@ -72,6 +87,7 @@ export function createApiClient(options = {}) {
       request(path, { ...init, method: "PATCH", body: data === undefined ? undefined : JSON.stringify(data) }),
     delete: (path, init) => request(path, { ...init, method: "DELETE" }),
   };
+  return client;
 }
 
 /** Domyślny klient (baseUrl z env). */

@@ -1,0 +1,1 @@
+CREATE TABLE guard_probe (id BIGINT PRIMARY KEY);
