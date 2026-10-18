@@ -115,8 +115,8 @@ flowchart LR
 ```
 
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
-reusable workflows. `platform-bump` moves the first two and prints the notes of every release it
-crosses; a caller's `@vX.Y.Z` is moved by hand in the same change. Two references float: the
+reusable workflows. `platform-bump` moves all three and prints the notes of every release it
+crosses. Two references float: the
 Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
 is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 

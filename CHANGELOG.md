@@ -17,6 +17,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
+  `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
+  of your first bump: a caller on `@v1` moves to an exact tag and stops floating.
 - `platformDependencyCheck` now also governs dependency constraints, every declarable bucket
   (`compileOnlyApi`, `developmentOnly`, `testAndDevelopmentOnly`, `testFixtures*` and custom
   source sets) and `pl.seniordeveloper` artifacts. Remove explicit versions from those

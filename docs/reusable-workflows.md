@@ -8,9 +8,10 @@ types and defaults are described in the workflow files themselves (every input h
 ## Rules that apply to every workflow
 
 - **Reference an exact tag.** Use the tag of your Platform pin, for example
-  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`, and bump it together
-  with the pin ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). The moving `@v1`
-  still works but changes under you on every Platform release.
+  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
+  ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). `platform-bump` moves it together
+  with the pins, `@v1` included. The moving `@v1` still works but changes under you on every
+  Platform release.
 - **Grant the permissions listed below.** A called workflow can never get more than its caller
   grants, so a missing permission ends the run with `startup_failure` before any step runs.
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid

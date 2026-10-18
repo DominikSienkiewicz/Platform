@@ -199,6 +199,9 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   when the layout has no pin, instead of reporting success;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
+- moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
+  `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
+  `deploy.yml` caller; a reference by commit SHA stays;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
   `gradle/verification-metadata.xml`.
 
