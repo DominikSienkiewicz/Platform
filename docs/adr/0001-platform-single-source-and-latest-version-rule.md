@@ -65,6 +65,14 @@ into `seniordev.quality-conventions` so consumers stop declaring it inline; and 
 `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` packages to replace the
 per-repository fetch wrappers and query clients that had drifted apart.
 
+## Incubating artifacts (2026-10-18)
+
+The consolidation this decision delivered stopped at the platform side: no consumer uses the catalog
+bundles, the security starter, `api-client` or `query`. The consumer migration is deferred, not
+forced: these artifacts stay *incubating*, still published, until a first consumer adopts one, and
+that adoption pull request removes the label in README.md. `api-client` and `query` are additionally
+marked private, so they are not published until then. `docs/consuming.md` shows the adoption path.
+
 ## Amended (2026-10-18)
 
 Renovate never opened a pull request in Platform or in a consumer, and its pin manager could not have

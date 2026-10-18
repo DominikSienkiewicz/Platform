@@ -312,6 +312,44 @@ and optionally Ollama:
 cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
 ```
 
+## Catalog bundles (*incubating*)
+
+The catalog groups the Spring starters every product backend declares into three bundles. Their members
+carry no version, so the Platform BOMs decide it, as before:
+
+```kotlin
+// Before: one line per starter, the same in every repository
+implementation("org.springframework.boot:spring-boot-starter-actuator")
+implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+implementation("org.springframework.boot:spring-boot-starter-validation")
+implementation("org.springframework.boot:spring-boot-starter-webmvc")
+implementation("org.springframework.modulith:spring-modulith-starter-core")
+implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+
+// After
+implementation(libs.bundles.modulith.web)
+testImplementation(libs.bundles.modulith.web.tests) // actuator, data-jpa, validation and webmvc test starters
+developmentOnly(libs.bundles.dev.docker.compose)    // spring-boot-docker-compose and Spring AI's
+```
+
+Keep any starter outside these lists on its own line. The bundles stay *incubating* until a first
+backend adopts them; that pull request removes the label in README.md.
+
+## Adopting the security starter (*incubating*)
+
+Add `implementation(libs.platform.security.starter)`, delete the application's own `SecurityConfig`, and
+express its behaviour as properties. The two configurations the
+starter was written from map like this:
+
+| Application | Properties | Then |
+|---|---|---|
+| permit-all, stateless API with CORS (BookOfStyling) | `platform.security.mode=permit-all`, `platform.security.stateless=true`, `platform.security.csrf=false`, `platform.cors.allowed-origins=${app.cors.allowed-origins}` | delete `SecurityConfig` |
+| authenticated with HTTP Basic (SkillSprintPlus) | none: these are the defaults | delete `SecurityConfig` |
+
+Both variants are covered by `PlatformSecurityAutoConfigurationTest`, and the starter's chain takes
+precedence over Spring Boot's default web security (`PlatformSecurityBootAutoConfigurationTest`). The
+starter stays *incubating* until the first application adopts it; that pull request removes the label.
+
 ## Security starter CORS
 
 `platform.cors.allowed-origins` opts into the Platform CORS source. The security

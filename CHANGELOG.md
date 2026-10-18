@@ -50,6 +50,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `docs/consuming.md` shows how to adopt the incubating catalog bundles and the security starter, with
+  the properties that replace the two existing `SecurityConfig` variants.
 - `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside
   the platform (`extra["jackson-bom.version"]`), and `platform-bump` lists the `useVersion`, `force`,
   `strictly` and `extra["….version"]` overrides of the backend after every bump. Neither fails the build.

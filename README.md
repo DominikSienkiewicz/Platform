@@ -50,7 +50,9 @@ own schedule and rolls back by pinning an older version.
 | `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` (release notes), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan) | not published |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
-repository has adopted them yet. Treat their API as provisional until the first one does.
+repository has adopted them yet. Treat their API as provisional until the first one does: that
+repository's adoption pull request removes the label here. How to adopt the bundles and the security
+starter is in [docs/consuming.md](docs/consuming.md#catalog-bundles-incubating).
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
