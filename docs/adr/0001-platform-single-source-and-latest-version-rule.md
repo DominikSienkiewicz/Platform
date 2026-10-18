@@ -33,8 +33,8 @@ failure.
 2. **Latest-in-portfolio rule.** When the same tool or library exists at different versions
    across repositories, the newest one wins. It lands in the platform as the single source
    and every repository consumes it through the platform pin. Exceptions must be
-   **documented** — for example, the `build-logic` toolchain is deliberately held one
-   release back to keep the Kotlin and Java targets consistent.
+   **documented** — for example, `build-logic` and Gradle stay on JDK 25 while consumers
+   compile for JDK 27; see [ADR-0004](0004-consumer-toolchain-jdk-27.md).
 3. **Version changes flow through a platform release plus a bump in the consumer**, never
    through a manual per-repository edit. A new library means a catalog entry and a release
    first, and only then a bump downstream.
@@ -58,9 +58,9 @@ consumer's existing design tokens, and a dependency is **not** bumped from a mil
 GA release blindly, because the API can change across that boundary. In both cases the
 platform side is harmonised first, and the consumer migrates afterwards.
 
-## Next
+## Delivered with this decision (2026-07-05)
 
-Version-catalog bundles for the dependency spine repeated across consumers; moving Sonar
+Version-catalog bundles for the dependency spine repeated across consumers; Sonar moved
 into `seniordev.quality-conventions` so consumers stop declaring it inline; and shared
 `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` packages to replace the
-per-repository fetch wrappers and query clients that have drifted apart.
+per-repository fetch wrappers and query clients that had drifted apart.

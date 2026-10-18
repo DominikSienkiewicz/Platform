@@ -5,7 +5,9 @@ only source of truth for released artifacts. A single `platformVersion` in
 `gradle/build-logic/gradle.properties` is the version of every artifact, on GitHub Packages and in
 consumers' pins alike. [`release.yml`](.github/workflows/release.yml) publishes that version and
 runs only when someone asks for it: a pushed `vX.Y.Z` tag or a manual `workflow_dispatch`. Nothing
-bumps versions automatically, and nothing prunes old versions automatically.
+bumps versions automatically, and nothing prunes old versions automatically. What a version number
+means and what every release must carry is the
+[release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 
 There are two distribution channels, and they move differently:
 

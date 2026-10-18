@@ -46,9 +46,10 @@ opublikuj, podbij pin w repo konsumenta.
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
    (`alias(libs.plugins.spring.boot)`). Convention tylko importuje BOM-y + deps testowe + split testów.
-4. **SpotBugs report-only** dopóki SpotBugs nie analizuje bez błędów class-file 71 (toolchain JDK 27) —
-   kryterium wyjścia: `spotbugsMain` konsumenta bez „Unsupported class file major version”. Nie przełączaj
-   `ignoreFailures=false` globalnie bez weryfikacji.
+4. **SpotBugs report-only** do spełnienia OBU kryteriów z `docs/adr/0005-spotbugs-report-only.md`:
+   (1) SpotBugs czyta class-file toolchainu bez „Unsupported class file major version” — mierzy to
+   TestKit w build-logic, spełnione 2026-10-18 dla JDK 27; (2) `spotbugsMain` każdego konsumenta
+   przechodzi z `ignoreFailures=false`. Nie przełączaj `ignoreFailures=false` globalnie przed (2).
 5. **GitHub Packages npm:** scope = nazwa ownera repo (lowercase). Zmiana ownera = zmiana scope + `.npmrc`.
 6. **Wersje WSZYSTKICH zależności frontendu → `frontend/packages/versions/versions.json`**
    (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
