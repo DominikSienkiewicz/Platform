@@ -134,6 +134,10 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
    `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
    leaves an existing Release alone.
+6. **`verify-published`**, after both publish jobs, fails unless every artifact carries the
+   version: the main build-logic artifact, the marker of every convention plugin, the catalog,
+   test-fixtures, security-starter and every npm package not marked `private`. The publish jobs
+   skip versions that already exist, so this is the one place that proves the release is complete.
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.

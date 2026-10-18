@@ -9,6 +9,10 @@ version has, saying "None." when nothing is required.
 
 Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 2026-10-18.
 
+Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag; test-fixtures
+1.0.2 to 1.1.0 come from an abandoned auto-versioning model and have no matching release of the
+other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
+
 ## [Unreleased]
 
 ### Consumer action required
@@ -78,6 +82,8 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `release.yml` fails unless every published artifact carries the released version (new
+  `verify-published` job), and its tag guard reports in English.
 - The canon no longer ships known HIGH or CRITICAL CVEs with a fix: `seniordev.spring-modulith-conventions`
   overrides Tomcat to 11.0.27 and Jackson to 3.1.8 and 2.21.8 above the Spring Boot 4.1.1 BOM, the catalog
   moves jsoup to 1.23.2 and the frontend canon js-yaml to 4.3.2. `scripts/platform-bump.sh` regenerates the
