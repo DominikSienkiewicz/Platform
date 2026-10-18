@@ -11,8 +11,8 @@ docker compose --profile ai up -d   # + Ollama
 
 | Usługa | Obraz | Port (default) |
 |---|---|---|
-| postgres | `pgvector/pgvector:0.8.2-pg18` | 5432 |
-| ollama (profil `ai`) | `ollama/ollama:0.32.3` | 11434 |
+| postgres | `pgvector/pgvector` | 5432 |
+| ollama (profil `ai`) | `ollama/ollama` | 11434 |
 
 `postgres/init/01-extensions.sql` tworzy rozszerzenie `vector` przy pierwszej inicjalizacji wolumenu.
 
@@ -21,4 +21,7 @@ od PostgreSQL 18 oficjalny obraz ustawia `PGDATA=/var/lib/postgresql/18/docker`,
 punkcie montowania pg18 odmawia startu, a dane spoza wolumenu nie przetrwałyby `docker compose down`.
 
 > Jak używać: skopiuj `infra/` do repo konsumenta (lub trzymaj jako submodule) i nadpisz `.env`.
-> Wersje obrazów są jednym źródłem prawdy — bump tutaj, nie w każdym repo z osobna.
+> Źródłem tagów obrazów jest `PlatformImages.java` w `gradle/test-fixtures` (obrazy Testcontainers);
+> `docker-compose.yml` jest jego lustrem, a rozjazd wywala `templates/tests/image-tags-sync.test.sh`.
+> Renovate bumpuje oba pliki w jednej gałęzi. Tagi celowo nie stoją w tabeli wyżej — trzecia kopia
+> nie miałaby managera.
