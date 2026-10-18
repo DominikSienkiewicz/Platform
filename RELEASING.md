@@ -205,7 +205,9 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
   `gradle/verification-metadata.xml`.
 
-The script does not commit; the diff is left for review.
+The script does not commit; the diff is left for review. The reusable
+[`platform-bump.yml`](docs/reusable-workflows.md#platform-bumpyml) runs the same bin on a schedule and
+opens the pull request.
 
 ### Why dependency verification needs two Gradle passes
 

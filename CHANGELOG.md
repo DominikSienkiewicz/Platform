@@ -50,6 +50,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Reusable `platform-bump.yml`: run it on a schedule and it bumps the repository to the newest Platform
+  release of the current MAJOR and opens a pull request with the diff, the release notes and the
+  consumer actions. The caller grants `contents: write`, `pull-requests: write` and `packages: read`.
 - `frontend-ci.yml` with `run-e2e: true` uploads the Playwright report and traces as the artifact
   `playwright-report-<run id>`, kept for seven days.
 - `canon-cve-scan.yml` scans the versions Platform imposes every Monday before the consumers' scans:

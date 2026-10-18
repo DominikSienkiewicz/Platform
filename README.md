@@ -44,7 +44,7 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*) | GitHub Packages (npm) |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — private shadcn registry (*incubating*) | GitHub Packages + HTTP JSON |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
-| `.github/workflows/` | nine reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
+| `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
 | `default.json` | shared Renovate preset | `extends: github>DominikSienkiewicz/Platform` |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied (manual sync) |
 | `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` (release notes), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan) | not published |
@@ -73,6 +73,7 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 | `container-scan.yml` | scans published images: Grype is the gate, Snyk a non-blocking second opinion |
 | `deploy.yml` | builds and pushes images to GHCR, then deploys over SSH with [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) |
 | `roadmap-unblock.yml` | moves roadmap items to ready once their last prerequisite issue is closed |
+| `platform-bump.yml` | bumps the repository to a Platform release and opens a pull request with the diff, release notes and consumer actions |
 
 ### Convention plugins
 

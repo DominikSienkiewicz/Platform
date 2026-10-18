@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 9 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 10 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -172,6 +172,47 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       gpr_token: ${{ secrets.GPR_TOKEN }}
+```
+
+## platform-bump.yml
+
+Bumps the repository to a Platform release and opens a pull request with the diff: the Gradle and npm
+pins, the frontend canon, the reusable workflow references, the lockfiles and the dependency
+verification metadata. Schedule it in the caller; it runs the newest published `platform-bump` bin, so
+it also works in a repository without a frontend.
+
+- Permissions: `contents: write`, `pull-requests: write`, `packages: read`. Platform's commands run in a
+  job that can only read; a second job applies the diff, pushes `platform-bump/v<version>` and opens the
+  pull request. A branch that already exists is left alone.
+- Secret `gpr_token` (optional): a classic PAT with `read:packages`, as for backend-ci.
+- Secret `bump_token` (optional): a classic PAT with the `repo` and `workflow` scopes. A pull request
+  opened with the automatic `GITHUB_TOKEN` runs no CI, and that token may not push workflow changes, so
+  without `bump_token` the workflow references stay and the pull request says so. The fallback also needs
+  **Allow GitHub Actions to create and approve pull requests** in the repository's Actions settings.
+- Inputs: [platform-bump.yml](../.github/workflows/platform-bump.yml); `version` empty takes the newest
+  release of the current MAJOR.
+
+```yaml
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        default: ""
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+jobs:
+  bump:
+    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@vX.Y.Z
+    with:
+      version: ${{ inputs.version || '' }}
+    secrets:
+      gpr_token: ${{ secrets.GPR_TOKEN }}
+      bump_token: ${{ secrets.PLATFORM_BUMP_TOKEN }}
 ```
 
 ## roadmap-unblock.yml

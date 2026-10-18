@@ -1,0 +1,180 @@
+name: Platform bump (reusable)
+
+# Reusable kanał bumpu (Decyzja 5): uruchamia bin `platform-bump` (piny Gradle i npm, kanon frontendu,
+# referencje reusable workflows, lockfile'y, verification-metadata) i otwiera PR z diffem. Caller planuje go
+# cronem; wywołanie i uprawnienia: docs/reusable-workflows.md.
+#
+# Bin idzie z NAJNOWSZEGO opublikowanego @dominiksienkiewicz/versions (npx), nie z node_modules repo: działa też
+# w repo bez frontendu (Touchstone) i zawsze z aktualną logiką bumpu.
+# Dwa joby: `bump` uruchamia kod zależności (npm, Gradle) z tokenem tylko do odczytu i oddaje diff jako patch;
+# `pull-request` z prawem zapisu nakłada patch, pushuje gałąź i otwiera PR, nie uruchamiając nic z repo.
+on:
+  workflow_call:
+    inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 30
+      version:
+        description: "Platform version to bump to; empty takes the newest release of the current MAJOR."
+        type: string
+        default: ""
+      java-version:
+        description: "JDK that runs Gradle for the lockfile regeneration. Platform's build-logic is compiled for Java 25."
+        type: string
+        default: "25"
+      toolchain-java-version:
+        description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
+        type: string
+        default: "27"
+      node-version:
+        description: "Node.js version that runs the platform-bump bin and npm."
+        type: string
+        default: "24"
+    secrets:
+      gpr_token:
+        description: "Classic PAT with read:packages for Platform's GitHub Packages (npm, Gradle) and its release notes. Without it the caller's automatic GITHUB_TOKEN is used."
+        required: false
+      bump_token:
+        description: "Classic PAT with the repo and workflow scopes that pushes the bump branch and opens the pull request, so its CI runs. Without it GITHUB_TOKEN is used: the pull request runs no CI and leaves the workflow refs unchanged."
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    name: Run platform-bump
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      target: ${{ steps.bump.outputs.target }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      # Toolchain JDK z setup-java, nie z Foojay (patrz backend-ci.yml), plus JDK, na którym jedzie Gradle.
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.toolchain-java-version }}
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+      - name: Expose the toolchain JDK to Gradle
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@dominiksienkiewicz"
+
+      - name: Run platform-bump
+        id: bump
+        env:
+          VERSION: ${{ inputs.version }}
+          NODE_AUTH_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+          GPR_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+        run: |
+          set -o pipefail
+          read -r -a version <<< "$VERSION"
+          npx --yes --package "@dominiksienkiewicz/versions@latest" -- platform-bump "${version[@]}" 2>&1 \
+            | tee "$RUNNER_TEMP/platform-bump.log"
+
+      - name: Save the diff as a patch
+        run: |
+          mkdir -p "$RUNNER_TEMP/platform-bump"
+          git add -A
+          git diff --cached --binary > "$RUNNER_TEMP/platform-bump/bump.patch"
+          cp "$RUNNER_TEMP/platform-bump.log" "$RUNNER_TEMP/platform-bump/bump.log"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: platform-bump-${{ github.run_id }}
+          path: ${{ runner.temp }}/platform-bump/
+          retention-days: 1
+
+  pull-request:
+    name: Open the bump pull request
+    needs: bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: platform-bump-${{ github.run_id }}
+          path: ${{ runner.temp }}/platform-bump
+      - name: Apply the bump
+        env:
+          PATCH: ${{ runner.temp }}/platform-bump/bump.patch
+        run: if [ -s "$PATCH" ]; then git apply "$PATCH"; fi
+      - name: Open the bump pull request
+        env:
+          TARGET: ${{ needs.bump.outputs.target }}
+          BASE: ${{ github.ref_name }}
+          BUMP_LOG: ${{ runner.temp }}/platform-bump/bump.log
+          BUMP_TOKEN: ${{ secrets.bump_token }}
+          PUSH_TOKEN: ${{ secrets.bump_token || secrets.GITHUB_TOKEN }}
+        run: |
+          # >>> open-pr
+          set -euo pipefail
+          [ -n "$TARGET" ] || { echo "::error::platform-bump reported no target version"; exit 1; }
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 | tr -d '\n')"
+          git_auth() { git -c "http.https://github.com/.extraheader=$auth" "$@"; }
+
+          # GITHUB_TOKEN nie może pushować zmian w .github/workflows, więc bez PAT-a referencje zostają.
+          note=""
+          if [ -z "${BUMP_TOKEN:-}" ] && ! git diff --quiet -- .github/workflows; then
+            git checkout -- .github/workflows
+            note="The reusable workflow references were not moved: GITHUB_TOKEN may not push workflow changes. Add a bump_token secret (classic PAT with the repo and workflow scopes), or move them to v$TARGET by hand."
+          fi
+          if git diff --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+            echo "Already on Platform $TARGET; nothing to bump."
+            exit 0
+          fi
+          branch="platform-bump/v$TARGET"
+          if git_auth ls-remote --exit-code --heads origin "$branch" > /dev/null 2>&1; then
+            echo "::notice::$branch already exists; merge or close its pull request to bump again."
+            exit 0
+          fi
+
+          git switch -q -c "$branch"
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "chore(platform): bump Platform to $TARGET"
+          git_auth push -q origin "$branch"
+
+          {
+            echo "Bumps Platform to $TARGET with \`platform-bump\`: the Gradle and npm pins, the frontend canon,"
+            echo "the reusable workflow references, the lockfiles and the dependency verification metadata."
+            if [ -n "$note" ]; then echo; echo "> $note"; fi
+            echo
+            echo "Review the release notes and the consumer actions below before merging."
+            echo
+            echo '```text'
+            tail -c 60000 "$BUMP_LOG"
+            echo '```'
+          } > "$RUNNER_TEMP/platform-bump-pr.md"
+          GH_TOKEN="$PUSH_TOKEN" gh pr create --base "$BASE" --head "$branch" \
+            --title "chore(platform): bump Platform to $TARGET" --body-file "$RUNNER_TEMP/platform-bump-pr.md"
+          if [ -z "${BUMP_TOKEN:-}" ]; then
+            echo "::warning::The pull request was opened with GITHUB_TOKEN, so its CI does not start. Add a bump_token secret to run it."
+          fi
+          # <<< open-pr

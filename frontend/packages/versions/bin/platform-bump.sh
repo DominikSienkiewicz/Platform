@@ -100,6 +100,8 @@ PY
 fi
 [[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
 echo "==> Podbijam piny Platform do: $TARGET"
+# W GitHub Actions (reusable platform-bump.yml) wersja docelowa idzie też do wyjść kroku.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "target=$TARGET" >> "$GITHUB_OUTPUT"; fi
 
 # Notatki każdego wydania z (CURRENT, TARGET] — źródłem są GitHub Releases, czyli sekcje CHANGELOG.md.
 ACTIONS_FILE="$(mktemp)"
