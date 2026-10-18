@@ -10,6 +10,10 @@ name: Security scan (reusable)
 on:
   workflow_call:
     inputs:
+      timeout-minutes:
+        description: "Minutes before each job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 15
       working-directory:
         description: "Directory of the Gradle build, relative to the repository root."
         type: string
@@ -42,6 +46,7 @@ jobs:
   backend-sbom:
     name: Backend — CycloneDX SBOM + Grype
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -124,6 +129,7 @@ jobs:
     name: Frontend — Grype (package-lock)
     if: ${{ inputs.run-frontend }}
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:

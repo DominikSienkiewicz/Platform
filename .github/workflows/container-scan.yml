@@ -23,6 +23,10 @@ name: Container scan (reusable)
 on:
   workflow_call:
     inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 15
       images:
         description: "JSON array of full image references to scan, e.g. '[\"ghcr.io/owner/app:latest\"]'."
         type: string
@@ -48,6 +52,7 @@ jobs:
   scan:
     name: Scan ${{ matrix.image }}
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     strategy:
       fail-fast: false
       matrix:

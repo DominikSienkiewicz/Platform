@@ -15,6 +15,10 @@ types and defaults are described in the workflow files themselves (every input h
   grants, so a missing permission ends the run with `startup_failure` before any step runs.
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid
   `secrets: inherit`: it hands every repository secret to Platform code.
+- **Every job has a time limit.** A calling job cannot set `timeout-minutes` on a `uses:` job, so
+  each workflow takes it as an input: `timeout-minutes` (in `deploy.yml`, `build-timeout-minutes` and
+  `deploy-timeout-minutes`), with a default of a few times the longest measured run. Pass a larger
+  value with `with:` when your build is slower; GitHub's own default is 360 minutes.
 - **Contract changes are announced.** A new permission, input, secret or changed default is a
   consumer action: it ships in a MINOR release with a **Consumer action required** entry in
   [CHANGELOG.md](../CHANGELOG.md). `templates/tests/workflow-contract.test.sh` fails Platform's CI
@@ -45,8 +49,8 @@ jobs:
 ## frontend-ci.yml
 
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
-Playwright tests. With `strict: true` the guard and the scripts `lint`, `typecheck`, `test` and
-`build` are required.
+Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
+`strict: true` the guard and the scripts `lint`, `typecheck`, `test` and `build` are required.
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.

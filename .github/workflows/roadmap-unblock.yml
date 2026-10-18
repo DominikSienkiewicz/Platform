@@ -21,6 +21,11 @@ name: Roadmap auto-unblock (reusable)
 
 on:
   workflow_call:
+    inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 5
     # Zmienna ROADMAP_PROJECT_NUMBER idzie z kontekstu `vars` callera.
     secrets:
       ROADMAP_PROJECT_TOKEN:
@@ -35,6 +40,7 @@ jobs:
     # Tylko issue z markerem roadmapy — reszta zamknięć ignorowana (kontekst eventu z callera).
     if: contains(github.event.issue.body, 'roadmap-id:')
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:

@@ -27,6 +27,7 @@ concurrency:
 jobs:
   version:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     outputs:
@@ -42,7 +43,7 @@ jobs:
           # wersja w GitHub Packages ma swój tag i odwrotnie. Dispatch z gałęzi kończy się tutaj.
           # >>> tag-version-bijection
           if [ "$GITHUB_REF" != "refs/tags/v$V" ]; then
-            echo "::error::Release publikuje tylko z taga v$V (platformVersion), a uruchomiono go z $GITHUB_REF. Wydawaj przez ./release.sh."
+            echo "::error::Release must run from tag v$V, the platformVersion; it ran from $GITHUB_REF. Release with ./release.sh."
             exit 1
           fi
           # <<< tag-version-bijection
@@ -60,6 +61,7 @@ jobs:
   registry-build:
     needs: version
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     defaults:
@@ -83,6 +85,7 @@ jobs:
   gradle:
     needs: [version, verify, registry-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -149,6 +152,7 @@ jobs:
   npm:
     needs: [version, verify, registry-build]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
@@ -207,6 +211,62 @@ jobs:
           done
           exit $FAIL
 
+  # Bijekcja w drugą stronę: wydanie jest zielone dopiero, gdy KAŻDY publikowany artefakt ma $V w registry.
+  # Joby publikujące pomijają wersje, które już istnieją (idempotencja), więc tylko tu widać, że komplet jest.
+  # Pakiety Maven: główny artefakt build-logic i marker każdego pluginu (z nazw plików źródeł), catalog,
+  # test-fixtures, security-starter; npm: każda paczka bez "private": true. Blok testuje
+  # templates/tests/release-verify-published.test.sh.
+  verify-published:
+    needs: [version, gradle, npm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      packages: read
+    env:
+      V: ${{ needs.version.outputs.version }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GPR_OWNER: ${{ github.repository_owner }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@dominiksienkiewicz"
+      - name: Every published artifact carries the version
+        run: |
+          # >>> verify-published
+          set -uo pipefail
+          maven_has() {
+            local names
+            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/users/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
+              || return 1
+            grep -qxF "$V" <<<"$names"
+          }
+          maven=(pl.seniordeveloper.gradle.build-logic pl.seniordeveloper.platform-catalog
+                 pl.seniordeveloper.platform-test-fixtures pl.seniordeveloper.platform-security-starter)
+          for source in gradle/build-logic/src/main/kotlin/seniordev.*.gradle.kts; do
+            id="${source##*/}"; id="${id%.gradle.kts}"; id="${id%.settings}"
+            maven+=("$id.$id.gradle.plugin")
+          done
+          missing=()
+          for package in "${maven[@]}"; do maven_has "$package" || missing+=("maven $package"); done
+          for manifest in frontend/packages/*/package.json; do
+            [ "$(node -p "require('./$manifest').private === true")" = true ] && continue
+            name=$(node -p "require('./$manifest').name")
+            [ "$(npm view "$name@$V" version 2>/dev/null)" = "$V" ] || missing+=("npm $name")
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            for entry in "${missing[@]}"; do echo "::error::$entry has no version $V in GitHub Packages"; done
+            exit 1
+          fi
+          echo "All ${#maven[@]} Maven packages and every public npm package carry $V."
+          # <<< verify-published
+
   # Ruchomy v1 (reusable workflows konsumentów) idzie za wydaniem dopiero po obu zielonych
   # publikacjach i tylko do przodu: re-run starszego taga go nie cofa, a v1 spoza historii
   # wydawanego commita zostaje na miejscu do decyzji człowieka. Do wygaszenia, gdy konsumenci
@@ -214,6 +274,7 @@ jobs:
   move-v1:
     needs: [gradle, npm]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:
@@ -254,6 +315,7 @@ jobs:
   github-release:
     needs: [version, gradle, npm]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:

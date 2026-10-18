@@ -21,7 +21,7 @@ opublikuj, podbij pin w repo konsumenta.
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — parametryzowalny SecurityFilterChain + CORS (`platform.security.*`/`platform.cors.*`, opt-in `@ConditionalOnMissingBean`) |
 | `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`api-client` = wrapper fetch; `query` = QueryClient+provider) |
 | `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
-| `.github/workflows/` | 9 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages`, `self-scan` (Scorecard + Semgrep na samej Platform) |
+| `.github/workflows/` | 9 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages`, `self-scan` (Scorecard + Semgrep na samej Platform), `canon-cve-scan` (CVE w kanonie i BOM-ach; projekt `gradle/canon-probe`, reakcja: `docs/versions.md` „CVE response”) |
 | `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`); `changelog-section.sh` — sekcja wersji z `CHANGELOG.md` (dla `release.sh` i `release.yml`); `cleanup-packages.sh` — ręczne sprzątanie pakietów z wymaganym `--protect` i domyślnym dry-runem |
 | `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
 
@@ -78,7 +78,10 @@ opublikuj, podbij pin w repo konsumenta.
 7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.1 zarządza Netty 4.2.17.Final i PostgreSQL
    42.7.13 — usunięto starsze piny CVE. Nie przywracaj ich bez sprawdzenia BOM-a.
    Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
-   z javac 27. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
+   z javac 27. Nadpisania CVE `tomcat.version` 11.0.27, `jackson-bom.version` 3.1.8
+   i `jackson-2-bom.version` 2.21.8 wróciły, bo Boot 4.1.1 (najnowszy) zarządza podatnymi 11.0.24,
+   3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; lustra w katalogu pilnuje
+   `PlatformCveOverrideMirrorTest`, zdejmij je, gdy BOM Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
    zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
    Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje. Lustra pilnuje
    `PlatformToolVersionMirrorTest`.

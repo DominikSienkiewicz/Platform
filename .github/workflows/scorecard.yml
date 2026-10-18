@@ -5,6 +5,11 @@ name: Scorecard (reusable)
 # trafia do api.securityscorecards.dev (publish_results).
 on:
   workflow_call:
+    inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 10
 
 permissions:
   contents: read
@@ -13,6 +18,7 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     permissions:
       security-events: write
       id-token: write

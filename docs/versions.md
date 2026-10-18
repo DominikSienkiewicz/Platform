@@ -36,6 +36,9 @@ would stay on the old BOM, CVE fixes included.
 | `junitVersion` | `seniordev.spring-modulith-conventions` | `junit` | `PlatformCatalogMirrorTest` |
 | `archunitVersion` | `seniordev.spring-modulith-conventions` | `archunit` | `PlatformToolVersionMirrorTest` |
 | `ext["lombok.version"]` | `seniordev.spring-modulith-conventions` | `lombok` | `PlatformToolVersionMirrorTest` |
+| `ext["tomcat.version"]` | `seniordev.spring-modulith-conventions` | `tomcat` | `PlatformCveOverrideMirrorTest` |
+| `ext["jackson-bom.version"]` | `seniordev.spring-modulith-conventions` | `jacksonBom` | `PlatformCveOverrideMirrorTest` |
+| `ext["jackson-2-bom.version"]` | `seniordev.spring-modulith-conventions` | `jackson2Bom` | `PlatformCveOverrideMirrorTest` |
 | `toolchain-java-version` default | `backend-ci.yml`, `deploy.yml`, `sonar.yml` | `java` | `PlatformToolVersionMirrorTest` |
 
 `pitestTool` is the PIT engine and `pitest` the Gradle plugin; in the same way `spotbugs` is
@@ -49,6 +52,18 @@ Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the previous
 `netty.version` and `postgresql.version` overrides have been removed. Keeping them
 would force versions older than the BOM. The `lombok.version` override remains at
 `1.18.48`: the BOM still pins 1.18.46, incompatible with javac 27.
+
+Three CVE overrides came back after the first canon scan, because no Boot release newer than
+4.1.1 exists yet and its BOM manages vulnerable versions:
+
+| Property | Boot 4.1.1 | Override | Why |
+|---|---|---|---|
+| `tomcat.version` | 11.0.24 | 11.0.27 | three CRITICAL advisories (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5), fixed in 11.0.25 |
+| `jackson-bom.version` | 3.1.5 | 3.1.8 | HIGH advisories in jackson-core and jackson-databind, fixed in 3.1.7 |
+| `jackson-2-bom.version` | 2.21.5 | 2.21.8 | the same advisories in the 2.x line, fixed in 2.21.7 |
+
+Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
+as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
 
 ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
 `spring-modulith-core` 2.1.1 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
@@ -64,6 +79,30 @@ both the version mirror and the presence of this managed dependency.
 Consumers
 that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`
 after taking a platform version that changes an override.
+
+## CVE response
+
+Consumers cannot fix a vulnerable version the platform manages: the version guards reject any other
+version of a canon dependency, and a BOM-managed library follows the BOM Platform imports. A known CVE
+in the canon is therefore Platform's to fix, with a patch release.
+
+[`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml) scans what the platform imposes: a
+lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-probe`, a consumer that
+applies the convention plugins from source and declares every catalog library. It runs every Monday
+at 04:00 UTC, before the consumers' weekly scans, and on every push to `main` that changes the canon.
+Grype fails it on a HIGH or CRITICAL finding that has a fix. It is advisory and does not gate releases.
+`workflow_dispatch` with `ref=vX.Y.Z` scans the canon of an older release, for example to tell a
+consumer which releases are affected.
+
+When it is red, the maintainer:
+
+1. bumps the canon entry or the catalog version, or, for a library the Spring Boot BOM manages, adds
+   a CVE override in `seniordev.spring-modulith-conventions` (see
+   [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)) until a Boot release
+   manages a fixed version;
+2. ships a patch release within seven days of the finding, three for a CRITICAL one;
+3. or, when no fix can be adopted yet, accepts the finding in Platform's own `.grype.yaml`, with an
+   expiry as described in [security-scanning.md](security-scanning.md), so that the scan is green again.
 
 ## Runtime image for the JDK 27 toolchain
 

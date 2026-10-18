@@ -5,6 +5,10 @@ name: Frontend CI (reusable)
 on:
   workflow_call:
     inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 20
       working-directory:
         description: "Directory of the frontend package.json, relative to the repository root."
         type: string
@@ -36,6 +40,7 @@ jobs:
   build:
     name: Lint / test / build
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -104,3 +109,16 @@ jobs:
           # Bez tego npx pobrałby dowolną wersję z rejestru i wykonał jej skrypty instalacyjne.
           npx --no playwright install --with-deps chromium
           npm run test:e2e --if-present
+
+      # Raport HTML i trace'y Playwrighta: bez nich każdy czerwony E2E trzeba odtwarzać lokalnie, a flaki
+      # zależne od czasu często się nie odtwarzają. Wersja akcji i retencja jak w backend-ci.yml.
+      - name: Upload Playwright report
+        if: ${{ inputs.run-e2e && !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            ${{ inputs.working-directory }}/playwright-report/
+            ${{ inputs.working-directory }}/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

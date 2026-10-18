@@ -9,6 +9,10 @@ version has, saying "None." when nothing is required.
 
 Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 2026-10-18.
 
+Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag; test-fixtures
+1.0.2 to 1.1.0 come from an abandoned auto-versioning model and have no matching release of the
+other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
+
 ## [Unreleased]
 
 ### Consumer action required
@@ -36,8 +40,19 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
   fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits.
 
+- Every job of the reusable workflows has a time limit instead of GitHub's 360 minutes: backend-ci 30,
+  frontend-ci 20, security-scan and container-scan 15, semgrep and scorecard 10, roadmap-unblock 5,
+  deploy 30 for the build and 20 for the deploy. A caller whose job runs longer passes
+  `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml).
+
 ### Added
 
+- `frontend-ci.yml` with `run-e2e: true` uploads the Playwright report and traces as the artifact
+  `playwright-report-<run id>`, kept for seven days.
+- `canon-cve-scan.yml` scans the versions Platform imposes every Monday before the consumers' scans:
+  a lockfile resolved from the frontend canon, and the SBOM of `gradle/canon-probe`, which applies
+  the convention plugins from source to every catalog library. `docs/versions.md` describes the
+  CVE response: a patch release within seven days, three for a CRITICAL finding.
 - `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting
   table, and its snippets paste into real consumer layouts. `templates/npmrc` is the canonical
   `frontend/.npmrc`.
@@ -67,6 +82,15 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- Platform's CI runs shellcheck on every tracked shell script, the ones copied into consumers and
+  run on the deploy host included; `bump-version.sh db new-migration` numbers changesets with a glob
+  instead of parsing `ls`.
+- `release.yml` fails unless every published artifact carries the released version (new
+  `verify-published` job), and its tag guard reports in English.
+- The canon no longer ships known HIGH or CRITICAL CVEs with a fix: `seniordev.spring-modulith-conventions`
+  overrides Tomcat to 11.0.27 and Jackson to 3.1.8 and 2.21.8 above the Spring Boot 4.1.1 BOM, the catalog
+  moves jsoup to 1.23.2 and the frontend canon js-yaml to 4.3.2. `scripts/platform-bump.sh` regenerates the
+  lockfiles and verification metadata these versions change.
 - `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new
   `SSH_HOST_KEY_SHA256` before pushing anything, warns when it is empty, and exits non-zero when a
   `gh` call fails instead of ending with "Gotowe". Sync the copy in `scripts/`.

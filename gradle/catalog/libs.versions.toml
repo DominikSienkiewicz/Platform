@@ -11,7 +11,9 @@
 #   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle), pitestVersion (pitestTool),
 #                                junit5PluginVersion (pitestJunit5)
 #   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
-#                                archunitVersion, junitVersion, ext["lombok.version"] (lombok)
+#                                archunitVersion, junitVersion, ext["lombok.version"] (lombok),
+#                                ext["tomcat.version"] (tomcat), ext["jackson-bom.version"] (jacksonBom),
+#                                ext["jackson-2-bom.version"] (jackson2Bom)
 #   reusable workflows:          domyślny toolchain-java-version (java)
 # Rozjazd luster NIE psuje buildu Platform (te wersje trafiają na classpath konsumenta), a rozjazd importów
 # BOM jest u konsumenta CICHY — platformDependencyCheck nie widzi mavenBom(...). Każde lustro pilnują
@@ -23,6 +25,9 @@ platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem 
 java = "27"                              # lustro: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
 springBoot = "4.1.1"                     # lustro: springBootVersion w spring-modulith-conventions (import BOM-u)
 lombok = "1.18.48"                       # lustro: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
+tomcat = "11.0.27"                       # lustro: ext["tomcat.version"] w spring-modulith-conventions — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
+jacksonBom = "3.1.8"                     # lustro: ext["jackson-bom.version"] — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
+jackson2Bom = "2.21.8"                   # lustro: ext["jackson-2-bom.version"] — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
 springDependencyManagement = "1.1.7"
 springModulith = "2.1.1"                 # lustro: springModulithVersion w spring-modulith-conventions (import BOM-u)
 springAi = "2.0.1"                       # lustro: springAiVersion w spring-modulith-conventions (import BOM-u)
@@ -44,7 +49,7 @@ cyclonedx = "3.3.0"
 jacoco = "0.8.15"                        # lustro: toolVersion w java-conventions
 foojayResolver = "1.0.0"
 mapstruct = "1.6.3"
-jsoup = "1.23.1"
+jsoup = "1.23.2"
 wiremock = "3.13.2"
 sonarqube = "7.3.1.8318"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions
 openrewrite = "8.88.3"                   # Pragma (OpenRewrite AST/codegen)

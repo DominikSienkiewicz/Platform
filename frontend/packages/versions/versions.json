@@ -18,7 +18,7 @@
     "jsdom": "29.1.1",
     "@vitejs/plugin-react": "6.0.5",
     "openapi-typescript": "7.13.0",
-    "js-yaml": "4.3.1",
+    "js-yaml": "4.3.2",
     "@types/node": "25.9.2",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",

@@ -46,7 +46,8 @@ own schedule and rolls back by pinning an older version.
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
 | `.github/workflows/` | nine reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
 | `default.json` | shared Renovate preset | `extends: github>DominikSienkiewicz/Platform` |
-| `templates/` | canonical `.editorconfig`, `.gitignore`, `Dockerfile.backend` | copied (manual sync) |
+| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied (manual sync) |
+| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` (release notes), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan) | not published |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does.
@@ -141,6 +142,8 @@ checks with `strict: true`.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
+- **Canonical files to copy into a repository** → [templates/README.md](templates/README.md); the
+  local development stack (PostgreSQL with pgvector, Ollama) → [infra/README.md](infra/README.md).
 - **Design decisions** → [`docs/adr/`](docs/adr/), including the
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 - **What the security scans gate and how to accept a finding** →
