@@ -58,6 +58,12 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `deploy.yml` checks Platform out without a token and takes `scripts/deploy-remote.sh` from the new
+  `platform-ref` input (default `v1`); set it to the tag in `uses:` so script and workflow come from
+  one release. Every checkout in `deploy.yml` drops its persisted credentials, and the workflow
+  declares read-only top-level permissions.
+- `frontend-ci.yml` exposes `GITHUB_TOKEN` to `npm ci` only; lint, typecheck, test and build run
+  without registry credentials.
 - `deploy.yml`, `sonar.yml` and `roadmap-unblock.yml` declare the secrets they read, so callers can
   pass them explicitly instead of handing every repository secret over with `secrets: inherit`;
   `inherit` keeps working. `roadmap-unblock.yml` reads only `ROADMAP_PROJECT_TOKEN`, a classic PAT

@@ -23,6 +23,7 @@ deploy.yml input scan-images type=boolean default=false
 deploy.yml input scan-severity type=string default=high
 deploy.yml input compose-file type=string default="docker-compose.prod.yml"
 deploy.yml input base-env type=string default=""
+deploy.yml input platform-ref type=string default="v1"
 deploy.yml secret GPR_USER required=false
 deploy.yml secret GPR_KEY required=false
 deploy.yml secret NPM_GH_TOKEN required=false
@@ -31,6 +32,7 @@ deploy.yml secret SSH_USER required=false
 deploy.yml secret SSH_KEY required=false
 deploy.yml secret SSH_KNOWN_HOSTS required=false
 deploy.yml secret SNYK_TOKEN required=false
+deploy.yml permissions contents: read
 deploy.yml job preflight permissions {}
 deploy.yml job versions permissions contents: read
 deploy.yml job build-push permissions contents: read

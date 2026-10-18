@@ -65,6 +65,10 @@ on:
         description: "Base env file on the host; empty picks .env.prod, then .env."
         type: string
         default: ""
+      platform-ref:
+        description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
+        type: string
+        default: "v1"
     # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
     # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
     secrets:
@@ -96,6 +100,10 @@ on:
 concurrency:
   group: deploy-${{ inputs.app-name }}
   cancel-in-progress: false # nie przerywaj trwającego deployu
+
+# W reusable workflow blok top-level tylko zawęża to, co przyznał caller; joby dostają resztę jawnie.
+permissions:
+  contents: read
 
 env:
   REGISTRY: ghcr.io
@@ -143,6 +151,8 @@ jobs:
       worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - id: v
         shell: bash
         env:
@@ -175,7 +185,10 @@ jobs:
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} # opcjonalny; puste => kroki Snyk pominięte
     steps:
+      # Bez zapisanego tokenu: ten job trzyma packages: write, a dalej buduje kod repo.
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
@@ -317,14 +330,18 @@ jobs:
       OWNER: ${{ needs.versions.outputs.owner }}
     steps:
       - uses: actions/checkout@v6 # repo wołające: compose + Caddyfile
+        with:
+          persist-credentials: false
 
+      # Platform jest publiczny: checkout bez tokenu, więc PAT konsumenta nie ląduje w _platform/.git/config
+      # joba z dostępem SSH do produkcji. platform-ref = tag z `uses:`, żeby workflow i skrypt były z jednej wersji.
       - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
         uses: actions/checkout@v6
         with:
           repository: DominikSienkiewicz/Platform
-          ref: v1
+          ref: ${{ inputs.platform-ref }}
           path: _platform
-          token: ${{ secrets.GPR_KEY }}
+          persist-credentials: false
 
       - name: Plik z tagami (.env.deploy) — aliasy *_TAG i *_VER (compose SSP używa TAG, BoS VER)
         run: |

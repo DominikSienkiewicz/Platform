@@ -200,7 +200,9 @@ Builds, scans (optionally), pushes and deploys the application images to a host 
   not GitHub, names the missing ones. Set them with `templates/setup-gh-deploy.sh` from
   `templates/secrets.local.example`.
 - Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
-- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required.
+- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
+  to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
+  workflow; its default `v1` is transitional.
 
 ```yaml
 permissions:
@@ -211,6 +213,7 @@ jobs:
     uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
     with:
       app-name: myapp
+      platform-ref: vX.Y.Z
     secrets:
       GPR_USER: ${{ secrets.GPR_USER }}
       GPR_KEY: ${{ secrets.GPR_KEY }}
