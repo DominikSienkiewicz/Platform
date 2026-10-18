@@ -16,6 +16,9 @@
     "index.js",
     "index.d.ts"
   ],
+  "scripts": {
+    "test": "node --test"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },

@@ -23,7 +23,8 @@ public abstract class AbstractFlywayMigrationTest {
   private static final String MIGRATIONS_DIR = "/db/migration";
 
   // Flyway: V<wersja>__<opis>.sql (versioned) lub R__<opis>.sql (repeatable). Separator = podwójny '_'.
-  private static final Pattern FLYWAY_NAME = Pattern.compile("^(V\\d+(?:[._]\\d+)*__|R__).+\\.sql$");
+  // Package-private: FlywayNamePatternTest sprawdza wzorzec wprost, bez katalogu migracji na classpath.
+  static final Pattern FLYWAY_NAME = Pattern.compile("^(V\\d+(?:[._]\\d+)*__|R__).+\\.sql$");
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   @Test
