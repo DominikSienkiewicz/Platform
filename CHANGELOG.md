@@ -56,6 +56,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- Platform's own frontend packages follow the version canon: `@dominiksienkiewicz/eslint-config`
+  declares `@eslint/compat` and its `eslint`, `eslint-config-next` and `next` peers at the exact
+  canon version, and `@dominiksienkiewicz/ui` its runtime dependencies. A consumer on the canon
+  installs them unchanged; one off the canon gets a peer conflict from npm.
 - `platform-versions-check` names the canon release it read (`@dominiksienkiewicz/versions@X.Y.Z`),
   reports drift in English and ends with a fix that exists in consumers: run
   `scripts/platform-bump.sh X.Y.Z` from the repository root. It pointed at `./platform-bump.sh`, which

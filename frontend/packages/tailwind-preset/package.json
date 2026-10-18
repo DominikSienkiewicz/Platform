@@ -12,6 +12,9 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
+  "devDependencies": {
+    "tailwindcss": "4.3.3"
+  },
   "peerDependencies": {
     "tailwindcss": "^4"
   },

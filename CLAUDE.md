@@ -62,6 +62,9 @@ opublikuj, podbij pin w repo konsumenta.
    referencje npm w formie `"$nazwa"` (np. `"typescript": "$typescript"`) — rozwija je npm, guard
    i bump ich nie ruszają. Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga:
    kanon trzyma WERSJE — o tym, CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
+   Własny workspace `frontend/` podlega tej samej zasadzie: `dependencies`/`devDependencies` każdej paczki
+   = kanon, `eslint-config` i `ui` mają też dokładne peery, pozostałe peery to zakresy dopuszczające kanon
+   (pilnuje `packages/versions/test/self-canon.test.mjs`; szczegóły w `docs/versions.md`).
 
    **Override to ostateczność, nie domyślne lekarstwo na CVE w tranzytywnej.** npm zostawia raz
    rozwiązaną paczkę tranzytywną na wersji z lockfile'a, dopóki ta spełnia zakres — caret, który

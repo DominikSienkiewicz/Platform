@@ -1,5 +1,5 @@
 {
-  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./scripts/platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* (pin platformy, podbijany przez platform-bump.sh). Nie dodawaj override postcss/sharp bez sprawdzenia zależności aktualnego Next.",
+  "_comment": "Kanon wersji WSZYSTKICH zależności frontendów (governance: wersja każdej biblioteki używanej w jakimkolwiek repo żyje tutaj). Wersje EXACT — bez ^ / ~. Guard (strict): zależność spoza kanonu LUB z inną wersją = czerwony build. Nowa biblioteka w repo = najpierw wpis tutaj + ./release.sh, potem ./scripts/platform-bump.sh w repo. Wyjątek: paczki @dominiksienkiewicz/* — pin platformy, EXACT i równy wydaniu tej paczki, podbijany przez ./scripts/platform-bump.sh. Własne paczki Platform podlegają kanonowi tak samo (test/self-canon.test.mjs). Nie dodawaj override postcss/sharp bez sprawdzenia zależności aktualnego Next.",
   "versions": {
     "next": "16.4.0",
     "react": "19.2.8",

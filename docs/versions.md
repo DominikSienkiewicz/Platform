@@ -120,3 +120,21 @@ the consumer TestKit suite in `build-logic` is the verification gate. It runs th
 `build` with SpotBugs, JaCoCo, PIT and CycloneDX on class-file 71, fails on "Unsupported class
 file major version", and starts the packaged Spring `bootJar` from its own runtime classpath.
 What each release changed is recorded in [CHANGELOG.md](../CHANGELOG.md), not here.
+
+## Frontend canon
+
+`frontend/packages/versions/versions.json` is the frontend counterpart of the catalog: every npm
+dependency of a consumer takes its exact version from it, and `platform-versions-check` fails
+`frontend-ci` on anything else. Platform's own workspace follows the same rule, so its packages are
+tested on the versions consumers run:
+
+- every `dependencies`, `devDependencies` and `optionalDependencies` entry of `frontend/package.json`
+  and `frontend/packages/*/package.json` is the canon version;
+- `eslint-config` and `ui` declare their runtime dependencies and peers at the exact canon version;
+- the other packages keep peer ranges such as `^4`, which must admit the canon version;
+- `react`, `react-dom` and `@types/node` are root devDependencies, because pnpm resolves the peers of
+  workspace packages from the root and would otherwise pick versions off the canon.
+
+`frontend/packages/versions/test/self-canon.test.mjs` runs the guard on each of those manifests and
+checks the peer ranges. Regenerate `frontend/pnpm-lock.yaml` with `pnpm install` after a canon
+bump: CI installs with `--frozen-lockfile`.
