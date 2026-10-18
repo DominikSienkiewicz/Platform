@@ -56,6 +56,11 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 - The frontend canon gains `@eslint/js` 10.0.1 and `globals` 17.13.0.
 
+- `docs/security-scanning.md`: the gates of every scan and a procedure for accepting a finding,
+  with `templates/grype.yaml`. `security-scan.yml` fails on a `.grype.yaml` entry whose
+  `# expires:` date has passed and warns on one without a date, and gains an `only-fixed` input
+  (default `false`, the behaviour so far).
+
 ### Changed
 
 - `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new

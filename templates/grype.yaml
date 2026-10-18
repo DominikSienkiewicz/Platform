@@ -1,0 +1,9 @@
+# Copy to <repo>/.grype.yaml. Grype reads it in security-scan.yml and in deploy.yml (scan-images).
+# Every entry needs an expiry, a tracking link and a reason on the comment line right above it;
+# security-scan.yml fails on an expired entry and warns on one without a date.
+# Procedure: docs/security-scanning.md in DominikSienkiewicz/Platform.
+ignore:
+  # expires: 2026-12-31; tracking: https://github.com/OWNER/REPO/issues/123; reason: no fixed undici release for the bundling dependency yet
+  - vulnerability: GHSA-xxxx-xxxx-xxxx
+    package:
+      name: undici

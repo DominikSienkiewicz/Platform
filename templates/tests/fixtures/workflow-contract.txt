@@ -57,6 +57,7 @@ security-scan.yml input working-directory type=string default=backend
 security-scan.yml input java-version type=string default="25"
 security-scan.yml input severity-cutoff type=string default=high
 security-scan.yml input run-frontend type=boolean default=true
+security-scan.yml input only-fixed type=boolean default=false
 security-scan.yml secret gpr_token required=false
 security-scan.yml permissions contents: read
 semgrep.yml input config type=string default="p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions"
