@@ -1,0 +1,5 @@
+# Copy to <repo>/frontend/.npmrc. The scope must be the owner of the Platform repository, lowercased.
+@dominiksienkiewicz:registry=https://npm.pkg.github.com
+# npm expands ${GITHUB_TOKEN} from the environment: a classic PAT with read:packages locally,
+# the gpr_token secret (or the automatic GITHUB_TOKEN) in the reusable frontend-ci.
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}

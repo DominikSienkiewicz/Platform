@@ -33,6 +33,9 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Added
 
+- `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting
+  table, and its snippets paste into real consumer layouts. `templates/npmrc` is the canonical
+  `frontend/.npmrc`.
 - `docs/reusable-workflows.md`: the caller contract of every reusable workflow (permissions, secrets,
   variables and a snippet). Every workflow input and secret has an English description.
 - Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
