@@ -17,6 +17,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead
+  of looking for the word `databaseChangeLog`. A typo in an include path or invalid YAML now fails the
+  fast test instead of the Testcontainers context test; fix the file the failure names.
 - `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
   `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
   of your first bump: a caller on `@v1` moves to an exact tag and stops floating.

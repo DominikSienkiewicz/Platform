@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: changes/0002-missing.yaml
+      relativeToChangelogFile: true
