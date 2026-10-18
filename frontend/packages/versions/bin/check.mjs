@@ -12,9 +12,21 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const canon = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "versions.json"), "utf8"),
-).versions;
+const packageDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+const canon = JSON.parse(readFileSync(join(packageDir, "versions.json"), "utf8")).versions;
+// Wersja paczki versions = wydanie Platform, z którego pochodzi kanon (jedna platformVersion dla wszystkich
+// paczek). Bez niej konsument nie wie, czy podbić pin, czy powtórzyć bump. Kopia bez package.json (testy
+// hermetyczne) nie zna wersji — wtedy raport podaje ścieżkę versions.json.
+const canonVersion = readCanonVersion();
+const canonLabel = canonVersion ? `@dominiksienkiewicz/versions@${canonVersion}` : join(packageDir, "versions.json");
+
+function readCanonVersion() {
+  try {
+    return JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8")).version ?? null;
+  } catch {
+    return null;
+  }
+}
 const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8"));
 
 // Płaska lista {name, have, at} ze wszystkich rządzonych sekcji. `at` służy tylko do raportu:
@@ -51,20 +63,26 @@ for (const { name, have, at } of declared) {
 
 if (drift.length === 0 && missing.length === 0) {
   console.log(
-    `platform-versions-check: OK (${governed} zależności pod governance, kanon: ${Object.keys(canon).length} pozycji)`,
+    `platform-versions-check: OK (${governed} governed dependencies, canon ${canonLabel} with ${Object.keys(canon).length} entries)`,
   );
   process.exit(0);
 }
 
 const where = (e) => (e.at ? ` [${e.at}]` : "");
+const platformCanon = "frontend/packages/versions/versions.json in DominikSienkiewicz/Platform";
+console.error(`platform-versions-check (canon: ${canonLabel})`);
 if (missing.length > 0) {
   console.error("platform-versions-check: zależności BEZ wpisu w kanonie Platform:");
   for (const m of missing)
-    console.error(`  ${m.name}${where(m)} (${m.have}) — dodaj do Platform versions.json i wydaj (./release.sh)`);
+    console.error(`  ${m.name}${where(m)} (${m.have}): add it to ${platformCanon}, release, then bump`);
 }
 if (drift.length > 0) {
-  console.error("platform-versions-check: DRYF wersji względem kanonu Platform:");
-  for (const d of drift) console.error(`  ${d.name}${where(d)}: zadeklarowano "${d.have}", kanon "${d.want}"`);
+  console.error("platform-versions-check: versions that differ from the Platform canon:");
+  for (const d of drift) console.error(`  ${d.name}${where(d)}: declared "${d.have}", canon "${d.want}"`);
 }
-console.error('Napraw: ./platform-bump.sh (nakłada kanon) albo świadomie zmień kanon w Platform.');
+// Guard biegnie z frontend/ (working-directory frontend-ci), a stub żyje w <repo>/scripts/ — stąd „from the root”.
+console.error(
+  `Fix: from the repository root run scripts/platform-bump.sh ${canonVersion ?? "<version>"} (applies the canon), ` +
+    `or change ${platformCanon} and release.`,
+);
 process.exit(1);

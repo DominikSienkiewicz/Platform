@@ -62,5 +62,19 @@ grep -q 'left-pad.*1.3.0' <<<"$OUT" || fail "the report must name left-pad and i
 run_case alias '{ "dependencies": { "react": "npm:react@19.2.7" } }'
 [[ $RC -ne 0 ]] || fail "an npm: alias must fail closed"
 
+# (e) the report names the canon release and a fix that exists in consumers: the stub lives in
+#     <repo>/scripts/, and the guard runs from frontend/
+run_case hint '{ "dependencies": { "next": "16.2.11", "left-pad": "1.3.0" } }'
+grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "the report must name the canon release"
+grep -qF 'from the repository root run scripts/platform-bump.sh 1.6.0' <<<"$OUT" \
+  || fail "the fix must name scripts/platform-bump.sh, where to run it from and the canon version"
+if grep -qF './platform-bump.sh' <<<"$OUT"; then fail "no consumer has ./platform-bump.sh"; fi
+if grep -qF './release.sh' <<<"$OUT"; then fail "./release.sh is a Platform maintainer command"; fi
+
+# (f) a clean run names the canon release too
+run_case clean '{ "dependencies": { "next": "16.2.12" }, "devDependencies": { "typescript": "6.0.3" } }'
+[[ $RC -eq 0 ]] || fail "canon-compliant dependencies must pass (exit $RC)"
+grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "a clean run must name the canon release"
+
 [[ $fails -eq 0 ]] || exit 1
 echo "OK: the guard fails on drift, carets, missing canon entries and npm: aliases in dependencies and devDependencies"

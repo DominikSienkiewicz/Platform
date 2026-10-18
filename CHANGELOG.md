@@ -51,6 +51,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `platform-versions-check` names the canon release it read (`@dominiksienkiewicz/versions@X.Y.Z`),
+  reports drift in English and ends with a fix that exists in consumers: run
+  `scripts/platform-bump.sh X.Y.Z` from the repository root. It pointed at `./platform-bump.sh`, which
+  no consumer has, and at the Platform maintainer's `./release.sh`.
 - `platform-bump` also bumps a template-style `platformVersion=` pin in `backend/gradle.properties`
   (or a root `gradle.properties`) and fails when it finds no pin instead of reporting success.
 - `buildAndPublishLocal.sh` prints the consumer command with `-PplatformRepository`, and the docs
