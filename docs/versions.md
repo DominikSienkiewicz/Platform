@@ -159,6 +159,16 @@ with `distributionSha256Sum`, and the `wrapper-validation` job in `ci.yml` check
 `gradle-wrapper.jar` against the checksums Gradle publishes; `setup-gradle` repeats that check in
 each workflow that builds. A new module copies the wrapper of an existing one.
 
+The catalog entry `gradle` is the version of those wrappers, and `PlatformGradleVersionMirrorTest`
+fails when a wrapper or the `gradle-version` of `canon-cve-scan.yml` differs from it. `platform-bump`
+reads the entry from the catalog of the target release and moves the consumer's wrapper to it, with
+the distribution's SHA-256.
+
+A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
+`gradle/build-logic/gradle.properties` (9.6.1). `PlatformMinimumGradleFunctionalTest` builds a
+consumer on that version, and `seniordev.settings-conventions` fails an older build with a message
+that names the fix. Raising the minimum is a consumer action: a MINOR release with a CHANGELOG entry.
+
 ## Verification gate for the toolchain
 
 Gradle's Java 27 support does not establish compatibility for every analyzer or framework;

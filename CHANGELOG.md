@@ -88,6 +88,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- Consumers need Gradle 9.6.1 or newer, the minimum TestKit now builds a consumer on;
+  `seniordev.settings-conventions` fails an older build with the fix. `platform-bump` moves the Gradle
+  wrapper to the catalog's new `gradle` entry (9.8.1), with its SHA-256, so review the wrapper diff of
+  your next bump.
 - The shared Renovate preset (`default.json`) covers only GitHub Actions and Docker images. Its Gradle
   and npm rules and its Platform-pin manager, which never produced a working pull request, are gone:
   those versions move with `platform-bump`. Platform's own `renovate.json` manages the catalog and the

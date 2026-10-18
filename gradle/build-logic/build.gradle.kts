@@ -72,6 +72,7 @@ tasks.withType<Test>().configureEach {
 		"java" to libs.versions.java,
 		"archunit" to libs.versions.archunit,
 		"lombok" to libs.versions.lombok,
+		"gradle" to libs.versions.gradle,
 		"tomcat" to libs.versions.tomcat,
 		"jacksonBom" to libs.versions.jacksonBom,
 		"jackson2Bom" to libs.versions.jackson2Bom,
@@ -92,6 +93,14 @@ tasks.withType<Test>().configureEach {
 	systemProperty("platform.springModulithConventions", springModulithConventions.asFile.absolutePath)
 	systemProperty("platform.qualityConventions", qualityConventions.asFile.absolutePath)
 	systemProperty("platform.workflows", workflows.asFile.absolutePath)
+	// PlatformGradleVersionMirrorTest: wrappery wszystkich modułów i literał minimum w settings-conventions.
+	val gradleModules = layout.projectDirectory.dir("..")
+	val settingsConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts")
+	inputs.file(settingsConventions)
+	inputs.property("minimumConsumerGradle", providers.gradleProperty("minimumConsumerGradle"))
+	systemProperty("platform.gradleModules", gradleModules.asFile.absolutePath)
+	systemProperty("platform.settingsConventions", settingsConventions.asFile.absolutePath)
+	systemProperty("platform.minimumConsumerGradle", providers.gradleProperty("minimumConsumerGradle").get())
 	systemProperty("platform.conventionSources", conventionSources.asFile.absolutePath)
 	systemProperty("platform.referenceDoc", referenceDoc.asFile.absolutePath)
 }

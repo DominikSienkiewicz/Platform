@@ -9,7 +9,7 @@
     "bin/platform-bump.sh"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh"
   },
   "exports": {
     ".": "./versions.json",

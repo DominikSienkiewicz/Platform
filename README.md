@@ -157,6 +157,8 @@ JDK 25 or newer to run Gradle: `build-logic`, `test-fixtures` and `security-star
 to Java 25 bytecode. Consumers compile on toolchain 27, which Foojay provisions locally when it
 is not installed; the reusable CI workflows install it with `setup-java` instead
 ([`docs/versions.md`](docs/versions.md)). The backend runtime image is `sapmachine:27-jre`.
+Consumers run Gradle 9.6.1 or newer: TestKit builds a consumer on that minimum and on the 9.8.1 of
+Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
 Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages.
 
 ## License
