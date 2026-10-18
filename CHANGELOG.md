@@ -50,6 +50,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `security-scan.yml` gains `only-if-deps-changed` (default `false`) and `deps-pattern`: a push or pull
+  request scans only when a dependency manifest changed, schedules and manual runs always. Callers can
+  drop the `changes` job they copied.
 - Platform's CI runs the reusable `backend-ci.yml` on the `java-library` starter, on every push and
   every Monday at 04:00 UTC, so a broken workflow or a drifted runner shows up here before it reaches
   a consumer. Releases wait for it too.

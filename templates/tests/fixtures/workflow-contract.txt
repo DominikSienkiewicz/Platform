@@ -77,6 +77,8 @@ security-scan.yml input working-directory type=string default=backend
 security-scan.yml input java-version type=string default="25"
 security-scan.yml input severity-cutoff type=string default=high
 security-scan.yml input run-frontend type=boolean default=true
+security-scan.yml input only-if-deps-changed type=boolean default=false
+security-scan.yml input deps-pattern type=string default='^(backend/(build|settings)\.gradle\.kts|backend/(settings-)?gradle\.lockfile|backend/gradle/verification-metadata\.xml|backend/gradle/libs\.versions\.toml|frontend/package(-lock)?\.json|\.github/workflows/[^/]+\.ya?ml)$'
 security-scan.yml input only-fixed type=boolean default=false
 security-scan.yml secret gpr_token required=false
 security-scan.yml permissions contents: read

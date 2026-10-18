@@ -79,7 +79,10 @@ Scans dependencies for CVEs: the backend through its CycloneDX SBOM, the fronten
 
 - Permissions: `contents: read`, plus `packages: read` when the backend resolves Platform artifacts.
 - Secret `gpr_token` (optional), as for backend-ci.
-- Inputs: [security-scan.yml](../.github/workflows/security-scan.yml).
+- Inputs: [security-scan.yml](../.github/workflows/security-scan.yml). With `only-if-deps-changed: true`
+  a push or pull request scans only when a changed path matches `deps-pattern` (the Gradle build and
+  lock files, `verification-metadata.xml`, `frontend/package*.json` and the workflow files by
+  default); scheduled and manual runs always scan. It replaces the `changes` job callers copied.
 
 ```yaml
 permissions:
@@ -88,6 +91,8 @@ permissions:
 jobs:
   scan:
     uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
+    with:
+      only-if-deps-changed: true
     secrets:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
