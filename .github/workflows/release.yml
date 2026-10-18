@@ -21,8 +21,9 @@ concurrency:
   cancel-in-progress: false
 
 # Bramka wydania: version (tag == platformVersion) → verify (pełne CI na otagowanym commicie)
-# + registry-build → gradle + npm (packages: write) → move-v1 (contents: write). Czerwony job
-# zatrzymuje wszystko za nim: nic nie trafia do GitHub Packages, a v1 zostaje na miejscu.
+# + registry-build → gradle + npm (packages: write) → move-v1 + github-release (contents: write).
+# Czerwony job zatrzymuje wszystko za nim: nic nie trafia do GitHub Packages, v1 zostaje na miejscu
+# i nie powstaje GitHub Release.
 jobs:
   version:
     runs-on: ubuntu-latest
@@ -240,6 +241,40 @@ jobs:
           git push --force-with-lease="$lease" origin refs/tags/v1
           echo "::notice::v1 → $target ($GITHUB_REF)"
           # <<< move-v1-forward
+
+  # GitHub Release z sekcji CHANGELOG.md tej wersji — to samo źródło co annotated tag z release.sh
+  # i notatki w platform-bump (docs/adr/0002-release-and-versioning-contract.md). Po obu publikacjach,
+  # więc Release opisuje wersję, która naprawdę jest w rejestrach. Re-run nie tworzy duplikatu.
+  github-release:
+    needs: [version, gradle, npm]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: GitHub Release z sekcji CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # >>> github-release-notes
+          set -euo pipefail
+          tag="v$VERSION"
+          bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md > notes.md
+          previous=$(git describe --tags --abbrev=0 --match 'v*.*.*' "$tag^" 2>/dev/null || true)
+          if [ -n "$previous" ]; then
+            printf '\n**Full diff:** https://github.com/%s/compare/%s...%s\n' "$GITHUB_REPOSITORY" "$previous" "$tag" >> notes.md
+          fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "::notice::GitHub Release $tag już istnieje"
+          else
+            gh release create "$tag" --title "Platform $VERSION" --notes-file notes.md --verify-tag
+          fi
+          # <<< github-release-notes
 
   # Brak auto-prune: przy deliberate versioning + exact pin konsumenta przycięcie mogłoby skasować
   # wersję, którą ktoś pinuje. Storage Packages jest współdzielony z Actions, ale przy tej skali

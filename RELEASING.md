@@ -5,7 +5,9 @@ only source of truth for released artifacts. A single `platformVersion` in
 `gradle/build-logic/gradle.properties` is the version of every artifact, on GitHub Packages and in
 consumers' pins alike. [`release.yml`](.github/workflows/release.yml) publishes that version and
 runs only when someone asks for it: a pushed `vX.Y.Z` tag or a manual `workflow_dispatch`. Nothing
-bumps versions automatically, and nothing prunes old versions automatically.
+bumps versions automatically, and nothing prunes old versions automatically. What a version number
+means and what every release must carry is the
+[release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 
 There are two distribution channels, and they move differently:
 
@@ -64,6 +66,15 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 
 ## Cutting a release
 
+1. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
+   `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
+   have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
+   the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
+   action means a MINOR, anything else a PATCH.
+2. Commit and push that change through the normal branch and merge flow, so `main` equals
+   `origin/main` with a clean tree.
+3. Release:
+
 ```bash
 ./release.sh "fix: short description"
 ```
@@ -72,22 +83,30 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 ./release.sh "feat: short description" 1.6.0
 ```
 
-The first form releases a patch (current version + 0.0.1), the second an explicit version.
-Read the **Unreleased** section of [CHANGELOG.md](CHANGELOG.md) first: when it lists a
-**Consumer action required** entry, the release must bump the MINOR version, so use the
-explicit form (for example `1.6.0`). Move the Unreleased entries under that version in a commit
-before you run `release.sh`, which refuses a dirty tree. Append
-`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The commit message
-is required and must follow Conventional Commits in English.
+The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
+`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The message is
+required: an English Conventional Commit, which becomes the body of the release commit
+`chore(release): platform X.Y.Z`.
 
-Before it changes anything, `release.sh` refuses to run when the working tree is not clean
-(untracked files included), the current branch is not `main`, or `HEAD` differs from `origin/main`.
-It also refuses a version whose tag already exists. It then bumps `platformVersion` in every
-`gradle/*/gradle.properties` and `templates/jvm/*/gradle.properties`, and `version` in every
-`frontend/packages/*/package.json`, commits only those files, pushes `main`, and creates and pushes
-the `vX.Y.Z` tag. It does not touch `v1`. The tree therefore always carries one version;
-`templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script falls
-back to a hard-coded version.
+Before it changes anything, `release.sh` refuses to run when:
+
+- the working tree is not clean (untracked files included), the current branch is not `main`, or
+  `HEAD` differs from `origin/main`;
+- the message is not a Conventional Commit or contains Polish characters;
+- the version's tag already exists;
+- CHANGELOG.md has no section for the version, or the section has no
+  `### Consumer action required` subsection;
+- the release would be a patch although its section lists consumer action; the error names the
+  MINOR version to use;
+- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given.
+
+It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
+`templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
+commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
+message is the CHANGELOG section. It does not touch `v1`. The tree therefore always carries one
+version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
+falls back to a hard-coded version, and `templates/tests/release-contract.test.sh` pins every
+refusal above.
 
 The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
 because two publishes of the same version running in parallel once caused a partial release.
@@ -108,9 +127,13 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    announce a release.
 4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
    forward: re-running an older tag never moves it back. Never move `v1` by hand.
+5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
+   "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
+   `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
+   leaves an existing Release alone.
 
-A red job stops every job after it. A tag on a commit with red CI publishes nothing and leaves `v1`
-where it was.
+A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
+where it was and creates no GitHub Release.
 
 ### Idempotency, per registry
 
@@ -153,11 +176,16 @@ In a consumer repository:
 ./scripts/platform-bump.sh
 ```
 
-Without an argument the script bumps to the newest version on GitHub Packages; pass a version
-(`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
+Without an argument the script bumps to the newest release of the consumer's current MAJOR
+version; when a newer MAJOR exists it says so and leaves crossing it to an explicit version. Pass
+a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
 `platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
+- prints the GitHub Release notes of every version after the current pin up to the target, and
+  repeats their **Consumer action required** entries at the end, followed by a link to the target
+  release. The stub runs the installed copy of the bin, so the notes appear from the bump after
+  the one that installs a version with this feature;
 - rewrites the settings plugin and catalog pins in `backend/settings.gradle.kts` and
   `backend/settings-gradle.lockfile`; convention plugins in `build.gradle.kts` carry no version;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
@@ -196,7 +224,19 @@ repository with `-PplatformRepository`, as described in
 
 ## Package retention
 
-Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. Clean up
-deliberately with **Actions → Cleanup old package versions → Run workflow** (`keep`, default 10).
-It needs a `PACKAGES_ADMIN_TOKEN` secret (classic PAT with `read:packages` and `delete:packages`).
-Do not delete a version that a consumer still pins.
+Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. The
+support rule is: **no version that a consumer still pins may be deleted**, and a consumer stays on
+a deleted version only by accident. Clean up deliberately with
+**Actions → Cleanup old package versions → Run workflow**:
+
+- `protect` (required): every version a consumer still pins, comma-separated, for example
+  `1.5.26,1.5.31`. Read the pins from each consumer's `backend/settings.gradle.kts` before the run.
+  Protected versions are never deleted, whatever their age.
+- `keep` (default `10`): how many of the newest versions of each package to keep.
+- `dry_run` (default `true`): print the plan only. Review it, then run again with `dry_run`
+  unticked to delete.
+
+The workflow runs [`scripts/cleanup-packages.sh`](scripts/cleanup-packages.sh), which touches only
+Platform packages and refuses to run without `protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret
+(classic PAT with `read:packages` and `delete:packages`). GitHub can restore a deleted package
+version for 30 days; after that it is gone.

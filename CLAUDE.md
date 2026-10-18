@@ -22,7 +22,7 @@ opublikuj, podbij pin w repo konsumenta.
 | `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`api-client` = wrapper fetch; `query` = QueryClient+provider) |
 | `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
 | `.github/workflows/` | 9 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages` |
-| `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`) |
+| `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`); `changelog-section.sh` — sekcja wersji z `CHANGELOG.md` (dla `release.sh` i `release.yml`); `cleanup-packages.sh` — ręczne sprzątanie pakietów z wymaganym `--protect` i domyślnym dry-runem |
 | `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
 
 ## Zasady (twarde)
@@ -46,9 +46,10 @@ opublikuj, podbij pin w repo konsumenta.
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
    (`alias(libs.plugins.spring.boot)`). Convention tylko importuje BOM-y + deps testowe + split testów.
-4. **SpotBugs report-only** dopóki SpotBugs nie analizuje bez błędów class-file 71 (toolchain JDK 27) —
-   kryterium wyjścia: `spotbugsMain` konsumenta bez „Unsupported class file major version”. Nie przełączaj
-   `ignoreFailures=false` globalnie bez weryfikacji.
+4. **SpotBugs report-only** do spełnienia OBU kryteriów z `docs/adr/0005-spotbugs-report-only.md`:
+   (1) SpotBugs czyta class-file toolchainu bez „Unsupported class file major version” — mierzy to
+   TestKit w build-logic, spełnione 2026-10-18 dla JDK 27; (2) `spotbugsMain` każdego konsumenta
+   przechodzi z `ignoreFailures=false`. Nie przełączaj `ignoreFailures=false` globalnie przed (2).
 5. **GitHub Packages npm:** scope = nazwa ownera repo (lowercase). Zmiana ownera = zmiana scope + `.npmrc`.
 6. **Wersje WSZYSTKICH zależności frontendu → `frontend/packages/versions/versions.json`**
    (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
@@ -91,15 +92,23 @@ w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeh
 w `libs.versions.toml` jest celowo nierozwiązywalny.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
 
-**`./release.sh` wymaga message jako 1. argumentu** (Conventional Commits, po angielsku, zero atrybucji AI) —
-bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
+**Kontrakt wydania: `docs/adr/0002-release-and-versioning-contract.md`.** Akcja konsumenta = MINOR w linii
+1.x, reszta = PATCH, MAJOR zarezerwowany. Notatki = `CHANGELOG.md`: każda wersja ma sekcję
+`## [X.Y.Z] - YYYY-MM-DD` z obowiązkowym `### Consumer action required` (`None.`, gdy nic). Przed wydaniem
+zmień `## [Unreleased]` na sekcję wersji i zmerguj to zwykłą drogą.
+
+**`./release.sh` wymaga message jako 1. argumentu** (angielski Conventional Commit, zero atrybucji AI) —
+trafia do BODY commita `chore(release): platform X.Y.Z` (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
 - `./release.sh "fix: opis"` — patch +0.0.1 od aktualnej wersji
-- `./release.sh "feat: opis" 1.2.0` — konkretna wersja
+- `./release.sh "feat: opis" 1.2.0` — konkretna wersja (obowiązkowa dla `feat`/`!:`/`BREAKING CHANGE`)
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
 
-Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main` albo `HEAD` ≠ `origin/main`, i commituje
-wyłącznie pliki wersji. `release.yml` publikuje dopiero po zielonym CI (`verify` = `ci.yml`) na otagowanym
-commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do przodu) — nie pchaj `v1` ręcznie.
+Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main`, `HEAD` ≠ `origin/main`, message nie jest
+angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG albo patch miałby akcję konsumenta.
+Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
+zielonym CI (`verify` = `ci.yml`) na otagowanym commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do
+przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
+`templates/tests/release-contract.test.sh`.
 
 ## Czego NIE robić
 

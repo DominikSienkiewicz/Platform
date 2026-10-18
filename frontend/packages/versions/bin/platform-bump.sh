@@ -8,8 +8,11 @@
 #
 # Token (PAT classic, read:packages): z env GPR_TOKEN lub GITHUB_TOKEN, albo gpr.key z ~/.gradle/gradle.properties.
 # Użycie (z dowolnego miejsca w repo):
-#   platform-bump            # podbij do najnowszej
+#   platform-bump            # podbij do najnowszej w BIEŻĄCYM majorze (nowy MAJOR tylko jawnie)
 #   platform-bump 1.3.0      # podbij do konkretnej wersji
+#
+# Przed bumpem wypisuje notatki GitHub Releases z zakresu (obecny pin, cel], a na końcu powtarza
+# ich "Consumer action required" i podaje link do wydania docelowego (docs/adr/0002-…).
 #
 # Backend gradle.lockfile jest regenerowany AUTOMATYCZNIE na końcu (--write-locks) — analogicznie do
 # npm --package-lock-only dla frontu. Skrypt NIE commituje: diff zostaje do recenzji. Wymaga JDK (Gradle).
@@ -37,16 +40,100 @@ if [[ -z "$TOKEN" ]] && [[ -f "$HOME/.gradle/gradle.properties" ]]; then
 fi
 [[ -z "$TOKEN" ]] && { echo "Brak tokenu (GPR_TOKEN/GITHUB_TOKEN lub gpr.key w ~/.gradle/gradle.properties)"; exit 1; }
 
+VERSIONS_JSON=""
+RELEASES_JSON=""
+ACTIONS_FILE=""
+trap 'rm -f "$VERSIONS_JSON" "$RELEASES_JSON" "$ACTIONS_FILE"' EXIT
+
+# Obecny pin (przed bumpem) — do granicy MAJOR i notatek wydań, przez które bump przechodzi.
+CURRENT=""
+if [[ -f backend/settings.gradle.kts ]]; then
+  CURRENT="$(grep -oE 'pl\.seniordeveloper:platform-catalog:[0-9]+\.[0-9]+\.[0-9]+' backend/settings.gradle.kts | head -1 | sed 's/.*://' || true)"
+fi
+if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
+  CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+fi
+
 TARGET="${1:-}"
 if [[ -z "$TARGET" ]]; then
   echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
-  TARGET="$(curl -fsSL --proto '=https' --proto-redir '=https' \
+  VERSIONS_JSON="$(mktemp)"
+  curl -fsSL --proto '=https' --proto-redir '=https' \
     -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/users/$OWNER/packages/maven/$CATALOG_PKG/versions" \
-    | python3 -c "import sys,json,re; vs=[v['name'] for v in json.load(sys.stdin)]; vs=[v for v in vs if re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',v)]; vs.sort(key=lambda s:list(map(int,s.split('.')))); print(vs[-1] if vs else '')")"
+    "https://api.github.com/users/$OWNER/packages/maven/$CATALOG_PKG/versions" -o "$VERSIONS_JSON"
+  # Bez argumentu: najnowsze wydanie BIEŻĄCEGO majora; nowy MAJOR tylko jawnie (ADR-0002).
+  python3 - "$VERSIONS_JSON" "$CURRENT" > "$VERSIONS_JSON.choice" <<'PY'
+# platform-bump:target — marker wycinania dla frontend/packages/versions/test/release-notes.test.sh
+import json, re, sys
+
+versions_path, current = sys.argv[1], sys.argv[2]
+key = lambda version: [int(part) for part in version.split(".")]
+releases = sorted(
+    (v["name"] for v in json.load(open(versions_path)) if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v["name"])),
+    key=key,
+)
+if releases:
+    same_major = [v for v in releases if current and v.split(".")[0] == current.split(".")[0]]
+    print(same_major[-1] if same_major else releases[-1], releases[-1])
+PY
+  NEWEST=""
+  read -r TARGET NEWEST < "$VERSIONS_JSON.choice" || true
+  rm -f "$VERSIONS_JSON.choice"
+  if [[ -n "${NEWEST:-}" ]] && [[ "${NEWEST%%.*}" != "${TARGET%%.*}" ]]; then
+    echo "NOTE: Platform $NEWEST starts a new MAJOR and is not taken automatically."
+    echo "      Read its release notes, then run platform-bump $NEWEST to cross it."
+  fi
 fi
 [[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
 echo "==> Podbijam piny Platform do: $TARGET"
+
+# Notatki każdego wydania z (CURRENT, TARGET] — źródłem są GitHub Releases, czyli sekcje CHANGELOG.md.
+ACTIONS_FILE="$(mktemp)"
+RELEASES_JSON="$(mktemp)"
+if [[ -n "$CURRENT" ]] && curl -fsSL --proto '=https' --proto-redir '=https' \
+  -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/$OWNER/Platform/releases?per_page=100" -o "$RELEASES_JSON"; then
+  echo "==> Release notes from $CURRENT to $TARGET:"
+  python3 - "$RELEASES_JSON" "$CURRENT" "$TARGET" "$ACTIONS_FILE" <<'PY'
+# platform-bump:notes — marker wycinania dla frontend/packages/versions/test/release-notes.test.sh
+import json, re, sys
+
+releases_path, current, target, actions_path = sys.argv[1:5]
+key = lambda version: [int(part) for part in version.split(".")]
+
+def consumer_action(body):
+    lines, inside = [], False
+    for line in body.split("\n"):
+        if line.strip() == "### Consumer action required":
+            inside = True
+            continue
+        if inside and (line.startswith("#") or line.startswith("**Full diff:**")):
+            break
+        if inside:
+            lines.append(line)
+    return "\n".join(lines).strip()
+
+crossed = []
+for release in json.load(open(releases_path)):
+    match = re.fullmatch(r"v([0-9]+\.[0-9]+\.[0-9]+)", release.get("tag_name") or "")
+    if match and key(current) < key(match.group(1)) <= key(target):
+        crossed.append((match.group(1), (release.get("body") or "").replace("\r\n", "\n")))
+crossed.sort(key=lambda item: key(item[0]))
+
+if not crossed:
+    print(f"No release notes between {current} and {target}.")
+actions = []
+for version, body in crossed:
+    print(f"\n===== Platform {version} =====\n{body.strip()}")
+    action = consumer_action(body)
+    if action and not re.fullmatch(r"None\.?", action):
+        actions.append(f"Platform {version}:\n{action}")
+with open(actions_path, "w") as out:
+    out.write("\n\n".join(actions))
+PY
+else
+  echo "Release notes unavailable: no current Platform pin found, or the GitHub API did not answer."
+fi
 
 # --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
 #     i settings-gradle.lockfile; conventions w build.gradle.kts są BEZ wersji (classpath settings). ---
@@ -163,3 +250,11 @@ fi
 
 echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
 git --no-pager diff --stat
+
+if [[ -s "$ACTIONS_FILE" ]]; then
+  echo ""
+  echo "==> CONSUMER ACTION REQUIRED by the releases this bump crosses:"
+  cat "$ACTIONS_FILE"
+  echo ""
+fi
+echo "Release notes: https://github.com/$OWNER/Platform/releases/tag/v$TARGET"

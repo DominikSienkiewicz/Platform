@@ -1,10 +1,15 @@
 # Changelog
 
-Changes to the published Platform artifacts, newest first. All artifacts share one version. A
-release that needs action in consumer repositories bumps the MINOR version in the 1.x line and
-lists that action under **Consumer action required**.
+Changes to the published Platform artifacts, newest first, in the
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format. All artifacts share one
+version. The [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md)
+defines the numbering: a release that needs action in consumer repositories bumps the MINOR
+version in the 1.x line and lists that action under **Consumer action required**, which every
+version has, saying "None." when nothing is required.
 
-## Unreleased
+Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 2026-10-18.
+
+## [Unreleased]
 
 ### Consumer action required
 
@@ -22,8 +27,18 @@ lists that action under **Consumer action required**.
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
+### Added
+
+- Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
+  version tag carrying the same notes.
+- `platform-bump` prints the notes of every release it crosses and repeats their consumer
+  actions at the end. The stub runs the installed copy of the bin, so the notes appear from the
+  bump after the one that installs this release.
+
 ### Changed
 
+- `platform-bump` without an argument stays in the consumer's current MAJOR version and only
+  reports a newer MAJOR; crossing it takes an explicit version.
 - `platformDependencyCheck` messages are in English and name the fix: the `libs.…` alias to
   use, a BOM-managed version to remove, or a library to add to the Platform catalog first.
 - `platform-catalog` gains a `spotbugs` version entry, the canon of the SpotBugs
@@ -33,3 +48,122 @@ lists that action under **Consumer action required**.
   release version as before.
 - The JVM starters in `templates/jvm/` are pinned to the latest release.
 - `check` prints the effective coverage threshold and where it came from.
+
+## [1.5.31] - 2026-10-14
+
+### Consumer action required
+
+- Callers of `backend-ci.yml` must grant `packages: read` in their workflow `permissions`. A
+  reusable workflow cannot request more than its caller grants, so a caller with only
+  `contents: read` fails with `startup_failure`. Because consumers call it through the moving
+  `@v1`, this reached them on their next CI run, without a bump.
+- After the bump, regenerate `gradle.lockfile` and, where present,
+  `gradle/verification-metadata.xml`: the Boot, Modulith and Spring AI BOMs changed and the
+  `netty.version` and `postgresql.version` overrides were removed. `platform-bump` does both.
+
+### Changed
+
+- Backend baseline: Spring Boot 4.1.1, Spring Modulith 2.1.1, Spring AI 2.0.1, Gradle 9.8.1.
+  Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the earlier CVE overrides
+  were dropped.
+- Frontend canon: Next and `eslint-config-next` 16.4.0.
+- Gradle wrapper distributions include the official SHA-256 checksum.
+- `platform-security-starter` and `platform-test-fixtures` import the same source catalog for
+  their BOMs.
+
+### Added
+
+- `-PplatformRepository=<uri>` puts a locally published Platform first in plugin and
+  dependency resolution; without it nothing local is consulted
+  ([ADR-0003](docs/adr/0003-local-platform-resolution.md)).
+- `templates/jvm/java-library` and `templates/jvm/spring-app`, the starters the TestKit
+  consumer suite builds.
+- `frontend-ci.yml` input `strict` (default `false`), which makes every standard check
+  mandatory.
+
+### Fixed
+
+- `@dominiksienkiewicz/api-client` preserves the HTTP status and body of error responses.
+- The agent test profile caps Vitest workers.
+- `backend-ci.yml` keeps package access and passes `gradle-task` arguments literally.
+
+pnpm 12, Vitest 5 and a full OpenAPI validation and generation pipeline stay separate
+migrations and are not part of this release.
+
+## [1.5.30] - 2026-09-25
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `seniordev.spring-modulith-conventions` manages `com.tngtech.archunit:archunit` 1.5.0 on every
+  configuration, the runtime classpath included. Spring Modulith 2.1.0 pulled ArchUnit 1.4.2,
+  which cannot read class-file 71, so an application built on 1.5.29 failed to start with
+  "No classes found in packages" even though its tests passed.
+
+## [1.5.29] - 2026-09-25
+
+This release required consumer action but shipped as a patch. Under
+[ADR-0002](docs/adr/0002-release-and-versioning-contract.md) it would have been a minor.
+
+### Consumer action required
+
+- The toolchain moved to JDK 27, so the backend runtime image must run Java 27 or later: change
+  the final `FROM` of `backend/Dockerfile` to `sapmachine:27-jre`, as in
+  `templates/Dockerfile.backend`. An older image fails at start with
+  `UnsupportedClassVersionError`.
+- CI needs a JDK 27 toolchain. The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml`
+  install it themselves (input `toolchain-java-version`, default `27`); a workflow of your own
+  must install it.
+
+### Changed
+
+- `seniordev.java-conventions` compiles with the JDK 27 toolchain. Lombok is overridden to
+  1.18.48 above the Boot BOM, because 1.18.46 fails on javac 27.
+- PIT is pinned to 1.30.0, the first release that reads class-file 71.
+- CI installs the toolchain with `actions/setup-java` instead of Foojay, which offered only an
+  Alpine build of Temurin 27 for Linux
+  ([ADR-0004](docs/adr/0004-consumer-toolchain-jdk-27.md)).
+- `templates/Dockerfile.backend` runs on `sapmachine:27-jre`.
+
+## [1.5.28] - 2026-09-24
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `seniordev.java-conventions` pins google-java-format 1.36.1. Spotless otherwise picked its
+  default from the JVM running Gradle, which on JDK 27 was a release that crashes on javac 27.
+
+### Changed
+
+- The README became a router to reference documents: `docs/consuming.md`,
+  `docs/local-development.md` and `docs/versions.md`.
+
+## [1.5.27] - 2026-08-10
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `platform-bump` regenerates `gradle/verification-metadata.xml` in two Gradle passes, so the
+  checksums of metadata resolved outside the `build` graph are recorded too. A single pass left
+  `junit-bom-<version>.pom` unverified and CI failed on a cold cache.
+
+## [1.5.26] - 2026-08-10
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- The JUnit (6.1.3) and ArchUnit (1.5.0) versions in `seniordev.spring-modulith-conventions`
+  match the catalog again. In 1.5.25 they drifted apart, so `platformDependencyCheck` failed in
+  every Spring consumer.

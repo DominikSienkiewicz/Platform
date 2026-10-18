@@ -99,7 +99,8 @@ checks with `strict: true`.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
-- **Design decisions** → [`docs/adr/`](docs/adr/).
+- **Design decisions** → [`docs/adr/`](docs/adr/), including the
+  [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
 
 ## Requirements

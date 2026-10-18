@@ -113,25 +113,10 @@ no resolvable configuration, so `--write-locks` succeeds without creating a file
 exists so that every Gradle module in the repository has one — there is nothing to lock, so
 do not try to regenerate it.
 
-## Foundation refresh (2026-10-13)
+## Verification gate for the toolchain
 
-The backend baseline is Gradle 9.8.1, Boot 4.1.1, Modulith 2.1.1 and Spring AI 2.0.1.
-The frontend canon and the ESLint compatibility consumer use Next / eslint-config-next
-16.4.0. Wrapper distributions include the official SHA-256 checksum. Security-starter
-and test-fixtures now import the same source catalog for their BOMs.
-
-Upstream references: [Gradle 9.8.1](https://docs.gradle.org/9.8.1/release-notes.html),
-[Next 16.4.0](https://github.com/vercel/next.js/releases/tag/v16.4.0),
-[Boot 4.1.1 BOM](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom),
-[Modulith 2.1.1 POM](https://repo.maven.apache.org/maven2/org/springframework/modulith/spring-modulith-core/2.1.1/spring-modulith-core-2.1.1.pom).
-
-Java 27 remains the consumer toolchain. Gradle's Java 27 support does not establish
-compatibility for every analyzer or framework; the consumer TestKit suite is the
-verification gate. It runs the consumer `build` with SpotBugs, JaCoCo, PIT and CycloneDX on
-class-file 71, fails on "Unsupported class file major version", and starts the packaged
-Spring `bootJar` from its own runtime classpath.
-
-pnpm 12 and Vitest 5 remain separate major migrations; the current release retains
-pnpm 11.18.0 and Vitest 4 peers. A full OpenAPI validation/generation/freshness/breaking-change
-pipeline remains a separate extension: its baseline source and consumer migration
-contract must be defined before adoption.
+Gradle's Java 27 support does not establish compatibility for every analyzer or framework;
+the consumer TestKit suite in `build-logic` is the verification gate. It runs the consumer
+`build` with SpotBugs, JaCoCo, PIT and CycloneDX on class-file 71, fails on "Unsupported class
+file major version", and starts the packaged Spring `bootJar` from its own runtime classpath.
+What each release changed is recorded in [CHANGELOG.md](../CHANGELOG.md), not here.
