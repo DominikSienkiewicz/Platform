@@ -1,8 +1,11 @@
 {
   "name": "@dominiksienkiewicz/ui",
   "version": "1.5.31",
-  "description": "Prywatne shadcn registry — wspólny design system (komponenty + tokeny).",
+  "description": "shadcn registry (utils, button).",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "private": false,
   "type": "module",
   "scripts": {

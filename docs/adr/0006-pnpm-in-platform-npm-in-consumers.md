@@ -16,7 +16,7 @@ mismatch read as an accident, and a reader could not tell which one to change.
 
 ## Decision
 
-- Platform keeps pnpm for its own workspace. It installs eight independently published packages
+- Platform keeps pnpm for its own workspace. It installs every package under `frontend/packages/`
   in one pass with one lockfile, and pnpm's strict node_modules layout makes a package fail when it
   imports a dependency it does not declare, before a consumer installs it.
 - Consumers use npm with a committed `package-lock.json`. The reusable workflows and `platform-bump`

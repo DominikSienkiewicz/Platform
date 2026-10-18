@@ -327,6 +327,16 @@ if [[ -d backend ]]; then
 fi
 # platform-bump:local-overrides-end
 
+# --- Kopie szablonów (templates/manifest.json) kontra kanon wydania docelowego: tylko raport, kod wyjścia bez zmian.
+#     Bin obok tego skryptu; .bin/platform-bump to symlink, więc najpierw rozwiązujemy prawdziwą ścieżkę. ---
+# platform-bump:templates
+templates_check="$(dirname "$(node -e 'console.log(require("node:fs").realpathSync(process.argv[1]))' "${BASH_SOURCE[0]}")")/templates-check.mjs"
+if [[ -f "$templates_check" ]]; then
+  echo ""
+  node "$templates_check" --ref "v$TARGET" || true
+fi
+# platform-bump:templates-end
+
 echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
 git --no-pager diff --stat
 

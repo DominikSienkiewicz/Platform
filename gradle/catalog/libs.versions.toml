@@ -53,11 +53,7 @@ mapstruct = "1.6.3"
 jsoup = "1.23.2"
 wiremock = "3.13.2"
 sonarqube = "7.3.1.8318"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions
-openrewrite = "8.88.3"                   # Pragma (OpenRewrite AST/codegen)
-jimfs = "1.3.1"                          # Pragma (in-memory FS testów AST)
-javaDiffUtils = "4.17"                   # Pragma (diff/patch)
-openaiJavaClient = "4.50.0"              # Pragma (ChatClientFactory buduje klienta OkHttp ręcznie — Spring AI GA nie eksponuje go na compile)
-anthropicJavaClient = "2.53.0"           # Pragma (jw.)
+openrewrite = "8.88.3"                   # Attestate (ADR-0005)
 
 [libraries]
 # --- BOM-y ---
@@ -78,10 +74,6 @@ mapstruct-processor = { group = "org.mapstruct", name = "mapstruct-processor", v
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", version.ref = "wiremock" }
 openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref = "openrewrite" }
-jimfs = { group = "com.google.jimfs", name = "jimfs", version.ref = "jimfs" }
-java-diff-utils = { group = "io.github.java-diff-utils", name = "java-diff-utils", version.ref = "javaDiffUtils" }
-openai-java-client-okhttp = { group = "com.openai", name = "openai-java-client-okhttp", version.ref = "openaiJavaClient" }
-anthropic-java-client-okhttp = { group = "com.anthropic", name = "anthropic-java-client-okhttp", version.ref = "anthropicJavaClient" }
 
 # --- Artefakty platformy (pin = dynamiczny `platform`) ---
 platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
@@ -102,7 +94,7 @@ boot-test-validation = { group = "org.springframework.boot", name = "spring-boot
 boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc-test" }
 
 [bundles]
-# Kręgosłup web+modulith i slice'y testowe — powielane inline w 4 konsumentach. Wersje z BOM-ów.
+# Kręgosłup web+modulith i slice'y testowe — powielane inline w repo konsumentów. Wersje z BOM-ów.
 modulith-web = ["boot-starter-actuator", "boot-starter-data-jpa", "boot-starter-validation", "boot-starter-webmvc", "modulith-starter-core", "modulith-starter-jpa"]
 modulith-web-tests = ["boot-test-actuator", "boot-test-data-jpa", "boot-test-validation", "boot-test-webmvc"]
 dev-docker-compose = ["boot-docker-compose", "spring-ai-docker-compose"]

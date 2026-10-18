@@ -4,6 +4,12 @@ Files that **cannot** be distributed through a registry, because each repository
 copy, but that have one source of truth here. To change one: edit it here, then sync it to the
 consumer repositories.
 
+The files a consumer keeps byte for byte are listed in [`manifest.json`](manifest.json). The
+`platform-templates-check` bin of `@dominiksienkiewicz/versions` compares a repository's copies with
+the canon of its pinned release and prints `DRIFT` or `MISSING` with the `curl` command that restores
+each file; `platform-bump` runs it after every bump. It only reports and always exits 0. Run it by
+hand from the repository root with `frontend/node_modules/.bin/platform-templates-check`.
+
 | File | Purpose | Copy to |
 |---|---|---|
 | `jvm/java-library/`, `jvm/spring-app/` | minimal projects that consume the published plugins and catalog; built by Gradle TestKit. `java-library` carries the Gradle wrapper, and Platform's CI runs the reusable `backend-ci.yml` on it. Their `.gitignore` is the rules of `gitignore/root.gitignore` followed by `gitignore/backend.gitignore` | the root of a new repository; see [consuming.md](../docs/consuming.md) |
@@ -21,6 +27,7 @@ consumer repositories.
 | `setup-gh-deploy.sh` | bootstraps the Actions secrets and variables of the reusable `deploy.yml` from a local `.secrets.local` (safe parser, values through stdin, `SSH_KNOWN_HOSTS` from ssh-keyscan, verified against `SSH_HOST_KEY_SHA256` when set; options `--gen-key`, `--with-release`); refuses to run when git does not ignore `.secrets.local`, and exits non-zero when a `gh` call fails | `<repo>/scripts/setup-gh-deploy.sh` |
 | `secrets.local.example` | template of the local value file for `setup-gh-deploy.sh`; the secret and variable names are the contract of the reusable deploy | `<repo>/.secrets.local.example` |
 | `grype.yaml` | accepted Grype findings, each with an expiry, a tracking link and a reason ([docs/security-scanning.md](../docs/security-scanning.md)) | `<repo>/.grype.yaml` |
+| `manifest.json` | the copies `platform-templates-check` compares, each `source` here with its `target` in a consumer; `optional` files are compared only where the repository has them | not copied |
 | `roadmap/` | **roadmap → Issues and Projects v2 toolkit** (subtree): the canonical logic (`roadmap-{to-issues,unblock,project-setup}.sh` and `lib/`) plus a per-repository `roadmap-config.sh`. Details and rollout in [`roadmap/README.md`](roadmap/README.md) | `<repo>/scripts/**` (config: `scripts/lib/roadmap-config.sh`) |
 | `github/CODEOWNERS` | the default owner of the whole repository | `<repo>/.github/CODEOWNERS` |
 | `github/pull_request_template.md` | pull request description template (purpose and checklist) | `<repo>/.github/pull_request_template.md` |

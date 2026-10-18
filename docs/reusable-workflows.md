@@ -51,7 +51,8 @@ jobs:
 
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
 Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
-`strict: true` the guard and the scripts `lint`, `typecheck`, `test` and `build` are required.
+`strict: true` the guard and the scripts `lint`, `typecheck`, `test`, `build` and `format:check` are
+required, and `format:check` runs before lint.
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.

@@ -3,7 +3,8 @@
 Kontekst dla agentów AI. To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
 konsumowana przez osobne repo produktowe: Attestate (`Attestate_io`), Azimuth, BookOfStyling
 (`BookOfStyling_com`), SkillSprintPlus (`SkillSprintPlus_com`), Touchstone (wszystkie 5 konsumują
-convention pluginy + katalog; 4 z frontendem — bez Touchstone — także kanon frontendu).
+convention pluginy + katalog; 4 z frontendem — bez Touchstone — także kanon frontendu). Lista = `scripts/consumers.txt`
+(ta sama co sekcja Consumers w README); adopcję i piny pokazuje lokalny `scripts/consumer-audit.sh` (tylko GET).
 
 ## Czym to jest
 
@@ -19,8 +20,8 @@ opublikuj, podbij pin w repo konsumenta.
 | `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` (+ **bundle'e**: `modulith-web`, `modulith-web-tests`, `dev-docker-compose` — zamiast powielanych inline starterów) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów + guardy migracji Liquibase/Flyway) |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — parametryzowalny SecurityFilterChain + CORS (`platform.security.*`/`platform.cors.*`, opt-in `@ConditionalOnMissingBean`) |
-| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`api-client` = wrapper fetch; `query` = QueryClient+provider) |
-| `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
+| `frontend/packages/*` | `@dominiksienkiewicz/{tsconfig,eslint-config,prettier-config,tailwind-preset,vitest-config,ui,versions,api-client,query}` (`prettier-config` = Prettier + sortowanie klas Tailwind, wymagany `format:check` w strict `frontend-ci`; `api-client` = wrapper fetch; `query` = QueryClient+provider — oba `private`, niepublikowane do pierwszego adoptera, ostatnie wydanie 1.5.31) |
+| `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) i `platform-templates-check` (raport dryfu kopii z `templates/manifest.json` względem kanonu przypiętego wydania; tylko raport, exit 0; odpala go `platform-bump`) |
 | `.github/workflows/` | 10 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`/`platform-bump` — kanał bumpu z Decyzji 5: bin + PR) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages`, `self-scan` (Scorecard + Semgrep na samej Platform), `canon-cve-scan` (CVE w kanonie i BOM-ach; projekt `gradle/canon-probe`, reakcja: `docs/versions.md` „CVE response”) |
 | `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`); `changelog-section.sh` — sekcja wersji z `CHANGELOG.md` (dla `release.sh` i `release.yml`); `cleanup-packages.sh` — ręczne sprzątanie pakietów z wymaganym `--protect` i domyślnym dry-runem |
 | `default.json` | preset Renovate (org) — tylko GitHub Actions i obrazy Docker; reguły kanonów Platform w `renovate.json` (pilnuje `templates/tests/renovate-config.test.sh`); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |

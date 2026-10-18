@@ -8,8 +8,9 @@ version = providers.gradleProperty("platformVersion").get()
 
 java {
 	toolchain { languageVersion = JavaLanguageVersion.of(25) }
-	// Sources jar obok binarki: IDE konsumenta pokazuje źródła i javadoc bez dekompilacji.
+	// Sources i javadoc jar obok binarki: IDE konsumenta pokazuje źródła i przykłady z javadoc bez dekompilacji.
 	withSourcesJar()
+	withJavadocJar()
 }
 
 repositories { mavenCentral() }
@@ -35,8 +36,12 @@ dependencies {
 	api("org.junit.jupiter:junit-jupiter-api")
 	// Ollama tylko dla PlatformOllamaContainer — konsument (np. Attestate) dostarcza artefakt sam.
 	compileOnly("org.testcontainers:testcontainers-ollama")
+	// Parser Liquibase dla AbstractLiquibaseChangelogTest — konsument na Liquibase ma go z własnego startera.
+	compileOnly("org.liquibase:liquibase-core")
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
+	testImplementation("org.assertj:assertj-core")
+	testImplementation("org.liquibase:liquibase-core")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

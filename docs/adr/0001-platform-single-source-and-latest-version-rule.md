@@ -65,6 +65,25 @@ into `seniordev.quality-conventions` so consumers stop declaring it inline; and 
 `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` packages to replace the
 per-repository fetch wrappers and query clients that had drifted apart.
 
+## Incubating artifacts (2026-10-18)
+
+The consolidation this decision delivered stopped at the platform side: no consumer uses the catalog
+bundles, the security starter, `api-client` or `query`. The consumer migration is deferred, not
+forced: these artifacts stay *incubating*, still published, until a first consumer adopts one, and
+that adoption pull request removes the label in README.md. `api-client` and `query` are additionally
+marked private, so they are not published until then. `docs/consuming.md` shows the adoption path.
+
+## Copied templates (2026-10-18)
+
+Point 1 says a template is consumed, never copied, but scripts and the `.editorconfig` can only reach
+a repository as a copy. Those copies are now measured instead of trusted: `templates/manifest.json`
+lists the files a consumer keeps byte for byte, and the `platform-templates-check` bin of
+`@dominiksienkiewicz/versions` compares them with the canon of the consumer's pinned release,
+fetched from this public repository at that tag. `platform-bump` runs it after every bump. It only
+reports: a deliberate fork stays possible, but it is visible, and each finding comes with the command
+that restores the canonical file. The Dockerfile is out of the manifest, because consumers adapt it;
+`platformRuntimeImageCheck` guards the part that matters.
+
 ## Amended (2026-10-18)
 
 Renovate never opened a pull request in Platform or in a consumer, and its pin manager could not have

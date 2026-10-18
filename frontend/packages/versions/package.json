@@ -3,13 +3,17 @@
   "version": "1.5.31",
   "description": "Kanon wersji frontendowych frameworków i toolchainu (jedno źródło prawdy w Platform). Konsumenci pinują dokładnie te wersje; guard `platform-versions-check` w CI failuje przy dryfie. Dostarcza też bin `platform-bump` (jedno źródło logiki bumpu platformy).",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "files": [
     "versions.json",
     "bin/check.mjs",
-    "bin/platform-bump.sh"
+    "bin/platform-bump.sh",
+    "bin/templates-check.mjs"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh"
   },
   "exports": {
     ".": "./versions.json",
@@ -17,7 +21,8 @@
   },
   "bin": {
     "platform-versions-check": "bin/check.mjs",
-    "platform-bump": "bin/platform-bump.sh"
+    "platform-bump": "bin/platform-bump.sh",
+    "platform-templates-check": "bin/templates-check.mjs"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

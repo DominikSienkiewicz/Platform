@@ -16,6 +16,10 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
 | `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts); see [consuming.md](consuming.md#agent-resource-profile) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 
+These names are frozen. A new Platform property, task or bin follows the naming rule in
+[ADR-0007](adr/0007-public-naming.md): `platform.<area>.<name>` for a Gradle property,
+`platform.<area>.*` for a Spring property, `platform<Name>` for a task, `platform-<name>` for a bin.
+
 ## seniordev.settings-conventions
 
 Source: [`seniordev.settings-conventions.settings.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts).
@@ -70,8 +74,9 @@ plugin: the consumer adds `alias(libs.plugins.spring.boot)`.
 
 ## Security starter (*incubating*)
 
-`pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS unless the
-application defines its own. No consumer has adopted it yet, so treat these as provisional. Source:
+`pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS in a servlet web
+application unless the application defines its own. It is ordered before Spring Boot's default web and
+management security, which back off when it is present. No consumer has adopted it yet, so treat these as provisional. Source:
 [`PlatformSecurityProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformSecurityProperties.java)
 and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformCorsProperties.java).
 
@@ -81,8 +86,8 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 | `platform.security.stateless` | `false` | `true` disables the HTTP session |
 | `platform.security.csrf` | `true` | CSRF protection |
 | `platform.security.http-basic` | `true` | HTTP Basic authentication |
-| `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication |
-| `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; see [consuming.md](consuming.md#security-starter-cors) |
+| `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication; a value replaces the defaults, so repeat the health paths |
+| `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; `*` fails at startup while `allow-credentials` is `true`; see [consuming.md](consuming.md#security-starter-cors) |
 | `platform.cors.allowed-methods` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | allowed methods |
 | `platform.cors.allowed-headers` | `*` | allowed headers |
 | `platform.cors.allow-credentials` | `true` | whether credentials are allowed |
@@ -134,9 +139,12 @@ class ModulithVerificationTest extends AbstractModulithVerificationTest {
 ```
 
 Two Docker-free guards fail the fast `test` when Spring Boot would start without migrations.
-`AbstractLiquibaseChangelogTest` fails when `db/changelog/db.changelog-master.yaml` is missing or
-defines no `databaseChangeLog`. `AbstractFlywayMigrationTest` fails when `db/migration` is missing,
-holds no `.sql` file, or holds one not named `V<n>__<description>.sql` or `R__<description>.sql`:
+`AbstractLiquibaseChangelogTest` parses `db/changelog/db.changelog-master.yaml` with Liquibase, no
+database needed, and fails when it is missing, is not valid YAML, or includes a file that does not exist;
+the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. `AbstractFlywayMigrationTest` checks every
+`db/migration` root on the classpath, main, test and jars, with subdirectories, as Flyway scans them: it
+fails when there is none or no `.sql` file, on a file not named `V<n>__<description>.sql` or
+`R__<description>.sql`, and on two migrations with one version (`V3__a` and `V3__b`, `V1.1` and `V1_1`):
 
 ```java
 class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }

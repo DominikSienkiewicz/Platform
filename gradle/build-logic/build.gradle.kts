@@ -12,6 +12,8 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(25)
 	}
+	// Źródła convention pluginów obok binarki: konsument czyta w IDE, co plugin robi z jego buildem.
+	withSourcesJar()
 }
 
 repositories {
@@ -66,6 +68,12 @@ tasks.withType<Test>().configureEach {
 	val referenceDoc = layout.projectDirectory.file("../../docs/reference.md")
 	inputs.dir(conventionSources)
 	inputs.file(referenceDoc)
+	// CompatibilityMatrixTest: górny wiersz docs/compatibility.md kontra katalog, Dockerfile i frontend.
+	val compatibilityDoc = layout.projectDirectory.file("../../docs/compatibility.md")
+	val dockerfileTemplate = layout.projectDirectory.file("../../templates/Dockerfile.backend")
+	val frontendManifest = layout.projectDirectory.file("../../frontend/package.json")
+	val frontendCanon = layout.projectDirectory.file("../../frontend/packages/versions/versions.json")
+	inputs.files(compatibilityDoc, dockerfileTemplate, frontendManifest, frontendCanon)
 	// Kanon każdego lustra z tabeli w docs/versions.md (PlatformToolVersionMirrorTest + PlatformCatalogMirrorTest).
 	mapOf(
 		"googleJavaFormat" to libs.versions.googleJavaFormat,
@@ -104,6 +112,10 @@ tasks.withType<Test>().configureEach {
 	systemProperty("platform.minimumConsumerGradle", providers.gradleProperty("minimumConsumerGradle").get())
 	systemProperty("platform.conventionSources", conventionSources.asFile.absolutePath)
 	systemProperty("platform.referenceDoc", referenceDoc.asFile.absolutePath)
+	systemProperty("platform.compatibilityDoc", compatibilityDoc.asFile.absolutePath)
+	systemProperty("platform.dockerfileTemplate", dockerfileTemplate.asFile.absolutePath)
+	systemProperty("platform.frontendManifest", frontendManifest.asFile.absolutePath)
+	systemProperty("platform.frontendCanon", frontendCanon.asFile.absolutePath)
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---

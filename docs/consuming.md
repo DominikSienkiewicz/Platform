@@ -177,8 +177,8 @@ jobs:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
 
-`strict: true` requires nonempty `lint`, `typecheck`, `test` and `build` scripts and the
-`@dominiksienkiewicz/versions` guard; `run-e2e: true` additionally requires `test:e2e`, and uploads
+`strict: true` requires nonempty `lint`, `typecheck`, `test`, `build` and `format:check` scripts and
+the `@dominiksienkiewicz/versions` guard, and runs `format:check` before lint; `run-e2e: true` additionally requires `test:e2e`, and uploads
 `playwright-report/` and `test-results/` (HTML report, traces, screenshots) as the artifact
 `playwright-report-<run id>`, kept for seven days, whether the tests pass or fail. Missing
 checks fail the job instead of producing a successful partial pipeline. Existing callers without
@@ -274,6 +274,23 @@ export { default } from "@dominiksienkiewicz/eslint-config/next";
 The config package declares `eslint`, `eslint-config-next` and `next` as peer
 dependencies; take their versions from `@dominiksienkiewicz/versions`.
 
+Prettier (*incubating*), in `package.json`, with `prettier`, `prettier-plugin-tailwindcss` and
+`@dominiksienkiewicz/prettier-config` in `devDependencies` at the canon versions:
+
+```json
+{
+  "prettier": "@dominiksienkiewicz/prettier-config",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
+```
+
+Strict `frontend-ci` requires `format:check`. The plugin sorts Tailwind class lists, so the first
+`npm run format` in a repository that formatted without it rewrites many `className` values; commit
+that diff on its own.
+
 `globals.css` (`app/globals.css`, or `src/app/globals.css` in a `src/` layout):
 
 ```css
@@ -312,6 +329,44 @@ and optionally Ollama:
 cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
 ```
 
+## Catalog bundles (*incubating*)
+
+The catalog groups the Spring starters every product backend declares into three bundles. Their members
+carry no version, so the Platform BOMs decide it, as before:
+
+```kotlin
+// Before: one line per starter, the same in every repository
+implementation("org.springframework.boot:spring-boot-starter-actuator")
+implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+implementation("org.springframework.boot:spring-boot-starter-validation")
+implementation("org.springframework.boot:spring-boot-starter-webmvc")
+implementation("org.springframework.modulith:spring-modulith-starter-core")
+implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+
+// After
+implementation(libs.bundles.modulith.web)
+testImplementation(libs.bundles.modulith.web.tests) // actuator, data-jpa, validation and webmvc test starters
+developmentOnly(libs.bundles.dev.docker.compose)    // spring-boot-docker-compose and Spring AI's
+```
+
+Keep any starter outside these lists on its own line. The bundles stay *incubating* until a first
+backend adopts them; that pull request removes the label in README.md.
+
+## Adopting the security starter (*incubating*)
+
+Add `implementation(libs.platform.security.starter)`, delete the application's own `SecurityConfig`, and
+express its behaviour as properties. The two configurations the
+starter was written from map like this:
+
+| Application | Properties | Then |
+|---|---|---|
+| permit-all, stateless API with CORS (BookOfStyling) | `platform.security.mode=permit-all`, `platform.security.stateless=true`, `platform.security.csrf=false`, `platform.cors.allowed-origins=${app.cors.allowed-origins}` | delete `SecurityConfig` |
+| authenticated with HTTP Basic (SkillSprintPlus) | none: these are the defaults | delete `SecurityConfig` |
+
+Both variants are covered by `PlatformSecurityAutoConfigurationTest`, and the starter's chain takes
+precedence over Spring Boot's default web security (`PlatformSecurityBootAutoConfigurationTest`). The
+starter stays *incubating* until the first application adopts it; that pull request removes the label.
+
 ## Security starter CORS
 
 `platform.cors.allowed-origins` opts into the Platform CORS source. The security
@@ -321,7 +376,14 @@ regardless of its bean name. Without an explicit source, MVC's existing CORS map
 remains the fallback; without MVC or CORS configuration, the starter does not add a
 CORS filter. An application-provided `SecurityFilterChain` still replaces the
 Platform chain. Multiple explicit sources require an unambiguous primary source
-or an application-owned chain; the starter does not silently choose one.
+or an application-owned chain; the starter does not silently choose one, and the context fails
+to start without a `@Primary` one. `platform.cors.allowed-origins=*` fails at startup while
+`allow-credentials` is `true`, the default: Spring rejects that pair, and before it did so only
+on the first CORS request.
+
+`platform.security.permitted-paths` replaces the default list instead of adding to it. Repeat
+`/actuator/health`, `/actuator/health/**` and `/actuator/info` when you set it, or the deploy health
+gate gets 401.
 
 ## Troubleshooting
 

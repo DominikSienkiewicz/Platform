@@ -17,6 +17,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
+  lint. No caller uses `strict` today; one that does adds the script, for example with
+  `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows.
+- The catalog drops `libs.jimfs`, `libs.java.diff.utils`, `libs.openai.java.client.okhttp` and
+  `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
+  resolve the alias; add the library to the Platform catalog first, as for any new library.
+- `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead
+  of looking for the word `databaseChangeLog`. A typo in an include path or invalid YAML now fails the
+  fast test instead of the Testcontainers context test; fix the file the failure names.
 - `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
   `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
   of your first bump: a caller on `@v1` moves to an exact tag and stops floating.
@@ -50,6 +59,17 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-templates-check`, a bin of `@dominiksienkiewicz/versions`, compares the scripts and the
+  `.editorconfig` a repository copied from `templates/` with the canon of its pinned release and prints
+  the command that restores each drifted or missing file. `platform-bump` runs it after every bump. It
+  only reports and never fails the bump.
+- `docs/compatibility.md`: the Java toolchain, runtime image, Gradle, Spring and frontend versions of
+  each release, back to 1.4.0, with a test that fails when the top row drifts from the catalog. Every
+  npm package declares `engines.node` `>=22.13`, so npm warns on an older Node at install time.
+- `@dominiksienkiewicz/prettier-config` (*incubating*): Prettier with `prettier-plugin-tailwindcss`, the
+  configuration BookOfStyling already uses.
+- `docs/consuming.md` shows how to adopt the incubating catalog bundles and the security starter, with
+  the properties that replace the two existing `SecurityConfig` variants.
 - `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside
   the platform (`extra["jackson-bom.version"]`), and `platform-bump` lists the `useVersion`, `force`,
   `strictly` and `extra["….version"]` overrides of the backend after every bump. Neither fails the build.
@@ -76,7 +96,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `docs/reference.md`: every task, property and default the convention plugins add, the security
   starter properties and a snippet per test fixture. The README shows how a release reaches the
   registries and the consumer pins.
-- `platform-test-fixtures` and `platform-security-starter` publish a sources jar, and every
+- `platform-test-fixtures` and `platform-security-starter` publish sources and javadoc jars, the convention
+  plugins a sources jar, and every
   `platform.security.*` and `platform.cors.*` property has an IDE description.
 - Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
   version tag carrying the same notes.
@@ -97,6 +118,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The README no longer lists an HTTP JSON channel for `@dominiksienkiewicz/ui`: nothing builds or hosts
+  one, and the npm package ships the registry sources only. Its description names its two items.
+- `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are private and no longer published;
+  1.5.31 stays their last release in GitHub Packages. No consumer used them; adopting one makes it
+  public again.
 - Consumers need Gradle 9.6.1 or newer, the minimum TestKit now builds a consumer on;
   `seniordev.settings-conventions` fails an older build with the fix. `platform-bump` moves the Gradle
   wrapper to the catalog's new `gradle` entry (9.8.1), with its SHA-256, so review the wrapper diff of
@@ -159,6 +185,21 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   release version as before.
 - The JVM starters in `templates/jvm/` are pinned to the latest release.
 - `check` prints the effective coverage threshold and where it came from.
+
+### Fixed
+
+- `@dominiksienkiewicz/api-client` keeps headers passed as a `Headers` instance or an array of pairs,
+  which the object spread dropped, and a call's header replaces a default of the same name in any case.
+- `AbstractFlywayMigrationTest` checks every `db/migration` root on the classpath, jars included, with
+  subdirectories, and reports duplicate versions. It read only the first root, so test resources hid the
+  production migrations, and it ignored subdirectories and failed on migrations packaged in a jar.
+- `platform-security-starter` fails at startup on `platform.cors.allowed-origins=*` with credentials
+  allowed, instead of on the first CORS request. Its CORS-source choice, `http-basic=false` and the
+  replacing `permitted-paths` are pinned by tests and documented.
+- `platform-security-starter` now orders its chain before Spring Boot's default web and management
+  security. Before, Boot's default chain registered first in a real application and the starter backed
+  off, so `platform.security.mode=permit-all` answered 401 everywhere; a non-web application no longer
+  fails to start with the starter on the classpath.
 
 ## [1.5.31] - 2026-10-14
 
