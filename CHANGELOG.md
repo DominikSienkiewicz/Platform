@@ -54,6 +54,8 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   actions at the end. The stub runs the installed copy of the bin, so the notes appear from the
   bump after the one that installs this release.
 
+- The frontend canon gains `@eslint/js` 10.0.1 and `globals` 17.13.0.
+
 ### Changed
 
 - Platform's own frontend packages follow the version canon: `@dominiksienkiewicz/eslint-config`

@@ -41,6 +41,11 @@ for (const section of ["dependencies", "devDependencies", "optionalDependencies"
 
 // npm `overrides`: wartość to wersja (string) albo zagnieżdżony obiekt zawężający kontekst
 // (overrides.next.postcss = "postcss tylko pod next"). Klucz "." oznacza paczkę nadrzędną.
+/**
+ * @param {unknown} node
+ * @param {string} path
+ * @param {string | null} parent
+ */
 function collectOverrides(node, path, parent) {
   if (node === null || typeof node !== "object") return;
   for (const [key, value] of Object.entries(node)) {
@@ -77,6 +82,7 @@ if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0)
   process.exit(0);
 }
 
+/** @param {{ at: string | null }} e */
 const where = (e) => (e.at ? ` [${e.at}]` : "");
 const platformCanon = "frontend/packages/versions/versions.json in DominikSienkiewicz/Platform";
 console.error(`platform-versions-check (canon: ${canonLabel})`);

@@ -1,8 +1,9 @@
 name: CI
 
 # Walidacja pushy do main i PR-ów: czy build-logic / catalog / test-fixtures kompilują się
-# na JDK 25, czy paczki frontendu instalują się, lintują, przechodzą własne testy i budują rejestr
-# shadcn oraz czy przechodzą wszystkie śledzone testy skryptów (*.test.sh poza frontend/).
+# na JDK 25, czy paczki frontendu instalują się, przechodzą ESLint i tsc (checkJs, deklaracje .d.ts,
+# testy typów, rejestr .tsx), własne testy i budują rejestr shadcn oraz czy przechodzą wszystkie
+# śledzone testy skryptów (*.test.sh poza frontend/).
 # Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
 # Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
 # (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
@@ -79,7 +80,7 @@ jobs:
           exit $fail
 
   frontend:
-    name: Frontend — install + lint + test
+    name: Frontend — install + lint + typecheck + test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -97,7 +98,8 @@ jobs:
       # --ignore-scripts: żadna paczka w monorepo ani w jej drzewie zależności nie wymaga
       # skryptu lifecycle (binaria napi/sharp przychodzą jako optionalDependencies).
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - run: pnpm -r --if-present lint
+      - run: pnpm lint
+      - run: pnpm typecheck
       - run: pnpm -r --if-present test
       # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
       - name: Build registry (shadcn)

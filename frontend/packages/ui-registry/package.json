@@ -6,8 +6,7 @@
   "private": false,
   "type": "module",
   "scripts": {
-    "build": "shadcn build",
-    "lint": "echo \"(registry — brak lintu)\""
+    "build": "shadcn build"
   },
   "files": [
     "registry",
