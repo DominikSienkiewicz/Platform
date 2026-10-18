@@ -85,6 +85,7 @@ tasks.withType<Test>().configureEach {
 		"springModulith" to libs.versions.springModulith,
 		"springAi" to libs.versions.springAi,
 		"junit" to libs.versions.junit,
+		"jsoup" to libs.versions.jsoup,
 	).forEach { (name, version) ->
 		inputs.property("canon.$name", version)
 		systemProperty("platform.canon.$name", version.get())
