@@ -17,6 +17,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- The catalog drops `libs.jimfs`, `libs.java.diff.utils`, `libs.openai.java.client.okhttp` and
+  `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
+  resolve the alias; add the library to the Platform catalog first, as for any new library.
 - `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead
   of looking for the word `databaseChangeLog`. A typo in an include path or invalid YAML now fails the
   fast test instead of the Testcontainers context test; fix the file the failure names.

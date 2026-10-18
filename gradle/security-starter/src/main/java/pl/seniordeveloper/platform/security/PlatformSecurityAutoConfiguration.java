@@ -19,9 +19,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Wspólny, parametryzowalny seam bezpieczeństwa/CORS. Zbiera trzy rozjechane konfiguracje
- * (BookOfStyling: stateless + permitAll + CORS; SkillSprintPlus: authenticated + httpBasic; Pragma:
- * MVC CORS) w JEDEN starter sterowany property. Każdy bean jest {@code @ConditionalOnMissingBean} —
+ * Wspólny, parametryzowalny seam bezpieczeństwa/CORS. Zbiera dwie rozjechane konfiguracje
+ * (BookOfStyling: stateless + permitAll + CORS; SkillSprintPlus: authenticated + httpBasic) w JEDEN
+ * starter sterowany property. Każdy bean jest {@code @ConditionalOnMissingBean} —
  * konsument nadpisuje własnym, gdy potrzebuje.
  *
  * <p>Świadomie NIE zamraża postawy: domyślne wartości są bezpieczne (authenticated + csrf on), a
