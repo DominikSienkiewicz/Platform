@@ -78,9 +78,12 @@ is required and must follow Conventional Commits in English.
 
 Before it changes anything, `release.sh` refuses to run when the working tree is not clean
 (untracked files included), the current branch is not `main`, or `HEAD` differs from `origin/main`.
-It also refuses a version whose tag already exists. It then bumps `platformVersion` in the module
-`gradle.properties` files and in the catalog's fallback default, commits only those files, pushes
-`main`, and creates and pushes the `vX.Y.Z` tag. It does not touch `v1`.
+It also refuses a version whose tag already exists. It then bumps `platformVersion` in every
+`gradle/*/gradle.properties` and `templates/jvm/*/gradle.properties`, and `version` in every
+`frontend/packages/*/package.json`, commits only those files, pushes `main`, and creates and pushes
+the `vX.Y.Z` tag. It does not touch `v1`. The tree therefore always carries one version;
+`templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script falls
+back to a hard-coded version.
 
 The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
 because two publishes of the same version running in parallel once caused a partial release.

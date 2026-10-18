@@ -81,6 +81,10 @@ opublikuj, podbij pin w repo konsumenta.
 ## Wersjonowanie
 
 Wszystkie artefakty = jeden `platformVersion` (build-logic `gradle.properties` + catalog `version("platform")`).
+Ta sama wartość stoi w każdym `gradle/*/gradle.properties`, `templates/jvm/*/gradle.properties`
+i `frontend/packages/*/package.json` — bumpuje je `release.sh`, a rozjazd albo `getOrElse("X.Y.Z")`
+w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeholder `platform`
+w `libs.versions.toml` jest celowo nierozwiązywalny.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
 
 **`./release.sh` wymaga message jako 1. argumentu** (Conventional Commits, po angielsku, zero atrybucji AI) —

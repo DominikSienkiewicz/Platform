@@ -15,10 +15,14 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 readonly CURRENT=1.2.3
 readonly NEXT=1.2.4
-readonly VERSION_FILES="gradle/build-logic/gradle.properties
-gradle/catalog/build.gradle.kts
+readonly VERSION_FILES="frontend/packages/alpha/package.json
+frontend/packages/beta/package.json
+gradle/build-logic/gradle.properties
 gradle/catalog/gradle.properties
-gradle/test-fixtures/gradle.properties"
+gradle/security-starter/gradle.properties
+gradle/test-fixtures/gradle.properties
+templates/jvm/java-library/gradle.properties
+templates/jvm/spring-app/gradle.properties"
 
 fail() {
   local message="$1"
@@ -34,12 +38,16 @@ seed_repo() {
   git init -q -b main "$work"
   git -C "$work" config user.name 'Release Test'
   git -C "$work" config user.email 'release-test@example.invalid'
-  for module in build-logic catalog test-fixtures; do
-    mkdir -p "$work/gradle/$module"
-    printf 'platformVersion=%s\n' "$CURRENT" > "$work/gradle/$module/gradle.properties"
+  for module in gradle/build-logic gradle/catalog gradle/security-starter gradle/test-fixtures \
+    templates/jvm/java-library templates/jvm/spring-app; do
+    mkdir -p "$work/$module"
+    printf 'platformVersion=%s\n' "$CURRENT" > "$work/$module/gradle.properties"
   done
-  printf 'version = providers.gradleProperty("platformVersion").getOrElse("%s")\n' "$CURRENT" \
-    > "$work/gradle/catalog/build.gradle.kts"
+  for package in alpha beta; do
+    mkdir -p "$work/frontend/packages/$package"
+    printf '{\n  "name": "@example/%s",\n  "version": "%s"\n}\n' "$package" "$CURRENT" \
+      > "$work/frontend/packages/$package/package.json"
+  done
   cp "$root/release.sh" "$work/release.sh"
   echo '# fixture' > "$work/README.md"
   git -C "$work" add -A
@@ -107,5 +115,9 @@ released=$(git -C "$work" rev-parse HEAD)
 [[ -z "$(remote_ref "$work" refs/tags/v1)" ]] || fail "release.sh must leave v1 to Release's move-v1 job"
 [[ "$(git -C "$work" diff --name-only HEAD~1 HEAD)" == "$VERSION_FILES" ]] \
   || fail 'release.sh must commit exactly the version files'
+while IFS= read -r file; do
+  grep -Eq "^platformVersion=$NEXT\$|^  \"version\": \"$NEXT\"" "$work/$file" \
+    || fail "release.sh must bump $file to $NEXT"
+done <<<"$VERSION_FILES"
 
 echo 'OK: release.sh refuses unsafe trees and commits only the version bump'

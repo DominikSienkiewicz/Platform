@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/versions",
-  "version": "1.0.0",
+  "version": "1.5.31",
   "description": "Kanon wersji frontendowych frameworków i toolchainu (jedno źródło prawdy w Platform). Konsumenci pinują dokładnie te wersje; guard `platform-versions-check` w CI failuje przy dryfie. Dostarcza też bin `platform-bump` (jedno źródło logiki bumpu platformy).",
   "license": "MIT",
   "files": [

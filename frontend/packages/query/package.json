@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/query",
-  "version": "1.0.0",
+  "version": "1.5.31",
   "description": "Współdzielony QueryClient (staleTime 60s, refetchOnWindowFocus off) + QueryProvider z Devtools. Likwiduje powielony provider w Attestate/Pragma.",
   "license": "MIT",
   "type": "module",

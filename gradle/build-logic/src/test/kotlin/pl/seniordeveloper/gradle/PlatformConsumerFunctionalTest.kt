@@ -54,6 +54,25 @@ class PlatformConsumerFunctionalTest {
 		assertTrue(agent.output.contains("BUDGET:1:2g:4"))
 	}
 
+	@Test
+	fun `published catalog carries the injected platform version, not its placeholder`() {
+		val runner = consumer("java-library")
+		directory.resolve("build.gradle.kts").toFile().appendText(
+			"""
+
+			tasks.register("inspectCatalog") {
+			    val platform = libs.versions.platform.get()
+			    doLast { println("CATALOG_PLATFORM:${'$'}platform") }
+			}
+			""".trimIndent(),
+		)
+		val result = runner.withArguments(*arguments(), "inspectCatalog").build()
+		assertEquals(
+			"CATALOG_PLATFORM:${System.getProperty("platform.version")}",
+			result.output.lineSequence().single { it.startsWith("CATALOG_PLATFORM:") },
+		)
+	}
+
 	private fun consumer(name: String): GradleRunner {
 		Path.of(System.getProperty("platform.templates"), name).toFile().copyRecursively(directory.toFile(), true)
 		return GradleRunner.create().withProjectDir(directory.toFile()).forwardOutput()

@@ -14,9 +14,9 @@ also packages `bootJar` and starts an application context. No database is needed
 
 Copy the selected directory to the product repository. Copy `gradlew`, `gradlew.bat`
 and `gradle/wrapper/` from `gradle/catalog/` to give it the same pinned Gradle distribution.
-Set `platformVersion` in the consumer's `gradle.properties` to an **already published**
-Platform release; the template's checked-in version is only the current repository
-baseline. The new template requires a release containing these changes. Add your own
+The template is pinned to the latest Platform release: `release.sh` bumps its
+`platformVersion` together with every other version file. Keep `platformVersion` in the
+consumer's `gradle.properties` on an **already published** release. Add your own
 package name, group and project name, then replace the example code. For these standalone
 JVM layouts, update `platformVersion` directly; the existing `platform-bump` command
 targets product repositories with `backend/` and `frontend/` directories.

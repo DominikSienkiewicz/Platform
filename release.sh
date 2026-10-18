@@ -20,11 +20,15 @@ VERSION="${2:-}"
 [[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
 
 PROP="gradle/build-logic/gradle.properties"
-PROPERTY_FILES=("$PROP" gradle/catalog/gradle.properties gradle/test-fixtures/gradle.properties)
-CATALOG_BUILD="gradle/catalog/build.gradle.kts"
-for f in "${PROPERTY_FILES[@]}" "$CATALOG_BUILD"; do
-  [[ -f "$f" ]] || { echo "Brak $f — uruchom z roota repo Platform."; exit 1; }
-done
+[[ -f "$PROP" ]] || { echo "Brak $PROP — uruchom z roota repo Platform."; exit 1; }
+# Każdy plik niosący platformVersion: moduły Gradle, startery JVM i paczki npm (jedna wersja w całym
+# drzewie — pilnuje templates/tests/platform-version-sync.test.sh). Globy, nie lista: nowy moduł
+# albo paczka wchodzą do wydania same.
+shopt -s nullglob
+PROPERTY_FILES=(gradle/*/gradle.properties templates/jvm/*/gradle.properties)
+PACKAGE_FILES=(frontend/packages/*/package.json)
+shopt -u nullglob
+[[ "${#PACKAGE_FILES[@]}" -gt 0 ]] || { echo "Brak frontend/packages/*/package.json — uruchom z roota repo Platform."; exit 1; }
 
 BR="$(git rev-parse --abbrev-ref HEAD)"
 [[ "$BR" == "main" ]] || { echo "Wydanie tylko z main — bieżąca gałąź: $BR."; exit 1; }
@@ -59,15 +63,17 @@ if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
   [[ "$ans" = "y" ]] || [[ "$ans" = "Y" ]] || { echo "Przerwane."; exit 0; }
 fi
 
-# Bump: 3× gradle.properties + lustro defaultu w catalogu.
+# Bump: platformVersion w gradle.properties modułów i starterów + "version" paczek npm.
 for f in "${PROPERTY_FILES[@]}"; do
   sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f"
   rm -f "$f.bak"
 done
-sed -i.bak -E "s/getOrElse\(\"[0-9]+\.[0-9]+\.[0-9]+\"\)/getOrElse(\"$VERSION\")/g" "$CATALOG_BUILD"
-rm -f "$CATALOG_BUILD.bak"
+for f in "${PACKAGE_FILES[@]}"; do
+  sed -i.bak -E "s/^(  \"version\": )\"[^\"]*\"/\1\"$VERSION\"/" "$f"
+  rm -f "$f.bak"
+done
 
-git add -- "${PROPERTY_FILES[@]}" "$CATALOG_BUILD"
+git add -- "${PROPERTY_FILES[@]}" "${PACKAGE_FILES[@]}"
 git commit -m "$MSG"
 git push origin main
 git tag "v$VERSION"
