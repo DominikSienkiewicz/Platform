@@ -131,6 +131,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- Everything a consumer reads is in English: the `infra/` and roadmap toolkit READMEs, the canonical
+  pull request template, every npm package description, and the gate messages of `frontend-ci.yml`,
+  `semgrep.yml` and `deploy.yml`. The README records the rule. Re-copy
+  `templates/github/pull_request_template.md` if you want the English checklist.
 - `sonar.yml` is deprecated: no consumer calls it. It keeps working for existing references; run the
   `sonar` task that `seniordev.quality-conventions` configures in the backend job instead.
 - `deploy.yml` builds `bootJar` with `setup-gradle`, which on `release` reads the cache your backend jobs

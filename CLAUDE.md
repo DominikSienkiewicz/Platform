@@ -126,6 +126,12 @@ przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-secti
 - ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza lustrami z tabeli w `docs/versions.md`).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).
 
+## Język
+
+Po polsku tylko CLAUDE.md oraz komentarze w kodzie i workflowach. Cała reszta po angielsku: README,
+`docs/**`, RELEASING.md, README w `templates/**` i `infra/`, szablony PR, opisy paczek i inputów
+workflowów, komunikaty bramek (Decyzja 8; README, sekcja „Documentation language”).
+
 ## Lokalne koncepcje
 
 Nowe koncepcje, propozycje funkcji, plany i analizy zapisuj w ignorowanym

@@ -94,7 +94,7 @@ jobs:
             echo "::error::Missing @dominiksienkiewicz/versions; strict CI cannot skip the version guard"
             exit 1
           else
-            echo "::notice::brak @dominiksienkiewicz/versions w zależnościach — guard kanonu pominięty"
+            echo "::notice::@dominiksienkiewicz/versions is not a dependency, so the version canon guard is skipped"
           fi
 
       # Tylko strict: format:check to nowy wymóg (L-9), a zwykły caller nie może dostać go po cichu.

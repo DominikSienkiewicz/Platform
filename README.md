@@ -177,6 +177,13 @@ checks with `strict: true`.
   [docs/security-scanning.md](docs/security-scanning.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
 
+### Documentation language
+
+Everything a consumer or an outside reader sees is in English: this README, `docs/**`, RELEASING.md,
+the `templates/**` and `infra/` READMEs, the pull request templates, package descriptions, workflow
+input descriptions and the messages of every gate. Polish appears only in CLAUDE.md and in code and
+workflow comments, which are written for the maintainer.
+
 ## Requirements
 
 JDK 25 or newer to run Gradle: `build-logic`, `test-fixtures` and `security-starter` compile

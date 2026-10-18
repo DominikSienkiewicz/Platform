@@ -142,7 +142,7 @@ jobs:
             [ -z "${!v}" ] && missing+=("$v")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Brakuje sekretów/zmiennych: ${missing[*]} — ustaw je (runbook §B)."
+            echo "::error::Missing secrets or variables: ${missing[*]}. Set them with templates/setup-gh-deploy.sh (docs/reusable-workflows.md, deploy.yml)."
             exit 1
           fi
           echo "Preflight OK."

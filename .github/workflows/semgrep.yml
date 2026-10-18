@@ -63,7 +63,7 @@ jobs:
           semgrep scan "${args[@]}" --json --output semgrep.json --quiet
           rc=$?
           if [ ! -s semgrep.json ]; then
-            echo "::error::Semgrep nie wygenerował wyniku (rc=$rc) — skan się nie powiódł." >&2
+            echo "::error::Semgrep produced no result (rc=$rc), so the scan failed." >&2
             exit 1
           fi
 

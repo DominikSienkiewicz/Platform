@@ -1,10 +1,10 @@
-## Co i po co
+## What and why
 
-<!-- Krótko: cel zmiany. Link do issue/ADR, jeśli architektoniczna. -->
+<!-- The goal of the change in a few sentences. Link the issue or ADR if it is architectural. -->
 
 ## Checklist
-- [ ] `./gradlew check` (backend) / `npm run lint && npm test` (frontend) przechodzą lokalnie
-- [ ] README zmienianego katalogu zaktualizowane (twarda reguła sync)
-- [ ] Zmiana architektoniczna → nowy ADR w `docs/adr/`
-- [ ] Dotyczy platformy → podbity pin wersji w repo konsumentach
-- [ ] Brak sekretów / `.env` / tokenów w diffie
+- [ ] `./gradlew check` (backend) and `npm run lint && npm test` (frontend) pass locally
+- [ ] The README of every changed directory is updated
+- [ ] Architectural decision → new ADR in `docs/adr/`
+- [ ] A new Platform release is taken with `scripts/platform-bump.sh`, and the consumer actions in its notes are done
+- [ ] No secrets, `.env` files or tokens in the diff
