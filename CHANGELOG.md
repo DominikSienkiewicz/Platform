@@ -202,6 +202,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `templates/bump-version.sh db new-migration` writes the repository name as the changeset author when it
+  runs from a worktree such as `<repo>/.worktrees/<name>`; it wrote the worktree name. Sync the copy in
+  `scripts/`.
 - `platform-bump` rewrites a settings plugin pin with extra spaces around `version`, and fails when a
   Platform pin in `backend/settings.gradle.kts` is written in a form it cannot rewrite, instead of moving
   the catalog and leaving the plugin behind. An `npm pack` error other than a missing release (an E401,

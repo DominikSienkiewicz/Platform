@@ -19,8 +19,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAYER="${1:-}"
 ACTION="${2:-}"
 ARG="${3:-}"
-# Autor changesetu = nazwa repo (bez hardkodu per-repo — kanon jest repo-agnostyczny).
-AUTHOR="$(basename "$ROOT" | tr '[:upper:]' '[:lower:]')"
+# Autor changesetu = nazwa repo (bez hardkodu per-repo — kanon jest repo-agnostyczny). Z worktree
+# (<repo>/.worktrees/<nazwa>) ROOT to katalog worktree, więc nazwę daje główne drzewo robocze:
+# pierwszy wpis `git worktree list`. Poza gitem zostaje katalog nad scripts/.
+main_worktree="$({ git -C "$ROOT" worktree list --porcelain 2>/dev/null || true; } | sed -n '1s/^worktree //p')"
+AUTHOR="$(basename "${main_worktree:-$ROOT}" | tr '[:upper:]' '[:lower:]')"
 
 usage() {
   grep -E '^#( |$)' "$0" | sed 's/^# \{0,1\}//'
