@@ -11,3 +11,4 @@ Decisions taken for this repository, in MADR-lite format: `Status` / `Context` /
 | [0004](0004-consumer-toolchain-jdk-27.md) | Consumers compile for non-LTS JDK 27 while Gradle and build-logic run on JDK 25 | Accepted |
 | [0005](0005-spotbugs-report-only.md) | SpotBugs stays report-only until a measurable exit criterion is met | Accepted |
 | [0006](0006-pnpm-in-platform-npm-in-consumers.md) | pnpm in Platform's workspace, npm with a committed lockfile in consumers | Accepted |
+| [0007](0007-public-naming.md) | Public naming of Platform artifacts and configuration keys | Accepted |

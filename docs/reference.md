@@ -16,6 +16,10 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
 | `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts); see [consuming.md](consuming.md#agent-resource-profile) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 
+These names are frozen. A new Platform property, task or bin follows the naming rule in
+[ADR-0007](adr/0007-public-naming.md): `platform.<area>.<name>` for a Gradle property,
+`platform.<area>.*` for a Spring property, `platform<Name>` for a task, `platform-<name>` for a bin.
+
 ## seniordev.settings-conventions
 
 Source: [`seniordev.settings-conventions.settings.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts).
