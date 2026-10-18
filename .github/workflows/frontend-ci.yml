@@ -1,6 +1,7 @@
 name: Frontend CI (reusable)
 
 # Backward-compatible by default; strict mode requires all standard checks.
+# Caller contract (permissions, secrets, a snippet): docs/reusable-workflows.md.
 on:
   workflow_call:
     inputs:
@@ -25,8 +26,11 @@ on:
         description: "Token for GitHub Packages npm (@dominiksienkiewicz/*). Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
         required: false
 
+# packages: read — bez tego fallback na automatyczny GITHUB_TOKEN callera nie przeczyta
+# @dominiksienkiewicz/* z GitHub Packages. Caller musi przyznać to samo (workflow wołany nie dostanie więcej).
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:

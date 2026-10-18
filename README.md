@@ -44,7 +44,7 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*) | GitHub Packages (npm) |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — private shadcn registry (*incubating*) | GitHub Packages + HTTP JSON |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
-| `.github/workflows/` | nine reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@v1` |
+| `.github/workflows/` | nine reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
 | `default.json` | shared Renovate preset | `extends: github>DominikSienkiewicz/Platform` |
 | `templates/` | canonical `.editorconfig`, `.gitignore`, `Dockerfile.backend` | copied (manual sync) |
 
@@ -56,8 +56,10 @@ described in [RELEASING.md](RELEASING.md).
 
 ### Reusable workflows
 
-Consumers call them as `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@v1`.
-Triggers and permissions are declared by the calling workflow; the platform keeps only the logic.
+Consumers call them as `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
+the tag of their Platform pin. Triggers are declared by the calling workflow; the platform keeps only
+the logic. What each caller must grant and pass, with a snippet per workflow, is in
+[docs/reusable-workflows.md](docs/reusable-workflows.md).
 
 | Workflow | What it does |
 |---|---|

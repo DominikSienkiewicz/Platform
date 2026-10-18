@@ -34,6 +34,7 @@ frontend-ci.yml input strict type=boolean default=false
 frontend-ci.yml input run-e2e type=boolean default=false
 frontend-ci.yml secret gpr_token required=false
 frontend-ci.yml permissions contents: read
+frontend-ci.yml permissions packages: read
 roadmap-unblock.yml permissions contents: read
 scorecard.yml permissions contents: read
 scorecard.yml job analysis permissions security-events: write
