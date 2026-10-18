@@ -1,0 +1,15 @@
+{
+  "description": "Files a consumer keeps as a byte-for-byte copy of templates/. platform-templates-check compares them with the canon of the pinned release; optional files are compared only where the repository has them.",
+  "files": [
+    { "source": "platform-bump.sh", "target": "scripts/platform-bump.sh" },
+    { "source": "merge.sh", "target": "scripts/merge.sh" },
+    { "source": "bump-version.sh", "target": "scripts/bump-version.sh" },
+    { "source": ".editorconfig", "target": ".editorconfig" },
+    { "source": "setup-gh-deploy.sh", "target": "scripts/setup-gh-deploy.sh", "optional": true },
+    { "source": "roadmap/scripts/roadmap-to-issues.sh", "target": "scripts/roadmap-to-issues.sh", "optional": true },
+    { "source": "roadmap/scripts/roadmap-unblock.sh", "target": "scripts/roadmap-unblock.sh", "optional": true },
+    { "source": "roadmap/scripts/roadmap-project-setup.sh", "target": "scripts/roadmap-project-setup.sh", "optional": true },
+    { "source": "roadmap/scripts/lib/roadmap-lib.sh", "target": "scripts/lib/roadmap-lib.sh", "optional": true },
+    { "source": "roadmap/scripts/lib/roadmap-parse.sh", "target": "scripts/lib/roadmap-parse.sh", "optional": true }
+  ]
+}
