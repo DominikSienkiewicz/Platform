@@ -77,7 +77,8 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
    the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
-   action means a MINOR, anything else a PATCH.
+   action means a MINOR, anything else a PATCH. In [docs/compatibility.md](docs/compatibility.md),
+   give the top row that version and the release date when it reads `unreleased`.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
 4. Release:

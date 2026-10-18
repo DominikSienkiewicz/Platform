@@ -148,6 +148,8 @@ checks with `strict: true`.
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single
   source of truth, the versions mirrored in convention plugin sources, and dependency locking.
+- **Which Java, Gradle, Spring and Node each release brings** →
+  **[docs/compatibility.md](docs/compatibility.md)**.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
@@ -167,7 +169,8 @@ is not installed; the reusable CI workflows install it with `setup-java` instead
 ([`docs/versions.md`](docs/versions.md)). The backend runtime image is `sapmachine:27-jre`.
 Consumers run Gradle 9.6.1 or newer: TestKit builds a consumer on that minimum and on the 9.8.1 of
 Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
-Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages.
+Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages, which declare the
+Node range in `engines`. Earlier releases are in the [compatibility matrix](docs/compatibility.md).
 
 ## License
 

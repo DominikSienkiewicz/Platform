@@ -59,6 +59,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `docs/compatibility.md`: the Java toolchain, runtime image, Gradle, Spring and frontend versions of
+  each release, back to 1.4.0, with a test that fails when the top row drifts from the catalog. Every
+  npm package declares `engines.node` `>=22.13`, so npm warns on an older Node at install time.
 - `@dominiksienkiewicz/prettier-config` (*incubating*): Prettier with `prettier-plugin-tailwindcss`, the
   configuration BookOfStyling already uses.
 - `docs/consuming.md` shows how to adopt the incubating catalog bundles and the security starter, with

@@ -3,6 +3,9 @@
   "version": "1.5.31",
   "description": "Shared Prettier configuration with the Tailwind CSS class sorter (incubating).",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "main": "index.json",
   "exports": {
     ".": "./index.json"

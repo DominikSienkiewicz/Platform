@@ -4,6 +4,9 @@
   "private": true,
   "description": "Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body.",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "type": "module",
   "main": "index.js",
   "types": "index.d.ts",

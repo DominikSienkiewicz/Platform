@@ -3,6 +3,9 @@
   "version": "1.5.31",
   "description": "Współdzielone konfiguracje TypeScript (base + Next.js) dla repo organizacji.",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "files": [
     "base.json",
     "next.json"

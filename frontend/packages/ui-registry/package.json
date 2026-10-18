@@ -3,6 +3,9 @@
   "version": "1.5.31",
   "description": "shadcn registry (utils, button).",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
   "private": false,
   "type": "module",
   "scripts": {
