@@ -27,8 +27,18 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
+### Added
+
+- Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
+  version tag carrying the same notes.
+- `platform-bump` prints the notes of every release it crosses and repeats their consumer
+  actions at the end. The stub runs the installed copy of the bin, so the notes appear from the
+  bump after the one that installs this release.
+
 ### Changed
 
+- `platform-bump` without an argument stays in the consumer's current MAJOR version and only
+  reports a newer MAJOR; crossing it takes an explicit version.
 - `platformDependencyCheck` messages are in English and name the fix: the `libs.…` alias to
   use, a BOM-managed version to remove, or a library to add to the Platform catalog first.
 - `platform-catalog` gains a `spotbugs` version entry, the canon of the SpotBugs

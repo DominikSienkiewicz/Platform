@@ -176,11 +176,16 @@ In a consumer repository:
 ./scripts/platform-bump.sh
 ```
 
-Without an argument the script bumps to the newest version on GitHub Packages; pass a version
-(`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
+Without an argument the script bumps to the newest release of the consumer's current MAJOR
+version; when a newer MAJOR exists it says so and leaves crossing it to an explicit version. Pass
+a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
 `platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
+- prints the GitHub Release notes of every version after the current pin up to the target, and
+  repeats their **Consumer action required** entries at the end, followed by a link to the target
+  release. The stub runs the installed copy of the bin, so the notes appear from the bump after
+  the one that installs a version with this feature;
 - rewrites the settings plugin and catalog pins in `backend/settings.gradle.kts` and
   `backend/settings-gradle.lockfile`; convention plugins in `build.gradle.kts` carry no version;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
