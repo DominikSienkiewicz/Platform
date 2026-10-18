@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // platform-versions-check — guard governance wersji frontendu (tryb STRICT).
-// Porównuje dependencies/devDependencies/overrides z package.json (cwd) z versions.json tej paczki.
+// Porównuje dependencies/devDependencies/optionalDependencies/overrides z package.json (cwd)
+// z versions.json tej paczki. peerDependencies aplikacji są świadomie poza governance.
 // Reguły:
 //   1. KAŻDA zależność (poza @dominiksienkiewicz/* — pin platformy) musi mieć wpis w kanonie.
 //   2. Wersja musi być IDENTYCZNA z kanonem (exact, bez ^/~).
+//   3. Piny @dominiksienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
+//      kanon z versions@X i preset z eslint-config@Y nie mogą pochodzić z różnych wydań.
 // Nowa biblioteka w repo = najpierw wpis w Platform versions.json + release, potem użycie.
 // `overrides` podlega tym samym regułom co zależność bezpośrednia — to tam żyją piny CVE paczek
 // transytywnych (overrides.next.postcss), które bez tego dryfowały po cichu przy ruchu kanonu.
@@ -32,7 +35,7 @@ const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")
 // Płaska lista {name, have, at} ze wszystkich rządzonych sekcji. `at` służy tylko do raportu:
 // dla overrides jest ścieżką (overrides.next.postcss), dla zależności bezpośredniej — null.
 const declared = [];
-for (const section of ["dependencies", "devDependencies"]) {
+for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
   for (const [name, have] of Object.entries(pkg[section] ?? {})) declared.push({ name, have, at: null });
 }
 
@@ -61,7 +64,13 @@ for (const { name, have, at } of declared) {
   else if (have !== want) drift.push({ name, have, want, at });
 }
 
-if (drift.length === 0 && missing.length === 0) {
+// Bez znanej wersji kanonu (kopia testowa) wymagamy przynajmniej jednej wspólnej wartości wszystkich pinów.
+const platformPins = declared.filter(({ name, at }) => at === null && name.startsWith("@dominiksienkiewicz/"));
+const pinValues = new Set(platformPins.map(({ have }) => have));
+const expectedPin = canonVersion ?? (pinValues.size === 1 ? [...pinValues][0] : null);
+const looseOrMixedPins = platformPins.filter(({ have }) => !/^\d+\.\d+\.\d+$/.test(have) || have !== expectedPin);
+
+if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0) {
   console.log(
     `platform-versions-check: OK (${governed} governed dependencies, canon ${canonLabel} with ${Object.keys(canon).length} entries)`,
   );
@@ -79,6 +88,11 @@ if (missing.length > 0) {
 if (drift.length > 0) {
   console.error("platform-versions-check: versions that differ from the Platform canon:");
   for (const d of drift) console.error(`  ${d.name}${where(d)}: declared "${d.have}", canon "${d.want}"`);
+}
+if (looseOrMixedPins.length > 0) {
+  const release = canonVersion ? `, the canon release ${canonVersion}` : "";
+  console.error(`platform-versions-check: Platform packages must share one exact version${release}:`);
+  for (const p of looseOrMixedPins) console.error(`  ${p.name}: declared "${p.have}"`);
 }
 // Guard biegnie z frontend/ (working-directory frontend-ci), a stub żyje w <repo>/scripts/ — stąd „from the root”.
 console.error(

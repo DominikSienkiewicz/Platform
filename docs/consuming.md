@@ -237,8 +237,11 @@ workers at two only in agent mode. See [HTTP client and frontend budget](http-cl
 
 Install the packages with npm and commit `package-lock.json`: the reusable `frontend-ci` runs
 `npm ci` and `platform-bump` refreshes the lockfile with npm, so a consumer on pnpm or Yarn fails
-CI even though Platform builds its own packages with pnpm. Pin every `@dominiksienkiewicz/*`
-package and every other dependency at the exact version the canon gives.
+CI even though Platform builds its own packages with pnpm. Pin every other dependency at the
+exact version the canon gives, and every `@dominiksienkiewicz/*` package at one exact version: the
+release of `@dominiksienkiewicz/versions` you install. `platform-versions-check` governs
+`dependencies`, `devDependencies`, `optionalDependencies` and `overrides`; an application's
+`peerDependencies` are deliberately left out.
 
 `tsconfig.json`:
 

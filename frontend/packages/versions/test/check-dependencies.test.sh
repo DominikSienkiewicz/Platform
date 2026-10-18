@@ -76,5 +76,25 @@ run_case clean '{ "dependencies": { "next": "16.2.12" }, "devDependencies": { "t
 [[ $RC -eq 0 ]] || fail "canon-compliant dependencies must pass (exit $RC)"
 grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "a clean run must name the canon release"
 
+# (g) optionalDependencies are governed like dependencies
+run_case optional '{ "optionalDependencies": { "react": "^19.2.7" } }'
+[[ $RC -ne 0 ]] || fail "a range in optionalDependencies must fail the guard"
+grep -qF '^19.2.7' <<<"$OUT" || fail "the report must show the optional dependency's ^19.2.7"
+
+# (h) a Platform pin must be exact
+run_case platform-caret '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "^1.6.0", "@dominiksienkiewicz/versions": "1.6.0" } }'
+[[ $RC -ne 0 ]] || fail "a caret on a Platform pin must fail the guard"
+grep -qF '@dominiksienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the loose Platform pin"
+
+# (i) Platform pins must share the release the canon came from
+run_case platform-mixed '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "1.5.26", "@dominiksienkiewicz/versions": "1.6.0" } }'
+[[ $RC -ne 0 ]] || fail "Platform pins from two releases must fail the guard"
+grep -qF '@dominiksienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the pin off the canon release"
+grep -qF '1.5.26' <<<"$OUT" || fail "the report must show the mismatching 1.5.26"
+
+# (j) Platform pins on the canon release pass
+run_case platform-ok '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "1.6.0", "@dominiksienkiewicz/versions": "1.6.0" } }'
+[[ $RC -eq 0 ]] || fail "Platform pins on the canon release must pass (exit $RC)"
+
 [[ $fails -eq 0 ]] || exit 1
 echo "OK: the guard fails on drift, carets, missing canon entries and npm: aliases in dependencies and devDependencies"

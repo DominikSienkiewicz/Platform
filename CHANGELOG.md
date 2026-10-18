@@ -31,6 +31,11 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
+- `platform-versions-check` now requires every `@dominiksienkiewicz/*` pin to be exact and equal to
+  the installed `@dominiksienkiewicz/versions` release, and it governs `optionalDependencies`. A
+  caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
+  fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits.
+
 ### Added
 
 - `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting

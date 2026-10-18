@@ -55,8 +55,10 @@ opublikuj, podbij pin w repo konsumenta.
    (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
    (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: zależność bez wpisu
    w kanonie albo z inną wersją = czerwony build. `platform-bump` (bin pakietu `versions`) nakłada kanon.
-   Governance obejmuje `dependencies`, `devDependencies` **oraz `overrides`** (płaskie i zagnieżdżone,
-   np. `overrides.openapi-typescript.js-yaml` — tam żyją piny CVE paczek transytywnych). Wyjątek:
+   Governance obejmuje `dependencies`, `devDependencies`, `optionalDependencies` **oraz `overrides`**
+   (płaskie i zagnieżdżone, np. `overrides.openapi-typescript.js-yaml` — tam żyją piny CVE paczek
+   transytywnych); `peerDependencies` aplikacji świadomie poza nią. Piny `@dominiksienkiewicz/*` poza
+   `overrides` muszą być EXACT i równe wydaniu zainstalowanej paczki `versions`. Wyjątek:
    referencje npm w formie `"$nazwa"` (np. `"typescript": "$typescript"`) — rozwija je npm, guard
    i bump ich nie ruszają. Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga:
    kanon trzyma WERSJE — o tym, CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
