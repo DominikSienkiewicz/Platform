@@ -17,6 +17,13 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `deploy.yml` reads `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` as secrets of the
+  `production` environment, whose deployment branch policy admits only `release`; its preflight no
+  longer checks them. Sync `templates/setup-gh-deploy.sh` into `scripts/`, run it once (it creates the
+  environment, the policy and the secrets), then delete the repository-level `SSH_*` secrets it lists,
+  and drop `SSH_*` from the caller's `secrets:` block. A job of your own that uses the SSH key needs
+  `environment: production`. A private repository needs GitHub Pro, Team or Enterprise for
+  environment secrets. `--with-release` now requires a pull request without an approval.
 - `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
   lint. No caller uses `strict` today; one that does adds the script, for example with
   `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows.

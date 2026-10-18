@@ -5,7 +5,9 @@ name: Deploy (reusable)
 #   • build obrazów przez docker/build-push-action (cache, provenance) (z SSP)
 #   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest) (z BoS)
 #   • workflow_dispatch — ręczny re-deploy                            (z BoS)
-#   • environment: production — druga bramka (required reviewer)        (z BoS)
+#   • environment: production — bramka: deployment branch policy `release` (tylko ta gałąź wdraża)
+#     i sekrety SSH_* trzymane w tym environmencie, więc workflow z innej gałęzi ich nie przeczyta.
+#     Zatwierdzania przez recenzenta nie ma: GitHub daje tę regułę prywatnym repo dopiero na Enterprise.
 #   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP); przypięty przy bootstrapie,
 #     sprawdzony względem SSH_HOST_KEY_SHA256, gdy go podano (templates/setup-gh-deploy.sh)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
@@ -91,16 +93,16 @@ on:
         description: "Classic PAT with read:packages, passed to the frontend image build as a BuildKit secret."
         required: false
       SSH_HOST:
-        description: "Host the deploy job connects to over SSH."
+        description: "Host the deploy job connects to over SSH. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
         required: false
       SSH_USER:
-        description: "SSH user on the deploy host."
+        description: "SSH user on the deploy host. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
         required: false
       SSH_KEY:
-        description: "Private SSH key of SSH_USER."
+        description: "Private SSH key of SSH_USER. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
         required: false
       SSH_KNOWN_HOSTS:
-        description: "known_hosts entry of SSH_HOST, pinned at bootstrap by templates/setup-gh-deploy.sh."
+        description: "known_hosts entry of SSH_HOST, pinned at bootstrap by templates/setup-gh-deploy.sh. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
         required: false
       SNYK_TOKEN:
         description: "Snyk token for the advisory image scan. Without it the Snyk steps are skipped; Grype stays the gate."
@@ -129,16 +131,13 @@ jobs:
           GPR_USER: ${{ secrets.GPR_USER }}
           GPR_KEY: ${{ secrets.GPR_KEY }}
           NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
           GHCR_OWNER: ${{ vars.GHCR_OWNER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        # SSH_* żyją w environmencie production, którego ten job nie widzi — sprawdza je pierwszy krok joba deploy.
         run: |
           set -euo pipefail
           missing=()
-          for v in GPR_USER GPR_KEY NPM_GH_TOKEN SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS GHCR_OWNER DEPLOY_PATH; do
+          for v in GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER DEPLOY_PATH; do
             [ -z "${!v}" ] && missing+=("$v")
           done
           if [ ${#missing[@]} -gt 0 ]; then
@@ -361,10 +360,29 @@ jobs:
     timeout-minutes: ${{ inputs.deploy-timeout-minutes }}
     permissions:
       contents: read
-    environment: production # druga bramka (required reviewer) na szczycie merge'a PR
+    environment: production # deployment branch policy `release` + sekrety SSH_* tylko tego environmentu
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
     steps:
+      # >>> ssh-secrets
+      - name: Check the SSH secrets of the production environment
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for v in SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS; do
+            [ -n "${!v}" ] || missing+=("$v")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing secrets of the production environment: ${missing[*]}. Store them with templates/setup-gh-deploy.sh, which keeps SSH_* in that environment."
+            exit 1
+          fi
+      # <<< ssh-secrets
+
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 — repo wołające: compose + Caddyfile
         with:
           persist-credentials: false
