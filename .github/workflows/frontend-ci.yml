@@ -5,9 +5,11 @@ on:
   workflow_call:
     inputs:
       working-directory:
+        description: "Directory of the frontend package.json, relative to the repository root."
         type: string
         default: frontend
       node-version:
+        description: "Node.js version for install, lint, test and build."
         type: string
         default: "24"
       strict:
@@ -15,11 +17,12 @@ on:
         type: boolean
         default: false
       run-e2e:
+        description: "Run the Playwright end-to-end tests (`npm run test:e2e`) after the build."
         type: boolean
         default: false
     secrets:
       gpr_token:
-        description: "Token do GitHub Packages npm (@dominiksienkiewicz/*). Fallback: automatyczny GITHUB_TOKEN."
+        description: "Token for GitHub Packages npm (@dominiksienkiewicz/*). Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
         required: false
 
 permissions:

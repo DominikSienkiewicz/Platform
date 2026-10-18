@@ -6,21 +6,24 @@ on:
   workflow_call:
     inputs:
       working-directory:
+        description: "Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout)."
         type: string
         default: backend
       java-version:
+        description: "JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer."
         type: string
         default: "25"
       toolchain-java-version:
-        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string
         default: "27"
       gradle-task:
+        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing."
         type: string
         default: "build"
     secrets:
       gpr_token:
-        description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
+        description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
         required: false
 
 permissions:

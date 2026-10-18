@@ -23,20 +23,20 @@ on:
   workflow_call:
     inputs:
       images:
-        description: "JSON-array pełnych referencji obrazów do skanu (np. '[\"ghcr.io/o/a:latest\"]')."
+        description: "JSON array of full image references to scan, e.g. '[\"ghcr.io/owner/app:latest\"]'."
         type: string
         required: true
       severity-cutoff:
-        description: "Próg fail dla Grype: negligible|low|medium|high|critical."
+        description: "Grype fail threshold: negligible, low, medium, high or critical."
         type: string
         default: high
       only-fixed:
-        description: "Failuj TYLKO na CVE z dostępnym fixem. Obrazy bazowe niosą nienaprawialne HIGH OS-CVE — bez tego bramka byłaby permanentnie czerwona."
+        description: "Fail only on vulnerabilities that have a fix. Base images carry unfixable HIGH OS CVEs, which would otherwise keep the gate red."
         type: boolean
         default: true
     secrets:
       snyk_token:
-        description: "Token Snyk. Bez niego kroki Snyk są pomijane (Grype nadal działa jako bramka)."
+        description: "Snyk token. Without it the Snyk steps are skipped; Grype stays the gate."
         required: false
 
 permissions:

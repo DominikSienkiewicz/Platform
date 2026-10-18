@@ -18,15 +18,15 @@ on:
       java-version:
         # build-logic Platform (>=1.3.11) jest skompilowane do bytecode'u 25 -> samo Gradle MUSI jechać
         # na JDK 25 (nie wystarczy toolchain 25 z Foojay). Zrównane z backend-ci.yml (default "25").
-        description: "JDK do uruchomienia Gradle (skan backendu)."
+        description: "JDK that runs Gradle for the backend scan."
         type: string
         default: "25"
       toolchain-java-version:
-        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string
         default: "27"
       node-version:
-        description: "Node do testów + coverage (skan frontendu)."
+        description: "Node.js version for the frontend tests and coverage."
         type: string
         default: "24"
     # SONAR_TOKEN/GITHUB_TOKEN dostarcza caller przez `secrets: inherit`.

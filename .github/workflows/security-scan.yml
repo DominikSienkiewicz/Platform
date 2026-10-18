@@ -10,21 +10,24 @@ on:
   workflow_call:
     inputs:
       working-directory:
+        description: "Directory of the Gradle build, relative to the repository root."
         type: string
         default: backend
       java-version:
+        description: "JDK that runs Gradle for the CycloneDX SBOM."
         type: string
         default: "25"
       severity-cutoff:
+        description: "Grype fail threshold for the SBOM and the frontend lockfile: negligible, low, medium, high or critical."
         type: string
         default: high
       run-frontend:
-        description: "Skanuj frontend/package-lock (monorepo z frontem). Single-module backend bez frontu: false."
+        description: "Also scan frontend/package-lock.json. Use false for a backend without a frontend."
         type: boolean
         default: true
     secrets:
       gpr_token:
-        description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
+        description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
         required: false
 
 permissions:
