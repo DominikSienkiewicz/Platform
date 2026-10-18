@@ -168,6 +168,26 @@ no resolvable configuration, so `--write-locks` succeeds without creating a file
 exists so that every Gradle module in the repository has one — there is nothing to lock, so
 do not try to regenerate it.
 
+## Dependency verification
+
+The same three modules carry `gradle/verification-metadata.xml` with the SHA-256 of every artifact and
+metadata file they resolve, the standard the consumers' `backend/gradle/verification-metadata.xml`
+already meets. A lockfile pins versions; this file pins content, so an artifact replaced under the same
+version in a repository or on the network fails the build instead of reaching the published plugins.
+Gradle verifies strictly whenever the file exists, locally and in CI.
+
+After any change that resolves something new (a catalog bump, a new library, a plugin update), regenerate
+the files and review the diff:
+
+```bash
+scripts/write-verification-metadata.sh
+```
+
+It runs two passes per module with `--refresh-dependencies`, as `platform-bump` does for consumers:
+`build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
+bumps the catalog stays red on verification until you run the script and push its result to that branch.
+`gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows.
+
 ## Gradle wrapper
 
 Every Gradle module carries the same wrapper. `gradle-wrapper.properties` pins the distribution

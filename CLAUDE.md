@@ -42,7 +42,9 @@ opublikuj, podbij pin w repo konsumenta.
    `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly` i ich warianty `test*`/`testFixtures*`/
    własnych source setów), także dla artefaktów `pl.seniordeveloper`. Bez wersji = zarządzane BOM-ami
    platformy (OK). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
-   Nowa biblioteka = najpierw wpis tu + `./release.sh`.
+   Nowa biblioteka = najpierw wpis tu + `./release.sh`. Po każdej zmianie tego, co moduły Platform pobierają
+   (bump katalogu, nowa biblioteka, plugin): `scripts/write-verification-metadata.sh` — build-logic, test-fixtures
+   i security-starter mają `gradle/verification-metadata.xml`, weryfikowane strict (docs/versions.md).
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
