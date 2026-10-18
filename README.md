@@ -42,7 +42,7 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, and the `platform-bump` bin | GitHub Packages (npm) |
 | `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — private shadcn registry (*incubating*) | GitHub Packages + HTTP JSON |
+| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
 | `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` |

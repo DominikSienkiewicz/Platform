@@ -106,6 +106,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The README no longer lists an HTTP JSON channel for `@dominiksienkiewicz/ui`: nothing builds or hosts
+  one, and the npm package ships the registry sources only. Its description names its two items.
 - `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are private and no longer published;
   1.5.31 stays their last release in GitHub Packages. No consumer used them; adopting one makes it
   public again.
