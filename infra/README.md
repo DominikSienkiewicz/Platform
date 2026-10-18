@@ -23,5 +23,5 @@ punkcie montowania pg18 odmawia startu, a dane spoza wolumenu nie przetrwałyby 
 > Jak używać: skopiuj `infra/` do repo konsumenta (lub trzymaj jako submodule) i nadpisz `.env`.
 > Źródłem tagów obrazów jest `PlatformImages.java` w `gradle/test-fixtures` (obrazy Testcontainers);
 > `docker-compose.yml` jest jego lustrem, a rozjazd wywala `templates/tests/image-tags-sync.test.sh`.
-> Renovate bumpuje oba pliki w jednej gałęzi. Tagi celowo nie stoją w tabeli wyżej — trzecia kopia
+> Renovate (preset Platform) bumpuje oba pliki w jednej gałęzi, gdy aplikacja Renovate działa w repo. Tagi celowo nie stoją w tabeli wyżej — trzecia kopia
 > nie miałaby managera.

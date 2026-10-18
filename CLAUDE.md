@@ -23,7 +23,7 @@ opublikuj, podbij pin w repo konsumenta.
 | `frontend/packages/versions/` | **kanon wersji frontendu** (`versions.json`) + biny: `platform-versions-check` (guard w `frontend-ci`) oraz `platform-bump` (jedno źródło logiki bumpu platformy; repo wołają przez stub) |
 | `.github/workflows/` | 10 reusable (`backend-ci`/`frontend-ci`/`sonar`/`scorecard`/`security-scan`/`semgrep`/`container-scan`/`deploy`/`roadmap-unblock`/`platform-bump` — kanał bumpu z Decyzji 5: bin + PR) + własne: `ci`, `release` (publish na tag `vX.Y.Z`, patrz `RELEASING.md`), `cleanup-packages`, `self-scan` (Scorecard + Semgrep na samej Platform), `canon-cve-scan` (CVE w kanonie i BOM-ach; projekt `gradle/canon-probe`, reakcja: `docs/versions.md` „CVE response”) |
 | `scripts/` | `deploy-remote.sh` — kanon logiki on-box deployu (scp+run przez `deploy.yml`); `changelog-section.sh` — sekcja wersji z `CHANGELOG.md` (dla `release.sh` i `release.yml`); `cleanup-packages.sh` — ręczne sprzątanie pakietów z wymaganym `--protect` i domyślnym dry-runem |
-| `default.json` | preset Renovate (org); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
+| `default.json` | preset Renovate (org) — tylko GitHub Actions i obrazy Docker; reguły kanonów Platform w `renovate.json` (pilnuje `templates/tests/renovate-config.test.sh`); `templates/` — kanon editorconfig/gitignore/Dockerfile/CODEOWNERS/PR/sdkmanrc + `bump-version.sh` (wersja warstwy app) + `platform-bump.sh` i `merge.sh` (stuby konsumenta — kopiowane do **`<repo>/scripts/`**, nie do roota; `platform-bump` dochodzi stamtąd do roota przez `cd "$(dirname "$0")/.."`, a pilnuje tego `templates/tests/platform-bump.test.sh`. Sama Platform trzyma `merge.sh` w roocie jako cienki wrapper `exec` na ten szablon — nie jest konsumentem) + `roadmap/` (kanon toolkitu roadmap→Issues/Projects v2; repo konsumują `scripts/**`, trzymają tylko `roadmap-config.sh`) |
 
 ## Zasady (twarde)
 
@@ -98,7 +98,7 @@ Ta sama wartość stoi w każdym `gradle/*/gradle.properties`, `templates/jvm/*/
 i `frontend/packages/*/package.json` — bumpuje je `release.sh`, a rozjazd albo `getOrElse("X.Y.Z")`
 w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeholder `platform`
 w `libs.versions.toml` jest celowo nierozwiązywalny.
-Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
+Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach przez `scripts/platform-bump.sh` albo reusable `platform-bump.yml` (Decyzja 5; preset Renovate obejmuje tylko GitHub Actions i obrazy Docker).
 
 **Kontrakt wydania: `docs/adr/0002-release-and-versioning-contract.md`.** Akcja konsumenta = MINOR w linii
 1.x, reszta = PATCH, MAJOR zarezerwowany. Notatki = `CHANGELOG.md`: każda wersja ma sekcję

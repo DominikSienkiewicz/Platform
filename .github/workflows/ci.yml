@@ -86,6 +86,22 @@ jobs:
       - name: shellcheck -x --severity=warning
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -x --severity=warning
 
+  # Walidator configów Renovate w przypiętej wersji (jak semgrep-version w semgrep.yml): zepsuty preset
+  # trafiłby do każdego konsumenta przez `extends`. Wersja >= 2 tygodnie od wydania.
+  renovate-config:
+    name: Renovate — validate the preset and Platform's config
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+      - name: renovate-config-validator --strict
+        run: npx --yes --package renovate@44.132.5 -- renovate-config-validator --strict renovate.json default.json
+
   templates:
     name: Templates — testy skryptów
     runs-on: ubuntu-latest

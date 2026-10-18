@@ -1,4 +1,48 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>DominikSienkiewicz/Platform"]
+  "description": "Platform's own Renovate config: the shared preset plus the rules for the canons that live only here.",
+  "extends": ["github>DominikSienkiewicz/Platform"],
+  "packageRules": [
+    {
+      "description": "The backend canon: Renovate proposes catalog versions in Platform only. Mirrored literals in the convention plugins move by hand in the same pull request (docs/versions.md).",
+      "matchManagers": ["gradle"],
+      "matchFileNames": ["gradle/catalog/libs.versions.toml"],
+      "enabled": true,
+      "groupName": "platform catalog",
+      "addLabels": ["backend"]
+    },
+    {
+      "description": "The frontend canon: versions.json and the workspace manifests move in one pull request, or self-canon.test.mjs fails.",
+      "matchManagers": ["npm", "custom.regex"],
+      "matchFileNames": ["frontend/**"],
+      "enabled": true,
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "frontend canon",
+      "addLabels": ["frontend"]
+    },
+    {
+      "description": "Major updates of the frontend canon stay separate, but each still updates versions.json and the manifests together.",
+      "matchManagers": ["npm", "custom.regex"],
+      "matchFileNames": ["frontend/**"],
+      "enabled": true,
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["frontend"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The frontend canon: every exact version in versions.json, from npm.",
+      "managerFilePatterns": ["/^frontend/packages/versions/versions\\.json$/"],
+      "matchStrings": ["\"(?<depName>@?[a-z0-9][^\"]*)\":\\s*\"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "The digest-pinned Snyk image; deploy.yml and container-scan.yml move in one pull request (templates/tests/snyk-image-pin.test.sh).",
+      "managerFilePatterns": ["/^\\.github/workflows/(deploy|container-scan)\\.yml$/"],
+      "matchStrings": ["SNYK_IMAGE: (?<depName>[a-z0-9./-]+):(?<currentValue>[a-z0-9.-]+)@(?<currentDigest>sha256:[a-f0-9]{64})"],
+      "datasourceTemplate": "docker"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Współdzielony preset Renovate organizacji (DominikSienkiewicz). Konsumenci: extends github>DominikSienkiewicz/Platform.",
+  "description": "Shared Renovate preset of DominikSienkiewicz; consumers extend github>DominikSienkiewicz/Platform. It covers GitHub Actions and Docker images only. Gradle, npm and the Platform pins come from the Platform catalog and frontend canon and are bumped by platform-bump (reusable platform-bump.yml).",
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
@@ -10,63 +10,37 @@
   "schedule": ["before 9am on monday"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 10,
-  "gradle": {
-    "description": "Katalog wersji backendu w niestandardowej ścieżce (gradle/catalog/libs.versions.toml). Rozszerza domyślne wzorce (Renovate je łączy, nie nadpisuje). Domyślny wzorzec .versions.toml i tak prawdopodobnie łapie — to jawne + future-proof.",
-    "managerFilePatterns": ["/gradle/catalog/libs\\.versions\\.toml$/"]
-  },
   "packageRules": [
     {
-      "description": "Backend (Gradle): minor+patch w jednym PR; majory osobno (review człowieka).",
-      "matchManagers": ["gradle"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "gradle (minor & patch)",
-      "addLabels": ["backend"]
+      "description": "Gradle and Gradle wrapper versions come from the Platform catalog (CLAUDE.md rule 1); platform-bump moves them.",
+      "matchManagers": ["gradle", "gradle-wrapper"],
+      "enabled": false
     },
     {
-      "description": "Frontend (npm): minor+patch w jednym PR.",
+      "description": "Frontend versions are governed by versions.json; update them with platform-bump.",
       "matchManagers": ["npm"],
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "npm (minor & patch)",
-      "addLabels": ["frontend"]
+      "enabled": false
     },
     {
-      "description": "GitHub Actions w jednej grupie.",
+      "description": "GitHub Actions in one group.",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions",
       "addLabels": ["ci"]
     },
     {
-      "description": "Nie pinuj po SHA własnych reusable workflows Platform — `@v1` to celowa, ruchoma linia wydania (jedno miejsce aktualizacji logiki dla repo konsumenckich).",
+      "description": "Platform's own reusable workflows are called by an exact vX.Y.Z that platform-bump moves; Renovate neither updates nor SHA-pins them.",
       "matchManagers": ["github-actions"],
       "matchDepNames": ["DominikSienkiewicz/Platform"],
       "enabled": false
-    },
-    {
-      "description": "Artefakty Platform (pin 1.0.0) — osobna grupa, szybka ścieżka.",
-      "matchPackageNames": ["@dominiksienkiewicz/**", "pl.seniordeveloper:platform-catalog", "seniordev.**"],
-      "groupName": "platform (DominikSienkiewicz)",
-      "addLabels": ["platform"]
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Bump tagów obrazów kontenerów testowych w PlatformImages.java (datasource: docker). No-op w repo, które tego pliku nie mają.",
+      "description": "Testcontainers image tags in PlatformImages.java (datasource docker); a no-op in repositories without that file.",
       "managerFilePatterns": ["/PlatformImages\\.java$/"],
       "matchStrings": ["\"(?<depName>[^\"]+?):(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "description": "Bump pinów platformy (catalog + convention pluginy) w Gradle konsumentów — datasource maven z GitHub Packages. Wymaga hostRules z tokenem read:packages w konfiguracji Renovate.",
-      "managerFilePatterns": ["/(settings|build)\\.gradle\\.kts$/"],
-      "matchStrings": [
-        "from\\(\"pl\\.seniordeveloper:platform-catalog:(?<currentValue>[^\"]+)\"\\)",
-        "id\\(\"seniordev\\.[a-z-]+-conventions\"\\)\\s+version\\s+\"(?<currentValue>[^\"]+)\""
-      ],
-      "depNameTemplate": "pl.seniordeveloper:platform-catalog",
-      "datasourceTemplate": "maven",
-      "registryUrlTemplate": "https://maven.pkg.github.com/DominikSienkiewicz/Platform"
     }
   ]
 }

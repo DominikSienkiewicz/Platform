@@ -88,6 +88,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The shared Renovate preset (`default.json`) covers only GitHub Actions and Docker images. Its Gradle
+  and npm rules and its Platform-pin manager, which never produced a working pull request, are gone:
+  those versions move with `platform-bump`. Platform's own `renovate.json` manages the catalog and the
+  frontend canon, and CI validates both configs.
 - Platform's CI runs shellcheck on every tracked shell script, the ones copied into consumers and
   run on the deploy host included; `bump-version.sh db new-migration` numbers changesets with a glob
   instead of parsing `ls`.

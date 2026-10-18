@@ -48,7 +48,7 @@ failure.
 - (−) Changing a version costs a release-and-bump cycle. This is a deliberate trade for
   consistency.
 - (−) A consumer's pin can sit briefly behind the platform's published HEAD. That is the
-  normal flow, closed by Renovate and the bump script.
+  normal flow, closed by the bump script (see the amendment below).
 
 ## What this decision does not cover
 
@@ -64,3 +64,12 @@ Version-catalog bundles for the dependency spine repeated across consumers; Sona
 into `seniordev.quality-conventions` so consumers stop declaring it inline; and shared
 `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` packages to replace the
 per-repository fetch wrappers and query clients that had drifted apart.
+
+## Amended (2026-10-18)
+
+Renovate never opened a pull request in Platform or in a consumer, and its pin manager could not have
+produced a green one: it rewrote only `settings.gradle.kts`, not the lockfiles, the verification
+metadata or the frontend canon. Pin lag is therefore closed by `platform-bump`, run by hand or on a
+schedule through the reusable `platform-bump.yml`, which opens the bump pull request. The shared
+Renovate preset now covers GitHub Actions and Docker images only; Platform's own `renovate.json`
+manages its catalog and frontend canon ([ADR-0002](0002-release-and-versioning-contract.md), item 6).
