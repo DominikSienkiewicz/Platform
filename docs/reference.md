@@ -82,8 +82,8 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 | `platform.security.stateless` | `false` | `true` disables the HTTP session |
 | `platform.security.csrf` | `true` | CSRF protection |
 | `platform.security.http-basic` | `true` | HTTP Basic authentication |
-| `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication |
-| `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; see [consuming.md](consuming.md#security-starter-cors) |
+| `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication; a value replaces the defaults, so repeat the health paths |
+| `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; `*` fails at startup while `allow-credentials` is `true`; see [consuming.md](consuming.md#security-starter-cors) |
 | `platform.cors.allowed-methods` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | allowed methods |
 | `platform.cors.allowed-headers` | `*` | allowed headers |
 | `platform.cors.allow-credentials` | `true` | whether credentials are allowed |

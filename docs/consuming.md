@@ -321,7 +321,14 @@ regardless of its bean name. Without an explicit source, MVC's existing CORS map
 remains the fallback; without MVC or CORS configuration, the starter does not add a
 CORS filter. An application-provided `SecurityFilterChain` still replaces the
 Platform chain. Multiple explicit sources require an unambiguous primary source
-or an application-owned chain; the starter does not silently choose one.
+or an application-owned chain; the starter does not silently choose one, and the context fails
+to start without a `@Primary` one. `platform.cors.allowed-origins=*` fails at startup while
+`allow-credentials` is `true`, the default: Spring rejects that pair, and before it did so only
+on the first CORS request.
+
+`platform.security.permitted-paths` replaces the default list instead of adding to it. Repeat
+`/actuator/health`, `/actuator/health/**` and `/actuator/info` when you set it, or the deploy health
+gate gets 401.
 
 ## Troubleshooting
 

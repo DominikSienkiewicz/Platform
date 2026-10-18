@@ -104,6 +104,8 @@ public class PlatformSecurityAutoConfiguration {
     config.setAllowedMethods(cors.getAllowedMethods());
     config.setAllowedHeaders(cors.getAllowedHeaders());
     config.setAllowCredentials(cors.isAllowCredentials());
+    // Wildcard origin z credentials Spring odrzuca dopiero przy pierwszym żądaniu CORS; tu błąd przy starcie.
+    config.validateAllowCredentials();
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
     return source;

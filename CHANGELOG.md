@@ -162,6 +162,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `platform-security-starter` fails at startup on `platform.cors.allowed-origins=*` with credentials
+  allowed, instead of on the first CORS request. Its CORS-source choice, `http-basic=false` and the
+  replacing `permitted-paths` are pinned by tests and documented.
 - `platform-security-starter` now orders its chain before Spring Boot's default web and management
   security. Before, Boot's default chain registered first in a real application and the starter backed
   off, so `platform.security.mode=permit-all` answered 401 everywhere; a non-web application no longer
