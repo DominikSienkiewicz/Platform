@@ -72,7 +72,11 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 ./release.sh "feat: short description" 1.6.0
 ```
 
-The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
+The first form releases a patch (current version + 0.0.1), the second an explicit version.
+Read the **Unreleased** section of [CHANGELOG.md](CHANGELOG.md) first: when it lists a
+**Consumer action required** entry, the release must bump the MINOR version, so use the
+explicit form (for example `1.6.0`). Move the Unreleased entries under that version in a commit
+before you run `release.sh`, which refuses a dirty tree. Append
 `-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The commit message
 is required and must follow Conventional Commits in English.
 

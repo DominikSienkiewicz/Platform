@@ -36,8 +36,12 @@ opublikuj, podbij pin w repo konsumenta.
    i przy bumpie zmieniasz oba miejsca. Rozjazd wywala `PlatformToolVersionMirrorTest`
    / `PlatformCatalogMirrorTest` w build-logic.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
-   build konsumenta, gdy zadeklarowana zależność ma jawną wersję spoza katalogu lub inną niż katalog.
-   Bez wersji = zarządzane BOM-ami platformy (OK). Nowa biblioteka = najpierw wpis tu + `./release.sh`.
+   build konsumenta, gdy zadeklarowana zależność albo constraint ma jawną wersję spoza katalogu lub inną
+   niż katalog — w każdym deklarowalnym kubełku (`api`/`implementation`/`compileOnly(Api)`/`runtimeOnly`/
+   `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly` i ich warianty `test*`/`testFixtures*`/
+   własnych source setów), także dla artefaktów `pl.seniordeveloper`. Bez wersji = zarządzane BOM-ami
+   platformy (OK). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
+   Nowa biblioteka = najpierw wpis tu + `./release.sh`.
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument

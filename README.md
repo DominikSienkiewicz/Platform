@@ -98,6 +98,7 @@ checks with `strict: true`.
   source of truth, the versions mirrored in convention plugin sources, and dependency locking.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
+- **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
 - **Design decisions** → [`docs/adr/`](docs/adr/).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
 

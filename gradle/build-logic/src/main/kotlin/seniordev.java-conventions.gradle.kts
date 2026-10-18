@@ -144,43 +144,65 @@ tasks.named("check") {
 	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"))
 }
 
-// === Governance wersji: KAŻDA wersja biblioteki pochodzi z platform-catalog ====================
+// === Governance wersji: KAŻDA jawna wersja biblioteki pochodzi z platform-catalog ==============
 // Reguły:
 //   1. Zależność zadeklarowana BEZ wersji = zarządzana BOM-ami platformy (spring-modulith-conventions) — OK.
-//   2. Zależność z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją IDENTYCZNĄ
-//      — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Inline wersja spoza katalogu = czerwony build.
-//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) + ./release.sh,
+//   2. Zależność albo constraint z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją
+//      IDENTYCZNĄ — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Dotyczy też artefaktów
+//      pl.seniordeveloper: ich kanonem jest wstrzyknięta platformVersion. Inline wersja spoza kanonu = czerwony build.
+//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) i wydanie,
 //      potem bump pinu i użycie przez libs.<alias>.
+// Zakres: każdy deklarowalny kubełek — nazwy bazowe niżej i ich warianty z prefiksem source setu (test*,
+// testFixtures*, własne source sety). Konfiguracje narzędzi (checkstyle, pitest, spotbugs*, jacocoAgent,
+// cyclonedx*) zostają poza zakresem z konstrukcji.
 // Wykrywanie w afterEvaluate (deps konsumenta już zadeklarowane), asercja w tasku — CC-safe.
-val governedConfigurations = setOf(
-	"api", "implementation", "compileOnly", "runtimeOnly", "annotationProcessor",
-	"testImplementation", "testCompileOnly", "testRuntimeOnly", "testAnnotationProcessor",
+val governedBuckets = setOf(
+	"api", "implementation", "compileOnly", "compileOnlyApi", "runtimeOnly", "annotationProcessor",
+	"developmentOnly", "testAndDevelopmentOnly",
 )
+val governedBucketSuffixes =
+	listOf("Implementation", "Api", "CompileOnly", "CompileOnlyApi", "RuntimeOnly", "AnnotationProcessor")
+fun isGovernedBucket(name: String): Boolean =
+	name in governedBuckets || governedBucketSuffixes.any { name.length > it.length && name.endsWith(it) }
+
 val platformDependencyCheck = tasks.register("platformDependencyCheck") {
-	description = "Pilnuje, że wersje wszystkich zadeklarowanych zależności pochodzą z platform-catalog."
+	description = "Checks that every explicit dependency version comes from platform-catalog."
 	group = "verification"
 }
 afterEvaluate {
 	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 	val violations = mutableListOf<String>()
 	if (libs != null) {
-		val canon = mutableMapOf<String, String>()
+		val canonVersions = mutableMapOf<String, String>()
+		val accessors = mutableMapOf<String, String>()
 		libs.libraryAliases.forEach { alias ->
 			val dep = libs.findLibrary(alias).get().get()
+			val key = "${dep.module.group}:${dep.module.name}"
+			accessors.putIfAbsent(key, "libs." + alias.replace('-', '.').replace('_', '.'))
 			val v = dep.versionConstraint.requiredVersion
-			if (v.isNotBlank()) canon["${dep.module.group}:${dep.module.name}"] = v
+			if (v.isNotBlank()) canonVersions[key] = v
 		}
-		configurations.matching { it.name in governedConfigurations }.forEach { conf ->
+		fun violation(key: String, version: String?, bucket: String): String? {
+			if (version.isNullOrBlank()) return null
+			val canonVersion = canonVersions[key]
+			val accessor = accessors[key]
+			return when {
+				canonVersion == version -> null
+				canonVersion != null -> "$key:$version ($bucket) — Platform canon is $canonVersion: declare it as $accessor"
+				accessor != null ->
+					"$key:$version ($bucket) — managed by the Platform BOMs: remove the explicit version and declare it as $accessor"
+				else ->
+					"$key:$version ($bucket) — not in the Platform catalog. If the Platform BOMs (Spring Boot / Modulith / " +
+						"Spring AI) manage it, remove the explicit version; otherwise add it to gradle/catalog/libs.versions.toml " +
+						"in DominikSienkiewicz/Platform, release, and bump the Platform pin"
+			}
+		}
+		configurations.matching { isGovernedBucket(it.name) }.forEach { conf ->
 			conf.dependencies.withType(ExternalModuleDependency::class.java).forEach { d ->
-				val ver = d.version
-				if (ver.isNullOrBlank() || d.group == "pl.seniordeveloper") return@forEach
-				val key = "${d.group}:${d.name}"
-				val canonV = canon[key]
-				if (canonV == null) {
-					violations += "$key:$ver (${conf.name}) — BRAK w platform-catalog: dodaj wpis w Platform i wydaj (./release.sh)"
-				} else if (canonV != ver) {
-					violations += "$key:$ver (${conf.name}) — kanon platformy: $canonV (deklaruj przez libs.<alias>)"
-				}
+				violation("${d.group}:${d.name}", d.version, conf.name)?.let { violations += it }
+			}
+			conf.dependencyConstraints.forEach { c ->
+				violation("${c.group}:${c.name}", c.version, "${conf.name} constraint")?.let { violations += it }
 			}
 		}
 	}
@@ -188,13 +210,13 @@ afterEvaluate {
 	platformDependencyCheck.configure {
 		doLast {
 			if (catalogMissing) {
-				logger.lifecycle("platformDependencyCheck: pominięty — brak katalogu 'libs' (build spoza konsumenta platformy)")
+				logger.warn("platformDependencyCheck: skipped — no 'libs' version catalog, so this is not a Platform consumer build")
 			} else if (violations.isNotEmpty()) {
 				throw GradleException(
-					"Wersje zależności spoza platformy (governance):\n  " + violations.joinToString("\n  "),
+					"Dependency versions outside the Platform canon (platformDependencyCheck):\n  " + violations.joinToString("\n  "),
 				)
 			} else {
-				logger.lifecycle("platformDependencyCheck: OK — wszystkie jawne wersje zgodne z platform-catalog")
+				logger.lifecycle("platformDependencyCheck: OK — every explicit version matches platform-catalog")
 			}
 		}
 	}

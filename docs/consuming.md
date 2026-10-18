@@ -58,6 +58,18 @@ Pass `gradle-task` as one line of whitespace-separated task arguments, for examp
 `lint test :app:integrationTest :app:bootJar`. Wildcard characters are passed
 literally to Gradle; the input does not interpret shell quoting or commands.
 
+## Dependency version governance
+
+`seniordev.java-conventions` wires `platformDependencyCheck` into `check`. A dependency or
+dependency constraint without a version is left to the Platform BOMs. One with an explicit
+version must match the catalog, so declare it through `libs.<alias>`. The check covers every
+declarable bucket: `api`, `implementation`, `compileOnly`, `compileOnlyApi`, `runtimeOnly`,
+`annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly`, and their `test*`,
+`testFixtures*` and custom source set variants. It also covers `pl.seniordeveloper` artifacts,
+whose canon is the Platform version you pin. Each failure line names the fix: the `libs.…` alias
+to use, a BOM-managed version to remove, or a library that must first be added to the Platform
+catalog and released.
+
 ## Agent resource profile
 
 Only `AI_AGENT=1` or `AI_AGENT=true` opts in. Java test tasks use one fork, a 2 GiB
