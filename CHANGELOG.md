@@ -71,6 +71,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- The canon no longer ships known HIGH or CRITICAL CVEs with a fix: `seniordev.spring-modulith-conventions`
+  overrides Tomcat to 11.0.27 and Jackson to 3.1.8 and 2.21.8 above the Spring Boot 4.1.1 BOM, the catalog
+  moves jsoup to 1.23.2 and the frontend canon js-yaml to 4.3.2. `scripts/platform-bump.sh` regenerates the
+  lockfiles and verification metadata these versions change.
 - `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new
   `SSH_HOST_KEY_SHA256` before pushing anything, warns when it is empty, and exits non-zero when a
   `gh` call fails instead of ending with "Gotowe". Sync the copy in `scripts/`.

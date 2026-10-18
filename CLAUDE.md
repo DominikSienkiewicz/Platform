@@ -78,7 +78,10 @@ opublikuj, podbij pin w repo konsumenta.
 7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.1 zarządza Netty 4.2.17.Final i PostgreSQL
    42.7.13 — usunięto starsze piny CVE. Nie przywracaj ich bez sprawdzenia BOM-a.
    Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
-   z javac 27. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
+   z javac 27. Nadpisania CVE `tomcat.version` 11.0.27, `jackson-bom.version` 3.1.8
+   i `jackson-2-bom.version` 2.21.8 wróciły, bo Boot 4.1.1 (najnowszy) zarządza podatnymi 11.0.24,
+   3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; lustra w katalogu pilnuje
+   `PlatformCveOverrideMirrorTest`, zdejmij je, gdy BOM Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
    zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
    Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje. Lustra pilnuje
    `PlatformToolVersionMirrorTest`.

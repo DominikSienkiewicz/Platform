@@ -43,6 +43,15 @@ val junitVersion = "6.1.3"
 // Lustro gradle/catalog: version("lombok"); pilnuje PlatformToolVersionMirrorTest.
 ext["lombok.version"] = "1.18.48"
 
+// Nadpisania CVE ponad BOM Boot 4.1.1 (nowszego Boota jeszcze nie ma). Wykrył je canon-cve-scan.yml:
+// tomcat-embed-core 11.0.24 — 3x Critical (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5,
+// poprawka 11.0.25); jackson 3.1.5 i 2.21.5 — High (np. GHSA-cxp5-3px4-pw24, poprawki 3.1.7 i 2.21.7).
+// Najnowsze łatki w tych samych liniach, które zarządza Boot. USUŃ każde, gdy BOM Boota dojdzie do poprawki.
+// Lustra gradle/catalog: tomcat, jacksonBom, jackson2Bom; pilnuje PlatformCveOverrideMirrorTest.
+ext["tomcat.version"] = "11.0.27"
+ext["jackson-bom.version"] = "3.1.8"
+ext["jackson-2-bom.version"] = "2.21.8"
+
 dependencyManagement {
 	imports {
 		mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")

@@ -36,6 +36,9 @@ would stay on the old BOM, CVE fixes included.
 | `junitVersion` | `seniordev.spring-modulith-conventions` | `junit` | `PlatformCatalogMirrorTest` |
 | `archunitVersion` | `seniordev.spring-modulith-conventions` | `archunit` | `PlatformToolVersionMirrorTest` |
 | `ext["lombok.version"]` | `seniordev.spring-modulith-conventions` | `lombok` | `PlatformToolVersionMirrorTest` |
+| `ext["tomcat.version"]` | `seniordev.spring-modulith-conventions` | `tomcat` | `PlatformCveOverrideMirrorTest` |
+| `ext["jackson-bom.version"]` | `seniordev.spring-modulith-conventions` | `jacksonBom` | `PlatformCveOverrideMirrorTest` |
+| `ext["jackson-2-bom.version"]` | `seniordev.spring-modulith-conventions` | `jackson2Bom` | `PlatformCveOverrideMirrorTest` |
 | `toolchain-java-version` default | `backend-ci.yml`, `deploy.yml`, `sonar.yml` | `java` | `PlatformToolVersionMirrorTest` |
 
 `pitestTool` is the PIT engine and `pitest` the Gradle plugin; in the same way `spotbugs` is
@@ -49,6 +52,18 @@ Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the previous
 `netty.version` and `postgresql.version` overrides have been removed. Keeping them
 would force versions older than the BOM. The `lombok.version` override remains at
 `1.18.48`: the BOM still pins 1.18.46, incompatible with javac 27.
+
+Three CVE overrides came back after the first canon scan, because no Boot release newer than
+4.1.1 exists yet and its BOM manages vulnerable versions:
+
+| Property | Boot 4.1.1 | Override | Why |
+|---|---|---|---|
+| `tomcat.version` | 11.0.24 | 11.0.27 | three CRITICAL advisories (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5), fixed in 11.0.25 |
+| `jackson-bom.version` | 3.1.5 | 3.1.8 | HIGH advisories in jackson-core and jackson-databind, fixed in 3.1.7 |
+| `jackson-2-bom.version` | 2.21.5 | 2.21.8 | the same advisories in the 2.x line, fixed in 2.21.7 |
+
+Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
+as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
 
 ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
 `spring-modulith-core` 2.1.1 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
