@@ -61,6 +61,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   `# expires:` date has passed and warns on one without a date, and gains an `only-fixed` input
   (default `false`, the behaviour so far).
 
+- Platform runs its own `scorecard.yml` and `semgrep.yml` on itself from `self-scan.yml`: Scorecard on
+  every push to `main` and weekly, with published results; Semgrep also on pull requests. A change
+  to either workflow now runs in Platform before consumers get it.
+
 ### Changed
 
 - `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new

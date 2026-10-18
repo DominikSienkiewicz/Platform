@@ -1,0 +1,36 @@
+name: Self-scan
+
+# Platform uruchamia własne reusable scorecard.yml i semgrep.yml na sobie. To jedyne publiczne repo
+# ekosystemu (konsumenci są prywatni i pomijają Scorecard), więc tylko tu Scorecard publikuje wynik,
+# a zmiana w tych workflowach przechodzi przez prawdziwy run, zanim dostaną ją konsumenci.
+# Osobny plik, nie job w ci.yml: ci.yml jest też `verify` wydania, a Semgrep nie ma bramkować release'u.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: self-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Wynik publikowany i SARIF w Code scanning tylko z main; pull requesty skanuje Semgrep.
+  scorecard:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+    uses: ./.github/workflows/scorecard.yml
+
+  # Domyślny zestaw reguł, ten sam co u konsumentów (w tym p/github-actions dla tych workflowów).
+  semgrep:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/semgrep.yml

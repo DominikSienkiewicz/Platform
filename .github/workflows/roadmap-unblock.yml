@@ -45,10 +45,11 @@ jobs:
           GH_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
           GH_REPO: ${{ github.repository }}
           ROADMAP_PROJECT_NUMBER: ${{ vars.ROADMAP_PROJECT_NUMBER }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -euo pipefail
           if [ -z "${GH_TOKEN:-}" ]; then
             echo "::warning title=Auto-unblock pominięty::Brak sekretu ROADMAP_PROJECT_TOKEN (PAT scope project). Projects v2 dla repo user-owned wymaga PAT-a."
             exit 0
           fi
-          bash scripts/roadmap-unblock.sh --closed "${{ github.event.issue.number }}"
+          bash scripts/roadmap-unblock.sh --closed "$ISSUE_NUMBER"

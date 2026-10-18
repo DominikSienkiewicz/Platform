@@ -1,6 +1,8 @@
 name: Scorecard (reusable)
 
 # Reusable OpenSSF Scorecard. Wołany przez repo (z odpowiednimi uprawnieniami na poziomie joba callera).
+# Platform woła go na sobie z self-scan.yml — jedyne publiczne repo ekosystemu, więc tylko tu wynik
+# trafia do api.securityscorecards.dev (publish_results).
 on:
   workflow_call:
 

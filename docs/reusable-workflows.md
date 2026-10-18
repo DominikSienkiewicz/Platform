@@ -110,7 +110,9 @@ jobs:
 
 ## semgrep.yml
 
-Static analysis of the source code. ERROR findings fail the run.
+Static analysis of the source code. ERROR findings fail the run; accepting one is described in
+[security-scanning.md](security-scanning.md). Platform runs the default rulesets on itself from
+`self-scan.yml`, pull requests included.
 
 - Permissions: `contents: read`.
 - No secrets.
@@ -127,7 +129,9 @@ jobs:
 ## scorecard.yml
 
 OpenSSF Scorecard. It only makes sense in a public repository; private callers usually skip it
-with `if: ${{ !github.event.repository.private }}`.
+with `if: ${{ !github.event.repository.private }}`. Platform runs it on itself from
+[`self-scan.yml`](../.github/workflows/self-scan.yml) on every push to `main` and weekly, and
+publishes the result.
 
 - Permissions on the calling job: `contents: read`, `security-events: write`, `id-token: write`.
 - No secrets and no inputs.

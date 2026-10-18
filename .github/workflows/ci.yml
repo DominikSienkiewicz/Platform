@@ -97,8 +97,7 @@ jobs:
     defaults:
       run:
         working-directory: frontend
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Bez GITHUB_TOKEN: lockfile ciągnie wyłącznie publiczne paczki npm, a job uruchamia kod zależności.
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
