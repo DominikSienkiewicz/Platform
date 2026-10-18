@@ -1,7 +1,8 @@
 {
   "name": "@dominiksienkiewicz/api-client",
   "version": "1.5.31",
-  "description": "Współdzielony klient HTTP dla frontendów (env base URL, JSON, 204→null, ApiError z body.message). Likwiduje 4 zdryfowane wrappery fetch w repo.",
+  "private": true,
+  "description": "Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body.",
   "license": "MIT",
   "type": "module",
   "main": "index.js",

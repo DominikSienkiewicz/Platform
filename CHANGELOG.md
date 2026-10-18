@@ -106,6 +106,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are private and no longer published;
+  1.5.31 stays their last release in GitHub Packages. No consumer used them; adopting one makes it
+  public again.
 - Consumers need Gradle 9.6.1 or newer, the minimum TestKit now builds a consumer on;
   `seniordev.settings-conventions` fails an older build with the fix. `platform-bump` moves the Gradle
   wrapper to the catalog's new `gradle` entry (9.8.1), with its SHA-256, so review the wrapper diff of

@@ -2,6 +2,10 @@
 
 ## API client response contract
 
+> **Incubating.** `@dominiksienkiewicz/api-client` is private and not published: no consumer has
+> adopted it, and 1.5.31 is its last release in GitHub Packages. The contract below holds for that
+> release and for the source, and becomes public again with its first adopter.
+
 `@dominiksienkiewicz/api-client` returns parsed JSON for successful responses.
 A response with status 204 returns `null` without reading its body; other empty
 responses also produce a `null` body. Invalid JSON in a successful response still

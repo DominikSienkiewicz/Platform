@@ -46,13 +46,12 @@ Every artifact below is published at the same `platformVersion`.
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
-| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` | GitHub Packages (npm) |
-| `frontend/packages/query/` | `@dominiksienkiewicz/query` | GitHub Packages (npm) |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
 
 The npm job publishes every workspace package under `frontend/packages/` that is not marked
 `"private": true`, so a new package is released as soon as it exists. Update this table and the
-README in the same change.
+README in the same change. `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are
+private until a first consumer adopts them; 1.5.31 is their last published release.
 
 ## One-time setup
 

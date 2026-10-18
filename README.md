@@ -40,8 +40,8 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, and the `platform-bump` bin | GitHub Packages (npm) |
-| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*) | GitHub Packages (npm) |
-| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*) | GitHub Packages (npm) |
+| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
+| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — private shadcn registry (*incubating*) | GitHub Packages + HTTP JSON |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
 | `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
@@ -53,6 +53,11 @@ own schedule and rolls back by pinning an older version.
 repository has adopted them yet. Treat their API as provisional until the first one does: that
 repository's adoption pull request removes the label here. How to adopt the bundles and the security
 starter is in [docs/consuming.md](docs/consuming.md#catalog-bundles-incubating).
+
+`api-client` and `query` are also private: no frontend adopted them, and `api-client` overlaps the
+clients the consumers generate from OpenAPI. Releases skip them, and they stay at 1.5.31 in the
+registry until a first consumer adopts one; that pull request removes `"private": true` too.
+Attestate's `providers.tsx` matches `query` one to one.
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
