@@ -243,11 +243,20 @@ release of `@dominiksienkiewicz/versions` you install. `platform-versions-check`
 `dependencies`, `devDependencies`, `optionalDependencies` and `overrides`; an application's
 `peerDependencies` are deliberately left out.
 
-`tsconfig.json`:
+`tsconfig.json` (`"@/*": ["./*"]` in a layout without `src/`):
 
 ```json
-{ "extends": "@dominiksienkiewicz/tsconfig/next.json" }
+{
+  "extends": "@dominiksienkiewicz/tsconfig/next.json",
+  "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
 ```
+
+The preset sets compiler options and the `next` plugin only. TypeScript resolves `include`, `exclude`
+and `paths` of an extended config against that config's directory, which is
+`node_modules/@dominiksienkiewicz/tsconfig`, so the consumer declares them.
 
 `eslint.config.mjs`:
 
