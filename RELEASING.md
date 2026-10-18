@@ -187,7 +187,9 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   release. The stub runs the installed copy of the bin, so the notes appear from the bump after
   the one that installs a version with this feature;
 - rewrites the settings plugin and catalog pins in `backend/settings.gradle.kts` and
-  `backend/settings-gradle.lockfile`; convention plugins in `build.gradle.kts` carry no version;
+  `backend/settings-gradle.lockfile`, and a `platformVersion=` pin in `backend/gradle.properties` or
+  a root `gradle.properties`; convention plugins in `build.gradle.kts` carry no version. It fails
+  when the layout has no pin, instead of reporting success;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,

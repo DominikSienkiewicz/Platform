@@ -32,8 +32,8 @@ plugins {
 }
 
 // UWAGA: convention plugin NIE deklaruje repositories — repozytoria pochodzą z settings konsumenta
-// (dependencyResolutionManagement: mavenLocal + mavenCentral + GitHub Packages). Deklaracja repo
-// na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform z mavenLocal/GitHub.
+// (dependencyResolutionManagement: opcjonalne -PplatformRepository, mavenCentral, GitHub Packages). Deklaracja
+// repo na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform.
 
 // Lustro gradle/catalog: version("java"). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
 java {

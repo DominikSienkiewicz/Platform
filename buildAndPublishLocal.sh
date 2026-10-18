@@ -4,7 +4,8 @@
 #
 #   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog
 #               + test-fixtures + security-starter, wszystkie w jednej platformVersion
-#   Frontend -> pnpm install (paczki gotowe); konsument linkuje je przez `npm run platform:link`
+#   Frontend -> pnpm install (paczki gotowe); konsument instaluje je przez
+#               npm install --no-save <ścieżka>/Platform/frontend/packages/<nazwa>
 #
 # Konsument wskazuje to repo jawnie: -PplatformRepository=file:///<home>/.m2/repository (pierwsze
 # w kolejności rezolucji) — patrz docs/local-development.md.
@@ -62,10 +63,13 @@ if [[ "$SKIP_FRONTEND" -eq 0 ]]; then
   fi
 fi
 
-log "Gotowe — artefakty Gradle w ~/.m2/repository (mavenLocal)."
-cat <<'EOF'
+VERSION="$(grep -E '^platformVersion=' "$ROOT/gradle/build-logic/gradle.properties" | cut -d= -f2 | tr -d ' ')"
+log "Gotowe — artefakty Gradle $VERSION w $HOME/.m2/repository."
+cat <<EOF
 
-Następnie w repo konsumenta:
-  Backend  : ./gradlew build                                  # platforma z mavenLocal (bez GitHuba)
-  Frontend : npm run platform:link && npm install && npm test # lokalne paczki przez symlink
+Next, in a consumer repository (Platform 1.5.31 or newer wiring, see docs/local-development.md):
+  Backend : ./gradlew build -PplatformVersion=$VERSION -PplatformRepository=file://$HOME/.m2/repository
+            The consumer's pluginManagement must contain the platformRepository line from
+            templates/jvm/spring-app/settings.gradle.kts, or plugins still resolve from GitHub Packages.
+  Frontend: npm install --no-save $ROOT/frontend/packages/<name>
 EOF

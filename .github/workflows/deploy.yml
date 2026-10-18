@@ -16,51 +16,51 @@ on:
   workflow_call:
     inputs:
       app-name:
-        description: "Prefiks obrazów, np. skillsprintplus / bookofstyling."
+        description: "Image name prefix, e.g. skillsprintplus or bookofstyling."
         type: string
         required: true
       compose-dir:
-        description: "Katalog z docker-compose.prod.yml i Caddyfile (SSP: '.', BoS: 'infra')."
+        description: "Directory with the compose file and the Caddyfile on the host (e.g. '.' or 'infra')."
         type: string
         default: "."
       has-worker:
-        description: "Czy budować obraz <app>-eval-worker (SSP: true, BoS: false)."
+        description: "Also build the <app>-eval-worker image."
         type: boolean
         default: false
       migrate-image-suffix:
-        description: "Sufiks obrazu migracji (SSP: 'migrate', BoS: 'db-migrate')."
+        description: "Suffix of the migration image (e.g. 'migrate' or 'db-migrate')."
         type: string
         default: "migrate"
       migrate-tag-source:
-        description: "Tag obrazu migracji: 'backend' (=wersja backendu) lub 'changelog' (numer changeloga)."
+        description: "Tag of the migration image: 'backend' (the backend version) or 'changelog' (the changelog number)."
         type: string
         default: "backend"
       java-version:
-        description: "JDK do builda. Pluginy Platform są kompilowane na JVM 25 -> Gradle MUSI działać na 25."
+        description: "JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer."
         type: string
         default: "25"
       toolchain-java-version:
-        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string
         default: "27"
       has-migrate:
-        description: "Buduj/uruchamiaj osobny obraz migracji. Aplikacje z migracją na starcie (Flyway) -> false."
+        description: "Build and run a separate migration image. Use false for applications that migrate on start (Flyway)."
         type: boolean
         default: true
       scan-images:
-        description: "Skan zbudowanych obrazów (Grype gate + opcjonalny Snyk) po push, przed deployem. Opt-in."
+        description: "Scan the pushed images before deploying (Grype gate, optional Snyk). Opt-in."
         type: boolean
         default: false
       scan-severity:
-        description: "Próg fail dla Grype przy scan-images."
+        description: "Grype fail threshold for scan-images."
         type: string
         default: high
       compose-file:
-        description: "Nazwa pliku compose w compose-dir (default docker-compose.prod.yml; azimuth: docker-compose.dev.yml)."
+        description: "Compose file name in compose-dir."
         type: string
         default: "docker-compose.prod.yml"
       base-env:
-        description: "Nazwa host env-file bazowego (puste = auto .env.prod->.env; azimuth: .env.dev)."
+        description: "Base env file on the host; empty picks .env.prod, then .env."
         type: string
         default: ""
     # Sekrety (GPR_USER/GPR_KEY/NPM_GH_TOKEN/SSH_*, opcjonalnie SNYK_TOKEN) i zmienne (GHCR_OWNER/DEPLOY_PATH) z callera przez inherit + vars.

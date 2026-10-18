@@ -1,26 +1,31 @@
 name: Backend CI (reusable)
 
-# Reusable workflow dla backendów Spring/Gradle. Wołany przez repo:
-#   jobs: { backend: { uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1, secrets: inherit } }
+# Reusable workflow dla backendów Spring/Gradle. Kontrakt callera (uprawnienia, sekrety, snippet):
+# docs/reusable-workflows.md. Wołany z jawnym sekretem, nie `secrets: inherit`:
+#   jobs: { backend: { uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z,
+#                      secrets: { gpr_token: "${{ secrets.GPR_TOKEN }}" } } }
 on:
   workflow_call:
     inputs:
       working-directory:
+        description: "Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout)."
         type: string
         default: backend
       java-version:
+        description: "JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer."
         type: string
         default: "25"
       toolchain-java-version:
-        description: "JDK toolchainu kompilacji (seniordev.java-conventions). Instalowany przez setup-java, nie przez Foojay."
+        description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string
         default: "27"
       gradle-task:
+        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing."
         type: string
         default: "build"
     secrets:
       gpr_token:
-        description: "PAT z read:packages do prywatnych paczek Platform (fallback: automatyczny GITHUB_TOKEN)."
+        description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
         required: false
 
 permissions:
@@ -61,8 +66,8 @@ jobs:
           mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
 
-      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages
-      # (local-first: lokalnie mavenLocal, na CI fallback do GitHub Packages).
+      # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
+      # Lokalnie konsument może dołożyć jawne -PplatformRepository (ADR-0003); tu działa GitHub Packages.
       - name: ./gradlew ${{ inputs.gradle-task }}
         run: |
           read -r -a gradle_tasks <<< "$GRADLE_TASK"

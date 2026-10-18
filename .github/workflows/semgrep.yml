@@ -15,11 +15,11 @@ on:
   workflow_call:
     inputs:
       config:
-        description: "Rulesety Semgrep (spacje-separated, każdy dostaje własne --config)."
+        description: "Semgrep rulesets, separated by spaces; each gets its own --config."
         type: string
         default: "p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions"
       semgrep-version:
-        description: "Pinowana wersja CLI Semgrep (pipx)."
+        description: "Pinned Semgrep CLI version, installed with pipx."
         type: string
         default: "1.168.0"
 

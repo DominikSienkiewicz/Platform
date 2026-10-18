@@ -1,33 +1,36 @@
-# templates — kanoniczne pliki współdzielone (source of truth)
+# templates — canonical shared files (source of truth)
 
-Pliki, których **nie da się** dystrybuować przez registry (są per-repo z natury), ale mają jedno
-źródło prawdy tutaj. Przy zmianie: edytuj tu, potem zsynchronizuj do repo konsumenckich.
+Files that **cannot** be distributed through a registry, because each repository keeps its own
+copy, but that have one source of truth here. To change one: edit it here, then sync it to the
+consumer repositories.
 
-| Plik | Cel | Gdzie kopiować |
+| File | Purpose | Copy to |
 |---|---|---|
-| `jvm/java-library/`, `jvm/spring-app/` | minimalne projekty konsumujące opublikowane pluginy i katalog; sprawdzane przez Gradle TestKit. Ich `.gitignore` = reguły `gitignore/root.gitignore` + `gitignore/backend.gitignore` | root nowego repo; instrukcja w [consuming.md](../docs/consuming.md) |
-| `agent-gradle.sh` | opt-in limity workerów przy `AI_AGENT=1/true`; uruchamia `./gradlew` z roota, a gdy go nie ma — `backend/gradlew` z `backend/` | `<repo>/scripts/agent-gradle.sh` |
-| `.editorconfig` | spójny styl IDE/OS (Java: 2 spacje jak google-java-format; Kotlin/`*.kts`: taby) | root każdego repo |
-| `.sdkmanrc` | lokalny JDK do uruchamiania Gradle przez SDKMAN (`sdk env`) | root każdego repo |
-| `gitignore/root.gitignore` | OS/IDE/env/`.secrets.local`/logs | `<repo>/.gitignore` |
-| `gitignore/backend.gitignore` | Java/Gradle, wyjście IntelliJ (`out/`) i Buildship (`bin/`) | `<repo>/backend/.gitignore` |
-| `gitignore/frontend.gitignore` | Next.js/Node/Playwright | `<repo>/frontend/.gitignore` |
-| `Dockerfile.backend` | runtime-only (jar z `bootJar`) na `sapmachine:27-jre` — powód i warunek powrotu na Temurin w [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` |
-| `platform-bump.sh` | **stub** delegujący do binu `platform-bump` z `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); logika bumpu żyje w pakiecie npm, nie tutaj — drift-proof. Wymaga pinu `@dominiksienkiewicz/versions` ≥ 1.3.8 | `<repo>/scripts/platform-bump.sh` |
-| `bump-version.sh` | bump wersji warstwy aplikacji (`backend`/`frontend`) i nowy changeset Liquibase (`db new-migration`); to nie jest `platform-bump.sh` | `<repo>/scripts/bump-version.sh` |
-| `merge.sh` | bezpieczna integracja lokalnej gałęzi feature z wymaganym komunikatem merge; preflight worktree (także plików ignored) i lokalnego targetu, kontrola świeżości `origin/<target>`, blokada równoległych uruchomień, `--dry-run`, jawny tryb `--offline`, atomowy cleanup oraz jednoznaczny wynik: zielone `✓` przy sukcesie, czerwone `✗` przy każdej porażce (`NO_COLOR` wyłącza kolor, `FORCE_COLOR` wymusza go poza terminalem) | `<repo>/scripts/merge.sh` |
-| `setup-gh-deploy.sh` | bootstrap sekretów+zmiennych Actions dla reusable `deploy.yml@v1` z lokalnego `.secrets.local` (bezpieczny parser, wartości przez stdin, `SSH_KNOWN_HOSTS` z ssh-keyscan; opcje `--gen-key`, `--with-release`); odmawia pracy, gdy git nie ignoruje `.secrets.local` | `<repo>/scripts/setup-gh-deploy.sh` |
-| `secrets.local.example` | szablon lokalnego pliku wartości dla `setup-gh-deploy.sh` (nazwy sekretów/zmiennych = kontrakt reusable deploy) | `<repo>/.secrets.local.example` |
-| `roadmap/` | **toolkit roadmap→Issues+Projects v2** (poddrzewo): kanoniczna logika (`roadmap-{to-issues,unblock,project-setup}.sh` + `lib/`) + per-repo `roadmap-config.sh`. Szczegóły i rollout w [`roadmap/README.md`](roadmap/README.md) | `<repo>/scripts/**` (config: `scripts/lib/roadmap-config.sh`) |
-| `github/CODEOWNERS` | domyślny właściciel całego repo | `<repo>/.github/CODEOWNERS` |
-| `github/pull_request_template.md` | szablon opisu PR (cel zmiany + checklista) | `<repo>/.github/pull_request_template.md` |
+| `jvm/java-library/`, `jvm/spring-app/` | minimal projects that consume the published plugins and catalog; built by Gradle TestKit. Their `.gitignore` is the rules of `gitignore/root.gitignore` followed by `gitignore/backend.gitignore` | the root of a new repository; see [consuming.md](../docs/consuming.md) |
+| `agent-gradle.sh` | opt-in worker limits with `AI_AGENT=1/true`; runs `./gradlew` from the root, or `backend/gradlew` from `backend/` when the root has no wrapper | `<repo>/scripts/agent-gradle.sh` |
+| `.editorconfig` | consistent IDE style (Java: 2 spaces like google-java-format; Kotlin/`*.kts`: tabs) | the root of every repository |
+| `.sdkmanrc` | the local JDK that runs Gradle, through SDKMAN (`sdk env`) | the root of every repository |
+| `npmrc` | GitHub Packages registry and token lines for `@dominiksienkiewicz/*` | `<repo>/frontend/.npmrc` |
+| `gitignore/root.gitignore` | OS, IDE, env files, `.secrets.local`, logs | `<repo>/.gitignore` |
+| `gitignore/backend.gitignore` | Java and Gradle, IntelliJ (`out/`) and Buildship (`bin/`) output | `<repo>/backend/.gitignore` |
+| `gitignore/frontend.gitignore` | Next.js, Node, Playwright | `<repo>/frontend/.gitignore` |
+| `Dockerfile.backend` | runtime-only image (the `bootJar`) on `sapmachine:27-jre`; why, and when to move back to Temurin, is in [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` |
+| `platform-bump.sh` | **stub** that runs the `platform-bump` bin of `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); the bump logic lives in the npm package, so the stub cannot drift. Needs `@dominiksienkiewicz/versions` 1.3.8 or newer | `<repo>/scripts/platform-bump.sh` |
+| `bump-version.sh` | bumps the application version (`backend`/`frontend`) and creates a Liquibase changeset (`db new-migration`); not the same as `platform-bump.sh` | `<repo>/scripts/bump-version.sh` |
+| `merge.sh` | safe integration of a local feature branch with a required merge message: preflight of the worktree (ignored files included) and the local target, freshness of `origin/<target>`, a lock against parallel runs, `--dry-run`, an explicit `--offline` mode, atomic cleanup, and a clear result: a green `✓` on success, a red `✗` on any failure (`NO_COLOR` disables colour, `FORCE_COLOR` forces it outside a terminal) | `<repo>/scripts/merge.sh` |
+| `setup-gh-deploy.sh` | bootstraps the Actions secrets and variables of the reusable `deploy.yml` from a local `.secrets.local` (safe parser, values through stdin, `SSH_KNOWN_HOSTS` from ssh-keyscan; options `--gen-key`, `--with-release`); refuses to run when git does not ignore `.secrets.local` | `<repo>/scripts/setup-gh-deploy.sh` |
+| `secrets.local.example` | template of the local value file for `setup-gh-deploy.sh`; the secret and variable names are the contract of the reusable deploy | `<repo>/.secrets.local.example` |
+| `roadmap/` | **roadmap → Issues and Projects v2 toolkit** (subtree): the canonical logic (`roadmap-{to-issues,unblock,project-setup}.sh` and `lib/`) plus a per-repository `roadmap-config.sh`. Details and rollout in [`roadmap/README.md`](roadmap/README.md) | `<repo>/scripts/**` (config: `scripts/lib/roadmap-config.sh`) |
+| `github/CODEOWNERS` | the default owner of the whole repository | `<repo>/.github/CODEOWNERS` |
+| `github/pull_request_template.md` | pull request description template (purpose and checklist) | `<repo>/.github/pull_request_template.md` |
 
-Testy skryptów szablonowych żyją w `templates/tests/` (odpalane w CI, job „Templates”). Platform
-używa kanonicznego `templates/merge.sh` przez cienki delegat [`../merge.sh`](../merge.sh), dzięki
-czemu własna kopia helpera nie może się rozjechać z kanonem.
+Tests of the template scripts live in `templates/tests/` and run in CI (the "Templates" job).
+Platform uses the canonical `templates/merge.sh` through the thin delegate [`../merge.sh`](../merge.sh),
+so its own copy of the helper cannot drift from the canon.
 
-CI (reusable workflows), wersje (catalog), jakość (convention plugins), config lintera, paczki FE
-i Renovate-preset są dystrybuowane automatycznie (artefakty/`extends`) — nie ma ich tutaj.
+CI (reusable workflows), versions (catalog), quality (convention plugins), the linter config, the
+frontend packages and the Renovate preset are distributed automatically (artifacts and `extends`),
+so they are not here.
 
 Project concepts, feature proposals, plans, and audits belong in local
 `docs/concepts/`. The root Git ignore templates exclude that directory;

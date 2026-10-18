@@ -24,11 +24,25 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
   post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
   (`sapmachine:27-jre`) before taking this release.
+- Callers of `frontend-ci.yml` must grant `packages: read`. The workflow now requests it, so the
+  automatic `GITHUB_TOKEN` fallback can read `@dominiksienkiewicz/*`, and a caller that grants only
+  `contents: read` fails with `startup_failure`. Pass `gpr_token` explicitly as shown in
+  `docs/reusable-workflows.md`.
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
 ### Added
 
+- `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting
+  table, and its snippets paste into real consumer layouts. `templates/npmrc` is the canonical
+  `frontend/.npmrc`.
+- `docs/reusable-workflows.md`: the caller contract of every reusable workflow (permissions, secrets,
+  variables and a snippet). Every workflow input and secret has an English description.
+- `docs/reference.md`: every task, property and default the convention plugins add, the security
+  starter properties and a snippet per test fixture. The README shows how a release reaches the
+  registries and the consumer pins.
+- `platform-test-fixtures` and `platform-security-starter` publish a sources jar, and every
+  `platform.security.*` and `platform.cors.*` property has an IDE description.
 - Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
   version tag carrying the same notes.
 - `platform-bump` prints the notes of every release it crosses and repeats their consumer
@@ -37,6 +51,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `platform-bump` also bumps a template-style `platformVersion=` pin in `backend/gradle.properties`
+  (or a root `gradle.properties`) and fails when it finds no pin instead of reporting success.
+- `buildAndPublishLocal.sh` prints the consumer command with `-PplatformRepository`, and the docs
+  replace the non-existent `npm run platform:link` with `npm install --no-save <path>`.
 - `platform-bump` without an argument stays in the consumer's current MAJOR version and only
   reports a newer MAJOR; crossing it takes an explicit version.
 - `platformDependencyCheck` messages are in English and name the fix: the `libs.…` alias to

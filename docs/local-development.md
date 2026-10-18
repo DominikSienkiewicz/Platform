@@ -6,9 +6,8 @@ Frontend requirements: Node.js ≥ 22.13 (this repository is built with Node 24)
 11.18.0.
 
 ```bash
-# Gradle — publish to the local repository (a smoke test that needs no registry):
-cd gradle/build-logic && ./gradlew publishToMavenLocal
-cd ../catalog        && ./gradlew publishToMavenLocal
+# Gradle — publish all 4 modules to the local Maven repository (a smoke test that needs no registry):
+./buildAndPublishLocal.sh --skip-frontend
 
 # Frontend:
 cd frontend && pnpm install
@@ -39,23 +38,28 @@ For npm, pnpm 11 requires the token in a trusted `~/.npmrc`, not in the committe
 
 ## Local-first: building without GitHub
 
-The rule is: **locally, consume what was built locally; after a push and on CI, consume the
-published artifacts.**
+The rule is: **locally, consume what was built locally, explicitly; after a push and on CI,
+consume the published artifacts.** `-PplatformRepository` is the only official way to test an
+unreleased Platform change on a consumer ([ADR-0003](adr/0003-local-platform-resolution.md));
+no convention reads the local Maven repository implicitly.
 
 | Layer | Locally, without GitHub | CI / after push |
 |---|---|---|
-| Gradle (plugins + catalog) | Set `-PplatformRepository=file:///absolute/path/to/.m2/repository` after `publishToMavenLocal`; the explicit local repository comes first | GitHub Packages uses `GITHUB_ACTOR` / `GITHUB_TOKEN` |
-| npm (frontend packages) | `npm run platform:link` symlinks to `../../Platform/frontend/packages/*` — the live local source | dependencies resolve from the registry at the exact Platform version |
+| Gradle (plugins + catalog) | Run `./buildAndPublishLocal.sh`, then build the consumer with `-PplatformVersion=<version> -PplatformRepository=file://$HOME/.m2/repository`; the explicit local repository comes first | GitHub Packages uses `GITHUB_ACTOR` / `GITHUB_TOKEN` |
+| npm (frontend packages) | `npm install --no-save <absolute path>/Platform/frontend/packages/<name>` installs the live local source without touching `package.json` | dependencies resolve from the registry at the exact Platform version |
 
 ```bash
-# Once, in the platform — builds and publishes locally (Gradle → mavenLocal, frontend → pnpm install):
+# Once, in the platform — publishes the Gradle modules to ~/.m2/repository and installs the frontend:
 ./buildAndPublishLocal.sh                  # (--skip-frontend / --with-registry / --help)
 
-# In a consuming frontend repository:
-npm run platform:link     # before working locally
-npm run platform:unlink   # before committing — restores registry versions
+# In a consuming backend (it prints this command with the version filled in):
+./gradlew build -PplatformVersion=<version> -PplatformRepository=file://$HOME/.m2/repository
+
+# In a consuming frontend; `npm ci` restores the registry versions afterwards:
+npm install --no-save <absolute path>/Platform/frontend/packages/<name>
 ```
 
-> Local resolution is explicit in the current settings convention. Missing artifacts may
-> still require remote access. Product repositories with older custom settings may behave
-> differently; use the [current consumer wiring](consuming.md) when adopting this release.
+> This needs a consumer on Platform 1.5.31 or newer whose `pluginManagement` contains the
+> `platformRepository` line of [`templates/jvm/spring-app/settings.gradle.kts`](../templates/jvm/spring-app/settings.gradle.kts);
+> otherwise plugins still resolve from GitHub Packages. A missing local artifact may still need
+> remote access.

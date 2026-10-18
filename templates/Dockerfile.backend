@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Runtime-only. Jar budujesz PRZED obrazem: `./gradlew bootJar`.
-# Świadomie NIE budujemy Gradle'em w obrazie — local-first ciągnie artefakty Platform z
-# mavenLocal/GitHub Packages, a poświadczenia nie powinny trafiać do warstwy build kontenera.
+# Świadomie NIE budujemy Gradle'em w obrazie — build ciągnie artefakty Platform z GitHub Packages
+# (lokalnie z -PplatformRepository), a poświadczenia nie powinny trafiać do warstwy build kontenera.
 # Build:  ./gradlew bootJar && docker build -t <obraz> backend
 # SapMachine, bo eclipse-temurin:27-jre nie istnieje (stan 2026-09-25); bytecode 27 wymaga runtime >= 27.
 # Powrót na Temurin: docs/versions.md -> "Runtime image for the JDK 27 toolchain".

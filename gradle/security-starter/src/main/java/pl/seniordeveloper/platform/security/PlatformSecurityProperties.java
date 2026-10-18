@@ -19,10 +19,22 @@ public class PlatformSecurityProperties {
     PERMIT_ALL
   }
 
+  /**
+   * AUTHENTICATED requires authentication for every path not permitted; PERMIT_ALL permits every
+   * request.
+   */
   private Mode mode = Mode.AUTHENTICATED;
+
+  /** Disables the HTTP session, for token-authenticated APIs. */
   private boolean stateless = false;
+
+  /** CSRF protection; turn it off only for a stateless API without cookie authentication. */
   private boolean csrf = true;
+
+  /** HTTP Basic authentication. */
   private boolean httpBasic = true;
+
+  /** Paths that never require authentication; the deploy health gate needs the defaults. */
   private List<String> permittedPaths =
       List.of("/actuator/health", "/actuator/health/**", "/actuator/info");
 

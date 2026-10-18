@@ -2,10 +2,12 @@ package pl.seniordeveloper.platform.testing;
 
 /**
  * Jedno źródło prawdy tagów obrazów kontenerów testowych — likwiduje rozjazd, który był między
- * repo (np. {@code pgvector/pgvector:pg18} vs {@code :0.8.2-pg18}).
+ * repo (np. {@code :pg18} vs {@code :0.8.2-pg18}).
  *
- * <p>Lustro {@code gradle/catalog} ({@code pgvectorImage} / {@code ollamaImage}); Renovate bumpuje
- * te stałe przez customManager (datasource: docker) — patrz {@code Platform/default.json}.
+ * <p>Lustro: {@code infra/docker-compose.yml} (lokalne środowisko dev); równość tagów pilnuje
+ * {@code templates/tests/image-tags-sync.test.sh}. Renovate bumpuje te stałe przez customManager
+ * (datasource: docker) — patrz {@code Platform/default.json} — a compose swoim managerem, w tej
+ * samej gałęzi.
  */
 public final class PlatformImages {
 
