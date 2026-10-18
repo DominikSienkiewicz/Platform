@@ -34,7 +34,7 @@ val springAiVersion = "2.0.1"
 val archunitVersion = "1.5.0"
 val junitVersion = "6.1.3"
 
-// Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13; no CVE overrides needed.
+// Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13; no override needed for those two.
 
 // Nadpisanie KOMPATYBILNOŚCI (nie CVE) ponad BOM Boot 4.1.1: BOM-owy Lombok 1.18.46 pada na javac 27
 // (ClassNotFoundException com.sun.tools.javac.tree.EndPosTable w lombok.javac.Javac), a toolchain
@@ -51,6 +51,38 @@ ext["lombok.version"] = "1.18.48"
 ext["tomcat.version"] = "11.0.27"
 ext["jackson-bom.version"] = "3.1.8"
 ext["jackson-2-bom.version"] = "2.21.8"
+
+// Właściwości wersji BOM-ów ustawiane przez Platform (wyżej). Konsument, który ustawi dowolną właściwość `*.version`
+// (extra/ext albo gradle.properties), omija kanon: dependency-management podstawia ją do zaimportowanych BOM-ów,
+// a platformDependencyCheck widzi tylko zadeklarowane zależności. Decyzja 18: ostrzeżenie z listą, nie błąd.
+// resolutionStrategy.eachDependency/force są statycznie niewidoczne — zgłasza je platform-bump (docs/versions.md).
+val platformBomProperties = listOf("lombok.version", "tomcat.version", "jackson-bom.version", "jackson-2-bom.version")
+	.associateWith { ext[it].toString() }
+val platformBomOverrideCheck = tasks.register("platformBomOverrideCheck") {
+	description = "Warns about BOM version properties set outside the platform."
+	group = "verification"
+	val overrides = provider {
+		project.properties
+			.filterKeys { it.endsWith(".version") }
+			.mapValues { it.value.toString() }
+			.filter { (key, value) -> platformBomProperties[key] != value }
+			.toSortedMap()
+	}
+	inputs.property("overrides", overrides)
+	doLast {
+		val found = overrides.get()
+		found.forEach { (key, value) ->
+			logger.warn(
+				"platformBomOverrideCheck: $key=$value overrides the Platform BOMs outside the platform. Move the override " +
+					"to Platform (seniordev.spring-modulith-conventions) and release, or remove it once the Platform BOMs manage that version.",
+			)
+		}
+		if (found.isEmpty()) logger.lifecycle("platformBomOverrideCheck: OK — no BOM version property is set outside the platform")
+	}
+}
+tasks.named("check") {
+	dependsOn(platformBomOverrideCheck)
+}
 
 dependencyManagement {
 	imports {

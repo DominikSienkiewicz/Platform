@@ -52,6 +52,18 @@ frontend-ci.yml input run-e2e type=boolean default=false
 frontend-ci.yml secret gpr_token required=false
 frontend-ci.yml permissions contents: read
 frontend-ci.yml permissions packages: read
+platform-bump.yml input timeout-minutes type=number default=30
+platform-bump.yml input version type=string default=""
+platform-bump.yml input java-version type=string default="25"
+platform-bump.yml input toolchain-java-version type=string default="27"
+platform-bump.yml input node-version type=string default="24"
+platform-bump.yml secret gpr_token required=false
+platform-bump.yml secret bump_token required=false
+platform-bump.yml permissions contents: read
+platform-bump.yml job bump permissions contents: read
+platform-bump.yml job bump permissions packages: read
+platform-bump.yml job pull-request permissions contents: write
+platform-bump.yml job pull-request permissions pull-requests: write
 roadmap-unblock.yml input timeout-minutes type=number default=5
 roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false
 roadmap-unblock.yml permissions contents: read
@@ -65,6 +77,8 @@ security-scan.yml input working-directory type=string default=backend
 security-scan.yml input java-version type=string default="25"
 security-scan.yml input severity-cutoff type=string default=high
 security-scan.yml input run-frontend type=boolean default=true
+security-scan.yml input only-if-deps-changed type=boolean default=false
+security-scan.yml input deps-pattern type=string default='^(backend/(build|settings)\.gradle\.kts|backend/(settings-)?gradle\.lockfile|backend/gradle/verification-metadata\.xml|backend/gradle/libs\.versions\.toml|frontend/package(-lock)?\.json|\.github/workflows/[^/]+\.ya?ml)$'
 security-scan.yml input only-fixed type=boolean default=false
 security-scan.yml secret gpr_token required=false
 security-scan.yml permissions contents: read

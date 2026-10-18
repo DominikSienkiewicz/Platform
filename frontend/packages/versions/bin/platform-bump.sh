@@ -100,6 +100,8 @@ PY
 fi
 [[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
 echo "==> Podbijam piny Platform do: $TARGET"
+# W GitHub Actions (reusable platform-bump.yml) wersja docelowa idzie też do wyjść kroku.
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "target=$TARGET" >> "$GITHUB_OUTPUT"; fi
 
 # Notatki każdego wydania z (CURRENT, TARGET] — źródłem są GitHub Releases, czyli sekcje CHANGELOG.md.
 ACTIONS_FILE="$(mktemp)"
@@ -228,6 +230,19 @@ PY
   ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
 fi
 
+# --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
+#     callera deploy.yml idą na v$TARGET razem z pinami (Decyzja 3: dokładny tag przesuwany przez bump). Ruchome
+#     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. ---
+# platform-bump:workflows
+for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
+  [[ -f "$workflow" ]] || continue
+  sed -i.bak -E \
+    -e "s#(uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\3#" \
+    -e "s#^([[:space:]]*platform-ref:[[:space:]]*)[\"']?v[0-9]+(\.[0-9]+\.[0-9]+)?[\"']?[[:space:]]*\$#\1v$TARGET#" \
+    "$workflow" && rm -f "$workflow.bak"
+done
+# platform-bump:workflows-end
+
 # --- Backend: regen ZAMROŻONEGO STANU (analogicznie do `npm install --package-lock-only` dla frontu) ---
 # --write-locks przelicza CAŁY graf (też transytywny: checker-qual itp.), nie tylko podbite wpisy.
 # Gdy jest verification-metadata: WSZYSTKIE TRZY flagi RAZEM.
@@ -258,6 +273,31 @@ fi
 #      konfiguracji spoza grafu `build` (pitest, cyclonedxBom), więc bez przepisania locka ten
 #      przebieg wywracałby bump na niezgodności lock state. Musi iść DRUGI — przy --write-locks
 #      wygrywa ostatni przebieg, a jego zbiór konfiguracji jest nadzbiorem zbioru `build`.
+# --- Wrapper Gradle: wersja `gradle` z katalogu wydania docelowego (od 1.6.0), z sumą SHA-256 dystrybucji.
+#     Konsument jedzie na własnym wrapperze, a Platform kompiluje pluginy (kotlin-dsl) na wersji z katalogu;
+#     PlatformMinimumGradleFunctionalTest pilnuje minimum, ten blok trzyma wrapper na wersji testowanej.
+#     Katalog bez wpisu `gradle` (starsze wydania) albo niedostępny = wrapper bez zmian. ---
+# platform-bump:wrapper
+for wrapper_dir in backend .; do
+  props="$wrapper_dir/gradle/wrapper/gradle-wrapper.properties"
+  [[ -f "$props" && -x "$wrapper_dir/gradlew" ]] || continue
+  catalog_toml="$(mktemp)"
+  if curl -fsSL --proto '=https' -u "${GITHUB_ACTOR:-platform-bump}:$TOKEN" \
+    "https://maven.pkg.github.com/$OWNER/Platform/pl/seniordeveloper/platform-catalog/$TARGET/platform-catalog-$TARGET.toml" \
+    -o "$catalog_toml" 2>/dev/null; then
+    gradle_target="$(sed -n -E 's/^gradle[[:space:]]*=[[:space:]]*"([0-9.]+)".*/\1/p' "$catalog_toml" | head -1)"
+    gradle_current="$(sed -n -E 's#^distributionUrl=.*gradle-([0-9.]+)-(bin|all)\.zip.*#\1#p' "$props" | head -1)"
+    if [[ -n "$gradle_target" && "$gradle_target" != "$gradle_current" ]]; then
+      echo "==> Gradle wrapper: $gradle_current -> $gradle_target"
+      gradle_sum="$(curl -fsSL --proto '=https' "https://services.gradle.org/distributions/gradle-$gradle_target-bin.zip.sha256")"
+      ( cd "$wrapper_dir" && ./gradlew wrapper --gradle-version "$gradle_target" --gradle-distribution-sha256-sum "$gradle_sum" --no-daemon )
+    fi
+  fi
+  rm -f "$catalog_toml"
+  break
+done
+# platform-bump:wrapper-end
+
 # platform-bump:gradle
 if [[ -f backend/settings.gradle.kts ]]; then
   echo "==> Backend: regeneracja zamrożonego stanu (--write-locks)"
@@ -270,6 +310,22 @@ if [[ -f backend/settings.gradle.kts ]]; then
   fi
 fi
 # platform-bump:gradle-end
+
+# --- Lokalne nadpisania wersji, których BOM-y Platform i platformDependencyCheck nie widzą (eachDependency/useVersion,
+#     force, strictly, extra/ext["….version"]). Bump nie może kończyć się po cichu na wersji, którą nowe BOM-y już
+#     łatają — tylko raport, kod wyjścia bez zmian. Wyniki builda (build/, .gradle/) pomijamy. ---
+# platform-bump:local-overrides
+if [[ -d backend ]]; then
+  local_overrides="$(grep -rnE --include='*.gradle.kts' --exclude-dir=build --exclude-dir=.gradle \
+    'useVersion\(|force\(|strictly\(|(extra|ext)\["[^"]+\.version"\]' backend 2>/dev/null || true)"
+  if [[ -n "$local_overrides" ]]; then
+    echo ""
+    echo "==> Local version overrides the Platform BOMs do not see. Remove each one the BOMs of $TARGET manage at an equal or higher version:"
+    while IFS= read -r hit; do echo "  $hit"; done <<<"$local_overrides"
+    echo "  Selected version of a module: (cd backend && ./gradlew dependencyInsight --dependency <group:name> --configuration runtimeClasspath)"
+  fi
+fi
+# platform-bump:local-overrides-end
 
 echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
 git --no-pager diff --stat

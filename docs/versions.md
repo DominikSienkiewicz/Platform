@@ -104,6 +104,22 @@ When it is red, the maintainer:
 3. or, when no fix can be adopted yet, accepts the finding in Platform's own `.grype.yaml`, with an
    expiry as described in [security-scanning.md](security-scanning.md), so that the scan is green again.
 
+## What platformDependencyCheck does not see
+
+`platformDependencyCheck` compares the versions a build *declares* with the catalog. A consumer can
+still move a version through channels the check cannot see:
+
+| Channel | Example | What reports it |
+|---|---|---|
+| A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); Platform's own overrides are not reported |
+| A resolution rule | `resolutionStrategy.eachDependency { useVersion("42.7.12") }` | `platform-bump`, which lists each one with its file and line |
+| A forced or strict version | `force("…")`, `strictly("…")` | `platform-bump`, the same way |
+
+Resolution rules cannot be detected from the build model, because dependency-management itself is
+built on `eachDependency`. A rule beats the BOM, so after a bump it can pin a version older than the
+one the new BOMs manage. Remove an override as soon as the Platform BOMs manage an equal or higher
+version; move one that must stay into `seniordev.spring-modulith-conventions`, so every consumer gets it.
+
 ## Runtime image for the JDK 27 toolchain
 
 Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from
@@ -158,6 +174,16 @@ Every Gradle module carries the same wrapper. `gradle-wrapper.properties` pins t
 with `distributionSha256Sum`, and the `wrapper-validation` job in `ci.yml` checks every
 `gradle-wrapper.jar` against the checksums Gradle publishes; `setup-gradle` repeats that check in
 each workflow that builds. A new module copies the wrapper of an existing one.
+
+The catalog entry `gradle` is the version of those wrappers, and `PlatformGradleVersionMirrorTest`
+fails when a wrapper or the `gradle-version` of `canon-cve-scan.yml` differs from it. `platform-bump`
+reads the entry from the catalog of the target release and moves the consumer's wrapper to it, with
+the distribution's SHA-256.
+
+A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
+`gradle/build-logic/gradle.properties` (9.6.1). `PlatformMinimumGradleFunctionalTest` builds a
+consumer on that version, and `seniordev.settings-conventions` fails an older build with a message
+that names the fix. Raising the minimum is a consumer action: a MINOR release with a CHANGELOG entry.
 
 ## Verification gate for the toolchain
 

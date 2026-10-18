@@ -9,14 +9,17 @@ bumps versions automatically, and nothing prunes old versions automatically. Wha
 means and what every release must carry is the
 [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 
-There are two distribution channels, and they move differently:
+Consumers pin everything to one release and move it with `scripts/platform-bump.sh`, or on a
+schedule with the reusable `platform-bump.yml`, which opens the pull request. Nothing changes for them
+until they bump:
 
-- **Artifacts are pinned.** Consumers pin the exact platform version and move it with
-  `scripts/platform-bump.sh` (or Renovate). Nothing changes for them until they bump.
-- **Reusable workflows float.** Consumers call them as
-  `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@v1`. `v1` is a moving major tag
-  that `release.yml` moves forward after every successful release, so a workflow change reaches
-  every consumer on its next CI run.
+- **Artifacts** are pinned to the exact platform version.
+- **Reusable workflows** are called by the exact tag,
+  `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
+  pins. The moving `v1` tag, which `release.yml` moves forward after every successful release, still
+  works for callers that have not migrated, and reaches them on their next CI run.
+
+Renovate's shared preset covers only GitHub Actions and Docker images; it bumps no Platform pin.
 
 The current version is not repeated here, because a copy goes stale. Read it from the source:
 
@@ -67,7 +70,8 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 ## Cutting a release
 
 1. Bump the pinned actions by hand. Every action in `.github/workflows/` is pinned by commit SHA
-   with a `# vX.Y.Z` comment, and Renovate does not run in Platform yet, so nothing moves them.
+   with a `# vX.Y.Z` comment. Renovate moves them once the Renovate app runs in Platform; until then
+   nothing does.
    Check each one against its latest release and update SHA and comment together.
 2. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
@@ -199,10 +203,19 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   when the layout has no pin, instead of reporting success;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
+- moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
+  `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
+  `deploy.yml` caller; a reference by commit SHA stays;
+- moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
+  distribution's SHA-256;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
-  `gradle/verification-metadata.xml`.
+  `gradle/verification-metadata.xml`;
+- lists the local version overrides in the backend's Gradle scripts (`useVersion`, `force`,
+  `strictly`, `extra["….version"]`) that the Platform BOMs do not see, without failing.
 
-The script does not commit; the diff is left for review.
+The script does not commit; the diff is left for review. The reusable
+[`platform-bump.yml`](docs/reusable-workflows.md#platform-bumpyml) runs the same bin on a schedule and
+opens the pull request.
 
 ### Why dependency verification needs two Gradle passes
 

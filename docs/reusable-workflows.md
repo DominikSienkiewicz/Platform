@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 9 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 10 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -8,9 +8,10 @@ types and defaults are described in the workflow files themselves (every input h
 ## Rules that apply to every workflow
 
 - **Reference an exact tag.** Use the tag of your Platform pin, for example
-  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`, and bump it together
-  with the pin ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). The moving `@v1`
-  still works but changes under you on every Platform release.
+  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
+  ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). `platform-bump` moves it together
+  with the pins, `@v1` included. The moving `@v1` still works but changes under you on every
+  Platform release.
 - **Grant the permissions listed below.** A called workflow can never get more than its caller
   grants, so a missing permission ends the run with `startup_failure` before any step runs.
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid
@@ -78,7 +79,10 @@ Scans dependencies for CVEs: the backend through its CycloneDX SBOM, the fronten
 
 - Permissions: `contents: read`, plus `packages: read` when the backend resolves Platform artifacts.
 - Secret `gpr_token` (optional), as for backend-ci.
-- Inputs: [security-scan.yml](../.github/workflows/security-scan.yml).
+- Inputs: [security-scan.yml](../.github/workflows/security-scan.yml). With `only-if-deps-changed: true`
+  a push or pull request scans only when a changed path matches `deps-pattern` (the Gradle build and
+  lock files, `verification-metadata.xml`, `frontend/package*.json` and the workflow files by
+  default); scheduled and manual runs always scan. It replaces the `changes` job callers copied.
 
 ```yaml
 permissions:
@@ -87,6 +91,8 @@ permissions:
 jobs:
   scan:
     uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
+    with:
+      only-if-deps-changed: true
     secrets:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
@@ -171,6 +177,47 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       gpr_token: ${{ secrets.GPR_TOKEN }}
+```
+
+## platform-bump.yml
+
+Bumps the repository to a Platform release and opens a pull request with the diff: the Gradle and npm
+pins, the frontend canon, the reusable workflow references, the lockfiles and the dependency
+verification metadata. Schedule it in the caller; it runs the newest published `platform-bump` bin, so
+it also works in a repository without a frontend.
+
+- Permissions: `contents: write`, `pull-requests: write`, `packages: read`. Platform's commands run in a
+  job that can only read; a second job applies the diff, pushes `platform-bump/v<version>` and opens the
+  pull request. A branch that already exists is left alone.
+- Secret `gpr_token` (optional): a classic PAT with `read:packages`, as for backend-ci.
+- Secret `bump_token` (optional): a classic PAT with the `repo` and `workflow` scopes. A pull request
+  opened with the automatic `GITHUB_TOKEN` runs no CI, and that token may not push workflow changes, so
+  without `bump_token` the workflow references stay and the pull request says so. The fallback also needs
+  **Allow GitHub Actions to create and approve pull requests** in the repository's Actions settings.
+- Inputs: [platform-bump.yml](../.github/workflows/platform-bump.yml); `version` empty takes the newest
+  release of the current MAJOR.
+
+```yaml
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        default: ""
+permissions:
+  contents: write
+  pull-requests: write
+  packages: read
+jobs:
+  bump:
+    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@vX.Y.Z
+    with:
+      version: ${{ inputs.version || '' }}
+    secrets:
+      gpr_token: ${{ secrets.GPR_TOKEN }}
+      bump_token: ${{ secrets.PLATFORM_BUMP_TOKEN }}
 ```
 
 ## roadmap-unblock.yml

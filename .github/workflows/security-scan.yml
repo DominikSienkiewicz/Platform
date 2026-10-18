@@ -30,6 +30,14 @@ on:
         description: "Also scan frontend/package-lock.json. Use false for a backend without a frontend."
         type: boolean
         default: true
+      only-if-deps-changed:
+        description: "On push and pull_request, scan only when a changed path matches deps-pattern. Schedules and manual runs always scan."
+        type: boolean
+        default: false
+      deps-pattern:
+        description: "Extended regular expression matched against every changed path when only-if-deps-changed is on."
+        type: string
+        default: '^(backend/(build|settings)\.gradle\.kts|backend/(settings-)?gradle\.lockfile|backend/gradle/verification-metadata\.xml|backend/gradle/libs\.versions\.toml|frontend/package(-lock)?\.json|\.github/workflows/[^/]+\.ya?ml)$'
       only-fixed:
         description: "Fail only on vulnerabilities that have a fix. Accept a finding without a fix through .grype.yaml instead; see docs/security-scanning.md."
         type: boolean
@@ -43,8 +51,53 @@ permissions:
   contents: read
 
 jobs:
+  # Filtr „czy zmieniły się zależności” w jednym miejscu, zamiast kopii joba `changes` w każdym repo. Domyślnie
+  # wyłączony (deps=true), więc caller bez nowych wejść skanuje zawsze, jak dotąd. Cron i dispatch skanują zawsze.
+  changes:
+    name: Did dependencies change
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deps: ${{ steps.filter.outputs.deps }}
+    steps:
+      # fetch-depth 0 pobiera też gałąź bazową PR-a, więc filtr nie potrzebuje osobnego `git fetch` z tokenem.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: ${{ inputs.only-if-deps-changed && (github.event_name == 'push' || github.event_name == 'pull_request') }}
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Detect dependency manifest changes
+        id: filter
+        env:
+          ONLY_IF_CHANGED: ${{ inputs.only-if-deps-changed }}
+          DEPS_PATTERN: ${{ inputs.deps-pattern }}
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # >>> deps-changed
+          set -euo pipefail
+          if [ "$ONLY_IF_CHANGED" != "true" ] || { [ "$EVENT" != "push" ] && [ "$EVENT" != "pull_request" ]; }; then
+            echo "deps=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVENT" = "pull_request" ]; then
+            range="origin/$BASE_REF...HEAD"
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            range="HEAD^...HEAD"
+          else
+            range="$BEFORE...HEAD"
+          fi
+          changed=$(git diff --name-only "$range")
+          if grep -qE -- "$DEPS_PATTERN" <<<"$changed"; then deps=true; else deps=false; fi
+          echo "Dependency manifests changed in $range: $deps"
+          echo "deps=$deps" >> "$GITHUB_OUTPUT"
+          # <<< deps-changed
+
   backend-sbom:
     name: Backend — CycloneDX SBOM + Grype
+    needs: changes
+    if: ${{ !cancelled() && needs.changes.outputs.deps == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
@@ -127,7 +180,8 @@ jobs:
 
   frontend-deps:
     name: Frontend — Grype (package-lock)
-    if: ${{ inputs.run-frontend }}
+    needs: changes
+    if: ${{ !cancelled() && inputs.run-frontend && needs.changes.outputs.deps == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:

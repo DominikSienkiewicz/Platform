@@ -13,8 +13,22 @@
  *   - rootProject.name
  */
 
+import org.gradle.util.GradleVersion
+
 plugins {
 	id("org.gradle.toolchains.foojay-resolver-convention")
+}
+
+// Najstarszy Gradle, na którym TestKit buduje konsumenta (PlatformMinimumGradleFunctionalTest). Starszy dostaje
+// komunikat z naprawą zamiast przypadkowego błędu ładowania Kotlin DSL — o ile plugin w ogóle się załaduje.
+// Lustro: minimumConsumerGradle w gradle/build-logic/gradle.properties; pilnuje PlatformGradleVersionMirrorTest.
+val minimumConsumerGradle: GradleVersion = GradleVersion.version("9.6.1")
+if (GradleVersion.current() < minimumConsumerGradle) {
+	throw GradleException(
+		"Platform requires Gradle ${minimumConsumerGradle.version} or newer, but this build runs " +
+			"${GradleVersion.current().version}. Run scripts/platform-bump.sh, which updates the wrapper, or " +
+			"./gradlew wrapper --gradle-version ${minimumConsumerGradle.version}.",
+	)
 }
 
 dependencyResolutionManagement {

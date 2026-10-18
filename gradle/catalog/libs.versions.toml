@@ -22,6 +22,7 @@
 
 [versions]
 platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts; celowo nierozwiązywalny, żeby zepsuty inject failował głośno
+gradle = "9.8.1"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
 java = "27"                              # lustro: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
 springBoot = "4.1.1"                     # lustro: springBootVersion w spring-modulith-conventions (import BOM-u)
 lombok = "1.18.48"                       # lustro: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48

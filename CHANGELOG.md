@@ -17,6 +17,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
+  `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
+  of your first bump: a caller on `@v1` moves to an exact tag and stops floating.
 - `platformDependencyCheck` now also governs dependency constraints, every declarable bucket
   (`compileOnlyApi`, `developmentOnly`, `testAndDevelopmentOnly`, `testFixtures*` and custom
   source sets) and `pl.seniordeveloper` artifacts. Remove explicit versions from those
@@ -47,6 +50,18 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside
+  the platform (`extra["jackson-bom.version"]`), and `platform-bump` lists the `useVersion`, `force`,
+  `strictly` and `extra["….version"]` overrides of the backend after every bump. Neither fails the build.
+- `security-scan.yml` gains `only-if-deps-changed` (default `false`) and `deps-pattern`: a push or pull
+  request scans only when a dependency manifest changed, schedules and manual runs always. Callers can
+  drop the `changes` job they copied.
+- Platform's CI runs the reusable `backend-ci.yml` on the `java-library` starter, on every push and
+  every Monday at 04:00 UTC, so a broken workflow or a drifted runner shows up here before it reaches
+  a consumer. Releases wait for it too.
+- Reusable `platform-bump.yml`: run it on a schedule and it bumps the repository to the newest Platform
+  release of the current MAJOR and opens a pull request with the diff, the release notes and the
+  consumer actions. The caller grants `contents: write`, `pull-requests: write` and `packages: read`.
 - `frontend-ci.yml` with `run-e2e: true` uploads the Playwright report and traces as the artifact
   `playwright-report-<run id>`, kept for seven days.
 - `canon-cve-scan.yml` scans the versions Platform imposes every Monday before the consumers' scans:
@@ -82,6 +97,14 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- Consumers need Gradle 9.6.1 or newer, the minimum TestKit now builds a consumer on;
+  `seniordev.settings-conventions` fails an older build with the fix. `platform-bump` moves the Gradle
+  wrapper to the catalog's new `gradle` entry (9.8.1), with its SHA-256, so review the wrapper diff of
+  your next bump.
+- The shared Renovate preset (`default.json`) covers only GitHub Actions and Docker images. Its Gradle
+  and npm rules and its Platform-pin manager, which never produced a working pull request, are gone:
+  those versions move with `platform-bump`. Platform's own `renovate.json` manages the catalog and the
+  frontend canon, and CI validates both configs.
 - Platform's CI runs shellcheck on every tracked shell script, the ones copied into consumers and
   run on the deploy host included; `bump-version.sh db new-migration` numbers changesets with a glob
   instead of parsing `ls`.
