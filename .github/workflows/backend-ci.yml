@@ -7,6 +7,10 @@ name: Backend CI (reusable)
 on:
   workflow_call:
     inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 30
       working-directory:
         description: "Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout)."
         type: string
@@ -36,6 +40,7 @@ jobs:
   build:
     name: Build & test (JDK ${{ inputs.java-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}

@@ -5,6 +5,10 @@ name: Frontend CI (reusable)
 on:
   workflow_call:
     inputs:
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build."
+        type: number
+        default: 20
       working-directory:
         description: "Directory of the frontend package.json, relative to the repository root."
         type: string
@@ -36,6 +40,7 @@ jobs:
   build:
     name: Lint / test / build
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}

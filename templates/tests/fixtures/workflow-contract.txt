@@ -1,3 +1,4 @@
+backend-ci.yml input timeout-minutes type=number default=30
 backend-ci.yml input working-directory type=string default=backend
 backend-ci.yml input java-version type=string default="25"
 backend-ci.yml input toolchain-java-version type=string default="27"
@@ -5,12 +6,15 @@ backend-ci.yml input gradle-task type=string default="build"
 backend-ci.yml secret gpr_token required=false
 backend-ci.yml permissions contents: read
 backend-ci.yml permissions packages: read
+container-scan.yml input timeout-minutes type=number default=15
 container-scan.yml input images type=string required=true
 container-scan.yml input severity-cutoff type=string default=high
 container-scan.yml input only-fixed type=boolean default=true
 container-scan.yml secret snyk_token required=false
 container-scan.yml permissions contents: read
 container-scan.yml permissions packages: read
+deploy.yml input build-timeout-minutes type=number default=30
+deploy.yml input deploy-timeout-minutes type=number default=20
 deploy.yml input app-name type=string required=true
 deploy.yml input compose-dir type=string default="."
 deploy.yml input has-worker type=boolean default=false
@@ -40,6 +44,7 @@ deploy.yml job build-push permissions packages: write
 deploy.yml job snyk-advisory permissions contents: read
 deploy.yml job snyk-advisory permissions packages: read
 deploy.yml job deploy permissions contents: read
+frontend-ci.yml input timeout-minutes type=number default=20
 frontend-ci.yml input working-directory type=string default=frontend
 frontend-ci.yml input node-version type=string default="24"
 frontend-ci.yml input strict type=boolean default=false
@@ -47,12 +52,15 @@ frontend-ci.yml input run-e2e type=boolean default=false
 frontend-ci.yml secret gpr_token required=false
 frontend-ci.yml permissions contents: read
 frontend-ci.yml permissions packages: read
+roadmap-unblock.yml input timeout-minutes type=number default=5
 roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false
 roadmap-unblock.yml permissions contents: read
+scorecard.yml input timeout-minutes type=number default=10
 scorecard.yml permissions contents: read
 scorecard.yml job analysis permissions security-events: write
 scorecard.yml job analysis permissions id-token: write
 scorecard.yml job analysis permissions contents: read
+security-scan.yml input timeout-minutes type=number default=15
 security-scan.yml input working-directory type=string default=backend
 security-scan.yml input java-version type=string default="25"
 security-scan.yml input severity-cutoff type=string default=high
@@ -60,6 +68,7 @@ security-scan.yml input run-frontend type=boolean default=true
 security-scan.yml input only-fixed type=boolean default=false
 security-scan.yml secret gpr_token required=false
 security-scan.yml permissions contents: read
+semgrep.yml input timeout-minutes type=number default=10
 semgrep.yml input config type=string default="p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions"
 semgrep.yml input semgrep-version type=string default="1.168.0"
 semgrep.yml permissions contents: read

@@ -15,6 +15,10 @@ types and defaults are described in the workflow files themselves (every input h
   grants, so a missing permission ends the run with `startup_failure` before any step runs.
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid
   `secrets: inherit`: it hands every repository secret to Platform code.
+- **Every job has a time limit.** A calling job cannot set `timeout-minutes` on a `uses:` job, so
+  each workflow takes it as an input: `timeout-minutes` (in `deploy.yml`, `build-timeout-minutes` and
+  `deploy-timeout-minutes`), with a default of a few times the longest measured run. Pass a larger
+  value with `with:` when your build is slower; GitHub's own default is 360 minutes.
 - **Contract changes are announced.** A new permission, input, secret or changed default is a
   consumer action: it ships in a MINOR release with a **Consumer action required** entry in
   [CHANGELOG.md](../CHANGELOG.md). `templates/tests/workflow-contract.test.sh` fails Platform's CI

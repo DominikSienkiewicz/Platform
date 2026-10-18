@@ -18,6 +18,14 @@ name: Deploy (reusable)
 on:
   workflow_call:
     inputs:
+      build-timeout-minutes:
+        description: "Minutes before the build-push job is cancelled; GitHub's default is 360."
+        type: number
+        default: 30
+      deploy-timeout-minutes:
+        description: "Minutes before the deploy job (upload, migrations, health gate) is cancelled; GitHub's default is 360."
+        type: number
+        default: 20
       app-name:
         description: "Image name prefix, e.g. skillsprintplus or bookofstyling."
         type: string
@@ -113,6 +121,7 @@ jobs:
   # ---- Fail-fast: ujawnij brakującą konfigurację ZANIM ruszy build/deploy ----
   preflight:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions: {}
     steps:
       - name: Sprawdź wymagane sekrety i zmienne
@@ -142,6 +151,7 @@ jobs:
   versions:
     needs: preflight
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
     outputs:
@@ -175,6 +185,7 @@ jobs:
   build-push:
     needs: versions
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.build-timeout-minutes }}
     permissions:
       contents: read
       packages: write
@@ -312,6 +323,7 @@ jobs:
     needs: [versions, build-push]
     if: ${{ inputs.scan-images }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     continue-on-error: true
     permissions:
       contents: read
@@ -346,6 +358,7 @@ jobs:
   deploy:
     needs: [versions, build-push]
     runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.deploy-timeout-minutes }}
     permissions:
       contents: read
     environment: production # druga bramka (required reviewer) na szczycie merge'a PR

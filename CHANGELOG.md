@@ -36,6 +36,11 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
   caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
   fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits.
 
+- Every job of the reusable workflows has a time limit instead of GitHub's 360 minutes: backend-ci 30,
+  frontend-ci 20, security-scan and container-scan 15, semgrep and scorecard 10, roadmap-unblock 5,
+  deploy 30 for the build and 20 for the deploy. A caller whose job runs longer passes
+  `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml).
+
 ### Added
 
 - `canon-cve-scan.yml` scans the versions Platform imposes every Monday before the consumers' scans:
