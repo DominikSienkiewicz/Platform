@@ -42,5 +42,6 @@ In scope:
 
 A dependency version pinned by the platform that has a **publicly disclosed** CVE is already
 public. Report it as a regular issue or pull request against `gradle/catalog/libs.versions.toml` or
-`frontend/packages/versions/versions.json`. Vulnerabilities in third-party projects themselves
-belong with those projects.
+`frontend/packages/versions/versions.json`. The weekly `canon-cve-scan.yml` looks for such versions,
+and [docs/versions.md](docs/versions.md#cve-response) describes how they are fixed. Vulnerabilities in
+third-party projects themselves belong with those projects.

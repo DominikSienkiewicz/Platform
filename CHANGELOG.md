@@ -38,6 +38,10 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Added
 
+- `canon-cve-scan.yml` scans the versions Platform imposes every Monday before the consumers' scans:
+  a lockfile resolved from the frontend canon, and the SBOM of `gradle/canon-probe`, which applies
+  the convention plugins from source to every catalog library. `docs/versions.md` describes the
+  CVE response: a patch release within seven days, three for a CRITICAL finding.
 - `docs/consuming.md` opens with Prerequisites, a Quickstart and Verify, ends with a Troubleshooting
   table, and its snippets paste into real consumer layouts. `templates/npmrc` is the canonical
   `frontend/.npmrc`.
