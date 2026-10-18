@@ -160,6 +160,11 @@ jobs:
 
 ## sonar.yml
 
+**Deprecated.** No consumer calls this workflow: two removed their Sonar jobs on 2026-08-05, and
+the third scans inline, within SonarQube Cloud's 50,000-line limit for private projects. It stays so
+that existing references resolve; do not adopt it. Run the `sonar` task in the backend job instead,
+which `seniordev.quality-conventions` configures.
+
 SonarQube Cloud for a backend plus frontend monorepo. Both jobs are skipped until the repository has
 a `SONAR_TOKEN` secret.
 

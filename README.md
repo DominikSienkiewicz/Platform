@@ -90,7 +90,7 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 |---|---|
 | `backend-ci.yml` | runs the Gradle tasks of a Spring backend (default `build`) on the platform toolchain |
 | `frontend-ci.yml` | installs, lints, type-checks, tests and builds a frontend; `strict: true` makes every standard script and the `platform-versions-check` guard mandatory |
-| `sonar.yml` | SonarQube Cloud analysis for a backend + frontend monorepo |
+| `sonar.yml` | **Deprecated:** SonarQube Cloud analysis for a backend + frontend monorepo; no consumer calls it, so run the `sonar` task in your backend job instead |
 | `scorecard.yml` | OpenSSF Scorecard |
 | `security-scan.yml` | dependency CVE scan: CycloneDX SBOM + Grype for the backend, `package-lock.json` for the frontend; CRITICAL and HIGH fail the build |
 | `semgrep.yml` | Semgrep SAST over the source code |

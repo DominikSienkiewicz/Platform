@@ -131,6 +131,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `sonar.yml` is deprecated: no consumer calls it. It keeps working for existing references; run the
+  `sonar` task that `seniordev.quality-conventions` configures in the backend job instead.
 - `deploy.yml` builds `bootJar` with `setup-gradle`, which on `release` reads the cache your backend jobs
   wrote on the default branch, and caches the layers of each image in the GitHub Actions cache
   (`type=gha`, `mode=max`, one scope per image). The layer cache shares the repository's 10 GB Actions
