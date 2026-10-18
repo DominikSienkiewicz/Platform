@@ -202,7 +202,8 @@ tested on the versions consumers run:
 
 - every `dependencies`, `devDependencies` and `optionalDependencies` entry of `frontend/package.json`
   and `frontend/packages/*/package.json` is the canon version;
-- `eslint-config` and `ui` declare their runtime dependencies and peers at the exact canon version;
+- `eslint-config`, `prettier-config` and `ui` declare their runtime dependencies and peers at the exact
+  canon version;
 - the other packages keep peer ranges such as `^4`, which must admit the canon version;
 - `react`, `react-dom` and `@types/node` are root devDependencies, because pnpm resolves the peers of
   workspace packages from the root and would otherwise pick versions off the canon.

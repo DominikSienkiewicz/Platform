@@ -18,7 +18,7 @@ on:
         type: string
         default: "24"
       strict:
-        description: "Require the Platform guard and lint/typecheck/test/build scripts."
+        description: "Require the Platform guard and the lint, typecheck, test, build and format:check scripts, and run format:check."
         type: boolean
         default: false
       run-e2e:
@@ -96,6 +96,17 @@ jobs:
           else
             echo "::notice::brak @dominiksienkiewicz/versions w zależnościach — guard kanonu pominięty"
           fi
+
+      # Tylko strict: format:check to nowy wymóg (L-9), a zwykły caller nie może dostać go po cichu.
+      # Osobny krok, nie lista w "Require standard scripts" — skrypt sprawdza i uruchamia w jednym miejscu.
+      - name: Format check
+        if: ${{ inputs.strict }}
+        run: |
+          if ! node -e 'const s = require("./package.json").scripts ?? {}; process.exit(typeof s["format:check"] === "string" && s["format:check"].trim() ? 0 : 1)'; then
+            echo "::error::Missing required scripts: format:check"
+            exit 1
+          fi
+          npm run format:check
 
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present

@@ -1,0 +1,32 @@
+{
+  "name": "@dominiksienkiewicz/prettier-config",
+  "version": "1.5.31",
+  "description": "Shared Prettier configuration with the Tailwind CSS class sorter (incubating).",
+  "license": "MIT",
+  "main": "index.json",
+  "exports": {
+    ".": "./index.json"
+  },
+  "files": [
+    "index.json"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "prettier": "3.8.3",
+    "prettier-plugin-tailwindcss": "0.8.1"
+  },
+  "peerDependencies": {
+    "prettier": "3.8.3",
+    "prettier-plugin-tailwindcss": "0.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/prettier-config"
+  }
+}

@@ -45,6 +45,7 @@ Every artifact below is published at the same `platformVersion`.
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
 

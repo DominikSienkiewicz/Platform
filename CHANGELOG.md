@@ -17,6 +17,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
+  lint. No caller uses `strict` today; one that does adds the script, for example with
+  `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows.
 - The catalog drops `libs.jimfs`, `libs.java.diff.utils`, `libs.openai.java.client.okhttp` and
   `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
   resolve the alias; add the library to the Platform catalog first, as for any new library.
@@ -56,6 +59,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `@dominiksienkiewicz/prettier-config` (*incubating*): Prettier with `prettier-plugin-tailwindcss`, the
+  configuration BookOfStyling already uses.
 - `docs/consuming.md` shows how to adopt the incubating catalog bundles and the security starter, with
   the properties that replace the two existing `SecurityConfig` variants.
 - `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside

@@ -39,6 +39,7 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, and the `platform-bump` bin | GitHub Packages (npm) |
 | `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |

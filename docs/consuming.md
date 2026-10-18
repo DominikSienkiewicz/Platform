@@ -177,8 +177,8 @@ jobs:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
 
-`strict: true` requires nonempty `lint`, `typecheck`, `test` and `build` scripts and the
-`@dominiksienkiewicz/versions` guard; `run-e2e: true` additionally requires `test:e2e`, and uploads
+`strict: true` requires nonempty `lint`, `typecheck`, `test`, `build` and `format:check` scripts and
+the `@dominiksienkiewicz/versions` guard, and runs `format:check` before lint; `run-e2e: true` additionally requires `test:e2e`, and uploads
 `playwright-report/` and `test-results/` (HTML report, traces, screenshots) as the artifact
 `playwright-report-<run id>`, kept for seven days, whether the tests pass or fail. Missing
 checks fail the job instead of producing a successful partial pipeline. Existing callers without
@@ -273,6 +273,23 @@ export { default } from "@dominiksienkiewicz/eslint-config/next";
 
 The config package declares `eslint`, `eslint-config-next` and `next` as peer
 dependencies; take their versions from `@dominiksienkiewicz/versions`.
+
+Prettier (*incubating*), in `package.json`, with `prettier`, `prettier-plugin-tailwindcss` and
+`@dominiksienkiewicz/prettier-config` in `devDependencies` at the canon versions:
+
+```json
+{
+  "prettier": "@dominiksienkiewicz/prettier-config",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
+```
+
+Strict `frontend-ci` requires `format:check`. The plugin sorts Tailwind class lists, so the first
+`npm run format` in a repository that formatted without it rewrites many `className` values; commit
+that diff on its own.
 
 `globals.css` (`app/globals.css`, or `src/app/globals.css` in a `src/` layout):
 
