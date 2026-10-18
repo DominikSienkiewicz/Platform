@@ -48,7 +48,10 @@ seed_repo() {
     printf '{\n  "name": "@example/%s",\n  "version": "%s"\n}\n' "$package" "$CURRENT" \
       > "$work/frontend/packages/$package/package.json"
   done
+  mkdir -p "$work/scripts"
+  printf '# Changelog\n\n## [%s] - 2026-10-18\n\n### Consumer action required\n\nNone.\n' "$NEXT" > "$work/CHANGELOG.md"
   cp "$root/release.sh" "$work/release.sh"
+  cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
   echo '# fixture' > "$work/README.md"
   git -C "$work" add -A
   git -C "$work" commit -q -m initial
@@ -111,7 +114,7 @@ if ! run_release "$work"; then
 fi
 released=$(git -C "$work" rev-parse HEAD)
 [[ "$(remote_ref "$work" refs/heads/main)" == "$released" ]] || fail 'release.sh must push the release commit to main'
-[[ "$(remote_ref "$work" "refs/tags/v$NEXT")" == "$released" ]] || fail "release.sh must push v$NEXT at the release commit"
+[[ "$(remote_ref "$work" "refs/tags/v$NEXT^{}")" == "$released" ]] || fail "release.sh must push v$NEXT at the release commit"
 [[ -z "$(remote_ref "$work" refs/tags/v1)" ]] || fail "release.sh must leave v1 to Release's move-v1 job"
 [[ "$(git -C "$work" diff --name-only HEAD~1 HEAD)" == "$VERSION_FILES" ]] \
   || fail 'release.sh must commit exactly the version files'
@@ -119,5 +122,8 @@ while IFS= read -r file; do
   grep -Eq "^platformVersion=$NEXT\$|^  \"version\": \"$NEXT\"" "$work/$file" \
     || fail "release.sh must bump $file to $NEXT"
 done <<<"$VERSION_FILES"
+[[ "$(git -C "$work" log -1 --format=%s)" == "chore(release): platform $NEXT" ]] \
+  || fail 'the release commit subject must name the version'
+[[ "$(git -C "$work" cat-file -t "v$NEXT")" == tag ]] || fail 'the version tag must be annotated'
 
 echo 'OK: release.sh refuses unsafe trees and commits only the version bump'

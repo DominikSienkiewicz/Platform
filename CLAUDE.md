@@ -92,15 +92,23 @@ w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeh
 w `libs.versions.toml` jest celowo nierozwiązywalny.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
 
-**`./release.sh` wymaga message jako 1. argumentu** (Conventional Commits, po angielsku, zero atrybucji AI) —
-bez niego skrypt odmawia (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
+**Kontrakt wydania: `docs/adr/0002-release-and-versioning-contract.md`.** Akcja konsumenta = MINOR w linii
+1.x, reszta = PATCH, MAJOR zarezerwowany. Notatki = `CHANGELOG.md`: każda wersja ma sekcję
+`## [X.Y.Z] - YYYY-MM-DD` z obowiązkowym `### Consumer action required` (`None.`, gdy nic). Przed wydaniem
+zmień `## [Unreleased]` na sekcję wersji i zmerguj to zwykłą drogą.
+
+**`./release.sh` wymaga message jako 1. argumentu** (angielski Conventional Commit, zero atrybucji AI) —
+trafia do BODY commita `chore(release): platform X.Y.Z` (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
 - `./release.sh "fix: opis"` — patch +0.0.1 od aktualnej wersji
-- `./release.sh "feat: opis" 1.2.0` — konkretna wersja
+- `./release.sh "feat: opis" 1.2.0` — konkretna wersja (obowiązkowa dla `feat`/`!:`/`BREAKING CHANGE`)
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
 
-Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main` albo `HEAD` ≠ `origin/main`, i commituje
-wyłącznie pliki wersji. `release.yml` publikuje dopiero po zielonym CI (`verify` = `ci.yml`) na otagowanym
-commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do przodu) — nie pchaj `v1` ręcznie.
+Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main`, `HEAD` ≠ `origin/main`, message nie jest
+angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG albo patch miałby akcję konsumenta.
+Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
+zielonym CI (`verify` = `ci.yml`) na otagowanym commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do
+przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
+`templates/tests/release-contract.test.sh`.
 
 ## Czego NIE robić
 

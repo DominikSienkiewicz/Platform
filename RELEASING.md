@@ -66,6 +66,15 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 
 ## Cutting a release
 
+1. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
+   `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
+   have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
+   the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
+   action means a MINOR, anything else a PATCH.
+2. Commit and push that change through the normal branch and merge flow, so `main` equals
+   `origin/main` with a clean tree.
+3. Release:
+
 ```bash
 ./release.sh "fix: short description"
 ```
@@ -74,22 +83,30 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 ./release.sh "feat: short description" 1.6.0
 ```
 
-The first form releases a patch (current version + 0.0.1), the second an explicit version.
-Read the **Unreleased** section of [CHANGELOG.md](CHANGELOG.md) first: when it lists a
-**Consumer action required** entry, the release must bump the MINOR version, so use the
-explicit form (for example `1.6.0`). Move the Unreleased entries under that version in a commit
-before you run `release.sh`, which refuses a dirty tree. Append
-`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The commit message
-is required and must follow Conventional Commits in English.
+The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
+`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The message is
+required: an English Conventional Commit, which becomes the body of the release commit
+`chore(release): platform X.Y.Z`.
 
-Before it changes anything, `release.sh` refuses to run when the working tree is not clean
-(untracked files included), the current branch is not `main`, or `HEAD` differs from `origin/main`.
-It also refuses a version whose tag already exists. It then bumps `platformVersion` in every
-`gradle/*/gradle.properties` and `templates/jvm/*/gradle.properties`, and `version` in every
-`frontend/packages/*/package.json`, commits only those files, pushes `main`, and creates and pushes
-the `vX.Y.Z` tag. It does not touch `v1`. The tree therefore always carries one version;
-`templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script falls
-back to a hard-coded version.
+Before it changes anything, `release.sh` refuses to run when:
+
+- the working tree is not clean (untracked files included), the current branch is not `main`, or
+  `HEAD` differs from `origin/main`;
+- the message is not a Conventional Commit or contains Polish characters;
+- the version's tag already exists;
+- CHANGELOG.md has no section for the version, or the section has no
+  `### Consumer action required` subsection;
+- the release would be a patch although its section lists consumer action; the error names the
+  MINOR version to use;
+- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given.
+
+It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
+`templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
+commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
+message is the CHANGELOG section. It does not touch `v1`. The tree therefore always carries one
+version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
+falls back to a hard-coded version, and `templates/tests/release-contract.test.sh` pins every
+refusal above.
 
 The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
 because two publishes of the same version running in parallel once caused a partial release.
