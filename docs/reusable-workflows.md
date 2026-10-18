@@ -200,7 +200,8 @@ package access, which the deploy does not wait for.
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
   `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`. They are declared optional so that the `preflight` job,
   not GitHub, names the missing ones. Set them with `templates/setup-gh-deploy.sh` from
-  `templates/secrets.local.example`.
+  `templates/secrets.local.example`; give it `SSH_HOST_KEY_SHA256` from a trusted channel, and it
+  refuses a scanned host key with another fingerprint instead of trusting it on first use.
 - Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the

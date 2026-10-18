@@ -58,6 +58,9 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new
+  `SSH_HOST_KEY_SHA256` before pushing anything, warns when it is empty, and exits non-zero when a
+  `gh` call fails instead of ending with "Gotowe". Sync the copy in `scripts/`.
 - Every GitHub-owned action in the reusable workflows is pinned by commit SHA with a version
   comment, like the third-party ones; the versions run are the same as before.
 - Snyk runs from a digest-pinned `snyk/snyk:docker` image instead of the Snyk Docker action, which

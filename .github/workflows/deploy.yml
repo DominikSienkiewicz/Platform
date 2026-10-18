@@ -6,7 +6,8 @@ name: Deploy (reusable)
 #   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest) (z BoS)
 #   • workflow_dispatch — ręczny re-deploy                            (z BoS)
 #   • environment: production — druga bramka (required reviewer)        (z BoS)
-#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP)
+#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP); przypięty przy bootstrapie,
+#     sprawdzony względem SSH_HOST_KEY_SHA256, gdy go podano (templates/setup-gh-deploy.sh)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
@@ -378,7 +379,8 @@ jobs:
             echo "MIGRATE_VER=${{ needs.versions.outputs.migrate }}"
           } > .env.deploy
 
-      - name: Konfiguracja SSH (known_hosts PINOWANE — bez MITM)
+      # known_hosts przypięty przy bootstrapie; setup-gh-deploy.sh sprawdza go względem SSH_HOST_KEY_SHA256, gdy podano.
+      - name: Konfiguracja SSH (known_hosts PINOWANE)
         env:
           SSH_KEY: ${{ secrets.SSH_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
