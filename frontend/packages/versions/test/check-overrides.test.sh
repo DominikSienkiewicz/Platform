@@ -85,7 +85,7 @@ run_case missing '{
 }'
 [[ $RC -ne 0 ]] || fail "override spoza kanonu powinien failować build"
 grep -q 'nieznana-paczka' <<<"$OUT" || fail "komunikat nie wymienia paczki spoza kanonu"
-grep -q 'BEZ wpisu w kanonie' <<<"$OUT" || fail "override spoza kanonu zgłoszony jako dryf zamiast braku wpisu"
+grep -q 'without a Platform canon entry' <<<"$OUT" || fail "override spoza kanonu zgłoszony jako dryf zamiast braku wpisu"
 
 # --- 7) Pin platformy (@dominiksienkiewicz/*) w overrides jest poza governance kanonu ---
 run_case platform-scope '{

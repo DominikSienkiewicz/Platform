@@ -87,7 +87,7 @@ const where = (e) => (e.at ? ` [${e.at}]` : "");
 const platformCanon = "frontend/packages/versions/versions.json in DominikSienkiewicz/Platform";
 console.error(`platform-versions-check (canon: ${canonLabel})`);
 if (missing.length > 0) {
-  console.error("platform-versions-check: zależności BEZ wpisu w kanonie Platform:");
+  console.error("platform-versions-check: dependencies without a Platform canon entry:");
   for (const m of missing)
     console.error(`  ${m.name}${where(m)} (${m.have}): add it to ${platformCanon}, release, then bump`);
 }
