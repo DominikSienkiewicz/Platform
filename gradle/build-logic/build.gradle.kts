@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "pl.seniordeveloper.gradle"
-version = providers.gradleProperty("platformVersion").getOrElse("1.0.0")
+version = providers.gradleProperty("platformVersion").get()
 
 // Pin toolchainu na 25, żeby compileJava i compileKotlin celowały w ten sam JVM-target niezależnie
 // od ambientowego JDK (lokalnie JDK 26 dawał ostrzeżenie o niespójności 26 vs 25).
@@ -61,19 +61,28 @@ tasks.withType<Test>().configureEach {
 	inputs.file(qualityConventions)
 	val workflows = layout.projectDirectory.dir("../../.github/workflows")
 	inputs.dir(workflows)
-	inputs.property("canonGoogleJavaFormat", libs.versions.googleJavaFormat.get())
-	inputs.property("canonJava", libs.versions.java.get())
-	inputs.property("canonArchunit", libs.versions.archunit.get())
-	inputs.property("canonLombok", libs.versions.lombok.get())
-	inputs.property("canonPitestTool", libs.versions.pitestTool.get())
+	// Kanon każdego lustra z tabeli w docs/versions.md (PlatformToolVersionMirrorTest + PlatformCatalogMirrorTest).
+	mapOf(
+		"googleJavaFormat" to libs.versions.googleJavaFormat,
+		"java" to libs.versions.java,
+		"archunit" to libs.versions.archunit,
+		"lombok" to libs.versions.lombok,
+		"pitestTool" to libs.versions.pitestTool,
+		"pitestJunit5" to libs.versions.pitestJunit5,
+		"checkstyle" to libs.versions.checkstyle,
+		"jacoco" to libs.versions.jacoco,
+		"spotbugs" to libs.versions.spotbugs,
+		"springBoot" to libs.versions.springBoot,
+		"springModulith" to libs.versions.springModulith,
+		"springAi" to libs.versions.springAi,
+		"junit" to libs.versions.junit,
+	).forEach { (name, version) ->
+		inputs.property("canon.$name", version)
+		systemProperty("platform.canon.$name", version.get())
+	}
 	systemProperty("platform.javaConventions", javaConventions.asFile.absolutePath)
 	systemProperty("platform.springModulithConventions", springModulithConventions.asFile.absolutePath)
-	systemProperty("platform.canon.googleJavaFormat", libs.versions.googleJavaFormat.get())
-	systemProperty("platform.canon.java", libs.versions.java.get())
-	systemProperty("platform.canon.archunit", libs.versions.archunit.get())
-	systemProperty("platform.canon.lombok", libs.versions.lombok.get())
 	systemProperty("platform.qualityConventions", qualityConventions.asFile.absolutePath)
-	systemProperty("platform.canon.pitestTool", libs.versions.pitestTool.get())
 	systemProperty("platform.workflows", workflows.asFile.absolutePath)
 }
 

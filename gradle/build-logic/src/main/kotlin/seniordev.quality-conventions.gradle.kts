@@ -26,7 +26,8 @@ plugins {
 
 pitest {
 	// Wersje przypięte jawnie. PIT >= 1.30.0 czyta class-file 71 (toolchain 27); 1.25.3 niosło ASM 9.9.1
-	// i padało na „Unsupported class file major version 71". Lustro gradle/catalog: version("pitestTool").
+	// i padało na „Unsupported class file major version 71". Lustra gradle/catalog: version("pitestJunit5")
+	// dla junit5PluginVersion i version("pitestTool") dla pitestVersion.
 	junit5PluginVersion.set("1.2.3")
 	pitestVersion.set("1.30.0")
 	timestampedReports.set(false)
@@ -56,6 +57,7 @@ val extractSpotbugsConfig = tasks.register("extractSpotbugsConfig") {
 }
 
 spotbugs {
+	// Lustro gradle/catalog: version("spotbugs").
 	toolVersion.set("4.10.3")
 	// Report-only, dopóki SpotBugs nie analizuje bez błędów class-file 71 (toolchain JDK 27).
 	// Konsument może przełączyć: spotbugs { ignoreFailures.set(false) }

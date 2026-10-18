@@ -2,7 +2,8 @@
 # buildAndPublishLocal.sh — buduje i publikuje artefakty Platform do LOKALNEGO repo, żeby repo
 # konsumenckie budowały się lokalnie BEZ GitHuba (lista konsumentów: CLAUDE.md).
 #
-#   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog + test-fixtures
+#   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog
+#               + test-fixtures + security-starter, wszystkie w jednej platformVersion
 #   Frontend -> pnpm install (paczki gotowe); konsument linkuje je przez `npm run platform:link`
 #
 # Konsument wskazuje to repo jawnie: -PplatformRepository=file:///<home>/.m2/repository (pierwsze
@@ -10,7 +11,7 @@
 #
 # Użycie:
 #   ./buildAndPublishLocal.sh                 # Gradle + frontend
-#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (build-logic + catalog + test-fixtures)
+#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (build-logic + catalog + test-fixtures + security-starter)
 #   ./buildAndPublishLocal.sh --with-registry # dodatkowo `shadcn build` (public/r/*.json)
 #   ./buildAndPublishLocal.sh --help
 set -euo pipefail
@@ -44,6 +45,7 @@ publish_gradle() {
 publish_gradle "build-logic"
 publish_gradle "catalog"
 publish_gradle "test-fixtures"
+publish_gradle "security-starter"
 
 # --- 2) Frontend (pnpm workspace) ---
 if [[ "$SKIP_FRONTEND" -eq 0 ]]; then

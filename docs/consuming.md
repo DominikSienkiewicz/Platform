@@ -9,14 +9,16 @@ Start from [`templates/jvm/java-library`](../templates/jvm/java-library) for a p
 library or [`templates/jvm/spring-app`](../templates/jvm/spring-app) for a minimal
 Spring application. These are the inputs to `PlatformConsumerFunctionalTest`, which
 publishes the current plugins and catalog to an isolated local Maven repository and
-then compiles, lints and tests consumers through Gradle TestKit. The Spring check
-also packages `bootJar` and starts an application context. No database is needed.
+then runs the consumer CI entry point through Gradle TestKit: `build cyclonedxBom`, plus
+`pitest` for the library, with Checkstyle, Spotless, SpotBugs, JaCoCo and the platform gates
+included. The Spring check also starts the packaged `bootJar` from its own classpath, so a
+dependency missing only at runtime fails it. No database is needed.
 
 Copy the selected directory to the product repository. Copy `gradlew`, `gradlew.bat`
 and `gradle/wrapper/` from `gradle/catalog/` to give it the same pinned Gradle distribution.
-Set `platformVersion` in the consumer's `gradle.properties` to an **already published**
-Platform release; the template's checked-in version is only the current repository
-baseline. The new template requires a release containing these changes. Add your own
+The template is pinned to the latest Platform release: `release.sh` bumps its
+`platformVersion` together with every other version file. Keep `platformVersion` in the
+consumer's `gradle.properties` on an **already published** release. Add your own
 package name, group and project name, then replace the example code. For these standalone
 JVM layouts, update `platformVersion` directly; the existing `platform-bump` command
 targets product repositories with `backend/` and `frontend/` directories.
@@ -57,6 +59,38 @@ access where the package registry supports it, or pass a `gpr_token` with
 Pass `gradle-task` as one line of whitespace-separated task arguments, for example
 `lint test :app:integrationTest :app:bootJar`. Wildcard characters are passed
 literally to Gradle; the input does not interpret shell quoting or commands.
+
+## Dependency version governance
+
+`seniordev.java-conventions` wires `platformDependencyCheck` into `check`. A dependency or
+dependency constraint without a version is left to the Platform BOMs. One with an explicit
+version must match the catalog, so declare it through `libs.<alias>`. The check covers every
+declarable bucket: `api`, `implementation`, `compileOnly`, `compileOnlyApi`, `runtimeOnly`,
+`annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly`, and their `test*`,
+`testFixtures*` and custom source set variants. It also covers `pl.seniordeveloper` artifacts,
+whose canon is the Platform version you pin. Each failure line names the fix: the `libs.…` alias
+to use, a BOM-managed version to remove, or a library that must first be added to the Platform
+catalog and released.
+
+## Runtime image
+
+`check` runs `platformRuntimeImageCheck`. It reads the final `FROM` of the project's
+`Dockerfile`, or of the root project's in a multi-module build, and fails when that JVM image
+runs an older Java than the toolchain the bytecode is compiled for (Java 27). Move the final
+`FROM` to the image in [`templates/Dockerfile.backend`](../templates/Dockerfile.backend). A
+build without a Dockerfile, a non-JVM image or an image taken from a build argument is skipped
+with a log line. A repository-local test that compares the class-file version with the
+Dockerfile can be deleted once the consumer runs this release.
+
+## Coverage threshold
+
+`check` runs `jacocoTestCoverageVerification` on the coverage of `test` and `integrationTest`
+together. Set the threshold in the consumer's `gradle.properties`, for example
+`coverageMinimum=0.80`. It is a decimal between 0 and 1 and defaults to 0.00; any other value
+fails the build. The threshold is static: raise it yourself as coverage grows. `check` prints
+the effective value (`Coverage gate: minimum=0.80 (source: coverageMinimum)`). When the
+threshold is above 0, `platformCoverageDataCheck` fails `check` if neither test task produced
+JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
 ## Agent resource profile
 

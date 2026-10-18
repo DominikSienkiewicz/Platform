@@ -1,10 +1,13 @@
 import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.RuntimeImageCheck
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
+import java.math.BigDecimal
 
 /*
  * seniordev.java-conventions
@@ -14,7 +17,7 @@ import java.io.File
  *     BOM-a w spring-modulith-conventions) i google-java-format >= 1.35.0 (pin niżej)
  *   - Spotless (Google Java Format) — jeden formatter dla wszystkich repo
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
- *   - JaCoCo + bramka pokrycia z RATCHETEM (start 0.00 → cel 0.80, sterowany -PcoverageMinimum);
+ *   - JaCoCo + statyczny próg pokrycia `coverageMinimum` (ułamek 0..1, domyślnie 0.00; repo samo go podnosi);
  *     pokrycie sumowane z `test` I `integrationTest`, raport i bramka wiszą na `check`
  *
  * Źródło 1:1: najlepsze części z BookOfStyling (googleJavaFormat + checkstyle) ujednolicone
@@ -37,6 +40,21 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(27)
 	}
+}
+
+// Obraz runtime konsumenta żyje w ręcznie kopiowanym Dockerfile, a toolchain tutaj — nic ich nie wiązało
+// (BookOfStyling i SkillSprintPlus: eclipse-temurin:25-jre przy toolchainie 26). Bramka porównuje ostatni
+// FROM z toolchainem; brak Dockerfile albo obraz spoza JVM = pominięcie z logiem.
+val runtimeDockerfiles =
+	listOf(layout.projectDirectory, rootProject.layout.projectDirectory).map { it.file("Dockerfile").asFile }.distinct()
+val platformRuntimeImageCheck = tasks.register<RuntimeImageCheck>("platformRuntimeImageCheck") {
+	description = "Fails when the Dockerfile's final JVM image runs an older Java than the toolchain of the bytecode."
+	group = "verification"
+	dockerfiles.set(runtimeDockerfiles)
+	toolchainVersion.set(java.toolchain.languageVersion.map { it.asInt() })
+}
+tasks.named("check") {
+	dependsOn(platformRuntimeImageCheck)
 }
 
 spotless {
@@ -70,6 +88,7 @@ val extractCheckstyleConfig = tasks.register("extractCheckstyleConfig") {
 }
 
 checkstyle {
+	// Lustro gradle/catalog: version("checkstyle").
 	toolVersion = "13.10.0"
 	maxWarnings = 0
 	configDirectory.set(layout.buildDirectory.dir("platform-config/checkstyle"))
@@ -111,7 +130,7 @@ tasks.withType<Test>().configureEach {
 // żeby wynik lokalny i wynik CI były tą samą liczbą.
 val coverageProducers = tasks.matching { it.name == "test" || it.name == "integrationTest" }
 val coverageExecutionData =
-	fileTree(layout.buildDirectory).include("jacoco/test.exec", "jacoco/integrationTest.exec")
+	fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco/integrationTest.exec") }
 
 tasks.named<JacocoReport>("jacocoTestReport") {
 	dependsOn(coverageProducers)
@@ -122,16 +141,51 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 	}
 }
 
+// Próg pokrycia: STATYCZNY ułamek `coverageMinimum` z gradle.properties konsumenta albo -P, domyślnie 0.00.
+// To nie jest ratchet — każde repo startuje tam, gdzie ma kod, i samo podnosi próg w stronę 0.80.
+// Walidacja od razu w konfiguracji: "80" dawało próg 80, a "0,8" NumberFormatException bez wskazówki.
+val coverageMinimumProperty = providers.gradleProperty("coverageMinimum")
+val coverageMinimum: BigDecimal = coverageMinimumProperty.orNull?.let { raw ->
+	raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
+		?: throw GradleException("coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'")
+} ?: BigDecimal("0.00")
+val coverageGate =
+	"Coverage gate: minimum=${coverageMinimum.toPlainString()} " +
+		"(source: ${if (coverageMinimumProperty.isPresent) "coverageMinimum" else "default"})"
+
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 	dependsOn(coverageProducers)
 	executionData.setFrom(coverageExecutionData)
+	val gate = coverageGate
+	doFirst { logger.lifecycle(gate) }
 	violationRules {
 		rule {
 			limit {
-				// RATCHET: każde repo startuje tam, gdzie ma kod, i podnosi w stronę 0.80.
-				// Nadpisz w gradle.properties konsumenta: coverageMinimum=0.80
-				minimum = (project.findProperty("coverageMinimum") as String? ?: "0.00").toBigDecimal()
+				minimum = coverageMinimum
 			}
+		}
+	}
+}
+
+// Bramka bez danych to fałszywa zieleń: JacocoCoverageVerification ma onlyIf("Any of the execution data
+// files exists"), więc moduł bez .exec przy coverageMinimum > 0 dostawał SKIPPED i zielony `check`.
+val mainClassesDirs = the<SourceSetContainer>()["main"].output.classesDirs
+val platformCoverageDataCheck = tasks.register("platformCoverageDataCheck") {
+	description = "Fails when coverageMinimum is above 0 but no test task produced JaCoCo execution data."
+	group = "verification"
+	dependsOn(coverageProducers)
+	val gateActive = coverageMinimum.signum() > 0
+	val minimum = coverageMinimum.toPlainString()
+	val executionData = coverageExecutionData
+	val mainClasses = mainClassesDirs
+	inputs.files(mainClasses)
+	doLast {
+		val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
+		if (gateActive && hasMainClasses && executionData.isEmpty()) {
+			throw GradleException(
+				"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
+					"Add tests to this module or set coverageMinimum=0.",
+			)
 		}
 	}
 }
@@ -140,46 +194,68 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 // `integrationTest`, więc finalizer na `test` ciągnąłby Testcontainers przy każdym `./gradlew test`.
 // Raport i bramka wiszą na `check` — a tam oba zestawy i tak się wykonują.
 tasks.named("check") {
-	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"))
+	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"), platformCoverageDataCheck)
 }
 
-// === Governance wersji: KAŻDA wersja biblioteki pochodzi z platform-catalog ====================
+// === Governance wersji: KAŻDA jawna wersja biblioteki pochodzi z platform-catalog ==============
 // Reguły:
 //   1. Zależność zadeklarowana BEZ wersji = zarządzana BOM-ami platformy (spring-modulith-conventions) — OK.
-//   2. Zależność z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją IDENTYCZNĄ
-//      — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Inline wersja spoza katalogu = czerwony build.
-//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) + ./release.sh,
+//   2. Zależność albo constraint z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją
+//      IDENTYCZNĄ — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Dotyczy też artefaktów
+//      pl.seniordeveloper: ich kanonem jest wstrzyknięta platformVersion. Inline wersja spoza kanonu = czerwony build.
+//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) i wydanie,
 //      potem bump pinu i użycie przez libs.<alias>.
+// Zakres: każdy deklarowalny kubełek — nazwy bazowe niżej i ich warianty z prefiksem source setu (test*,
+// testFixtures*, własne source sety). Konfiguracje narzędzi (checkstyle, pitest, spotbugs*, jacocoAgent,
+// cyclonedx*) zostają poza zakresem z konstrukcji.
 // Wykrywanie w afterEvaluate (deps konsumenta już zadeklarowane), asercja w tasku — CC-safe.
-val governedConfigurations = setOf(
-	"api", "implementation", "compileOnly", "runtimeOnly", "annotationProcessor",
-	"testImplementation", "testCompileOnly", "testRuntimeOnly", "testAnnotationProcessor",
+val governedBuckets = setOf(
+	"api", "implementation", "compileOnly", "compileOnlyApi", "runtimeOnly", "annotationProcessor",
+	"developmentOnly", "testAndDevelopmentOnly",
 )
+val governedBucketSuffixes =
+	listOf("Implementation", "Api", "CompileOnly", "CompileOnlyApi", "RuntimeOnly", "AnnotationProcessor")
+fun isGovernedBucket(name: String): Boolean =
+	name in governedBuckets || governedBucketSuffixes.any { name.length > it.length && name.endsWith(it) }
+
 val platformDependencyCheck = tasks.register("platformDependencyCheck") {
-	description = "Pilnuje, że wersje wszystkich zadeklarowanych zależności pochodzą z platform-catalog."
+	description = "Checks that every explicit dependency version comes from platform-catalog."
 	group = "verification"
 }
 afterEvaluate {
 	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 	val violations = mutableListOf<String>()
 	if (libs != null) {
-		val canon = mutableMapOf<String, String>()
+		val canonVersions = mutableMapOf<String, String>()
+		val accessors = mutableMapOf<String, String>()
 		libs.libraryAliases.forEach { alias ->
 			val dep = libs.findLibrary(alias).get().get()
+			val key = "${dep.module.group}:${dep.module.name}"
+			accessors.putIfAbsent(key, "libs." + alias.replace('-', '.').replace('_', '.'))
 			val v = dep.versionConstraint.requiredVersion
-			if (v.isNotBlank()) canon["${dep.module.group}:${dep.module.name}"] = v
+			if (v.isNotBlank()) canonVersions[key] = v
 		}
-		configurations.matching { it.name in governedConfigurations }.forEach { conf ->
+		fun violation(key: String, version: String?, bucket: String): String? {
+			if (version.isNullOrBlank()) return null
+			val canonVersion = canonVersions[key]
+			val accessor = accessors[key]
+			return when {
+				canonVersion == version -> null
+				canonVersion != null -> "$key:$version ($bucket) — Platform canon is $canonVersion: declare it as $accessor"
+				accessor != null ->
+					"$key:$version ($bucket) — managed by the Platform BOMs: remove the explicit version and declare it as $accessor"
+				else ->
+					"$key:$version ($bucket) — not in the Platform catalog. If the Platform BOMs (Spring Boot / Modulith / " +
+						"Spring AI) manage it, remove the explicit version; otherwise add it to gradle/catalog/libs.versions.toml " +
+						"in DominikSienkiewicz/Platform, release, and bump the Platform pin"
+			}
+		}
+		configurations.matching { isGovernedBucket(it.name) }.forEach { conf ->
 			conf.dependencies.withType(ExternalModuleDependency::class.java).forEach { d ->
-				val ver = d.version
-				if (ver.isNullOrBlank() || d.group == "pl.seniordeveloper") return@forEach
-				val key = "${d.group}:${d.name}"
-				val canonV = canon[key]
-				if (canonV == null) {
-					violations += "$key:$ver (${conf.name}) — BRAK w platform-catalog: dodaj wpis w Platform i wydaj (./release.sh)"
-				} else if (canonV != ver) {
-					violations += "$key:$ver (${conf.name}) — kanon platformy: $canonV (deklaruj przez libs.<alias>)"
-				}
+				violation("${d.group}:${d.name}", d.version, conf.name)?.let { violations += it }
+			}
+			conf.dependencyConstraints.forEach { c ->
+				violation("${c.group}:${c.name}", c.version, "${conf.name} constraint")?.let { violations += it }
 			}
 		}
 	}
@@ -187,13 +263,13 @@ afterEvaluate {
 	platformDependencyCheck.configure {
 		doLast {
 			if (catalogMissing) {
-				logger.lifecycle("platformDependencyCheck: pominięty — brak katalogu 'libs' (build spoza konsumenta platformy)")
+				logger.warn("platformDependencyCheck: skipped — no 'libs' version catalog, so this is not a Platform consumer build")
 			} else if (violations.isNotEmpty()) {
 				throw GradleException(
-					"Wersje zależności spoza platformy (governance):\n  " + violations.joinToString("\n  "),
+					"Dependency versions outside the Platform canon (platformDependencyCheck):\n  " + violations.joinToString("\n  "),
 				)
 			} else {
-				logger.lifecycle("platformDependencyCheck: OK — wszystkie jawne wersje zgodne z platform-catalog")
+				logger.lifecycle("platformDependencyCheck: OK — every explicit version matches platform-catalog")
 			}
 		}
 	}

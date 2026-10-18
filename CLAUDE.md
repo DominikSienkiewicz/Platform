@@ -15,7 +15,7 @@ opublikuj, podbij pin w repo konsumenta.
 
 | Katalog | Artefakt |
 |---|---|
-| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria). Podział: `java` = Spotless/Checkstyle/JaCoCo+gate/`platformDependencyCheck`; `quality` = PIT/SpotBugs/CycloneDX/**SonarCloud**; `spring-modulith` = BOM-y + deps testowe + split testów |
+| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria). Podział: `java` = Spotless/Checkstyle/JaCoCo+gate (`platformCoverageDataCheck`)/`platformDependencyCheck`/`platformRuntimeImageCheck` (ostatni `FROM` Dockerfile'a ≥ toolchain); `quality` = PIT/SpotBugs/CycloneDX/**SonarCloud**; `spring-modulith` = BOM-y + deps testowe + split testów |
 | `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` (+ **bundle'e**: `modulith-web`, `modulith-web-tests`, `dev-docker-compose` — zamiast powielanych inline starterów) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów + guardy migracji Liquibase/Flyway) |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — parametryzowalny SecurityFilterChain + CORS (`platform.security.*`/`platform.cors.*`, opt-in `@ConditionalOnMissingBean`) |
@@ -29,13 +29,19 @@ opublikuj, podbij pin w repo konsumenta.
 
 1. **Wersje bibliotek/pluginów → `gradle/catalog`.** `build-logic` dołącza ten sam
    `libs.versions.toml` przez swoje `settings.gradle.kts`, więc marker-artefakty pluginów biorą wersje
-   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: `toolVersion` w ŹRÓDŁACH convention pluginów
-   (checkstyle/jacoco + `googleJavaFormat("…")` w `java-conventions`, spotbugs w `quality-conventions`) — precompiled script
-   plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie i przy bumpie
-   zmieniasz oba miejsca.
+   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: LUSTRA wersji w ŹRÓDŁACH convention pluginów
+   (toolVersion checkstyle/jacoco/spotbugs, `googleJavaFormat("…")`, toolchain, pitest, wersje BOM-ów
+   Spring/JUnit, lombok, archunit — pełna tabela w `docs/versions.md`, sekcja „Mirrored literals”) —
+   precompiled script plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie
+   i przy bumpie zmieniasz oba miejsca. Rozjazd wywala `PlatformToolVersionMirrorTest`
+   / `PlatformCatalogMirrorTest` w build-logic.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
-   build konsumenta, gdy zadeklarowana zależność ma jawną wersję spoza katalogu lub inną niż katalog.
-   Bez wersji = zarządzane BOM-ami platformy (OK). Nowa biblioteka = najpierw wpis tu + `./release.sh`.
+   build konsumenta, gdy zadeklarowana zależność albo constraint ma jawną wersję spoza katalogu lub inną
+   niż katalog — w każdym deklarowalnym kubełku (`api`/`implementation`/`compileOnly(Api)`/`runtimeOnly`/
+   `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly` i ich warianty `test*`/`testFixtures*`/
+   własnych source setów), także dla artefaktów `pl.seniordeveloper`. Bez wersji = zarządzane BOM-ami
+   platformy (OK). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
+   Nowa biblioteka = najpierw wpis tu + `./release.sh`.
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
    To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
@@ -79,6 +85,10 @@ opublikuj, podbij pin w repo konsumenta.
 ## Wersjonowanie
 
 Wszystkie artefakty = jeden `platformVersion` (build-logic `gradle.properties` + catalog `version("platform")`).
+Ta sama wartość stoi w każdym `gradle/*/gradle.properties`, `templates/jvm/*/gradle.properties`
+i `frontend/packages/*/package.json` — bumpuje je `release.sh`, a rozjazd albo `getOrElse("X.Y.Z")`
+w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeholder `platform`
+w `libs.versions.toml` jest celowo nierozwiązywalny.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach (Dependabot/Renovate).
 
 **`./release.sh` wymaga message jako 1. argumentu** (Conventional Commits, po angielsku, zero atrybucji AI) —
@@ -94,7 +104,7 @@ commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do przodu) — nie pchaj 
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
-- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza `toolVersion` w źródłach convention pluginów).
+- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza lustrami z tabeli w `docs/versions.md`).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).
 
 ## Lokalne koncepcje

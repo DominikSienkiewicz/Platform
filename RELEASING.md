@@ -72,15 +72,22 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 ./release.sh "feat: short description" 1.6.0
 ```
 
-The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
+The first form releases a patch (current version + 0.0.1), the second an explicit version.
+Read the **Unreleased** section of [CHANGELOG.md](CHANGELOG.md) first: when it lists a
+**Consumer action required** entry, the release must bump the MINOR version, so use the
+explicit form (for example `1.6.0`). Move the Unreleased entries under that version in a commit
+before you run `release.sh`, which refuses a dirty tree. Append
 `-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The commit message
 is required and must follow Conventional Commits in English.
 
 Before it changes anything, `release.sh` refuses to run when the working tree is not clean
 (untracked files included), the current branch is not `main`, or `HEAD` differs from `origin/main`.
-It also refuses a version whose tag already exists. It then bumps `platformVersion` in the module
-`gradle.properties` files and in the catalog's fallback default, commits only those files, pushes
-`main`, and creates and pushes the `vX.Y.Z` tag. It does not touch `v1`.
+It also refuses a version whose tag already exists. It then bumps `platformVersion` in every
+`gradle/*/gradle.properties` and `templates/jvm/*/gradle.properties`, and `version` in every
+`frontend/packages/*/package.json`, commits only those files, pushes `main`, and creates and pushes
+the `vX.Y.Z` tag. It does not touch `v1`. The tree therefore always carries one version;
+`templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script falls
+back to a hard-coded version.
 
 The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
 because two publishes of the same version running in parallel once caused a partial release.

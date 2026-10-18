@@ -10,28 +10,38 @@ versionCatalogs { create("libs") { from(files("../catalog/libs.versions.toml")) 
 
 It reads the file rather than the published artifact because `platform-catalog` does not
 yet exist at the time `build-logic` is compiled. The plugin marker artifacts on the
-`build-logic` classpath therefore take their versions straight from the canonical file, and
-a bump is a one-place edit.
+`build-logic` classpath therefore take their versions straight from the canonical file.
 
-## The one remaining duplication
+## Mirrored literals
 
-`toolVersion` values inside the **sources** of the convention plugins — `checkstyle` and
-`jacoco` in `java-conventions`, `spotbugs` in `quality-conventions` — and the
-`googleJavaFormat("…")` formatter version in `java-conventions` cannot come from the
-catalog. A precompiled script plugin does not read a version catalog at compile time, so
-these values have to be literals in the code.
+A precompiled script plugin does not read a version catalog at compile time, so some
+versions are literals in the **sources** of the convention plugins and entries in the
+catalog at the same time. Bumping one of them means editing both places, and a test in
+`build-logic` fails when the two drift. Drift of a BOM import would otherwise be silent for
+consumers: `platformDependencyCheck` does not see `mavenBom(...)` imports, so their runtime
+would stay on the old BOM, CVE fixes included.
 
-The canonical file holds matching entries for `checkstyle`, `jacoco` and `googleJavaFormat`,
-so bumping any of them means editing both places. `PlatformToolVersionMirrorTest` in
-`build-logic` fails when the `googleJavaFormat` literal, the toolchain `JavaLanguageVersion.of(…)`
-in `java-conventions` (catalog `java`), the `ext["lombok.version"]` override in
-`spring-modulith-conventions` (catalog `lombok`), the `archunitVersion` literal there (catalog
-`archunit`) or `pitestVersion` in `quality-conventions`
-(catalog `pitestTool`, the PIT engine; `pitest` is the Gradle plugin) drifts from the catalog,
-and so does the `toolchain-java-version` default of the reusable workflows (catalog `java`). The formatter
-version is pinned rather than left to Spotless because Spotless picks its default from the JVM
-that runs Gradle, and on JDK 27 it picked a release that crashes on the new javac. `spotbugs` (`toolVersion` `4.10.3`) has no canonical entry;
-`spotbugsPlugin` is the Gradle plugin version, which is a different thing.
+| Mirrored literal | Source | Catalog key | Guarded by |
+|---|---|---|---|
+| `googleJavaFormat("…")` | `seniordev.java-conventions` | `googleJavaFormat` | `PlatformToolVersionMirrorTest` |
+| `JavaLanguageVersion.of(…)` | `seniordev.java-conventions` | `java` | `PlatformToolVersionMirrorTest` |
+| checkstyle `toolVersion` | `seniordev.java-conventions` | `checkstyle` | `PlatformCatalogMirrorTest` |
+| jacoco `toolVersion` | `seniordev.java-conventions` | `jacoco` | `PlatformCatalogMirrorTest` |
+| spotbugs `toolVersion` | `seniordev.quality-conventions` | `spotbugs` | `PlatformCatalogMirrorTest` |
+| `pitestVersion` | `seniordev.quality-conventions` | `pitestTool` | `PlatformToolVersionMirrorTest` |
+| `junit5PluginVersion` | `seniordev.quality-conventions` | `pitestJunit5` | `PlatformCatalogMirrorTest` |
+| `springBootVersion` | `seniordev.spring-modulith-conventions` | `springBoot` | `PlatformCatalogMirrorTest` |
+| `springModulithVersion` | `seniordev.spring-modulith-conventions` | `springModulith` | `PlatformCatalogMirrorTest` |
+| `springAiVersion` | `seniordev.spring-modulith-conventions` | `springAi` | `PlatformCatalogMirrorTest` |
+| `junitVersion` | `seniordev.spring-modulith-conventions` | `junit` | `PlatformCatalogMirrorTest` |
+| `archunitVersion` | `seniordev.spring-modulith-conventions` | `archunit` | `PlatformToolVersionMirrorTest` |
+| `ext["lombok.version"]` | `seniordev.spring-modulith-conventions` | `lombok` | `PlatformToolVersionMirrorTest` |
+| `toolchain-java-version` default | `backend-ci.yml`, `deploy.yml`, `sonar.yml` | `java` | `PlatformToolVersionMirrorTest` |
+
+`pitestTool` is the PIT engine and `pitest` the Gradle plugin; in the same way `spotbugs` is
+the SpotBugs engine and `spotbugsPlugin` the Gradle plugin. The formatter version is pinned
+rather than left to Spotless because Spotless picks its default from the JVM that runs
+Gradle, and on JDK 27 it picked a release that crashes on the new javac.
 
 ## Overrides above the Spring Boot BOM
 
@@ -59,6 +69,8 @@ after taking a platform version that changes an override.
 
 Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from
 `templates/Dockerfile.backend`, so the toolchain and the runtime image move together.
+`platformRuntimeImageCheck` in `seniordev.java-conventions` enforces it in every consumer's
+`check`: the final `FROM` of the Dockerfile must not run an older Java than the toolchain.
 
 On 2026-09-25 the toolchain 27 entry condition was met with `sapmachine:27-jre`, not
 `eclipse-temurin:27-jre`: ten days after the JDK 27 GA, Docker Hub still had no Temurin 27
@@ -115,7 +127,9 @@ Upstream references: [Gradle 9.8.1](https://docs.gradle.org/9.8.1/release-notes.
 
 Java 27 remains the consumer toolchain. Gradle's Java 27 support does not establish
 compatibility for every analyzer or framework; the consumer TestKit suite is the
-verification gate. This change does not claim a completed runtime compatibility run.
+verification gate. It runs the consumer `build` with SpotBugs, JaCoCo, PIT and CycloneDX on
+class-file 71, fails on "Unsupported class file major version", and starts the packaged
+Spring `bootJar` from its own runtime classpath.
 
 pnpm 12 and Vitest 5 remain separate major migrations; the current release retains
 pnpm 11.18.0 and Vitest 4 peers. A full OpenAPI validation/generation/freshness/breaking-change

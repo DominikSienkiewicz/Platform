@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "pl.seniordeveloper"
-version = providers.gradleProperty("platformVersion").getOrElse("1.0.0")
+version = providers.gradleProperty("platformVersion").get()
 
 java {
 	toolchain { languageVersion = JavaLanguageVersion.of(25) }
