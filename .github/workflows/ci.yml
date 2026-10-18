@@ -7,10 +7,14 @@ name: CI
 # Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
 # Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
 # (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
+# Cron w poniedziałek 04:00 UTC: dryf środowiska (runner, Foojay, GitHub Packages) widać tu przed
+# cotygodniowymi cronami konsumentów, a nie dopiero u nich.
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 4 * * 1"
   workflow_call:
 
 permissions:
@@ -101,6 +105,19 @@ jobs:
           node-version: "24"
       - name: renovate-config-validator --strict
         run: npx --yes --package renovate@44.132.5 -- renovate-config-validator --strict renovate.json default.json
+
+  # Reusable backend-ci uruchomiony tu, zanim zrobi to konsument: na starterze java-library z jego wrapperem
+  # i publikowanym pinem platformVersion, więc idzie prawdziwą ścieżką konsumenta (dwa setup-java, rejestracja
+  # toolchainu 27, GitHub Packages przez GITHUB_TOKEN, upload raportów). Wydanie woła ci.yml jako verify,
+  # więc ten job bramkuje też publikację.
+  backend-ci-smoke:
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/backend-ci.yml
+    with:
+      working-directory: templates/jvm/java-library
+      gradle-task: build
 
   templates:
     name: Templates — testy skryptów

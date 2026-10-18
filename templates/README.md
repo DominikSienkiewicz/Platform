@@ -6,7 +6,7 @@ consumer repositories.
 
 | File | Purpose | Copy to |
 |---|---|---|
-| `jvm/java-library/`, `jvm/spring-app/` | minimal projects that consume the published plugins and catalog; built by Gradle TestKit. Their `.gitignore` is the rules of `gitignore/root.gitignore` followed by `gitignore/backend.gitignore` | the root of a new repository; see [consuming.md](../docs/consuming.md) |
+| `jvm/java-library/`, `jvm/spring-app/` | minimal projects that consume the published plugins and catalog; built by Gradle TestKit. `java-library` carries the Gradle wrapper, and Platform's CI runs the reusable `backend-ci.yml` on it. Their `.gitignore` is the rules of `gitignore/root.gitignore` followed by `gitignore/backend.gitignore` | the root of a new repository; see [consuming.md](../docs/consuming.md) |
 | `agent-gradle.sh` | opt-in worker limits with `AI_AGENT=1/true`; runs `./gradlew` from the root, or `backend/gradlew` from `backend/` when the root has no wrapper | `<repo>/scripts/agent-gradle.sh` |
 | `.editorconfig` | consistent IDE style (Java: 2 spaces like google-java-format; Kotlin/`*.kts`: tabs) | the root of every repository |
 | `.sdkmanrc` | the local JDK that runs Gradle, through SDKMAN (`sdk env`) | the root of every repository |

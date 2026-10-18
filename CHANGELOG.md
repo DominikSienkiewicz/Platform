@@ -50,6 +50,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Platform's CI runs the reusable `backend-ci.yml` on the `java-library` starter, on every push and
+  every Monday at 04:00 UTC, so a broken workflow or a drifted runner shows up here before it reaches
+  a consumer. Releases wait for it too.
 - Reusable `platform-bump.yml`: run it on a schedule and it bumps the repository to the newest Platform
   release of the current MAJOR and opens a pull request with the diff, the release notes and the
   consumer actions. The caller grants `contents: write`, `pull-requests: write` and `packages: read`.

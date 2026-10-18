@@ -50,10 +50,12 @@ jobs:
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "Wersja release: $V (z gradle.properties — jedno źródło: local == GitHub == pin)"
 
+  # packages: read dla backend-ci-smoke w ci.yml: wołany workflow nie dostanie więcej, niż przyzna ten job.
   verify:
     needs: version
     permissions:
       contents: read
+      packages: read
     uses: ./.github/workflows/ci.yml
 
   # Rejestr shadcn budowany osobno, bez packages: write: narzędzie i jego zależności nie widzą

@@ -25,6 +25,18 @@ class PlatformGradleVersionMirrorTest {
 	}
 
 	@Test
+	fun `the JVM starters carry the catalog Gradle wrapper`() {
+		val wrappers = File(System.getProperty("platform.templates")).listFiles()!!
+			.map { File(it, "gradle/wrapper/gradle-wrapper.properties") }
+			.filter { it.isFile }
+		assertEquals(listOf("java-library"), wrappers.map { it.parentFile.parentFile.parentFile.name }, "backend-ci-smoke runs the java-library starter's wrapper")
+		wrappers.forEach { wrapper ->
+			val version = Regex("""distributionUrl=.*gradle-([0-9.]+)-(?:bin|all)\.zip""").find(wrapper.readText())?.groupValues?.get(1)
+			assertEquals(catalogGradle, version, "templates/jvm/${wrapper.parentFile.parentFile.parentFile.name}: the wrapper must run catalog entry gradle")
+		}
+	}
+
+	@Test
 	fun `the canon scan installs the catalog Gradle`() {
 		val workflow = File(System.getProperty("platform.workflows"), "canon-cve-scan.yml").readText()
 		assertEquals(
