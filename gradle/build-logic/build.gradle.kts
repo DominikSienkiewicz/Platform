@@ -12,6 +12,8 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(25)
 	}
+	// Źródła convention pluginów obok binarki: konsument czyta w IDE, co plugin robi z jego buildem.
+	withSourcesJar()
 }
 
 repositories {

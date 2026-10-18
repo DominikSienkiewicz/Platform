@@ -76,7 +76,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `docs/reference.md`: every task, property and default the convention plugins add, the security
   starter properties and a snippet per test fixture. The README shows how a release reaches the
   registries and the consumer pins.
-- `platform-test-fixtures` and `platform-security-starter` publish a sources jar, and every
+- `platform-test-fixtures` and `platform-security-starter` publish sources and javadoc jars, the convention
+  plugins a sources jar, and every
   `platform.security.*` and `platform.cors.*` property has an IDE description.
 - Every release gets a GitHub Release whose notes are its CHANGELOG section, and an annotated
   version tag carrying the same notes.
