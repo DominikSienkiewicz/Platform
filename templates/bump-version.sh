@@ -74,9 +74,14 @@ case "$LAYER" in
     changes_dir="$ROOT/backend/src/main/resources/db/changelog/changes"
     master="$ROOT/backend/src/main/resources/db/changelog/db.changelog-master.yaml"
     mkdir -p "$changes_dir"
-    # następny 4-cyfrowy numer sekwencji
-    last="$(ls "$changes_dir" 2>/dev/null | grep -oE '^[0-9]{4}' | sort -n | tail -1 || true)"
-    seq="$(printf '%04d' "$((10#${last:-0} + 1))")"
+    # następny 4-cyfrowy numer sekwencji: glob zamiast `ls | grep`, który psuje się na nazwach ze znakami specjalnymi
+    last=0
+    for path in "$changes_dir"/[0-9][0-9][0-9][0-9]*; do
+      [[ -e "$path" ]] || continue
+      name="${path##*/}"
+      if ((10#${name:0:4} > 10#$last)); then last="${name:0:4}"; fi
+    done
+    seq="$(printf '%04d' "$((10#$last + 1))")"
     file="${seq}-${ARG}.yaml"
     cat >"$changes_dir/$file" <<YAML
 databaseChangeLog:
