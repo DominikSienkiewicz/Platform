@@ -1,5 +1,5 @@
 // build-logic = osobny build Gradle publikujący convention plugins (precompiled script plugins)
-// jako artefakt Maven. Konsumowany przez 3 repo (Attestate / SkillSprintPlus / BookOfStyling)
+// jako artefakt Maven. Konsumowany przez repo z scripts/consumers.txt
 // przez `pluginManagement { repositories { maven(GitHub Packages) } }`.
 rootProject.name = "build-logic"
 

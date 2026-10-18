@@ -73,7 +73,8 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
    with a `# vX.Y.Z` comment. Renovate moves them once the Renovate app runs in Platform; until then
    nothing does.
    Check each one against its latest release and update SHA and comment together.
-2. Prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
+2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches, and who
+   still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
    the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
@@ -253,7 +254,7 @@ a deleted version only by accident. Clean up deliberately with
 **Actions → Cleanup old package versions → Run workflow**:
 
 - `protect` (required): every version a consumer still pins, comma-separated, for example
-  `1.5.26,1.5.31`. Read the pins from each consumer's `backend/settings.gradle.kts` before the run.
+  `1.5.26,1.5.31`. Read them from the Platform pin column of `scripts/consumer-audit.sh` before the run.
   Protected versions are never deleted, whatever their age.
 - `keep` (default `10`): how many of the newest versions of each package to keep.
 - `dry_run` (default `true`): print the plan only. Review it, then run again with `dry_run`

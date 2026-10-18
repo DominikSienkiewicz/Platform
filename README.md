@@ -29,26 +29,26 @@ own schedule and rolls back by pinning an older version.
 
 ## What it publishes
 
-| Path | Artifact | Published to |
-|---|---|---|
-| `gradle/build-logic/` | four convention plugins (`seniordev.*-conventions`, including settings) | GitHub Packages (Maven) |
-| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) |
-| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases) | GitHub Packages (Maven) |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, and the `platform-bump` bin | GitHub Packages (npm) |
-| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
-| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet |
-| `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule |
-| `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
-| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` |
-| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied (manual sync) |
-| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` (release notes), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan) | not published |
+| Path | Artifact | Published to | Adopted by |
+|---|---|---|---|
+| `gradle/build-logic/` | four convention plugins (`seniordev.*-conventions`, including settings) | GitHub Packages (Maven) | all five |
+| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | all five; the bundles none |
+| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
+| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases) | GitHub Packages (Maven) | all five |
+| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth, BookOfStyling, SkillSprintPlus |
+| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) | none |
+| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, and the `platform-bump` bin | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
+| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
+| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
+| `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule | not audited |
+| `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all five; `platform-bump.yml` none |
+| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
+| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied (manual sync) | not audited |
+| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` (release notes), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh` | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does: that
@@ -62,6 +62,22 @@ Attestate's `providers.tsx` matches `query` one to one.
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
+
+## Consumers
+
+| Repository | Layout |
+|---|---|
+| `DominikSienkiewicz/Attestate_io` | backend and frontend |
+| `DominikSienkiewicz/Azimuth` | backend and frontend |
+| `DominikSienkiewicz/BookOfStyling_com` | backend and frontend |
+| `DominikSienkiewicz/SkillSprintPlus_com` | backend and frontend |
+| `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
+
+"The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
+`scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
+image, Platform artifacts, workflow references and `platform-bump.yml` caller, with GET requests
+only. Its output describes private repositories, so it runs on the maintainer's machine, not in CI.
+The "Adopted by" column is from its run on 2026-10-18; an adoption pull request updates it.
 
 ### Reusable workflows
 

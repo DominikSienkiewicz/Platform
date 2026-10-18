@@ -3,7 +3,8 @@
 Kontekst dla agentów AI. To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
 konsumowana przez osobne repo produktowe: Attestate (`Attestate_io`), Azimuth, BookOfStyling
 (`BookOfStyling_com`), SkillSprintPlus (`SkillSprintPlus_com`), Touchstone (wszystkie 5 konsumują
-convention pluginy + katalog; 4 z frontendem — bez Touchstone — także kanon frontendu).
+convention pluginy + katalog; 4 z frontendem — bez Touchstone — także kanon frontendu). Lista = `scripts/consumers.txt`
+(ta sama co sekcja Consumers w README); adopcję i piny pokazuje lokalny `scripts/consumer-audit.sh` (tylko GET).
 
 ## Czym to jest
 

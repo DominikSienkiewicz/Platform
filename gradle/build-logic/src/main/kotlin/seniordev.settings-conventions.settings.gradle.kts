@@ -3,7 +3,7 @@
  * ------------------------------
  * Convention plugin dla settings.gradle.kts konsumenta:
  *   - foojay-resolver-convention (lokalny auto-provisioning JDK pod toolchain z java-conventions) — wersja z classpath
- *     build-logic (lustro gradle/catalog), znika hardkod "version 1.0.0" z 3 repo
+ *     build-logic (lustro gradle/catalog), znika hardkod wersji foojay w repo konsumentów
  *   - dependencyResolutionManagement.repositories: opcjonalne -PplatformRepository (pierwsze; jedyna droga do
  *     niewydanych zmian, ADR-0003), mavenCentral i GitHub Packages (gpr.user/gpr.key lub GITHUB_ACTOR/GITHUB_TOKEN)
  *

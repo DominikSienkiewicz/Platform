@@ -1,6 +1,6 @@
 name: platform-infra
 
-# Szablon środowiska dev współdzielony przez repo (Attestate / SkillSprintPlus / BookOfStyling).
+# Szablon środowiska dev współdzielony przez repo konsumentów (scripts/consumers.txt).
 # PostgreSQL+pgvector zawsze; Ollama tylko z profilem "ai" (local-first, np. Attestate):
 #   docker compose up -d                  # samo PG
 #   docker compose --profile ai up -d     # PG + Ollama

@@ -94,7 +94,7 @@ boot-test-validation = { group = "org.springframework.boot", name = "spring-boot
 boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc-test" }
 
 [bundles]
-# Kręgosłup web+modulith i slice'y testowe — powielane inline w 4 konsumentach. Wersje z BOM-ów.
+# Kręgosłup web+modulith i slice'y testowe — powielane inline w repo konsumentów. Wersje z BOM-ów.
 modulith-web = ["boot-starter-actuator", "boot-starter-data-jpa", "boot-starter-validation", "boot-starter-webmvc", "modulith-starter-core", "modulith-starter-jpa"]
 modulith-web-tests = ["boot-test-actuator", "boot-test-data-jpa", "boot-test-validation", "boot-test-webmvc"]
 dev-docker-compose = ["boot-docker-compose", "spring-ai-docker-compose"]

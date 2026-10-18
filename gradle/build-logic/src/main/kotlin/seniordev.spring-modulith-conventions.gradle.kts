@@ -4,7 +4,7 @@ import org.gradle.api.tasks.testing.Test
 /*
  * seniordev.spring-modulith-conventions
  * -------------------------------------
- * Wspólny "kręgosłup" backendu Spring Modulith dla 3 repo:
+ * Wspólny "kręgosłup" backendu Spring Modulith dla repo konsumentów (scripts/consumers.txt):
  *   - import BOM-ów (Spring Boot / Spring Modulith / Spring AI GA) przez dependency-management
  *   - wspólne zależności TESTOWE (modulith-test, Testcontainers, ArchUnit, junit-launcher)
  *   - TAKSONOMIA TESTÓW (z Attestate): szybki `test` (bez tagu integration) ‖ wolny `integrationTest`

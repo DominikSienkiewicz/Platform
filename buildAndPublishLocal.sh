@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # buildAndPublishLocal.sh — buduje i publikuje artefakty Platform do LOKALNEGO repo, żeby repo
-# konsumenckie budowały się lokalnie BEZ GitHuba (lista konsumentów: CLAUDE.md).
+# konsumenckie budowały się lokalnie BEZ GitHuba (lista konsumentów: scripts/consumers.txt).
 #
 #   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog
 #               + test-fixtures + security-starter, wszystkie w jednej platformVersion
