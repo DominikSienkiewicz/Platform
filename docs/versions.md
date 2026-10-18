@@ -113,6 +113,13 @@ no resolvable configuration, so `--write-locks` succeeds without creating a file
 exists so that every Gradle module in the repository has one — there is nothing to lock, so
 do not try to regenerate it.
 
+## Gradle wrapper
+
+Every Gradle module carries the same wrapper. `gradle-wrapper.properties` pins the distribution
+with `distributionSha256Sum`, and the `wrapper-validation` job in `ci.yml` checks every
+`gradle-wrapper.jar` against the checksums Gradle publishes; `setup-gradle` repeats that check in
+each workflow that builds. A new module copies the wrapper of an existing one.
+
 ## Verification gate for the toolchain
 
 Gradle's Java 27 support does not establish compatibility for every analyzer or framework;
