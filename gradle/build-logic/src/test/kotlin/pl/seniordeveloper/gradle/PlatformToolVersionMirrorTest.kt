@@ -93,6 +93,6 @@ class PlatformToolVersionMirrorTest {
 		const val TOOLCHAIN_INPUT_DEFAULT = """\n {6}toolchain-java-version:(?:\n {8}[^\n]*)*?\n {8}default: "([^"]+)""""
 		const val ARCHUNIT_MANAGED_EVERYWHERE =
 			"""dependencyManagement\s*\{(?:[^{}]|\{[^{}]*})*?dependencies\s*\{[^{}]*?dependency\("com\.tngtech\.archunit:archunit:(\${'$'}archunitVersion)"\)"""
-		val TOOLCHAIN_WORKFLOWS = listOf("backend-ci.yml", "deploy.yml", "sonar.yml")
+		val TOOLCHAIN_WORKFLOWS = listOf("backend-ci.yml", "deploy.yml", "platform-bump.yml", "sonar.yml")
 	}
 }
