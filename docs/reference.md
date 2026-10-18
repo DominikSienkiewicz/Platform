@@ -65,6 +65,7 @@ plugin: the consumer adds `alias(libs.plugins.spring.boot)`.
 | Task | On `check` | Knob | Default |
 |---|---|---|---|
 | `test` | yes | `@Tag("integration")` moves a test out | runs every test without the `integration` tag |
+| `platformBomOverrideCheck` | yes, warns only | none | lists every BOM version property (`*.version`) set outside the platform; see [versions.md](versions.md#what-platformdependencycheck-does-not-see) |
 | `integrationTest` | yes | `@Tag("integration")` | runs only tests tagged `integration`; tag every Testcontainers test, or it runs in the fast `test` and needs Docker there |
 
 ## Security starter (*incubating*)

@@ -209,7 +209,9 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
   distribution's SHA-256;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
-  `gradle/verification-metadata.xml`.
+  `gradle/verification-metadata.xml`;
+- lists the local version overrides in the backend's Gradle scripts (`useVersion`, `force`,
+  `strictly`, `extra["….version"]`) that the Platform BOMs do not see, without failing.
 
 The script does not commit; the diff is left for review. The reusable
 [`platform-bump.yml`](docs/reusable-workflows.md#platform-bumpyml) runs the same bin on a schedule and

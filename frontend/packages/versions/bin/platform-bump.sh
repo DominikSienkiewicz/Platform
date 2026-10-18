@@ -311,6 +311,22 @@ if [[ -f backend/settings.gradle.kts ]]; then
 fi
 # platform-bump:gradle-end
 
+# --- Lokalne nadpisania wersji, których BOM-y Platform i platformDependencyCheck nie widzą (eachDependency/useVersion,
+#     force, strictly, extra/ext["….version"]). Bump nie może kończyć się po cichu na wersji, którą nowe BOM-y już
+#     łatają — tylko raport, kod wyjścia bez zmian. Wyniki builda (build/, .gradle/) pomijamy. ---
+# platform-bump:local-overrides
+if [[ -d backend ]]; then
+  local_overrides="$(grep -rnE --include='*.gradle.kts' --exclude-dir=build --exclude-dir=.gradle \
+    'useVersion\(|force\(|strictly\(|(extra|ext)\["[^"]+\.version"\]' backend 2>/dev/null || true)"
+  if [[ -n "$local_overrides" ]]; then
+    echo ""
+    echo "==> Local version overrides the Platform BOMs do not see. Remove each one the BOMs of $TARGET manage at an equal or higher version:"
+    while IFS= read -r hit; do echo "  $hit"; done <<<"$local_overrides"
+    echo "  Selected version of a module: (cd backend && ./gradlew dependencyInsight --dependency <group:name> --configuration runtimeClasspath)"
+  fi
+fi
+# platform-bump:local-overrides-end
+
 echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
 git --no-pager diff --stat
 

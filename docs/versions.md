@@ -104,6 +104,22 @@ When it is red, the maintainer:
 3. or, when no fix can be adopted yet, accepts the finding in Platform's own `.grype.yaml`, with an
    expiry as described in [security-scanning.md](security-scanning.md), so that the scan is green again.
 
+## What platformDependencyCheck does not see
+
+`platformDependencyCheck` compares the versions a build *declares* with the catalog. A consumer can
+still move a version through channels the check cannot see:
+
+| Channel | Example | What reports it |
+|---|---|---|
+| A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); Platform's own overrides are not reported |
+| A resolution rule | `resolutionStrategy.eachDependency { useVersion("42.7.12") }` | `platform-bump`, which lists each one with its file and line |
+| A forced or strict version | `force("…")`, `strictly("…")` | `platform-bump`, the same way |
+
+Resolution rules cannot be detected from the build model, because dependency-management itself is
+built on `eachDependency`. A rule beats the BOM, so after a bump it can pin a version older than the
+one the new BOMs manage. Remove an override as soon as the Platform BOMs manage an equal or higher
+version; move one that must stay into `seniordev.spring-modulith-conventions`, so every consumer gets it.
+
 ## Runtime image for the JDK 27 toolchain
 
 Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from

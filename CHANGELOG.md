@@ -50,6 +50,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside
+  the platform (`extra["jackson-bom.version"]`), and `platform-bump` lists the `useVersion`, `force`,
+  `strictly` and `extra["….version"]` overrides of the backend after every bump. Neither fails the build.
 - `security-scan.yml` gains `only-if-deps-changed` (default `false`) and `deps-pattern`: a push or pull
   request scans only when a dependency manifest changed, schedules and manual runs always. Callers can
   drop the `changes` job they copied.

@@ -200,6 +200,11 @@ whose canon is the Platform version you pin. Each failure line names the fix: th
 to use, a BOM-managed version to remove, or a library that must first be added to the Platform
 catalog and released.
 
+A version set through a BOM property (`extra["jackson-bom.version"]`) or a resolution rule
+(`useVersion`, `force`) bypasses that check. `platformBomOverrideCheck` warns about the first,
+`platform-bump` lists both after every bump, and
+[versions.md](versions.md#what-platformdependencycheck-does-not-see) says how to remove them.
+
 ## Runtime image
 
 `check` runs `platformRuntimeImageCheck`. It reads the final `FROM` of the project's
