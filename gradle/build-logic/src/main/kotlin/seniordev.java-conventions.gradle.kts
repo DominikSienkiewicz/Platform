@@ -130,7 +130,7 @@ tasks.withType<Test>().configureEach {
 // żeby wynik lokalny i wynik CI były tą samą liczbą.
 val coverageProducers = tasks.matching { it.name == "test" || it.name == "integrationTest" }
 val coverageExecutionData =
-	fileTree(layout.buildDirectory).include("jacoco/test.exec", "jacoco/integrationTest.exec")
+	fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco/integrationTest.exec") }
 
 tasks.named<JacocoReport>("jacocoTestReport") {
 	dependsOn(coverageProducers)
@@ -181,7 +181,7 @@ val platformCoverageDataCheck = tasks.register("platformCoverageDataCheck") {
 	inputs.files(mainClasses)
 	doLast {
 		val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
-		if (gateActive && hasMainClasses && executionData.isEmpty) {
+		if (gateActive && hasMainClasses && executionData.isEmpty()) {
 			throw GradleException(
 				"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
 					"Add tests to this module or set coverageMinimum=0.",

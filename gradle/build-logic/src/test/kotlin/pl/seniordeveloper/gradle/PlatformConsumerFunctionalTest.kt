@@ -27,6 +27,8 @@ class PlatformConsumerFunctionalTest {
 	@Test
 	fun `published conventions build, package and start a Spring consumer`() {
 		val consumer = ConsumerFixture(directory, "spring-app")
+		val buildScript = consumer.file("build.gradle.kts")
+		buildScript.writeText("import java.time.Duration\n\n" + buildScript.readText())
 		consumer.appendToBuildScript(SMOKE_START_BOOT_JAR)
 
 		val result = consumer.runner("build", "cyclonedxBom", "smokeStartBootJar").build()
@@ -132,6 +134,9 @@ class PlatformConsumerFunctionalTest {
 		/**
 		 * Startuje spakowany bootJar z jego własnego classpathu. Testy widzą tylko testowy classpath, więc
 		 * regresja wyłącznie runtime'owa (np. ArchUnit 1.4.2 na class-file 71 w v1.5.29) była dla nich niewidoczna.
+		 * `spring.context.exit=onRefresh` kończy JVM zaraz po starcie kontekstu (kod 0, błąd startu = kod != 0):
+		 * aplikacja trzyma nie-daemonowy wątek puli, więc bez tego proces nigdy by się nie zakończył. `Duration`
+		 * wymaga importu dopisanego na początku skryptu: w skrypcie builda `java` to rozszerzenie, nie pakiet.
 		 */
 		const val SMOKE_START_BOOT_JAR = """
 tasks.register<JavaExec>("smokeStartBootJar") {
@@ -139,7 +144,9 @@ tasks.register<JavaExec>("smokeStartBootJar") {
     classpath = files(tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar").flatMap { it.archiveFile })
     mainClass.set("org.springframework.boot.loader.launch.JarLauncher")
     javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
+    jvmArgs("-Dspring.context.exit=onRefresh")
     args("--spring.main.web-application-type=none")
+    timeout.set(Duration.ofMinutes(3))
 }
 """
 	}
