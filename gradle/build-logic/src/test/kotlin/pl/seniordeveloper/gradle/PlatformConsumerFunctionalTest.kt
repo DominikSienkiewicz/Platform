@@ -125,7 +125,8 @@ class PlatformConsumerFunctionalTest {
 		/** Bramki, które `build` konsumenta uruchamia w backend-ci.yml, plus SBOM ze security-scan.yml. */
 		val CONSUMER_GATES = arrayOf(
 			":platformDependencyCheck", ":spotlessCheck", ":checkstyleMain", ":checkstyleTest", ":spotbugsMain",
-			":jacocoTestReport", ":jacocoTestCoverageVerification", ":platformCoverageDataCheck", ":cyclonedxBom",
+			":jacocoTestReport", ":jacocoTestCoverageVerification", ":platformCoverageDataCheck", ":platformRuntimeImageCheck",
+			":cyclonedxBom",
 		)
 
 		/**

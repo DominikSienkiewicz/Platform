@@ -72,6 +72,16 @@ whose canon is the Platform version you pin. Each failure line names the fix: th
 to use, a BOM-managed version to remove, or a library that must first be added to the Platform
 catalog and released.
 
+## Runtime image
+
+`check` runs `platformRuntimeImageCheck`. It reads the final `FROM` of the project's
+`Dockerfile`, or of the root project's in a multi-module build, and fails when that JVM image
+runs an older Java than the toolchain the bytecode is compiled for (Java 27). Move the final
+`FROM` to the image in [`templates/Dockerfile.backend`](../templates/Dockerfile.backend). A
+build without a Dockerfile, a non-JVM image or an image taken from a build argument is skipped
+with a log line. A repository-local test that compares the class-file version with the
+Dockerfile can be deleted once the consumer runs this release.
+
 ## Coverage threshold
 
 `check` runs `jacocoTestCoverageVerification` on the coverage of `test` and `integrationTest`

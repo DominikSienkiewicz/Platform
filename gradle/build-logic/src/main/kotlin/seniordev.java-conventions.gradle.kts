@@ -1,4 +1,5 @@
 import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.RuntimeImageCheck
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
@@ -39,6 +40,21 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(27)
 	}
+}
+
+// Obraz runtime konsumenta żyje w ręcznie kopiowanym Dockerfile, a toolchain tutaj — nic ich nie wiązało
+// (BookOfStyling i SkillSprintPlus: eclipse-temurin:25-jre przy toolchainie 26). Bramka porównuje ostatni
+// FROM z toolchainem; brak Dockerfile albo obraz spoza JVM = pominięcie z logiem.
+val runtimeDockerfiles =
+	listOf(layout.projectDirectory, rootProject.layout.projectDirectory).map { it.file("Dockerfile").asFile }.distinct()
+val platformRuntimeImageCheck = tasks.register<RuntimeImageCheck>("platformRuntimeImageCheck") {
+	description = "Fails when the Dockerfile's final JVM image runs an older Java than the toolchain of the bytecode."
+	group = "verification"
+	dockerfiles.set(runtimeDockerfiles)
+	toolchainVersion.set(java.toolchain.languageVersion.map { it.asInt() })
+}
+tasks.named("check") {
+	dependsOn(platformRuntimeImageCheck)
 }
 
 spotless {

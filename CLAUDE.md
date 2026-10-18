@@ -15,7 +15,7 @@ opublikuj, podbij pin w repo konsumenta.
 
 | Katalog | Artefakt |
 |---|---|
-| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria). Podział: `java` = Spotless/Checkstyle/JaCoCo+gate/`platformDependencyCheck`; `quality` = PIT/SpotBugs/CycloneDX/**SonarCloud**; `spring-modulith` = BOM-y + deps testowe + split testów |
+| `gradle/build-logic/` | convention pluginy `seniordev.{java,quality,spring-modulith}-conventions` + settings plugin `seniordev.settings-conventions` (foojay + repozytoria). Podział: `java` = Spotless/Checkstyle/JaCoCo+gate (`platformCoverageDataCheck`)/`platformDependencyCheck`/`platformRuntimeImageCheck` (ostatni `FROM` Dockerfile'a ≥ toolchain); `quality` = PIT/SpotBugs/CycloneDX/**SonarCloud**; `spring-modulith` = BOM-y + deps testowe + split testów |
 | `gradle/catalog/` | publikowany version catalog `pl.seniordeveloper:platform-catalog` (+ **bundle'e**: `modulith-web`, `modulith-web-tests`, `dev-docker-compose` — zamiast powielanych inline starterów) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers + bazy testów + guardy migracji Liquibase/Flyway) |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — parametryzowalny SecurityFilterChain + CORS (`platform.security.*`/`platform.cors.*`, opt-in `@ConditionalOnMissingBean`) |

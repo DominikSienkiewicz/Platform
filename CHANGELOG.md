@@ -15,6 +15,10 @@ lists that action under **Consumer action required**.
 - `check` now fails when `coverageMinimum` is above 0 and no test task produced JaCoCo data,
   for example in a module without tests or with every test task excluded. Before, the gate was
   skipped and `check` stayed green. Add tests or set `coverageMinimum=0` for such a module.
+- `check` now fails when the final `FROM` of the project's Dockerfile runs an older Java than
+  the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
+  post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
+  (`sapmachine:27-jre`) before taking this release.
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 

@@ -69,6 +69,8 @@ after taking a platform version that changes an override.
 
 Bytecode 27 needs a runtime of at least 27, and the consumers' images derive from
 `templates/Dockerfile.backend`, so the toolchain and the runtime image move together.
+`platformRuntimeImageCheck` in `seniordev.java-conventions` enforces it in every consumer's
+`check`: the final `FROM` of the Dockerfile must not run an older Java than the toolchain.
 
 On 2026-09-25 the toolchain 27 entry condition was met with `sapmachine:27-jre`, not
 `eclipse-temurin:27-jre`: ten days after the JDK 27 GA, Docker Hub still had no Temurin 27
