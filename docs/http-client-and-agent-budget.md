@@ -11,6 +11,14 @@ A response with status 204 returns `null` without reading its body; other empty
 responses also produce a `null` body. Invalid JSON in a successful response still
 rejects with the original JSON parsing error.
 
+Every request sends `Content-Type: application/json` unless a header replaces it. The client's
+`headers` option replaces that default, and a call's `init.headers` replaces both, matched by name
+without regard to case. `init.headers` accepts any `HeadersInit`: a plain object, a `Headers`
+instance or an array of name and value pairs.
+
+Without a `baseUrl` option the client prefixes every path with `NEXT_PUBLIC_API_BASE_URL`, or with
+nothing when the variable is unset.
+
 HTTP errors reject with `ApiError`, including HTML or plain-text responses from
 an upstream service or proxy. The error retains the HTTP status. Its `body` is
 parsed JSON when parsing succeeds, the original response text when parsing fails,

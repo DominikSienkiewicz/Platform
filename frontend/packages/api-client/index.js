@@ -31,6 +31,21 @@ function resolveBaseUrl(explicit) {
   return "";
 }
 
+// Spread obiektu gubi instancję `Headers` i tablicę par, a nazwy różniące się wielkością liter
+// dubluje — `Headers` przyjmuje każdy `HeadersInit` i porównuje nazwy bez względu na wielkość liter.
+/**
+ * @param {HeadersInit} defaults
+ * @param {HeadersInit | undefined} overrides
+ * @returns {Headers}
+ */
+function mergeHeaders(defaults, overrides) {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  for (const source of [defaults, overrides]) {
+    new Headers(source).forEach((value, name) => headers.set(name, value));
+  }
+  return headers;
+}
+
 /**
  * Tworzy klienta HTTP. `baseUrl` domyślnie z NEXT_PUBLIC_API_BASE_URL.
  * @param {{ baseUrl?: string, headers?: Record<string,string> }} [options]
@@ -46,11 +61,7 @@ export function createApiClient(options = {}) {
   async function request(path, init = {}) {
     const res = await fetch(`${baseUrl}${path}`, {
       ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...defaultHeaders,
-        ...init.headers,
-      },
+      headers: mergeHeaders(defaultHeaders, init.headers),
     });
 
     if (res.status === 204) return null;

@@ -174,6 +174,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `@dominiksienkiewicz/api-client` keeps headers passed as a `Headers` instance or an array of pairs,
+  which the object spread dropped, and a call's header replaces a default of the same name in any case.
 - `AbstractFlywayMigrationTest` checks every `db/migration` root on the classpath, jars included, with
   subdirectories, and reports duplicate versions. It read only the first root, so test resources hid the
   production migrations, and it ignored subdirectories and failed on migrations packaged in a jar.
