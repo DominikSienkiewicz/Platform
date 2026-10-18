@@ -2,9 +2,11 @@ import pl.seniordeveloper.gradle.AgentTestBudget
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
+import java.math.BigDecimal
 
 /*
  * seniordev.java-conventions
@@ -14,7 +16,7 @@ import java.io.File
  *     BOM-a w spring-modulith-conventions) i google-java-format >= 1.35.0 (pin niżej)
  *   - Spotless (Google Java Format) — jeden formatter dla wszystkich repo
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
- *   - JaCoCo + bramka pokrycia z RATCHETEM (start 0.00 → cel 0.80, sterowany -PcoverageMinimum);
+ *   - JaCoCo + statyczny próg pokrycia `coverageMinimum` (ułamek 0..1, domyślnie 0.00; repo samo go podnosi);
  *     pokrycie sumowane z `test` I `integrationTest`, raport i bramka wiszą na `check`
  *
  * Źródło 1:1: najlepsze części z BookOfStyling (googleJavaFormat + checkstyle) ujednolicone
@@ -123,16 +125,51 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 	}
 }
 
+// Próg pokrycia: STATYCZNY ułamek `coverageMinimum` z gradle.properties konsumenta albo -P, domyślnie 0.00.
+// To nie jest ratchet — każde repo startuje tam, gdzie ma kod, i samo podnosi próg w stronę 0.80.
+// Walidacja od razu w konfiguracji: "80" dawało próg 80, a "0,8" NumberFormatException bez wskazówki.
+val coverageMinimumProperty = providers.gradleProperty("coverageMinimum")
+val coverageMinimum: BigDecimal = coverageMinimumProperty.orNull?.let { raw ->
+	raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
+		?: throw GradleException("coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'")
+} ?: BigDecimal("0.00")
+val coverageGate =
+	"Coverage gate: minimum=${coverageMinimum.toPlainString()} " +
+		"(source: ${if (coverageMinimumProperty.isPresent) "coverageMinimum" else "default"})"
+
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 	dependsOn(coverageProducers)
 	executionData.setFrom(coverageExecutionData)
+	val gate = coverageGate
+	doFirst { logger.lifecycle(gate) }
 	violationRules {
 		rule {
 			limit {
-				// RATCHET: każde repo startuje tam, gdzie ma kod, i podnosi w stronę 0.80.
-				// Nadpisz w gradle.properties konsumenta: coverageMinimum=0.80
-				minimum = (project.findProperty("coverageMinimum") as String? ?: "0.00").toBigDecimal()
+				minimum = coverageMinimum
 			}
+		}
+	}
+}
+
+// Bramka bez danych to fałszywa zieleń: JacocoCoverageVerification ma onlyIf("Any of the execution data
+// files exists"), więc moduł bez .exec przy coverageMinimum > 0 dostawał SKIPPED i zielony `check`.
+val mainClassesDirs = the<SourceSetContainer>()["main"].output.classesDirs
+val platformCoverageDataCheck = tasks.register("platformCoverageDataCheck") {
+	description = "Fails when coverageMinimum is above 0 but no test task produced JaCoCo execution data."
+	group = "verification"
+	dependsOn(coverageProducers)
+	val gateActive = coverageMinimum.signum() > 0
+	val minimum = coverageMinimum.toPlainString()
+	val executionData = coverageExecutionData
+	val mainClasses = mainClassesDirs
+	inputs.files(mainClasses)
+	doLast {
+		val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
+		if (gateActive && hasMainClasses && executionData.isEmpty) {
+			throw GradleException(
+				"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
+					"Add tests to this module or set coverageMinimum=0.",
+			)
 		}
 	}
 }
@@ -141,7 +178,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 // `integrationTest`, więc finalizer na `test` ciągnąłby Testcontainers przy każdym `./gradlew test`.
 // Raport i bramka wiszą na `check` — a tam oba zestawy i tak się wykonują.
 tasks.named("check") {
-	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"))
+	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"), platformCoverageDataCheck)
 }
 
 // === Governance wersji: KAŻDA jawna wersja biblioteki pochodzi z platform-catalog ==============

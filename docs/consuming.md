@@ -9,8 +9,10 @@ Start from [`templates/jvm/java-library`](../templates/jvm/java-library) for a p
 library or [`templates/jvm/spring-app`](../templates/jvm/spring-app) for a minimal
 Spring application. These are the inputs to `PlatformConsumerFunctionalTest`, which
 publishes the current plugins and catalog to an isolated local Maven repository and
-then compiles, lints and tests consumers through Gradle TestKit. The Spring check
-also packages `bootJar` and starts an application context. No database is needed.
+then runs the consumer CI entry point through Gradle TestKit: `build cyclonedxBom`, plus
+`pitest` for the library, with Checkstyle, Spotless, SpotBugs, JaCoCo and the platform gates
+included. The Spring check also starts the packaged `bootJar` from its own classpath, so a
+dependency missing only at runtime fails it. No database is needed.
 
 Copy the selected directory to the product repository. Copy `gradlew`, `gradlew.bat`
 and `gradle/wrapper/` from `gradle/catalog/` to give it the same pinned Gradle distribution.
@@ -69,6 +71,16 @@ declarable bucket: `api`, `implementation`, `compileOnly`, `compileOnlyApi`, `ru
 whose canon is the Platform version you pin. Each failure line names the fix: the `libs.…` alias
 to use, a BOM-managed version to remove, or a library that must first be added to the Platform
 catalog and released.
+
+## Coverage threshold
+
+`check` runs `jacocoTestCoverageVerification` on the coverage of `test` and `integrationTest`
+together. Set the threshold in the consumer's `gradle.properties`, for example
+`coverageMinimum=0.80`. It is a decimal between 0 and 1 and defaults to 0.00; any other value
+fails the build. The threshold is static: raise it yourself as coverage grows. `check` prints
+the effective value (`Coverage gate: minimum=0.80 (source: coverageMinimum)`). When the
+threshold is above 0, `platformCoverageDataCheck` fails `check` if neither test task produced
+JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
 ## Agent resource profile
 

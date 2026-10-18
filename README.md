@@ -75,7 +75,7 @@ Triggers and permissions are declared by the calling workflow; the platform keep
 
 | Plugin | What it brings |
 |---|---|
-| `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a ratcheting gate |
+| `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, and a configurable coverage threshold (`coverageMinimum`, default 0.00) |
 | `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only until it reads Java 27 class files, major version 71), CycloneDX (SBOM) |
 | `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with CVE and JDK 27 (Lombok, runtime ArchUnit) version overrides, shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
 

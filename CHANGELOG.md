@@ -12,6 +12,11 @@ lists that action under **Consumer action required**.
   (`compileOnlyApi`, `developmentOnly`, `testAndDevelopmentOnly`, `testFixtures*` and custom
   source sets) and `pl.seniordeveloper` artifacts. Remove explicit versions from those
   declarations, or declare the dependency through `libs.<alias>`.
+- `check` now fails when `coverageMinimum` is above 0 and no test task produced JaCoCo data,
+  for example in a module without tests or with every test task excluded. Before, the gate was
+  skipped and `check` stayed green. Add tests or set `coverageMinimum=0` for such a module.
+- `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
+  the build instead of setting a threshold of 80 or crashing with a parse error.
 
 ### Changed
 
@@ -23,3 +28,4 @@ lists that action under **Consumer action required**.
   resolve, instead of the real release `1.4.3`. Published catalogs carry the injected
   release version as before.
 - The JVM starters in `templates/jvm/` are pinned to the latest release.
+- `check` prints the effective coverage threshold and where it came from.

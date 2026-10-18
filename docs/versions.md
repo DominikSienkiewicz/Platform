@@ -125,7 +125,9 @@ Upstream references: [Gradle 9.8.1](https://docs.gradle.org/9.8.1/release-notes.
 
 Java 27 remains the consumer toolchain. Gradle's Java 27 support does not establish
 compatibility for every analyzer or framework; the consumer TestKit suite is the
-verification gate. This change does not claim a completed runtime compatibility run.
+verification gate. It runs the consumer `build` with SpotBugs, JaCoCo, PIT and CycloneDX on
+class-file 71, fails on "Unsupported class file major version", and starts the packaged
+Spring `bootJar` from its own runtime classpath.
 
 pnpm 12 and Vitest 5 remain separate major migrations; the current release retains
 pnpm 11.18.0 and Vitest 4 peers. A full OpenAPI validation/generation/freshness/breaking-change
