@@ -39,6 +39,12 @@
 #   --                              treat all remaining arguments as positional
 #   -h, --help                      show this header
 #
+# Warnings:
+#   When the source carries commits whose changes are already on the target (the same patch id,
+#   for example a cherry-pick that reached the target another way), the script lists them and
+#   prints the rebase that drops the copies. It still merges and keeps the exit code: picking a
+#   hotfix onto the target and merging its branch later is a legitimate flow.
+#
 # Outcome:
 #   A successful run ends with a green "✓" line; every failure ends with a red "✗" line.
 #   The glyph is always printed, so captured output stays greppable; only the colour is
@@ -314,6 +320,18 @@ else
   git show-ref --verify --quiet "$REMOTE_TARGET_REF" || die "remote branch origin/$TARGET does not exist"
   if ! git merge-base --is-ancestor "$REMOTE_TARGET_REF" "$TARGET_REF"; then
     die "local target '$TARGET' is behind or diverged from origin/$TARGET; synchronize it before merging"
+  fi
+fi
+
+# Commity źródła o patch-id już obecnym na celu (`git cherry` → „-”): po merge'u historia ma obie kopie.
+DUPLICATES="$(git cherry "$TARGET_REF" "$SOURCE_REF" | sed -n 's/^- //p')"
+if [ -n "$DUPLICATES" ]; then
+  echo "!! warning: $BRANCH re-applies $(grep -c . <<<"$DUPLICATES") commit(s) whose changes are already on $TARGET:" >&2
+  while IFS= read -r oid; do git log -1 --format='     %h %s' "$oid" >&2; done <<<"$DUPLICATES"
+  if [ -n "$BRANCH_WT" ]; then
+    printf '   both copies stay in the history; to drop them first: git -C %q rebase %q\n' "$BRANCH_WT" "$TARGET" >&2
+  else
+    printf '   both copies stay in the history; to drop them first: git rebase %q %q\n' "$TARGET" "$BRANCH" >&2
   fi
 fi
 

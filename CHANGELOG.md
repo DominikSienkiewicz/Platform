@@ -66,6 +66,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/merge.sh` warns when the source branch re-applies commits whose changes are already on the
+  target, lists them and prints the command that drops the copies. It still integrates the branch and
+  keeps its exit code. Sync the copy in `scripts/`.
 - Every published jar, the catalog TOML and every npm tarball carry a GitHub artifact attestation
   (SLSA build provenance) from `release.yml`. Verify a file with
   `gh attestation verify <file> --repo DominikSienkiewicz/Platform`, as `docs/consuming.md` shows.
