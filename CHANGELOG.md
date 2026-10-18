@@ -58,6 +58,8 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 
 ### Changed
 
+- Every GitHub-owned action in the reusable workflows is pinned by commit SHA with a version
+  comment, like the third-party ones; the versions run are the same as before.
 - Snyk runs from a digest-pinned `snyk/snyk:docker` image instead of the Snyk Docker action, which
   executed the moving `:docker` tag whatever SHA it was pinned to. In `deploy.yml` it moves to an
   advisory `snyk-advisory` job with `packages: read`, out of the job that pushes images.

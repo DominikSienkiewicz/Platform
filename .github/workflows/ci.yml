@@ -31,8 +31,8 @@ jobs:
     name: Gradle — build-logic + catalog + test-fixtures + security-starter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         id: toolchain
         with:
           distribution: temurin
@@ -43,7 +43,7 @@ jobs:
         run: |
           mkdir -p "$HOME/.gradle"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JAVA_HOME" >> "$HOME/.gradle/gradle.properties"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: "25"
@@ -63,7 +63,7 @@ jobs:
     name: Templates — testy skryptów
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       # Każdy śledzony *.test.sh poza frontend/ (tamte odpala `pnpm -r test`) — nowy test nie
       # wymaga dopisania do listy. Wszystkie biegną do końca, wynik zbiorczy jak w jobie gradle.
       - name: Wszystkie testy skryptów
@@ -88,11 +88,11 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 11.18.0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
       # --ignore-scripts: żadna paczka w monorepo ani w jej drzewie zależności nie wymaga

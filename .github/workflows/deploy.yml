@@ -150,7 +150,7 @@ jobs:
       migrate: ${{ steps.v.outputs.migrate }}
       worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - id: v
@@ -185,7 +185,7 @@ jobs:
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
     steps:
       # Bez zapisanego tokenu: ten job trzyma packages: write, a dalej buduje kod repo.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
@@ -197,7 +197,7 @@ jobs:
       # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
       # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
       # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         id: toolchain-jdk
         with:
           distribution: temurin
@@ -208,7 +208,7 @@ jobs:
         run: |
           mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
@@ -351,14 +351,14 @@ jobs:
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
     steps:
-      - uses: actions/checkout@v6 # repo wołające: compose + Caddyfile
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 — repo wołające: compose + Caddyfile
         with:
           persist-credentials: false
 
       # Platform jest publiczny: checkout bez tokenu, więc PAT konsumenta nie ląduje w _platform/.git/config
       # joba z dostępem SSH do produkcji. platform-ref = tag z `uses:`, żeby workflow i skrypt były z jednej wersji.
       - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: DominikSienkiewicz/Platform
           ref: ${{ inputs.platform-ref }}

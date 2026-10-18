@@ -32,7 +32,7 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - id: v
@@ -66,13 +66,13 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 11.18.0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
       # --ignore-scripts: build rejestru nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
@@ -87,10 +87,10 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: "25"
@@ -119,14 +119,20 @@ jobs:
                            [catalog]="pl.seniordeveloper.platform-catalog" \
                            [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" \
                            [security-starter]="pl.seniordeveloper.platform-security-starter" )
+          # Kod wyjścia zamiast parsowania wyjścia: 0 = wersja opublikowana. Brak pakietu (404) i każdy
+          # błąd API = 1, czyli publikuj — jak wcześniej. Lista nazw najpierw do zmiennej: przy
+          # `gh … | grep -q` z pipefail grep kończy po pierwszym trafieniu, gh dostaje SIGPIPE i
+          # istniejąca wersja wyglądałaby na brak. Blok testuje templates/tests/release-version-exists.test.sh.
+          # >>> version-exists
           version_exists() {
-            curl -fsSL --proto '=https' --proto-redir '=https' \
-              -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/users/$GPR_OWNER/packages/maven/$1/versions" 2>/dev/null \
-              | python3 -c "import sys,json; print(any(v['name']=='$V' for v in json.load(sys.stdin)))" 2>/dev/null
+            local names
+            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/users/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
+              || return 1
+            grep -qxF "$V" <<<"$names"
           }
+          # <<< version-exists
           for m in build-logic catalog test-fixtures security-starter; do
-            if [ "$(version_exists "${PKG[$m]}")" = "True" ]; then
+            if version_exists "${PKG[$m]}"; then
               echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
               continue
             fi
@@ -154,13 +160,13 @@ jobs:
       NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       V: ${{ needs.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
       - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
         with:
           version: 11.18.0
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
@@ -211,7 +217,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
       - name: Przesuń v1 do wydanego commita (tylko do przodu)
@@ -251,7 +257,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
           persist-credentials: false
