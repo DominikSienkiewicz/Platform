@@ -2,6 +2,9 @@
 # platform-versions-check i okno wsparcia (N-REL-6): kanon z releasedAt starszym niż 60 dni daje dokładnie jedną
 # linię, a wynik zostaje zielony; świeży kanon, kanon bez daty i PLATFORM_STALENESS_NOTICE=false milczą.
 set -euo pipefail
+# Runner GitHub Actions ustawia GITHUB_ACTIONS=true, a wtedy check.mjs dokłada adnotację ::notice z tym samym
+# tekstem; przypadki poza Actions muszą jej nie widzieć, przypadek Actions ustawia zmienną jawnie.
+unset GITHUB_ACTIONS
 here=$(cd "$(dirname "$0")" && pwd)
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
