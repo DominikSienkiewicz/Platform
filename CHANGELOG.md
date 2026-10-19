@@ -233,7 +233,8 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   The `spring-app` starter gains two modules, `accounts` and `notifications`, joined by the `AccountOpened`
   event. The README shows their diagram, which a unit test of `platform-test-fixtures` keeps equal to
   `docs/diagrams/spring-app-modules.mmd`. `scripts/new-consumer.sh` carries the starter's sub-packages and
-  rewrites their imports. The starter change reaches new repositories only.
+  rewrites their imports in google-java-format order, so `spotlessCheck` passes for any package. The starter
+  change reaches new repositories only.
 - `@dominiksienkiewicz/api-client` understands RFC 9457 Problem Details: a `application/problem+json`
   error sets `ApiError.problem` (typed `ProblemDetail`), and the message comes from `detail`, then
   `message`, then `title`. Bodies with only `message` behave as before.
