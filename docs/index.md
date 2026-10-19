@@ -22,4 +22,12 @@ reusable GitHub workflows and the templates every repository copies. One release
 - [OpenSSF Best Practices self-assessment](openssf-best-practices.md): the passing-level criteria, each with its evidence.
 
 This site is built from `docs/` of the repository with [Zensical](https://zensical.org); the source of truth stays
-in the repository, so a page links to the code it describes on GitHub.
+in the repository, so a page links to the code it describes on GitHub, at the release the page belongs to.
+
+## Versions
+
+The site keeps one version per released MINOR line, built from the newest patch of that line, and
+`unreleased (main)` for what `main` holds today. Pick the version your repository pins with the selector next to
+the site name; it keeps the page you are on when that page exists in the other version. The site's root opens the
+newest release. Versions start with 1.6, the first release that carries this site
+([ADR-0031](adr/0031-docs-site-with-zensical.md#amended-2026-10-20)).

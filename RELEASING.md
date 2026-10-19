@@ -294,6 +294,23 @@ then every other repository of `scripts/consumers.txt` once the checks of Touchs
 green (`--dry-run` prints the plan; `RING_ROLLOUT_FIRST` changes the first ring). It dispatches each
 consumer's caller of `platform-bump.yml` with `gh`, so it needs a token that may run their workflows.
 
+## The documentation site
+
+Once Pages is on, a release publishes its docs version. The `vX.Y.Z` tag also starts
+[`docs-site.yml`](.github/workflows/docs-site.yml), which rebuilds the whole site with `scripts/docs-versions.py`:
+`/X.Y/` now holds the docs of that tag, the root redirects to the newest MINOR, and `versions.json` feeds the
+version selector. A patch replaces the version of its MINOR line, because each line shows its newest patch. A push
+to `main` that changes the docs rebuilds `/unreleased/` the same way. Every version is built in strict mode from its
+own tag's tree; when one fails, nothing is deployed and the previous site stays live. Tags before 1.6.0 carry no site
+tooling and get no version ([ADR-0031](docs/adr/0031-docs-site-with-zensical.md#amended-2026-10-20)).
+
+Turning Pages on is a one-time step for the owner: set the Pages source to GitHub Actions, allow the release tags
+`v*.*.*` in the deployment branches and tags of the `github-pages` environment, which otherwise refuses a deploy
+from a tag, and set the repository variable `PAGES_ENABLED=true`. Until then the workflow builds the site and
+uploads it as an artifact without deploying it. To preview the assembled site, install
+`docs/requirements-site.txt` with `pip install --require-hashes` into a virtual environment and run
+`python scripts/docs-versions.py <empty-directory>`; it builds `main` and every release tag of the local clone.
+
 ## Reproducibility
 
 Every Tuesday `reproducibility.yml` rebuilds the latest tag, with the commit date of the tag as the release

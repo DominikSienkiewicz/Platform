@@ -1,33 +1,43 @@
 name: Docs site
 
-# Strona dokumentacji (N-SHOW-16): Zensical w trybie strict na każdym PR-ze, który zmienia docs, i na main; zepsuty
-# link albo kotwica wewnątrz docs/ zatrzymuje build, a linki poza docs/ prowadzą do GitHuba na tym samym ref
-# (scripts/docs-site.py). Deploy na GitHub Pages tylko z main i dopiero, gdy właściciel włączy Pages (źródło:
-# GitHub Actions) i ustawi zmienną repozytorium PAGES_ENABLED=true.
+# Strona dokumentacji (N-SHOW-16): Zensical w trybie strict. PR, który zmienia docs, buduje jedną wersję z własnego
+# commita; zepsuty link albo kotwica wewnątrz docs/ zatrzymuje build, a linki poza docs/ prowadzą do GitHuba na tym
+# samym ref (scripts/docs-site.py). Push na main i tag wydania vX.Y.Z składają CAŁĄ stronę (scripts/docs-versions.py),
+# bo deploy-pages podmienia ją w całości: /<X.Y>/ z najnowszego patcha każdej MINOR, która ma narzędzie strony (od
+# 1.6.0), /unreleased/ z main, versions.json dla przełącznika wersji i root przekierowujący na najnowszą MINOR. Deploy
+# na GitHub Pages dopiero, gdy właściciel włączy Pages (źródło: GitHub Actions), ustawi zmienną repozytorium
+# PAGES_ENABLED=true i dopuści tagi v*.*.* w środowisku github-pages.
 on:
   pull_request:
-    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", ".github/workflows/docs-site.yml"]
+    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", "scripts/docs-versions.py", ".github/workflows/docs-site.yml"]
   push:
     branches: [main]
-    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", ".github/workflows/docs-site.yml"]
+    # Jak w release.yml: tylko tagi X.Y.Z, nie ruchomy v1. Filtra paths GitHub nie ocenia dla tagów, więc każdy tag
+    # wydania przebudowuje stronę, a push na main tylko wtedy, gdy zmienia jej źródła.
+    tags: ["v*.*.*"]
+    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", "scripts/docs-versions.py", ".github/workflows/docs-site.yml"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# PR anuluje swój poprzedni przebieg. main, tagi i dispatch dzielą jedną kolejkę bez anulowania: każdy przebieg składa
+# i wdraża całą stronę, więc ostatni w kolejce widzi wszystkie tagi, a rozpoczęty deploy kończy się w spokoju.
 concurrency:
-  group: docs-site-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('docs-site-{0}', github.ref) || 'docs-site-pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
     name: Build the site (strict)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
+          # Składanie wersji czyta tagi wydań i origin/main przez git archive, więc pełna historia z tagami.
+          fetch-depth: 0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
@@ -43,6 +53,7 @@ jobs:
             exit 1
           fi
       - name: Build the site
+        if: github.event_name == 'pull_request'
         env:
           REF: ${{ github.sha }}
         run: |
@@ -50,13 +61,30 @@ jobs:
           python scripts/docs-site.py "$REF" "$RUNNER_TEMP/site-src"
           (cd "$RUNNER_TEMP/site-src" && zensical build --strict)
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name == 'pull_request'
         with:
           path: ${{ runner.temp }}/site-src/site
+      # Każda wersja z drzewa własnego refu i z jego docs-site.py, w trybie strict; nieudana wersja zatrzymuje deploy,
+      # a na Pages zostaje poprzednia strona. Kanał unreleased to main: przy tagu origin/main, przy pushu na main jego
+      # commit, a dispatch z innej gałęzi buduje ją jako podgląd (artefakt bez deployu).
+      - name: Assemble every docs version
+        if: github.event_name != 'pull_request'
+        env:
+          UNRELEASED: ${{ startsWith(github.ref, 'refs/tags/') && 'origin/main' || github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/docs-versions.py --unreleased "$UNRELEASED" "$RUNNER_TEMP/pages"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event_name != 'pull_request'
+        with:
+          path: ${{ runner.temp }}/pages
 
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PAGES_ENABLED == 'true'
+    if: >-
+      vars.PAGES_ENABLED == 'true' && github.event_name == 'push'
+      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

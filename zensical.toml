@@ -1,5 +1,7 @@
 # Strona dokumentacji (N-SHOW-16, Zensical): budowana z docs/ w trybie strict w CI (docs-site.yml); deploy na
 # GitHub Pages dopiero po włączeniu Pages przez właściciela. Wersja narzędzia: docs/requirements-site.txt (hashe).
+# site_url to korzeń całej strony: scripts/docs-versions.py buduje każdą wersję pod <site_url><X.Y>/ albo
+# <site_url>unreleased/ i przepisuje site_url w jej kopii tego pliku.
 [project]
 site_name = "Platform"
 site_description = "The shared build, quality, version and frontend layer of a set of product repositories."
@@ -38,3 +40,8 @@ nav = [
 [project.theme]
 language = "en"
 features = ["content.code.copy", "navigation.footer", "navigation.indexes", "navigation.sections", "search.highlight"]
+
+# Przełącznik wersji motywu czyta <site_url>versions.json w formacie mike; plik generuje scripts/docs-versions.py
+# (bez narzędzia mike). W pojedynczym buildzie bez versions.json przełącznik się po prostu nie pokazuje.
+[project.extra.version]
+provider = "mike"

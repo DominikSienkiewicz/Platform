@@ -10,7 +10,9 @@ import re
 import shutil
 import sys
 
-ref, out = sys.argv[1], os.path.abspath(sys.argv[2])
+# Wywołanie `docs-site.py <ref> <out-dir>` to kontrakt: scripts/docs-versions.py uruchamia kopię tego skryptu z tagu
+# każdego wydania od 1.6.0, więc nowa wersja może dokładać zachowanie, ale nie zmieniać argumentów ani układu <out-dir>.
+ref, out =sys.argv[1], os.path.abspath(sys.argv[2])
 root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 docs = os.path.join(root, "docs")
 repository = "https://github.com/DominikSienkiewicz/Platform"

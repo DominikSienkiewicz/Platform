@@ -490,6 +490,15 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   the docs; CI fails on a stale region (N-SHOW-15).
 - A documentation site built with Zensical in strict mode by `docs-site.yml`, pinned with hashes, deployed to
   GitHub Pages once the maintainer enables it (N-SHOW-16).
+- The documentation site is versioned per MINOR line (N-SHOW-16, ADR-0031 amended): `/<X.Y>/` holds the docs of the
+  newest patch tag of each line from 1.6.0 on, each built in strict mode from its own tag with that tag's
+  `scripts/docs-site.py`, `/unreleased/` holds `main`, and the root redirects to the newest released MINOR, or to
+  `unreleased` while none exists. `scripts/docs-versions.py` assembles every version on each push to `main` and each
+  release tag, because a Pages deploy replaces the whole site, and writes `versions.json` in the format of mike for
+  the theme's version selector (`extra.version.provider = "mike"` in `zensical.toml`), so no further tool is
+  installed. Pull requests still build only their own commit. Deploying from a release tag needs the tags allowed
+  in the `github-pages` environment (RELEASING.md, "The documentation site"); `templates/tests/docs-versions.test.sh`
+  checks the assembly on a fixture repository.
 - `fast-check` 4.10.2 in the frontend canon, and property tests of `createApiClient` in
   `packages/api-client/test/properties.test.js`: headers in every `HeadersInit` form, the mapping of every 4xx
   and 5xx to `ApiError`, and the SPA CSRF rule, each on random inputs. OpenSSF Scorecard's Fuzzing check
