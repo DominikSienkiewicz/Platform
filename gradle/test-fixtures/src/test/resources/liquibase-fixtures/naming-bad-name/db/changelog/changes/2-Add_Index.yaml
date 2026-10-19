@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2-Add_Index
+      author: fixture
+      changes:
+        - sql:
+            sql: SELECT 1

@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: changes/0001-baseline.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/0002-add-index.yml
+      relativeToChangelogFile: true

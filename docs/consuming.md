@@ -162,6 +162,31 @@ that repository first. Without the property, resolution uses Maven Central, the 
 Portal and GitHub Packages, with the credentials from [Prerequisites](#prerequisites). An
 authenticated remote lookup may still occur when an artifact is missing locally.
 
+## Database migrations
+
+Schemas move forward only: a released changeset or migration is never edited, a change is a new file.
+`scripts/bump-version.sh db new-migration <slug>` creates the next Liquibase changeset as
+`db/changelog/changes/NNNN-<slug>.yaml` and includes it in the master. The reusable `deploy.yml` tags the
+migrate image with the highest four-digit prefix in that directory, so the name is part of the deploy
+contract: `AbstractLiquibaseChangelogTest` fails on a file outside `NNNN-<slug>.yaml`, on two files with one
+prefix and on a file no changeset of which reaches the master. Flyway applications name migrations
+`V<n>__<description>.sql`, which `AbstractFlywayMigrationTest` checks ([reference](reference.md#test-fixtures)).
+
+`spring-modulith-starter-jpa` (also in the `modulith-web` bundle) stores event publications in the
+`event_publication` table, and no Spring Modulith artifact creates it. Without the table the registry does
+not persist publications, so events are not republished after a failure. Copy the canonical migration:
+
+| Migration tool | Template | Copy to |
+|---|---|---|
+| Liquibase | [`templates/db/liquibase/modulith-event-publication.yaml`](../templates/db/liquibase/modulith-event-publication.yaml) | `db/changelog/changes/NNNN-modulith-event-publication.yaml`, included in the master |
+| Flyway | [`templates/db/flyway/V__modulith_event_publication.sql`](../templates/db/flyway/V__modulith_event_publication.sql) | `db/migration/V<n>__modulith_event_publication.sql` |
+
+Both use `CREATE TABLE IF NOT EXISTS`, so a database where the table was created by hand takes them
+without an error. They cover the completion modes `UPDATE` (the default) and `DELETE`; `ARCHIVE` also needs
+an `event_publication_archive` table. Platform's CI validates both templates with Hibernate against the
+entity of the catalog's Spring Modulith version, and `AbstractSchemaValidationIT` does the same for the
+application's own migrations ([reference](reference.md#test-fixtures)).
+
 ## CI
 
 Call the reusable workflows by the exact tag of your Platform pin and pass the token explicitly.
