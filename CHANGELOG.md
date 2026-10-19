@@ -71,6 +71,23 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Contract-first OpenAPI kit (*incubating*; [docs/api-contracts.md](docs/api-contracts.md)), for a
+  hand-written spec committed to the repository:
+  - `AbstractOpenApiContractTest` in `platform-test-fixtures` fails when the Spring MVC controllers and
+    the spec describe different operations, or the spec lacks an `operationId`, `responses` or a local
+    `$ref` target. It runs without Docker.
+  - `@dominiksienkiewicz/openapi` with `platform-openapi-gen` and `platform-openapi-check`: TypeScript
+    types generated from the spec named in `package.json#platform.openapi`, and a check that fails on
+    stale ones. Strict `frontend-ci` runs the check for a repository that configures
+    `platform.openapi`; no caller does yet.
+  - `createApiClient<paths>()` in `@dominiksienkiewicz/api-client` types paths, request bodies and
+    responses by the generated `paths` interface. Types only; the package stays private.
+  - Reusable `api-contract.yml`: oasdiff compares the spec of a pull request with its base, writes the
+    changelog to the job summary and fails on a breaking change unless the pull request carries the
+    `api-breaking` label. Platform's CI runs it on a compatible and a breaking fixture pair.
+- Platform's CI analyses `platform-test-fixtures` and `platform-security-starter` in SonarQube Cloud
+  with `seniordev.quality-conventions`, the setup consumers use. The job skips with a notice until the
+  `SONAR_TOKEN` secret exists (`RELEASING.md`).
 - `templates/merge.sh` warns when the source branch re-applies commits whose changes are already on the
   target, lists them and prints the command that drops the copies. It still integrates the branch and
   keeps its exit code. Sync the copy in `scripts/`.

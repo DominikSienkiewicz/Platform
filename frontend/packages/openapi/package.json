@@ -1,0 +1,34 @@
+{
+  "name": "@dominiksienkiewicz/openapi",
+  "version": "1.5.31",
+  "description": "Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "type": "module",
+  "bin": {
+    "platform-openapi-gen": "bin/gen.mjs",
+    "platform-openapi-check": "bin/check.mjs"
+  },
+  "files": [
+    "bin"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0"
+  },
+  "peerDependencies": {
+    "openapi-typescript": "^7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "directory": "frontend/packages/openapi"
+  }
+}

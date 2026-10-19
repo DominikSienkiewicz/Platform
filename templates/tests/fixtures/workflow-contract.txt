@@ -1,3 +1,11 @@
+api-contract.yml input spec-path type=string required=true
+api-contract.yml input base-spec-path type=string default=""
+api-contract.yml input fail-on type=string default="ERR"
+api-contract.yml input allow-label type=string default="api-breaking"
+api-contract.yml input fail-on-breaking type=boolean default=true
+api-contract.yml input oasdiff-image type=string default="tufin/oasdiff:v1.33.0@sha256:6263a96dd2ef0726c54e21fea9b8e1607eac4841add0079324b424c1f52b819c"
+api-contract.yml input timeout-minutes type=number default=10
+api-contract.yml permissions contents: read
 backend-ci.yml input timeout-minutes type=number default=30
 backend-ci.yml input working-directory type=string default=backend
 backend-ci.yml input java-version type=string default="25"

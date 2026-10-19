@@ -1,0 +1,145 @@
+name: OpenAPI breaking-change gate (reusable)
+
+# Contract-first (Decyzja 30): commitowany spec jest umową, z której frontend generuje typy. Ten workflow
+# porównuje spec z bazy PR-u ze specem z PR-u (oasdiff) i failuje na zmianie łamiącej klientów (poziom
+# fail-on), chyba że PR ma etykietę allow-label. Changelog oasdiff trafia do podsumowania joba.
+#
+# Triggery deklaruje CALLER. Etykieta działa dopiero, gdy jej dodanie odpala nowy run, więc caller słucha
+# też `labeled`/`unlabeled`:
+#   on: { pull_request: { types: [opened, synchronize, reopened, labeled, unlabeled] } }
+#   jobs: { api-contract: { uses: DominikSienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z,
+#                           with: { spec-path: contract/openapi.yaml } } }
+# Platform ćwiczy go w ci.yml na parach z templates/tests/fixtures/openapi/ (base-spec-path).
+on:
+  workflow_call:
+    inputs:
+      spec-path:
+        description: "Path of the committed OpenAPI spec (YAML or JSON), relative to the repository root."
+        type: string
+        required: true
+      base-spec-path:
+        description: "Compare against this file of the checked-out revision instead of spec-path at the pull request's base; Platform's self-test uses it."
+        type: string
+        default: ""
+      fail-on:
+        description: "Lowest oasdiff level that counts as breaking: ERR, WARN or INFO."
+        type: string
+        default: "ERR"
+      allow-label:
+        description: "Pull request label that lets a breaking change through; say why in the pull request description."
+        type: string
+        default: "api-breaking"
+      fail-on-breaking:
+        description: "Fail the job on a breaking change; false only reports it in the breaking output."
+        type: boolean
+        default: true
+      oasdiff-image:
+        description: "oasdiff container image, pinned by digest."
+        type: string
+        default: "tufin/oasdiff:v1.33.0@sha256:6263a96dd2ef0726c54e21fea9b8e1607eac4841add0079324b424c1f52b819c"
+      timeout-minutes:
+        description: "Minutes before the job is cancelled; GitHub's default is 360."
+        type: number
+        default: 10
+    outputs:
+      breaking:
+        description: "true when oasdiff found a change at or above fail-on, false otherwise."
+        value: ${{ jobs.api-contract.outputs.breaking }}
+
+# Etykiety PR-u są w payloadzie zdarzenia, więc API pull requests nie jest potrzebne.
+permissions:
+  contents: read
+
+jobs:
+  api-contract:
+    name: OpenAPI — breaking changes
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    outputs:
+      breaking: ${{ steps.diff.outputs.breaking }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          path: head
+          persist-credentials: false
+
+      # Pełny checkout bazy (nie sam plik), żeby względne $ref wieloplikowego specu rozwiązywały się jak w PR-ze.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: ${{ inputs.base-spec-path == '' && github.event.pull_request.base.sha != '' }}
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+
+      - name: Resolve the base spec
+        id: base
+        env:
+          SPEC: ${{ inputs.spec-path }}
+          BASE_SPEC: ${{ inputs.base-spec-path }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          [ -f "head/$SPEC" ] || { echo "::error::spec-path $SPEC does not exist"; exit 1; }
+          if [ -n "$BASE_SPEC" ]; then
+            [ -f "head/$BASE_SPEC" ] || { echo "::error::base-spec-path $BASE_SPEC does not exist"; exit 1; }
+            echo "base=head/$BASE_SPEC" >> "$GITHUB_OUTPUT"
+          elif [ -z "$BASE_SHA" ]; then
+            echo "::error::api-contract compares a pull request with its base; call it on pull_request or pass base-spec-path"
+            exit 1
+          elif [ -f "base/$SPEC" ]; then
+            echo "base=base/$SPEC" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$SPEC does not exist at the base of this pull request, so there is no contract to break yet"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compare with oasdiff
+        id: diff
+        env:
+          SKIP: ${{ steps.base.outputs.skip }}
+          BASE: ${{ steps.base.outputs.base }}
+          SPEC: ${{ inputs.spec-path }}
+          FAIL_ON: ${{ inputs.fail-on }}
+          IMAGE: ${{ inputs.oasdiff-image }}
+        run: |
+          set -uo pipefail   # bez -e: kod wyjścia oasdiff (1 = zmiana łamiąca) obsługujemy sami
+          if [ "$SKIP" = "true" ]; then
+            echo "breaking=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$FAIL_ON" in ERR | WARN | INFO) ;; *) echo "::error::fail-on must be ERR, WARN or INFO, not $FAIL_ON"; exit 1 ;; esac
+          oasdiff() { docker run --rm --network none -v "$PWD:/work:ro" -w /work "$IMAGE" "$@"; }
+
+          if ! oasdiff changelog "$BASE" "head/$SPEC" --format markdown > changelog.md; then
+            echo "::error::oasdiff could not compare $BASE with $SPEC"
+            cat changelog.md
+            exit 1
+          fi
+          {
+            echo "## OpenAPI changes in \`$SPEC\`"
+            if [ -s changelog.md ]; then cat changelog.md; else echo "No changes."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          oasdiff breaking "$BASE" "head/$SPEC" --fail-on "$FAIL_ON" --format singleline > breaking.txt
+          rc=$?
+          cat breaking.txt
+          case "$rc" in
+            0) echo "breaking=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "breaking=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::oasdiff breaking failed with exit code $rc"; exit 1 ;;
+          esac
+
+      - name: Gate breaking changes
+        if: ${{ steps.diff.outputs.breaking == 'true' && inputs.fail-on-breaking }}
+        env:
+          FAIL_ON: ${{ inputs.fail-on }}
+          ALLOW_LABEL: ${{ inputs.allow-label }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          if [ -n "$ALLOW_LABEL" ] && jq -e --arg label "$ALLOW_LABEL" 'index($label) != null' <<<"${LABELS:-[]}" > /dev/null; then
+            echo "::warning::Breaking OpenAPI change at level $FAIL_ON or above, allowed by the $ALLOW_LABEL label"
+            exit 0
+          fi
+          echo "::error::Breaking OpenAPI change at level $FAIL_ON or above (see the job summary). Make it compatible, or label the pull request $ALLOW_LABEL and say why in its description."
+          exit 1

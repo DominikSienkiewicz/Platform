@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info: { title: Pets, version: "1.1" }
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Pet" } } } }
+  /pets/{id}:
+    get:
+      operationId: getPet
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } }
+  /owners:
+    get:
+      operationId: listOwners
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { type: array, items: { type: string } } } }
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties: { id: { type: string }, name: { type: string }, nickname: { type: string } }

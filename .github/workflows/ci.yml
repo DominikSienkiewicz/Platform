@@ -152,6 +152,35 @@ jobs:
       working-directory: templates/jvm/java-library
       gradle-task: build
 
+  # Reusable api-contract na prawdziwym oasdiff: para zgodna musi dać breaking=false, para łamiąca
+  # breaking=true. Para łamiąca idzie z fail-on-breaking: false, żeby wynik sprawdzał job niżej, a nie
+  # czerwony status. Logikę kroków na stubie pilnuje templates/tests/api-contract.test.sh.
+  api-contract-compatible:
+    uses: ./.github/workflows/api-contract.yml
+    with:
+      spec-path: templates/tests/fixtures/openapi/compatible.yaml
+      base-spec-path: templates/tests/fixtures/openapi/base.yaml
+
+  api-contract-breaking:
+    uses: ./.github/workflows/api-contract.yml
+    with:
+      spec-path: templates/tests/fixtures/openapi/breaking.yaml
+      base-spec-path: templates/tests/fixtures/openapi/base.yaml
+      fail-on-breaking: false
+
+  api-contract-self-test:
+    name: api-contract — self-test
+    needs: [api-contract-compatible, api-contract-breaking]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          COMPATIBLE: ${{ needs.api-contract-compatible.outputs.breaking }}
+          BREAKING: ${{ needs.api-contract-breaking.outputs.breaking }}
+        run: |
+          [ "$COMPATIBLE" = "false" ] || { echo "::error::the compatible pair reported breaking=$COMPATIBLE"; exit 1; }
+          [ "$BREAKING" = "true" ] || { echo "::error::the breaking pair reported breaking=$BREAKING"; exit 1; }
+
   templates:
     name: Templates — testy skryptów
     runs-on: ubuntu-latest
