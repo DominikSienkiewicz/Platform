@@ -108,11 +108,14 @@ if [[ "$has_gradle" -eq 1 ]]; then
   fi
 fi
 
+# Pusty token albo złożony z samych białych znaków liczy się jak brak, jak w settings.gradle.kts (N-DX-18), i przechodzi
+# do następnego źródła; devcontainer przekazuje nieustawioną zmienną hosta jako "".
+gpr_key=""
+[[ ! -f "$HOME/.gradle/gradle.properties" ]] || gpr_key=$(grep -E '^gpr\.key=' "$HOME/.gradle/gradle.properties" | cut -d= -f2- | tr -d ' ')
 source_name="" token=""
-if [[ -n "${GPR_TOKEN:-}" ]]; then source_name=GPR_TOKEN; token=$GPR_TOKEN
-elif [[ -n "${GITHUB_TOKEN:-}" ]]; then source_name=GITHUB_TOKEN; token=$GITHUB_TOKEN
-elif [[ -f "$HOME/.gradle/gradle.properties" ]] && grep -qE '^gpr\.key=' "$HOME/.gradle/gradle.properties"; then
-  source_name="gpr.key in ~/.gradle/gradle.properties"; token=$(grep -E '^gpr\.key=' "$HOME/.gradle/gradle.properties" | cut -d= -f2- | tr -d ' ')
+if ! is_blank "${GPR_TOKEN:-}"; then source_name=GPR_TOKEN; token=$GPR_TOKEN
+elif ! is_blank "${GITHUB_TOKEN:-}"; then source_name=GITHUB_TOKEN; token=$GITHUB_TOKEN
+elif ! is_blank "$gpr_key"; then source_name="gpr.key in ~/.gradle/gradle.properties"; token=$gpr_key
 fi
 if [[ -z "$token" ]]; then
   report FAIL PD030 "no GitHub Packages credentials (GPR_TOKEN, GITHUB_TOKEN or gpr.key)" \
