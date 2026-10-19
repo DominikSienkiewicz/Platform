@@ -75,6 +75,13 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-test-fixtures` names the test taxonomy: `@IntegrationTest`, `@ModelTest` and
+  `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the platform PostgreSQL in one), with the tag
+  names in `PlatformTestTags`. The platform containers refuse to start in the unit `test` task once the
+  task names itself in `platform.test.task`.
+- `PlatformArchRules`, a curated ArchUnit rule set, and the `HexagonalRules` preset in
+  `platform-test-fixtures`; `AbstractModulithDocumentationTest` writes the Spring Modulith diagrams and
+  canvases, which `backend-ci.yml` uploads as `module-docs-<run id>`.
 - `@dominiksienkiewicz/api-client` understands RFC 9457 Problem Details: a `application/problem+json`
   error sets `ApiError.problem` (typed `ProblemDetail`), and the message comes from `detail`, then
   `message`, then `title`. Bodies with only `message` behave as before.

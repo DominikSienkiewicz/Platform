@@ -99,14 +99,26 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 published sources jar shows the same examples in the IDE.
 
 `PlatformPostgresContainer` starts one PostgreSQL with pgvector, wired through `@ServiceConnection`.
-It needs Docker, so tag the test `integration`:
+It needs Docker, so tag the test `integration`. `@PostgresIntegrationTest` is the three annotations in one:
 
 ```java
-@Tag("integration")
+@PostgresIntegrationTest
+class OrderRepositoryTest { }
+```
+
+which stands for:
+
+```java
+@IntegrationTest // @Tag("integration")
 @SpringBootTest
 @Import(PlatformPostgresContainer.class)
 class OrderRepositoryTest { }
 ```
+
+`@IntegrationTest` and `@ModelTest` carry the tags `integration` and `model`; `PlatformTestTags` holds
+their names. When the test task names itself in the system property `platform.test.task`, a platform
+container started under `test` fails with "Testcontainers used in the unit 'test' task … annotate the
+test class with @IntegrationTest or @PostgresIntegrationTest" instead of needing Docker there.
 
 The same configuration runs the application locally against a container, from `src/test/java`:
 
@@ -150,6 +162,39 @@ fails when there is none or no `.sql` file, on a file not named `V<n>__<descript
 class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }
 
 class FlywayMigrationTest extends AbstractFlywayMigrationTest { }
+```
+
+`PlatformArchRules` (package `…testing.arch`) is a small set of ArchUnit rules, one field each, so a
+consumer takes all of them or a few: no standard streams, no `java.util.logging`, no generic exceptions,
+no field injection, `@Transactional` methods that are not private, `@RestController` methods that return
+no JPA `@Entity`, and the integration tag on every class that uses a platform container. It needs
+`com.tngtech.archunit:archunit-junit5` on the test classpath, which `seniordev.spring-modulith-conventions`
+adds; others declare `libs.archunit.junit5`. `HexagonalRules.of(domain, application, adapter)` adds the
+ports-and-adapters rules. Freeze the existing violations of a rule with `FreezingArchRule.freeze(rule)`:
+
+```java
+@AnalyzeClasses(packagesOf = Application.class, importOptions = ImportOption.DoNotIncludeTests.class)
+class ArchitectureTest {
+  @ArchTest ArchTests platform = ArchTests.in(PlatformArchRules.class);
+
+  @ArchTest
+  void hexagonal(JavaClasses classes) {
+    HexagonalRules.of("..domain..", "..application..", "..adapter..").forEach(rule -> rule.check(classes));
+  }
+}
+```
+
+`AbstractModulithDocumentationTest` writes the Spring Modulith component diagrams (PlantUML) and module
+canvases (AsciiDoc) of the same modules to `build/spring-modulith-docs`, which `backend-ci.yml` uploads as
+the `module-docs-<run id>` artifact; `spring-modulith-starter-test` already brings the documenter:
+
+```java
+class ModulithDocumentationTest extends AbstractModulithDocumentationTest {
+  @Override
+  protected Class<?> applicationClass() {
+    return Application.class;
+  }
+}
 ```
 
 `AbstractOpenApiContractTest` holds the committed OpenAPI spec to the Spring MVC controllers, both ways

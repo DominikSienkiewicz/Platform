@@ -53,6 +53,10 @@ dependencies {
 	compileOnly("jakarta.servlet:jakarta.servlet-api")
 	compileOnly("tools.jackson.core:jackson-databind")
 	compileOnly("tools.jackson.dataformat:jackson-dataformat-yaml")
+	// PlatformArchRules i HexagonalRules: ArchUnit konsument ma z seniordev.spring-modulith-conventions albo z libs.
+	compileOnly(libs.archunit.junit5)
+	// AbstractModulithDocumentationTest: Documenter jest w spring-modulith-docs, który daje spring-modulith-starter-test.
+	compileOnly("org.springframework.modulith:spring-modulith-docs")
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
@@ -61,6 +65,11 @@ dependencies {
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("tools.jackson.core:jackson-databind")
 	testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")
+	testImplementation(libs.archunit.junit5)
+	testImplementation("org.springframework.modulith:spring-modulith-docs")
+	testImplementation("org.springframework:spring-tx")
+	testImplementation("jakarta.persistence:jakarta.persistence-api")
+	testImplementation("org.junit.jupiter:junit-jupiter-params")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

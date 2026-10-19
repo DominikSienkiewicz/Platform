@@ -23,6 +23,7 @@ public class PlatformPostgresContainer {
   @ServiceConnection
   @SuppressWarnings({"rawtypes", "unchecked"})
   public PostgreSQLContainer pgvectorContainer() {
+    PlatformTestTaskGuard.requireIntegrationTask("PlatformPostgresContainer");
     return new PostgreSQLContainer(
         DockerImageName.parse(PlatformImages.PGVECTOR).asCompatibleSubstituteFor("postgres"));
   }
