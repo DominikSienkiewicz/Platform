@@ -24,7 +24,7 @@ on:
         type: string
         default: "27"
       gradle-task:
-        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.testRetry=off here turns that off."
+        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.test.retry=off here turns that off."
         type: string
         default: "build"
       verify-provenance:
@@ -102,7 +102,7 @@ jobs:
           ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gradle-output.log"
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
-          # Wykrywanie niestabilnych testów (N-REL-13); -Pplatform.testRetry w gradle-task wygrywa ze zmienną.
+          # Wykrywanie niestabilnych testów (N-REL-13); -Pplatform.test.retry w gradle-task wygrywa ze zmienną.
           PLATFORM_TEST_RETRY: detect
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}

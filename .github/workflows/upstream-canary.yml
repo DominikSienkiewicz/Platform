@@ -4,7 +4,7 @@ name: Upstream canary
 # Doradczy: nigdy na push ani PR, nigdy nie blokuje main. Każda noga prowadzi jedno issue (scripts/upsert-issue.sh).
 #   gradle-rc:     cały zestaw TestKit build-logic na bieżącym Gradle RC (-PplatformTestGradleVersion, GradleRunner
 #                  .withGradleVersion); bez RC noga się pomija.
-#   next-jdk:      starter java-library z toolchainem o jeden wyżej niż kanon (-PplatformToolchainOverride) na buildzie EA
+#   next-jdk:      starter java-library z toolchainem o jeden wyżej niż kanon (-Pplatform.toolchain.override) na buildzie EA
 #                  Temurin; bez buildu EA noga się pomija.
 #   runtime-image: czy jest już eclipse-temurin:<java>-jre i czy przechodzi bramkę Grype z container-scan.yml —
 #                  warunek powrotu z sapmachine (docs/versions.md, "Runtime image for the JDK 27 toolchain").
@@ -133,7 +133,7 @@ jobs:
           app="$RUNNER_TEMP/java-library"
           cp -R templates/jvm/java-library "$app"
           cd "$app"
-          ./gradlew --no-daemon build -PplatformRepository="file://$repo" -PplatformToolchainOverride="$NEXT"
+          ./gradlew --no-daemon build -PplatformRepository="file://$repo" -Pplatform.toolchain.override="$NEXT"
       - name: Report the failure
         if: ${{ failure() && steps.build.outcome == 'failure' }}
         env:

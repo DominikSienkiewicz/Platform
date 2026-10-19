@@ -165,6 +165,6 @@ from a Platform release; resolve it again from GitHub Packages, and report it if
 **Cause:** something Platform deprecates is still in use: a dependency, a Gradle property or a plugin
 (`platformDependencyCheck`, from the plugin's `platform-deprecations.tsv`), a frontend package (the
 `deprecated` map of `versions.json`), or a deprecated workflow or input. It warns and keeps working;
-`-Pplatform.deprecations=fail` makes the Gradle side fail, as Platform's own TestKit suite does.
+`-Pplatform.deprecations.mode=fail` makes the Gradle side fail, as Platform's own TestKit suite does.
 **Fix:** use the replacement the message names before the release it names. Platform deprecates in one
 MINOR and removes no earlier than the next, and the CHANGELOG lists both.

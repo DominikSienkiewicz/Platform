@@ -54,7 +54,7 @@ internal class ConsumerFixture private constructor(
 				"--configuration-cache",
 				"--warning-mode=all",
 				// Kanał deprecacji w trybie strict (N-REL-9): starter użyty przez Platform nie może być przestarzały.
-				"-Pplatform.deprecations=fail",
+				"-Pplatform.deprecations.mode=fail",
 				"-PplatformVersion=${System.getProperty("platform.version")}",
 				"-PplatformRepository=${System.getProperty("platform.testRepository")}",
 			)

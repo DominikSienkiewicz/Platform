@@ -102,7 +102,7 @@ abstract class PlatformDependencyCheck : DefaultTask() {
 		}
 		if (deprecated.isNotEmpty() && failOnDeprecation.get()) {
 			throw GradleException(
-				"platform.deprecations=fail and ${deprecated.size} deprecated item(s) remain; see the warning above " +
+				"platform.deprecations.mode=fail and ${deprecated.size} deprecated item(s) remain; see the warning above " +
 					"and ${report.get().asFile.path}",
 			)
 		}

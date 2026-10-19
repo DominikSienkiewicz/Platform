@@ -13,7 +13,7 @@ gate that fails at once turns a routine bump into an unplanned fix.
 
 - A new failure mode ships as a warning in one MINOR and becomes a failure no earlier than the next, with both
   steps in the CHANGELOG: the container guard of the test fixtures (Decision 33) and the deprecation channel
-  (`PLAT-DEPR-001`, `-Pplatform.deprecations=fail` to opt in early) follow this.
+  (`PLAT-DEPR-001`, `-Pplatform.deprecations.mode=fail` to opt in early) follow this.
 - A check that depends on the date never fails an old commit locally: an expired quarantine fails only on CI
   ([ADR-0030](0030-quarantine-with-a-deadline.md)), and the support window only prints a notice
   ([ADR-0029](0029-support-window.md)).

@@ -10,15 +10,15 @@ whole host. The agent profile bounds what one agent takes. It is opt-in: the age
 | Knob | Where | Default in agent mode | Without `AI_AGENT` | Effect | Stack |
 |---|---|---|---|---|---|
 | `AI_AGENT` | environment | — | off | turns the profile on | all |
-| `platformAgentTestForks` | `-P` or `gradle.properties` | `1` | Gradle's default | `maxParallelForks` of every test task | Gradle |
-| `platformAgentTestHeap` | `-P` or `gradle.properties` | `2g` | Gradle's default | `maxHeapSize` of every test task | Gradle |
-| `springContextCacheSize` | `-P` or `gradle.properties` | `4` | Spring's default (32) | `spring.test.context.cache.maxSize` of every test task | Gradle, Spring tests |
+| `platform.agent.testForks` | `-P` or `gradle.properties` | `1` | Gradle's default | `maxParallelForks` of every test task | Gradle |
+| `platform.agent.testHeap` | `-P` or `gradle.properties` | `2g` | Gradle's default | `maxHeapSize` of every test task | Gradle |
+| `springContextCacheSize` | `-P` or `gradle.properties` | `4` | Spring's default (32) | `spring.test.context.cache.maxSize` of every test task; an ADR-0007 exception, because Azimuth already sets this name | Gradle, Spring tests |
 | `AI_AGENT_MAX_WORKERS` | environment | `2` | Gradle's and Vitest's defaults | `--max-workers` of `scripts/agent-gradle.sh` and `test.maxWorkers` of the Vitest preset | Gradle, Vitest |
 | `AI_AGENT_TEST_SLOTS` | environment | `3` | no slots | how many test suites `scripts/agent-gradle.sh` runs at once on the machine | Gradle |
 | `AI_AGENT_SLOT_TIMEOUT` | environment | `3600` | — | seconds `scripts/agent-gradle.sh` waits for a slot before exiting with 75 | Gradle |
 
 An explicit Gradle property applies in every mode; agent mode only changes the defaults. So a repository
-that needs more heap for one suite sets `platformAgentTestHeap=3g` in `gradle.properties` instead of
+that needs more heap for one suite sets `platform.agent.testHeap=3g` in `gradle.properties` instead of
 forking the logic. In agent mode `seniordev.java-conventions` also lets one test task run at a time across
 the projects of a build (a shared build service), and logs one line per build, so the transcript shows the
 budget that applied:

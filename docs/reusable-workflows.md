@@ -40,7 +40,7 @@ test-result and Checkstyle reports of every module go into the `backend-test-rep
 and line (ten at most), and the job summary lists all of them with Gradle's "What went wrong".
 The Gradle step sets `PLATFORM_TEST_RETRY=detect`: a failing test runs once more, a test that passes only
 then still fails the build, and a "Test health" summary lists the flaky tests, the `quarantineTest` result
-when the caller runs it, and every quarantine deadline (`-Pplatform.testRetry=off` in `gradle-task` turns
+when the caller runs it, and every quarantine deadline (`-Pplatform.test.retry=off` in `gradle-task` turns
 the retry off). With `verify-provenance: true` the job checks the artifact attestation of every Platform
 jar the build resolved against Platform's `release.yml` and fails with
 [PLAT-PROV-001](gates.md#plat-prov-001) on one without it; Platform attests its jars from 1.6.0 on.
@@ -72,7 +72,7 @@ Inputs:
 | `working-directory` | string | `backend` | Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout). |
 | `java-version` | string | `25` | JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
-| `gradle-task` | string | `build` | Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.testRetry=off here turns that off. |
+| `gradle-task` | string | `build` | Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.test.retry=off here turns that off. |
 | `verify-provenance` | boolean | `false` | Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars. |
 | `lint-task` | string | empty | Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step. |
 <!-- /docs-gen -->

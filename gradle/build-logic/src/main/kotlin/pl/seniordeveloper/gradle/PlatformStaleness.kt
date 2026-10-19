@@ -46,6 +46,6 @@ object PlatformStaleness {
 		if (age <= WINDOW_DAYS) return null
 		return "Platform ${release.version} was released $age days ago (${release.releasedAt}); the support window is " +
 			"$WINDOW_DAYS days or 3 releases (RELEASING.md, Support policy). Run scripts/platform-bump.sh, or silence this " +
-			"notice with -Pplatform.stalenessNotice=false."
+			"notice with -Pplatform.staleness.notice=false."
 	}
 }

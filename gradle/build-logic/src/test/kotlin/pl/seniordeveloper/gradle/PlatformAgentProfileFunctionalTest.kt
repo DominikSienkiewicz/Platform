@@ -15,7 +15,7 @@ class PlatformAgentProfileFunctionalTest {
 	@Test
 	fun `explicit agent knobs win and the banner appears once per build`() {
 		val consumer = twoProjectConsumer()
-		val knobs = mapOf("springContextCacheSize" to "8", "platformAgentTestHeap" to "3g")
+		val knobs = mapOf("springContextCacheSize" to "8", "platform.agent.testHeap" to "3g")
 
 		val agent = consumer.runner("inspectBudget", properties = knobs).withEnvironment(environment(agent = true)).build()
 		assertEquals("BUDGET:1:3g:8", budget(agent.output))
@@ -44,9 +44,9 @@ class PlatformAgentProfileFunctionalTest {
 		val canon = consumer.runner("inspectToolchain").build()
 		assertEquals("TOOLCHAIN:${PlatformVersions.JAVA}", line(canon.output, "TOOLCHAIN:"))
 
-		val override = consumer.runner("inspectToolchain", properties = mapOf("platformToolchainOverride" to "28")).build()
+		val override = consumer.runner("inspectToolchain", properties = mapOf("platform.toolchain.override" to "28")).build()
 		assertEquals("TOOLCHAIN:28", line(override.output, "TOOLCHAIN:"))
-		assertTrue(override.output.contains("platformToolchainOverride=28 replaces the Java"), "the override must be visible")
+		assertTrue(override.output.contains("platform.toolchain.override=28 replaces the Java"), "the override must be visible")
 	}
 
 	private fun twoProjectConsumer(): ConsumerFixture {

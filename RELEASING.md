@@ -305,7 +305,7 @@ Consumers see the window without any network call. `seniordev.settings-conventio
 when its release is older than 60 days, and `platform-versions-check` prints the same line for a frontend
 canon (from `releasedAt`, which `release.yml` stamps into the published `versions.json`). Both use the date
 of the tagged commit, so the artifacts stay reproducible. The notice never fails a build: a time-based gate
-would make old commits impossible to rebuild. Silence it with `-Pplatform.stalenessNotice=false` or
+would make old commits impossible to rebuild. Silence it with `-Pplatform.staleness.notice=false` or
 `PLATFORM_STALENESS_NOTICE=false`.
 
 ## Consumers: adopting a new version

@@ -36,7 +36,7 @@ spotbugs = "4.10.3"                      # → PlatformVersions: toolVersion w q
 checkstyle = "13.10.0"                   # → PlatformVersions: toolVersion w java-conventions (guard configów czyta stąd)
 pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; SAM PIT to pitestTool
 # testRetry >= 1.6.6: wcześniejsze mają ASM bez class-file 71 (JDK 27) i failują task testów z NullPointerException.
-testRetry = "1.6.6"                      # plugin Gradle org.gradle.test-retry: java-conventions stosuje go tylko z -Pplatform.testRetry=detect (N-REL-13)
+testRetry = "1.6.6"                      # plugin Gradle org.gradle.test-retry: java-conventions stosuje go tylko z -Pplatform.test.retry=detect (N-REL-13)
 pitestTool = "1.30.0"                    # → PlatformVersions: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
 pitestJunit5 = "1.2.3"                   # → PlatformVersions: junit5PluginVersion w quality-conventions
 cyclonedx = "3.3.0"

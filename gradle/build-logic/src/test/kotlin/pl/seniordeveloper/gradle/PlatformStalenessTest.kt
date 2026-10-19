@@ -18,7 +18,7 @@ class PlatformStalenessTest {
 		assertEquals(
 			"Platform 1.5.26 was released 65 days ago (2026-08-10); the support window is 60 days or 3 releases " +
 				"(RELEASING.md, Support policy). Run scripts/platform-bump.sh, or silence this notice with " +
-				"-Pplatform.stalenessNotice=false.",
+				"-Pplatform.staleness.notice=false.",
 			PlatformStaleness.notice(release, LocalDate.parse("2026-10-14")),
 		)
 	}

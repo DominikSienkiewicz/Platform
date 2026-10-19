@@ -48,11 +48,11 @@ plugins {
 // repo na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform.
 
 // Wersja z gradle/catalog: java (PlatformVersions.JAVA). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
-// -PplatformToolchainOverride=<N> (N-REL-4) tylko dla kanarka i eksperymentów z następnym JDK: kanonem zostaje katalog.
-val toolchainOverride = providers.gradleProperty("platformToolchainOverride").map { it.trim().toInt() }.orNull
+// -Pplatform.toolchain.override=<N> (N-REL-4) tylko dla kanarka i eksperymentów z następnym JDK: kanonem zostaje katalog.
+val toolchainOverride = providers.gradleProperty("platform.toolchain.override").map { it.trim().toInt() }.orNull
 if (toolchainOverride != null) {
 	logger.warn(
-		"seniordev.java-conventions: platformToolchainOverride=$toolchainOverride replaces the Java ${PlatformVersions.JAVA} toolchain of the Platform canon; use it for canaries only",
+		"seniordev.java-conventions: platform.toolchain.override=$toolchainOverride replaces the Java ${PlatformVersions.JAVA} toolchain of the Platform canon; use it for canaries only",
 	)
 }
 java {
@@ -157,11 +157,11 @@ jacoco {
 val agentMode = providers.environmentVariable("AI_AGENT").map { it == "1" || it == "true" }.getOrElse(false)
 val agentTestForks =
 	providers
-		.gradleProperty("platformAgentTestForks")
+		.gradleProperty("platform.agent.testForks")
 		.orNull
 		?.trim()
 		?.toInt() ?: if (agentMode) 1 else null
-val agentTestHeap = providers.gradleProperty("platformAgentTestHeap").orNull?.trim() ?: if (agentMode) "2g" else null
+val agentTestHeap = providers.gradleProperty("platform.agent.testHeap").orNull?.trim() ?: if (agentMode) "2g" else null
 val agentContextCache = providers.gradleProperty("springContextCacheSize").orNull?.trim() ?: if (agentMode) "4" else null
 if (agentMode && !gradle.extra.has("platformAgentProfileAnnounced")) {
 	// Jedna linia na build, nie na projekt: transkrypt agenta pokazuje, jaki budżet obowiązywał.
@@ -186,8 +186,8 @@ tasks.withType<Test>().configureEach {
 }
 
 // === Taksonomia testów (N-CAP-8) i kwarantanna (N-REL-13) ===================================================
-// Baseline JUnit z kanonu: BOM, Jupiter i launcher bez trzech linii w każdym repo; -Pplatform.junitBaseline=false wyłącza.
-if (providers.gradleProperty("platform.junitBaseline").orNull?.trim() != "false") {
+// Baseline JUnit z kanonu: BOM, Jupiter i launcher bez trzech linii w każdym repo; -Pplatform.junit.baseline=false wyłącza.
+if (providers.gradleProperty("platform.junit.baseline").orNull?.trim() != "false") {
 	dependencies {
 		"testImplementation"(platform("org.junit:junit-bom:${PlatformVersions.JUNIT}"))
 		"testImplementation"("org.junit.jupiter:junit-jupiter")
@@ -219,18 +219,18 @@ val platformQuarantineCheck =
 		group = "verification"
 		sources.from(provider { quarantineScannedSources.flatMap { it.allSource.srcDirs } })
 		ci.set(providers.environmentVariable("CI").map { it == "true" }.orElse(false))
-		today.set(providers.gradleProperty("platform.quarantineToday"))
+		today.set(providers.gradleProperty("platform.quarantine.today"))
 		report.set(layout.buildDirectory.file("reports/platform/quarantine.txt"))
 	}
 tasks.named("check") {
 	dependsOn(platformQuarantineCheck)
 }
-// -Pplatform.testRetry=detect albo PLATFORM_TEST_RETRY=detect (backend-ci): jedno powtórzenie, a build zostaje czerwony,
+// -Pplatform.test.retry=detect albo PLATFORM_TEST_RETRY=detect (backend-ci): jedno powtórzenie, a build zostaje czerwony,
 // gdy test przeszedł dopiero za drugim razem — raport rozróżnia niestabilne od zepsutych, nic nie jest ukryte.
-// Właściwość wygrywa ze zmienną, więc -Pplatform.testRetry=off w gradle-task wyłącza wykrywanie w backend-ci.
+// Właściwość wygrywa ze zmienną, więc -Pplatform.test.retry=off w gradle-task wyłącza wykrywanie w backend-ci.
 val testRetryMode =
 	providers
-		.gradleProperty("platform.testRetry")
+		.gradleProperty("platform.test.retry")
 		.orElse(providers.environmentVariable("PLATFORM_TEST_RETRY"))
 		.orNull
 		?.trim()
@@ -460,7 +460,7 @@ val platformDependencyCheck =
 			provider { entries.filter { it.kind == "property" && providers.gradleProperty(it.id).isPresent }.map { it.id }.toSet() },
 		)
 		pluginsApplied.set(provider { entries.filter { it.kind == "plugin" && pluginManager.hasPlugin(it.id) }.map { it.id }.toSet() })
-		failOnDeprecation.set(providers.gradleProperty("platform.deprecations").map { it == "fail" }.orElse(false))
+		failOnDeprecation.set(providers.gradleProperty("platform.deprecations.mode").map { it == "fail" }.orElse(false))
 		exempt.set(DependencyGovernance.GRADLE_INJECTED)
 		report.set(layout.buildDirectory.file("reports/platform/dependency-check.md"))
 	}

@@ -162,7 +162,7 @@ dependencies {
 	implementation("com.diffplug.spotless:spotless-plugin-gradle:${libs.versions.spotless.get()}")
 	implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:${libs.versions.spotbugsPlugin.get()}")
 	implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:${libs.versions.pitest.get()}")
-	// Wykrywanie niestabilnych testów (N-REL-13), stosowane tylko na żądanie -Pplatform.testRetry=detect.
+	// Wykrywanie niestabilnych testów (N-REL-13), stosowane tylko na żądanie -Pplatform.test.retry=detect.
 	implementation("org.gradle:test-retry-gradle-plugin:${libs.versions.testRetry.get()}")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")

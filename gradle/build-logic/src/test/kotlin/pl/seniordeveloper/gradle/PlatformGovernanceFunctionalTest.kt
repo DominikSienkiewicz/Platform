@@ -60,7 +60,7 @@ class PlatformGovernanceFunctionalTest {
 		val consumer = ConsumerFixture(directory, "java-library")
 		consumer.appendToBuildScript("dependencies { implementation(\"org.springframework.boot:spring-boot-starter-web\") }")
 
-		val warned = consumer.runner("platformDependencyCheck", properties = mapOf("platform.deprecations" to "warn")).build()
+		val warned = consumer.runner("platformDependencyCheck", properties = mapOf("platform.deprecations.mode" to "warn")).build()
 		val failed = consumer.runner("platformDependencyCheck").buildAndFail()
 
 		assertTrue(
@@ -68,7 +68,7 @@ class PlatformGovernanceFunctionalTest {
 			warned.output,
 		)
 		assertEquals(TaskOutcome.FAILED, failed.task(":platformDependencyCheck")?.outcome)
-		assertTrue(failed.output.contains("platform.deprecations=fail and 1 deprecated item(s) remain"), failed.output)
+		assertTrue(failed.output.contains("platform.deprecations.mode=fail and 1 deprecated item(s) remain"), failed.output)
 	}
 
 	private fun editSettings(

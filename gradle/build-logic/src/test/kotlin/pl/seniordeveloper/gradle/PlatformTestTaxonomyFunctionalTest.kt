@@ -63,7 +63,7 @@ class PlatformTestTaxonomyFunctionalTest {
 		assertTrue(untracked.output.contains("FlakyTest.java:"), "the message must name the file")
 
 		quarantinedTest(consumer, "// quarantine: https://github.com/example/library/issues/1 until 2026-01-31")
-		val today = mapOf("platform.quarantineToday" to "2026-02-01")
+		val today = mapOf("platform.quarantine.today" to "2026-02-01")
 		val local = consumer.runner("platformQuarantineCheck", properties = today).withEnvironment(environment(ci = false)).build()
 		assertTrue(local.output.contains("Expired quarantine (fails on CI)"), "an expired quarantine must warn locally")
 

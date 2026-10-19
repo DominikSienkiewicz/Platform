@@ -50,6 +50,6 @@ Temurin 27 for Linux, so CI installs the toolchain with `actions/setup-java` ins
 
 ## Update — a toolchain override for canaries (2026-10-19)
 
-`-PplatformToolchainOverride=<N>` replaces the toolchain of the canon with Java N and warns. It exists for the
+`-Pplatform.toolchain.override=<N>` replaces the toolchain of the canon with Java N and warns. It exists for the
 next-JDK leg of `upstream-canary.yml` and for experiments, never for a release; the canon stays the catalog's `java`
 (N-REL-4).
