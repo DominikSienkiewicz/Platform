@@ -314,6 +314,12 @@ package access, which the deploy does not wait for.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
   workflow; its default `v1` is transitional.
+- Rollback: on the host, `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
+  before it replaces a layer. When the new backend, or a frontend whose compose service defines a
+  healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
+  tag from the local image and the job fails with `ROLLED BACK to <tag>`. Database migrations are never
+  rolled back, so every schema change must be expand/contract: the previous release must still run on
+  the new schema. A first deploy has nothing to roll back to and fails as before.
 
 ```yaml
 permissions:

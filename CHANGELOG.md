@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `deploy.yml` rolls an application layer back on the host: when the new backend, or a frontend with a
+  healthcheck, does not become healthy, `scripts/deploy-remote.sh` recreates it with the previous tag
+  from the local image and fails the job with `ROLLED BACK to <tag>`. Migrations are not rolled back, so
+  schema changes must be expand/contract (`docs/reusable-workflows.md`).
 - `platform-versions-check --fix` rewrites drifted versions and Platform pins to the installed canon,
   offline and without adding or removing entries. In GitHub Actions the guard annotates every violation
   at its line of `package.json` and writes a table to the job summary.
