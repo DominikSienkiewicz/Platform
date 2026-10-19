@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/worktree-new.sh <type> <description>` starts a feature branch in its own worktree under
+  `.worktrees/`, named `<type>/<description>-YYYY-MM-DD` from the latest `origin/main`, and
+  `templates/worktree-status.sh` shows every worktree with whether `merge.sh` can take it. Copy them to
+  `scripts/` next to `merge.sh` if you want them.
 - Platform's CI has duration budgets: after every CI run, `ci-budget.yml` compares each job with
   `.github/ci-budgets.json`, warns on an overrun and lists every job in its summary. A test fails when a
   `ci.yml` job has no budget.

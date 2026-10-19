@@ -24,6 +24,8 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `platform-bump.sh` | **stub** that runs the `platform-bump` bin of `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); the bump logic lives in the npm package, so the stub cannot drift. Needs `@dominiksienkiewicz/versions` 1.3.8 or newer | `<repo>/scripts/platform-bump.sh` |
 | `bump-version.sh` | bumps the application version (`backend`/`frontend`) and creates a Liquibase changeset (`db new-migration`); not the same as `platform-bump.sh` | `<repo>/scripts/bump-version.sh` |
 | `merge.sh` | safe integration of a local feature branch with a required merge message: preflight of the worktree (ignored files included) and the local target, freshness of `origin/<target>`, a lock against parallel runs, `--dry-run`, an explicit `--offline` mode, atomic cleanup, a warning (not a refusal) when the source re-applies commits already on the target, and a clear result: a green `✓` on success, a red `✗` on any failure (`NO_COLOR` disables colour, `FORCE_COLOR` forces it outside a terminal) | `<repo>/scripts/merge.sh` |
+| `worktree-new.sh` | starts a feature branch in its own worktree: `<type>/<description>-YYYY-MM-DD` (local date, `-2`… on a collision) in `.worktrees/` from the latest `origin/main`, with `/.worktrees/` in `.git/info/exclude`; the start of the lifecycle `merge.sh` ends | `<repo>/scripts/worktree-new.sh` |
+| `worktree-status.sh` | every worktree under `.worktrees/` with its branch, commits ahead and behind the base, uncommitted files and whether `merge.sh` can take it | `<repo>/scripts/worktree-status.sh` |
 | `setup-gh-deploy.sh` | bootstraps the Actions secrets and variables of the reusable `deploy.yml` from a local `.secrets.local` (safe parser, values through stdin, `SSH_KNOWN_HOSTS` from ssh-keyscan, verified against `SSH_HOST_KEY_SHA256` when set; options `--gen-key`, `--with-release`); creates the `production` environment limited to the `release` branch, keeps the `SSH_*` secrets there and lists repository-level copies to delete; refuses to run when git does not ignore `.secrets.local`, and exits non-zero when a `gh` call fails | `<repo>/scripts/setup-gh-deploy.sh` |
 | `secrets.local.example` | template of the local value file for `setup-gh-deploy.sh`; the secret and variable names are the contract of the reusable deploy | `<repo>/.secrets.local.example` |
 | `grype.yaml` | accepted Grype findings, each with an expiry, a tracking link and a reason ([docs/security-scanning.md](../docs/security-scanning.md)) | `<repo>/.grype.yaml` |
@@ -33,8 +35,8 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `github/pull_request_template.md` | pull request description template (purpose and checklist) | `<repo>/.github/pull_request_template.md` |
 
 Tests of the template scripts live in `templates/tests/` and run in CI (the "Templates" job).
-Platform uses the canonical `templates/merge.sh` through the thin delegate [`../merge.sh`](../merge.sh),
-so its own copy of the helper cannot drift from the canon.
+Platform uses the canonical `templates/merge.sh`, `worktree-new.sh` and `worktree-status.sh` through thin
+delegates in its root ([`../merge.sh`](../merge.sh)), so its own copies of the helpers cannot drift from the canon.
 
 CI (reusable workflows), versions (catalog), quality (convention plugins), the linter config, the
 frontend packages and the Renovate preset are distributed automatically (artifacts and `extends`),
