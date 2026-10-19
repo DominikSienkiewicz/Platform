@@ -1,0 +1,21 @@
+openapi: 3.1.0
+info: { title: Pets, version: "1" }
+paths:
+  /pets/{id}:
+    get:
+      operationId: getPet
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } } }
+  /pets:
+    post:
+      operationId: createPet
+      responses:
+        "201": { description: created }
+  /actuator/health:
+    get:
+      operationId: health
+      responses:
+        "200": { description: up }
+components:
+  schemas:
+    Pet: { type: object }
