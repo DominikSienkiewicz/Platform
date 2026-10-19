@@ -17,6 +17,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- The roadmap toolkit (BookOfStyling, SkillSprintPlus) is marked *experimental*: only its marker contract
+  is stable. Re-copy `templates/roadmap/scripts/**` and the new issue form
+  `templates/roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml`; `roadmap-unblock.yml` now runs only for
+  issues closed as completed, one run at a time. Run the marker self-heal with `--preview <ID>` and
+  `--dry-run` first: it rewrites titles and bodies, now from the Backlog Handoff table.
 - `deploy.yml` reads `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` as secrets of the
   `production` environment, whose deployment branch policy admits only `release`; its preflight no
   longer checks them. Sync `templates/setup-gh-deploy.sh` into `scripts/`, run it once (it creates the
@@ -214,6 +219,14 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- Roadmap toolkit: auto-unblock reads the older SkillSprintPlus marker layout, takes the status from the
+  `status:*` label, ignores prerequisites closed as not planned, and fails instead of claiming changes it
+  did not make. The generator stops before creating anything when the issue snapshot fails or is
+  truncated, stops on a duplicate roadmap ID, keeps an auto-unblocked status and ticked criteria on
+  re-sync, keeps dependency links under `--only`, reconciles native `blocked_by` links, selects the board
+  by number and reports write errors; project setup no longer creates a twin of a closed board. Titles,
+  Risk and Notes come from the roadmap's Backlog Handoff table and Risk field, streams from
+  `ROADMAP_STREAMS`, and the body names `ROADMAP_DOC_PATH`.
 - The platform Checkstyle config accepts an empty arrow `case` block, `case 1 -> {}`, which
   google-java-format produces and `WhitespaceAround` rejected, so `spotlessApply` and `checkstyleMain`
   no longer contradict each other on it. A corpus of formatter output now guards the pair.

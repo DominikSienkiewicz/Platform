@@ -30,7 +30,7 @@ ROADMAP_STATUS_DESCS=(
   "Delivered / archived"
 )
 
-# --- Canonical Streams (shared across all repos) ---------------------------------
+# --- Streams (per repository; A–E is the default) -------------------------------
 ROADMAP_STREAMS=(A B C D E)
 
 # --- Label colors (hex, no #) — PER-REPO palette ---------------------------------
