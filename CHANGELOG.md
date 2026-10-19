@@ -582,6 +582,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 
 ### Fixed
 
+- `backend-ci-smoke` in Platform's own `ci.yml` builds the `java-library` starter on the previous release when
+  the commit is a release commit. `release.sh` moves the starter pin to the new version, which `release.yml`
+  publishes only after `ci.yml` passes on that commit, so the smoke could not resolve the Platform plugins and
+  would have blocked the release; the push of the same commit to `main` failed the same way. The new
+  `smoke-platform-version` job passes the parent commit's pin when the commit changes it, and the commit's own pin
+  otherwise.
 - `scorecard.yml` pins `ossf/scorecard-action` v2.4.3 by its commit, `4eaacf0`, instead of the SHA of its
   annotated tag, `99c09fe`. The runner resolved the tag, but publishing the result failed with "imposter
   commit … does not belong to ossf/scorecard-action". Platform's own `ci.yml` and `release.yml` pinned

@@ -8,6 +8,7 @@
     "Shellcheck": 2,
     "Action pins": 1,
     "Renovate": 3,
+    "Smoke Platform version": 1,
     "backend-ci-smoke / ": 12,
     "api-contract-compatible / ": 3,
     "api-contract-breaking / ": 3,

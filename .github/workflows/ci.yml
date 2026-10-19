@@ -208,18 +208,49 @@ jobs:
       - name: renovate-config-validator --strict
         run: npx --yes --package renovate@44.132.5 -- renovate-config-validator --strict renovate.json default.json
 
+  # Wersja Platform dla backend-ci-smoke. Commit wydania z release.sh podbija pin startera do wersji, której
+  # GitHub Packages jeszcze nie ma: release.yml publikuje ją dopiero po zielonym verify (= ten workflow), a push
+  # main i tag niosą ten sam commit. Gdy pin różni się od pinu rodzica, smoke buduje na pinie rodzica, czyli
+  # ostatnim wydaniu; każdy inny commit na własnym pinie. Blok testuje templates/tests/smoke-platform-version.test.sh.
+  smoke-platform-version:
+    name: Smoke Platform version
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      version: ${{ steps.pin.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 2 # rodzic HEAD: pin ostatniego wydania na commicie wydania
+      - id: pin
+        run: |
+          # >>> smoke-platform-version
+          pin_file=templates/jvm/java-library/gradle.properties
+          read_pin() { sed -n 's/^platformVersion=//p' | tr -d ' \r'; }
+          pin=$(read_pin < "$pin_file")
+          parent=$(git show "HEAD^:$pin_file" 2>/dev/null | read_pin) || parent=""
+          version=$pin
+          if [ -n "$parent" ] && [ "$parent" != "$pin" ]; then
+            version=$parent
+            echo "::notice title=backend-ci-smoke::This commit moves the starter pin to $pin, which release.yml publishes only after this CI passes, so the smoke builds on $parent."
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # <<< smoke-platform-version
+
   # Reusable backend-ci uruchomiony tu, zanim zrobi to konsument: na starterze java-library z jego wrapperem
-  # i publikowanym pinem platformVersion, więc idzie prawdziwą ścieżką konsumenta (dwa setup-java, rejestracja
+  # i opublikowaną wersją Platform z joba wyżej, więc idzie prawdziwą ścieżką konsumenta (dwa setup-java, rejestracja
   # toolchainu 27, GitHub Packages przez GITHUB_TOKEN, upload raportów). Wydanie woła ci.yml jako verify,
   # więc ten job bramkuje też publikację.
   backend-ci-smoke:
+    needs: smoke-platform-version
     permissions:
       contents: read
       packages: read
     uses: ./.github/workflows/backend-ci.yml
     with:
       working-directory: templates/jvm/java-library
-      gradle-task: build
+      gradle-task: build -PplatformVersion=${{ needs.smoke-platform-version.outputs.version }}
 
   # Reusable api-contract na prawdziwym oasdiff: para zgodna musi dać breaking=false, para łamiąca
   # breaking=true. Para łamiąca idzie z fail-on-breaking: false, żeby wynik sprawdzał job niżej, a nie
