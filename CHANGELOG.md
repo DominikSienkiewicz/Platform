@@ -225,6 +225,13 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `PlatformArchRules`, a curated ArchUnit rule set, and the `HexagonalRules` preset in
   `platform-test-fixtures`; `AbstractModulithDocumentationTest` writes the Spring Modulith diagrams and
   canvases, which `backend-ci.yml` uploads as `module-docs-<run id>`.
+- `AbstractModulithDocumentationTest` also writes `modules.mmd` after the PlantUML: a Mermaid `flowchart LR`
+  that GitHub renders, with one node per application module and one edge per dependency between two modules
+  (`uses`, `listens to` or `depends on`), sorted by module identifier. A subclass gets the file with no change.
+  The `spring-app` starter gains two modules, `accounts` and `notifications`, joined by the `AccountOpened`
+  event. The README shows their diagram, which a unit test of `platform-test-fixtures` keeps equal to
+  `docs/diagrams/spring-app-modules.mmd`. `scripts/new-consumer.sh` carries the starter's sub-packages and
+  rewrites their imports. The starter change reaches new repositories only.
 - `@dominiksienkiewicz/api-client` understands RFC 9457 Problem Details: a `application/problem+json`
   error sets `ApiError.problem` (typed `ProblemDetail`), and the message comes from `detail`, then
   `message`, then `title`. Bodies with only `message` behave as before.

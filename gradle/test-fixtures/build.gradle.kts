@@ -84,9 +84,20 @@ tasks.withType<Test>().configureEach { useJUnitPlatform() }
 
 // ModulithEventPublicationSchemaIT czyta kanoniczne migracje z templates/db, nie z kopii w zasobach testu.
 val platformTemplates = layout.projectDirectory.dir("../../templates")
+// N-CAP-14: główne źródła startera spring-app kompilują się z testami tego modułu, a ModulithMermaidDiagramTest
+// porównuje ich diagram modułów z plikiem, który README włącza przez scripts/docs-gen.sh — bez Dockera i TestKit.
+val springAppSources = platformTemplates.dir("jvm/spring-app/src/main/java")
+val springAppModuleDiagram = layout.projectDirectory.file("../../docs/diagrams/spring-app-modules.mmd")
+sourceSets { test { java.srcDir(springAppSources) } }
+// Spotless odrzuca pliki spoza katalogu modułu, więc formatuje tylko własne src/ (jak przed srcDir); format
+// startera sprawdza jego `lint` w TestKit build-logic, a Checkstyle checkstyleTest także tutaj.
+spotless { java { target("src/**/*.java") } }
 tasks.test {
 	inputs.dir(platformTemplates.dir("db")).withPropertyName("dbTemplates").withPathSensitivity(PathSensitivity.RELATIVE)
 	systemProperty("platform.templates.dir", platformTemplates.asFile.absolutePath)
+	inputs.dir(springAppSources).withPropertyName("springAppSources").withPathSensitivity(PathSensitivity.RELATIVE)
+	inputs.file(springAppModuleDiagram).withPropertyName("springAppModuleDiagram").withPathSensitivity(PathSensitivity.NONE)
+	systemProperty("platform.springApp.moduleDiagram", springAppModuleDiagram.asFile.absolutePath)
 	// Ten moduł nie dzieli testów na zadania: jego testy kontenerów świadomie biegną w `test`, więc strażnik
 	// PlatformTestTaskGuard (ostrzega przed kontenerem w szybkim `test` konsumenta) dostaje inną nazwę zadania.
 	systemProperty("platform.test.task", "platformModuleTest")

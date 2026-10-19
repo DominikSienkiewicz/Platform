@@ -108,6 +108,12 @@ then runs the consumer CI entry point through Gradle TestKit: `build cyclonedxBo
 included. The Spring check also starts the packaged `bootJar` from its own classpath, so a
 dependency missing only at runtime fails it. No database is needed.
 
+The Spring starter has two Spring Modulith modules joined by one event: `accounts` publishes
+`AccountOpened` and `notifications` listens to it; the README shows
+[their diagram](../README.md#the-starters-modules). Replace both modules with your own, and add
+`AbstractModulithDocumentationTest` from `platform-test-fixtures` ([reference](reference.md#test-fixtures))
+to get the diagrams of yours.
+
 The template is pinned to the latest Platform release: `release.sh` bumps its
 `platformVersion` together with every other version file. Keep `platformVersion` in the
 consumer's `gradle.properties` on an **already published** release. Add your own

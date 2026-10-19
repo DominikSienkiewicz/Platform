@@ -449,6 +449,15 @@ class ModulithDocumentationTest extends AbstractModulithDocumentationTest {
 }
 ```
 
+After the documenter, which empties the folder first, the same test writes `modules.mmd`: a Mermaid
+`flowchart LR` that GitHub renders in a `mermaid` code block, with one node per application module
+(labelled with its display name) and one edge per dependency between two modules, labelled `uses` (an
+injected bean), `listens to` (an event listener) or `depends on` (any other reference, left out when a more
+specific edge joins the same modules). Nodes and edges are sorted by module identifier, so the file only
+changes when the modules do. A unit test of `platform-test-fixtures` renders the modules of the `spring-app`
+starter the same way and compares them with `docs/diagrams/spring-app-modules.mmd`, the diagram the README
+shows.
+
 `AbstractOpenApiContractTest` holds the committed OpenAPI spec to the Spring MVC controllers, both ways
 and without Docker ([docs/api-contracts.md](api-contracts.md)). It reports an operation missing from the
 spec, a stale one, an operation without `operationId` or `responses`, a duplicate `operationId`, a mapping
