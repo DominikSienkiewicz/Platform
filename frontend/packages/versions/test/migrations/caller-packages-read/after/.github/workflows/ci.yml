@@ -1,0 +1,18 @@
+name: CI
+on: [push]
+permissions:
+  packages: read
+  contents: read
+jobs:
+  backend:
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1
+    secrets: inherit
+  frontend:
+    permissions:
+      contents: read
+      packages: read
+    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v1
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo lint

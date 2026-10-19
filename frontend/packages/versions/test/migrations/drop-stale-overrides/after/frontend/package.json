@@ -1,0 +1,13 @@
+{
+  "name": "consumer",
+  "overrides": {
+    "next": {
+      ".": "16.2.6"
+    },
+    "typescript": "$typescript",
+    "@dominiksienkiewicz/versions": "1.5.31",
+    "openapi-typescript": {
+      "js-yaml": "4.3.2"
+    }
+  }
+}

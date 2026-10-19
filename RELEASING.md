@@ -247,6 +247,10 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
   `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
   `deploy.yml` caller; a reference by commit SHA stays;
+- runs the upgrade migrations of the target release (`frontend/packages/versions/migrations/`) from
+  the downloaded package, so it always applies the target's logic: each migration whose `SINCE` lies
+  after the current pin and up to the target, and the `every-*` ones on every bump. It prints which it
+  applied, skipped or left for a manual fix;
 - moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
   distribution's SHA-256;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,

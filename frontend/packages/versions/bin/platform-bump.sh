@@ -79,6 +79,7 @@ VERSIONS_JSON=""
 RELEASES_JSON=""
 ACTIONS_FILE=""
 YANKED_FILE=""
+TARGET_PACKAGE=""
 SNAPSHOT="$(mktemp -d)"
 
 # Każdy plik, który bump może przepisać: zbiór kontroli czystego drzewa, migawki i rollbacku.
@@ -101,16 +102,29 @@ while IFS= read -r candidate; do CANDIDATES+=("$candidate"); done < <(
 # platform-bump:candidates-end
 
 # platform-bump:transaction
+copy_to_snapshot() {
+  if [[ -e "$1" ]]; then
+    mkdir -p "$SNAPSHOT/files/$(dirname "$1")" && cp -p "$1" "$SNAPSHOT/files/$1"
+  else
+    printf '%s\n' "$1" >> "$SNAPSHOT/absent"
+  fi
+}
 snapshot() {
   local file
-  for file in "${CANDIDATES[@]}"; do
-    if [[ -e "$file" ]]; then
-      mkdir -p "$SNAPSHOT/files/$(dirname "$file")" && cp -p "$file" "$SNAPSHOT/files/$file"
-    else
-      printf '%s\n' "$file" >> "$SNAPSHOT/absent"
-    fi
-  done
+  for file in "${CANDIDATES[@]}"; do copy_to_snapshot "$file"; done
   : > "$SNAPSHOT/taken"
+}
+# Plik spoza CANDIDATES (np. Dockerfile migracji) dołącza do migawki przed zapisem — pod tym samym warunkiem
+# czystego drzewa co preflight; brudny plik zatrzymuje bump z kodem 2, a finish() cofa to, co już zapisano.
+snapshot_file() {
+  local known
+  for known in "${CANDIDATES[@]}"; do [[ "$known" == "$1" ]] && return 0; done
+  if [[ "$ALLOW_DIRTY" != true ]] && [[ -n "$(git status --porcelain --untracked-files=no -- "$1")" ]]; then
+    echo "Uncommitted changes in $1, which an upgrade migration rewrites; commit or stash them, or pass --allow-dirty." >&2
+    exit 2
+  fi
+  CANDIDATES+=("$1")
+  copy_to_snapshot "$1"
 }
 restore() {
   local file
@@ -132,7 +146,7 @@ finish() {
       restore
     fi
   fi
-  rm -rf "$SNAPSHOT"
+  rm -rf "$SNAPSHOT" "$TARGET_PACKAGE"
   rm -f "$VERSIONS_JSON" "$RELEASES_JSON" "$ACTIONS_FILE" "$YANKED_FILE"
 }
 trap 'finish $?' EXIT
@@ -372,6 +386,7 @@ PY
 
   # Kanon: pobierz tarball versions@TARGET, nałóż versions.json na package.json (tylko wspólne klucze).
   TMPD="$(mktemp -d)"
+  TARGET_PACKAGE="$TMPD"
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
   if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
@@ -412,9 +427,6 @@ PY
     rm -rf "$TMPD"
     exit 1
   fi
-  rm -rf "$TMPD"
-
-  [[ "$DRY_RUN" == true ]] || ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
 fi
 
 # --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
@@ -429,6 +441,18 @@ for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
     "$workflow" && rm -f "$workflow.bak"
 done
 # platform-bump:workflows-end
+
+# --- Migracje wydania docelowego (versions/migrations): runner i migracje z rozpakowanego tarballa celu, nie
+#     z zainstalowanej kopii, więc bump zawsze wykonuje logikę wydania, do którego idzie. Bez tarballa (wydanie
+#     sprzed migracji, repo bez frontendu) nie ma czego uruchomić. ---
+# platform-bump:migrations
+MIGRATIONS="${TARGET_PACKAGE:+$TARGET_PACKAGE/package/migrations/run.sh}"
+if [[ -n "$MIGRATIONS" ]] && [[ -f "$MIGRATIONS" ]]; then
+  while IFS= read -r migrated; do snapshot_file "$migrated"; done < <(bash "$MIGRATIONS" files "$CURRENT" "$TARGET")
+  echo "==> Upgrade migrations from ${CURRENT:-an unknown pin} to $TARGET:"
+  PLATFORM_CANON="$TARGET_PACKAGE/package/versions.json" bash "$MIGRATIONS" apply "$CURRENT" "$TARGET"
+fi
+# platform-bump:migrations-end
 
 # --- Dry run: pokaż zmienione linie względem migawki i zakończ; finish() przywraca pliki, Gradle nie rusza. ---
 # platform-bump:dry-run
@@ -450,6 +474,11 @@ if [[ "$DRY_RUN" == true ]]; then
   exit 0
 fi
 # platform-bump:dry-run-end
+
+# Lockfile npm po pinach, kanonie i migracjach (drop-stale-overrides zmienia rozwiązywanie).
+if [[ -f frontend/package.json ]]; then
+  ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
+fi
 
 # --- Backend: regen ZAMROŻONEGO STANU (analogicznie do `npm install --package-lock-only` dla frontu) ---
 # --write-locks przelicza CAŁY graf (też transytywny: checker-qual itp.), nie tylko podbite wpisy.

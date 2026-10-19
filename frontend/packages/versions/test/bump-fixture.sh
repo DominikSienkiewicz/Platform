@@ -34,7 +34,8 @@ case "$url" in
   *) exit 22 ;;
 esac
 STUB
-# npm: pack daje tarball z versions.json (FAKE_PACK=ok) albo błąd E401; install tylko zapisuje wywołanie.
+# npm: pack daje tarball z versions.json (FAKE_PACK=ok; z migrations/, gdy FAKE_MIGRATIONS wskazuje katalog)
+# albo błąd E401; install tylko zapisuje wywołanie.
 cat > "$fixture_work/bin/npm" <<'STUB'
 #!/usr/bin/env bash
 echo "npm $*" >> "$FAKE_NPM_LOG"
@@ -44,6 +45,7 @@ if [[ "$1" == pack ]]; then
   staging=$(mktemp -d)
   mkdir -p "$staging/package"
   printf '{ "versions": { "react": "19.2.8" } }\n' > "$staging/package/versions.json"
+  [[ -z "${FAKE_MIGRATIONS:-}" ]] || cp -R "$FAKE_MIGRATIONS" "$staging/package/migrations"
   tar -czf "$2/dominiksienkiewicz-versions-9.9.9.tgz" -C "$staging" package
   rm -rf "$staging"
 fi
@@ -52,13 +54,15 @@ STUB
 chmod +x "$fixture_work/bin/curl" "$fixture_work/bin/npm"
 export FAKE_NPM_LOG="$fixture_work/npm.log"
 
-# consumer <name>: zacommitowane repo z frontendem i callerem reusable workflowu; wypisuje ścieżkę.
+# consumer <name> [pin]: zacommitowane repo z frontendem i callerem reusable workflowu na pinie (domyślnie
+# 1.5.29); dodatkowe pliki przed commitem kładzie hook FIXTURE_EXTRA (funkcja dostaje katalog). Wypisuje ścieżkę.
 consumer() {
-  local dir="$fixture_work/$1"
+  local dir="$fixture_work/$1" pin="${2:-1.5.29}"
   mkdir -p "$dir/frontend" "$dir/.github/workflows"
   git -C "$dir" init -q
-  printf '{\n  "devDependencies": {\n    "@dominiksienkiewicz/versions": "1.5.29",\n    "react": "19.0.0"\n  }\n}\n' > "$dir/frontend/package.json"
-  printf 'jobs:\n  frontend:\n    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v1.5.29\n' > "$dir/.github/workflows/ci.yml"
+  printf '{\n  "devDependencies": {\n    "@dominiksienkiewicz/versions": "%s",\n    "react": "19.0.0"\n  }\n}\n' "$pin" > "$dir/frontend/package.json"
+  printf 'jobs:\n  frontend:\n    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v%s\n' "$pin" > "$dir/.github/workflows/ci.yml"
+  [[ -z "${FIXTURE_EXTRA:-}" ]] || "$FIXTURE_EXTRA" "$dir"
   git -C "$dir" add -A
   git -C "$dir" -c user.name=t -c user.email=t@example.test commit -qm fixture
   printf '%s\n' "$dir"

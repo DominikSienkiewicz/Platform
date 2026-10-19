@@ -51,11 +51,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `check` now fails when the final `FROM` of the project's Dockerfile runs an older Java than
   the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
   post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
-  (`sapmachine:27-jre`) before taking this release.
+  (`sapmachine:27-jre`) before taking this release; `platform-bump` does it for a final
+  `eclipse-temurin:<N>-jre` or `-jdk` stage (migration `1.6.0-runtime-image-27`) and names any other
+  image for a manual fix.
 - Callers of `frontend-ci.yml` must grant `packages: read`. The workflow now requests it, so the
   automatic `GITHUB_TOKEN` fallback can read `@dominiksienkiewicz/*`, and a caller that grants only
   `contents: read` fails with `startup_failure`. Pass `gpr_token` explicitly as shown in
-  `docs/reusable-workflows.md`.
+  `docs/reusable-workflows.md`. `platform-bump` adds `packages: read` to the callers of `backend-ci.yml`
+  and `frontend-ci.yml` (migration `1.6.0-caller-packages-read`) and names a `permissions:` it cannot
+  edit for a manual fix.
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
@@ -71,6 +75,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Upgrade migrations: `platform-bump` runs the migrations of the target release from its downloaded
+  package, idempotent edits of the working tree that carry out a consumer action. The first three add
+  `packages: read` to the callers of `backend-ci.yml` and `frontend-ci.yml`, move a final
+  `eclipse-temurin` stage below 27 to `sapmachine:27-jre`, and remove `overrides` the canon no longer
+  lists (on every bump). A shape a migration does not recognise is reported for a manual fix.
 - `platform-bump` is transactional. Before writing anything it checks the tools it needs, that the
   files it rewrites carry no uncommitted changes (`--allow-dirty` overrides) and that GitHub accepts
   the token, and exits 2 otherwise. A failure after the first write restores every file it changed.

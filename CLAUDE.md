@@ -75,9 +75,13 @@ opublikuj, podbij pin w repo konsumenta.
    w manifeście. Domyślna naprawa to `npm update <paczka> --package-lock-only` + commit lockfile'a.
    Override zakładaj tylko wtedy, gdy rodzic pinuje DOKŁADNĄ podatną wersję (`@redocly/openapi-core`
    → `js-yaml@4.3.0`), i zdejmuj go, gdy upstream się naprawi — piny `postcss`/`sharp` przeżyły
-   w czterech repo o wydanie dłużej, niż były potrzebne. Uwaga: `platform-bump` NIE usuwa override'a,
-   który wypadł z kanonu — zostawia go nietkniętego, a guard zgłosi wtedy „paczka bez wpisu w kanonie".
-   Kasowanie takiego pinu w konsumentach jest ręczne i musi iść w tym samym wydaniu co zmiana kanonu.
+   w czterech repo o wydanie dłużej, niż były potrzebne. Override, który wypadł z kanonu, usuwa u konsumenta
+   migracja `every-drop-stale-overrides` przy każdym `platform-bump` (od wydania z migracjami, zob. niżej);
+   wcześniej zostawał nietknięty, a guard zgłaszał „paczka bez wpisu w kanonie".
+   **Migracje wydania** (`frontend/packages/versions/migrations/`): akcja konsumenta, którą da się wykonać
+   automatycznie, dostaje idempotentną migrację `<SINCE>-<slug>.sh` (bez sieci, z testem before/after
+   w `test/migrations/`), a jej wpis w CHANGELOG podaje slug albo „manual". `platform-bump` odpala runner
+   z tarballa wydania DOCELOWEGO.
 7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.1 zarządza Netty 4.2.17.Final i PostgreSQL
    42.7.13 — usunięto starsze piny CVE. Nie przywracaj ich bez sprawdzenia BOM-a.
    Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
