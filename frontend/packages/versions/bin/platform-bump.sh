@@ -13,6 +13,7 @@
 #   platform-bump --dry-run  # pokaż linie, które bump by zmienił, bez zapisu i bez Gradle
 #   --allow-dirty            # pozwól na niezacommitowane zmiany w plikach, które bump przepisuje
 #   --allow-yanked           # pozwól na jawny cel z listy wycofanych (releases/yanked.txt)
+#   --skip-provenance "<powód>"  # bump bez weryfikacji atestacji pobranej paczki (powód trafia do logu)
 #
 # Transakcja: preflight (narzędzia, czyste drzewo, token) idzie przed pierwszym zapisem, a błąd po nim
 # przywraca każdy plik, który bump mógł zmienić — drzewo zostaje jak przed bumpem.
@@ -37,22 +38,29 @@ set -euo pipefail
 # Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
 cd "$(git rev-parse --show-toplevel)"
 
-USAGE="Usage: platform-bump [--dry-run] [--allow-dirty] [--allow-yanked] [X.Y.Z]"
+USAGE='Usage: platform-bump [--dry-run] [--allow-dirty] [--allow-yanked] [--skip-provenance "<reason>"] [X.Y.Z]'
 DRY_RUN=false
 ALLOW_DIRTY=false
 ALLOW_YANKED=false
+SKIP_PROVENANCE=""
 TARGET=""
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --dry-run) DRY_RUN=true ;;
     --allow-dirty) ALLOW_DIRTY=true ;;
     --allow-yanked) ALLOW_YANKED=true ;;
-    -*) echo "Unknown option $arg. $USAGE" >&2; exit 2 ;;
+    --skip-provenance)
+      [[ -n "${2:-}" ]] || { echo "--skip-provenance needs a reason. $USAGE" >&2; exit 2; }
+      SKIP_PROVENANCE="$2"
+      shift
+      ;;
+    -*) echo "Unknown option $1. $USAGE" >&2; exit 2 ;;
     *)
-      if [[ -n "$TARGET" || ! "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Expected one X.Y.Z version, got $arg. $USAGE" >&2; exit 2; fi
-      TARGET="$arg"
+      if [[ -n "$TARGET" || ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Expected one X.Y.Z version, got $1. $USAGE" >&2; exit 2; fi
+      TARGET="$1"
       ;;
   esac
+  shift
 done
 
 # Pin w stylu szablonu: platformVersion= w backend/gradle.properties (layout produktowy na wiringu
@@ -200,6 +208,32 @@ preflight() {
 }
 preflight
 # platform-bump:preflight-end
+
+# Proweniencja (SLSA, wydania od 1.6.0): pobrany tarball celu musi pochodzić z release.yml Platform, zanim bump
+# z niego skorzysta. Nieudana weryfikacja zatrzymuje bump (finish() cofa zapisy), chyba że --skip-provenance;
+# brak gh tylko ostrzega, bo bump działał dotąd bez niego.
+# platform-bump:provenance
+version_key() { local IFS=.; read -r -a part <<<"$1"; printf '%05d%05d%05d' "${part[0]}" "${part[1]}" "${part[2]}"; }
+verify_provenance() {
+  local file=$1 name
+  name=$(basename "$file")
+  if [[ -n "$SKIP_PROVENANCE" ]]; then
+    echo "WARNING: the provenance of $name was not verified: $SKIP_PROVENANCE"
+  elif [[ "$(version_key "$TARGET")" < "$(version_key 1.6.0)" ]]; then
+    echo "Provenance: Platform $TARGET predates the release attestations of 1.6.0, so $name is not verified."
+  elif ! command -v gh >/dev/null 2>&1; then
+    echo "WARNING: gh is not installed, so the provenance of $name was not verified."
+  elif GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$OWNER/Platform" \
+    --signer-workflow "$OWNER/Platform/.github/workflows/release.yml" >/dev/null 2>"$file.provenance"; then
+    echo "Provenance: $name was built by Platform's release.yml."
+  else
+    echo "The provenance of $name does not verify, so platform-bump stops before using it:" >&2
+    cat "$file.provenance" >&2
+    echo "Pass --skip-provenance \"<reason>\" to bump anyway." >&2
+    exit 1
+  fi
+}
+# platform-bump:provenance-end
 
 # Obecny pin (przed bumpem) — do granicy MAJOR i notatek wydań, przez które bump przechodzi.
 CURRENT=""
@@ -390,6 +424,7 @@ PY
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
   if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
+    verify_provenance "$(ls "$TMPD"/dominiksienkiewicz-versions-*.tgz)"
     tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
 # platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh

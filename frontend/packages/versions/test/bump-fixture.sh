@@ -57,7 +57,15 @@ if [[ "$1" == pack ]]; then
 fi
 exit 0
 STUB
-chmod +x "$fixture_work/bin/curl" "$fixture_work/bin/npm"
+# gh: `attestation verify` udaje się, chyba że FAKE_PROVENANCE=fail; wywołania trafiają do FAKE_GH_LOG.
+cat > "$fixture_work/bin/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "gh $*" >> "$FAKE_GH_LOG"
+[[ "$1 $2" == "attestation verify" && "${FAKE_PROVENANCE:-ok}" == fail ]] && { echo 'no attestation matched' >&2; exit 1; }
+exit 0
+STUB
+chmod +x "$fixture_work/bin/curl" "$fixture_work/bin/npm" "$fixture_work/bin/gh"
+export FAKE_GH_LOG="$fixture_work/gh.log"
 export FAKE_NPM_LOG="$fixture_work/npm.log"
 
 # consumer <name> [pin]: zacommitowane repo z frontendem i callerem reusable workflowu na pinie (domyślnie

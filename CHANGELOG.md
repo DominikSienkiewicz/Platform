@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-bump` verifies the attestation of the package it downloads before it uses it, for targets
+  from 1.6.0 on, and stops with nothing changed when it does not verify (`--skip-provenance "<reason>"`
+  overrides it; without `gh` it warns).
 - Every Platform pull request gets a consumer impact report (`consumer-impact.yml`, `scripts/canon-diff.py`):
   the catalog, the frontend canon, the reusable workflow contract and the copied templates compared as
   parsed values. A change that needs consumer action labels the pull request `consumer-action`.
