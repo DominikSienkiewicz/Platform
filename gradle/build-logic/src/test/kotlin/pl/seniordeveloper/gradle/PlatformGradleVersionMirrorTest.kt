@@ -18,7 +18,19 @@ class PlatformGradleVersionMirrorTest {
 				.listFiles()!!
 				.map { File(it, "gradle/wrapper/gradle-wrapper.properties") }
 				.filter { it.isFile }
-		assertEquals(4, wrappers.size, "build-logic, catalog, test-fixtures and security-starter each carry a wrapper")
+		// Zbiór, nie liczba: moduł dopisany do gradle/maven-modules.txt nie wymaga zmiany tego testu.
+		val published =
+			File(System.getProperty("platform.gradleModules"), "maven-modules.txt")
+				.readLines()
+				.map { it.trim() }
+				.filter { it.isNotEmpty() && !it.startsWith("#") }
+				.map { it.substringBefore(' ') }
+				.toSortedSet()
+		assertEquals(
+			published,
+			wrappers.map { it.parentFile.parentFile.parentFile.name }.toSortedSet(),
+			"every module of gradle/maven-modules.txt, and only those, carries a Gradle wrapper",
+		)
 		wrappers.forEach { wrapper ->
 			val version = Regex("""distributionUrl=.*gradle-([0-9.]+)-(?:bin|all)\.zip""").find(wrapper.readText())?.groupValues?.get(1)
 			assertEquals(catalogGradle, version, "${wrapper.parentFile.parentFile.parentFile.name}: the wrapper must run catalog entry gradle")
