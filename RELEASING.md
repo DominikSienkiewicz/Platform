@@ -230,7 +230,9 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release
    (`scripts/release-assets.sh`): `platform-maven-repo-X.Y.Z.zip`, a Maven repository of every module
    in `gradle/maven-modules.txt` published to a local directory, the npm tarballs packed from the registry, and
-   `SHA256SUMS`, all attested. **`verify-bundle`** then builds the `spring-app` starter from the zip
+   `SHA256SUMS`, all attested, with the attestation's Sigstore bundle as
+   `platform-X.Y.Z-assets.sigstore.json`, the signature file OpenSSF Scorecard's Signed-Releases check looks
+   for. **`verify-bundle`** then builds the `spring-app` starter from the zip
    alone, with an empty Gradle home and no `GITHUB_TOKEN`
    ([README](README.md#try-it-without-credentials)).
 9. **`example`**, after `github-release`, regenerates the public `platform-example` repository from the

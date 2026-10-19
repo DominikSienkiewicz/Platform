@@ -455,6 +455,13 @@ A Maven artifact works the same way, for example `platform-test-fixtures-X.Y.Z.j
 cache (`~/.gradle/caches/modules-2/files-2.1/pl.seniordeveloper/`). A file without an attestation was
 published before 1.6.0 or not by Platform's CI.
 
+The files attached to a GitHub Release also carry their attestation as
+`platform-X.Y.Z-assets.sigstore.json`, so they can be verified offline, without the attestations API:
+
+```bash
+gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-assets.sigstore.json --repo DominikSienkiewicz/Platform
+```
+
 `platform-bump` checks the package it downloads this way before it uses it, for every target from
 1.6.0 on: an attestation that does not verify stops the bump with nothing changed. Without `gh`
 installed it only warns; `--skip-provenance "<reason>"` bumps anyway and logs the reason.

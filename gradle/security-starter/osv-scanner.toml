@@ -1,0 +1,13 @@
+# Zaakceptowane znaleziska OSV dla gradle.lockfile tego modułu — czyta je osv-scanner, a przez niego check
+# Vulnerabilities w OpenSSF Scorecard. Procedura jak w docs/security-scanning.md („Accepting a finding"):
+# data końca i powód; po ignoreUntil wpis przestaje działać i znalezisko wraca.
+
+[[IgnoredVulns]]
+id = "GHSA-j288-q9x7-2f5v"
+ignoreUntil = 2027-01-19
+reason = "commons-lang3 3.8.1 comes only with Checkstyle 13.10.0 (the checkstyle configuration) and processes only the repository's own sources, so the uncontrolled recursion on long inputs needs no untrusted input. Checkstyle 14 uses 3.20.0."
+
+[[IgnoredVulns]]
+id = "GHSA-6fmv-xxpf-w3cw"
+ignoreUntil = 2027-01-19
+reason = "plexus-utils 3.3.0 comes only with Checkstyle 13.10.0 (the checkstyle configuration), which never calls the vulnerable extractFile and runs only over the repository's own sources. Checkstyle 14 drops it; the canon stays on 13 until consumers' lint is checked against 14."

@@ -268,6 +268,9 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `platform-maven-repo-X.Y.Z.zip` with all four Maven modules, the npm tarballs and `SHA256SUMS`.
   `release.yml` builds the `spring-app` starter from the zip alone, without a token, and the README
   shows how (`-PplatformRepository=file://…`).
+- The GitHub Release also carries the Sigstore bundle of that attestation, `platform-X.Y.Z-assets.sigstore.json`,
+  for `gh attestation verify <file> --bundle` without the attestations API; OpenSSF Scorecard's Signed-Releases
+  check looks for it.
 - `platform-bump` verifies the attestation of the package it downloads before it uses it, for targets
   from 1.6.0 on, and stops with nothing changed when it does not verify (`--skip-provenance "<reason>"`
   overrides it; without `gh` it warns).
@@ -378,6 +381,15 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - Platform runs its own `scorecard.yml` and `semgrep.yml` on itself from `self-scan.yml`: Scorecard on
   every push to `main` and weekly, with published results; Semgrep also on pull requests. A change
   to either workflow now runs in Platform before consumers get it.
+- `codeql.yml` runs CodeQL on Platform (GitHub Actions, JavaScript/TypeScript, Java without a build, Python)
+  on pushes to `main`, pull requests and weekly, with its alerts in Code scanning. OpenSSF Scorecard's SAST
+  check recognises CodeQL and not Semgrep.
+- `gradle-wrapper.yml` validates every `gradle-wrapper.jar` in seconds on each push to `main`, so OpenSSF
+  Scorecard finds a successful validation on the latest commit and stops counting the wrappers as binaries;
+  the same step stays in `ci.yml` for the release's `verify`.
+- `osv-scanner.toml` next to the lockfiles of build-logic and the four library modules accepts the
+  advisories of commons-lang3 3.8.1 and plexus-utils 3.3.0, which come only with Checkstyle 13 and read only
+  the repository's own sources, until 2027-01-19 (`docs/security-scanning.md`).
 
 - Test taxonomy as code (N-CAP-8): every test task passes its name in `platform.test.task`, so the container guard
   of the test fixtures knows the fast `test`; `modelTest` in the Spring conventions; a JUnit baseline with the
@@ -448,7 +460,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   unfilled placeholder.
 - A devcontainer with JDK 25 and 27, Node 24 and pnpm, guarded against the canon by
   `templates/tests/devcontainer.test.sh` and built by `devcontainer.yml`, which runs the build-logic suite in it
-  (N-SHOW-11).
+  (N-SHOW-11). Its base image is pinned by digest next to the tag.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (the Contributor Covenant by reference) and issue forms for bugs, library
   requests and adoptions (N-SHOW-13).
 - ADRs 0014-0033 for every settled decision, with a decision map in `docs/adr/README.md` (N-SHOW-14).

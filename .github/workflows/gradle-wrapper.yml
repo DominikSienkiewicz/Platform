@@ -1,0 +1,26 @@
+name: Gradle wrapper
+
+# Sumy kontrolne gradle-wrapper.jar wszystkich modułów i starterów w osobnym, kilkunastosekundowym workflow.
+# OpenSSF Scorecard (Binary-Artifacts) pomija wrappery tylko wtedy, gdy workflow z gradle/actions/wrapper-validation
+# ma udany przebieg na NAJNOWSZYM commicie w chwili skanu; ci.yml trwa dłużej niż Scorecard z self-scan.yml
+# na tym samym pushu, więc sam tego nie spełnia. Krok w ci.yml zostaje, bo ci.yml jest też `verify` wydania.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "30 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  validation:
+    name: Gradle wrapper — checksums
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
