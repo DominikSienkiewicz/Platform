@@ -10,6 +10,12 @@
 # Użycie (z dowolnego miejsca w repo):
 #   platform-bump            # podbij do najnowszej w BIEŻĄCYM majorze (nowy MAJOR tylko jawnie)
 #   platform-bump 1.3.0      # podbij do konkretnej wersji
+#   platform-bump --dry-run  # pokaż linie, które bump by zmienił, bez zapisu i bez Gradle
+#   --allow-dirty            # pozwól na niezacommitowane zmiany w plikach, które bump przepisuje
+#   --allow-yanked           # pozwól na jawny cel z listy wycofanych (releases/yanked.txt)
+#
+# Transakcja: preflight (narzędzia, czyste drzewo, token) idzie przed pierwszym zapisem, a błąd po nim
+# przywraca każdy plik, który bump mógł zmienić — drzewo zostaje jak przed bumpem.
 #
 # Przed bumpem wypisuje notatki GitHub Releases z zakresu (obecny pin, cel], a na końcu powtarza
 # ich "Consumer action required" i podaje link do wydania docelowego (docs/adr/0002-…).
@@ -30,6 +36,24 @@ set -euo pipefail
 
 # Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
 cd "$(git rev-parse --show-toplevel)"
+
+USAGE="Usage: platform-bump [--dry-run] [--allow-dirty] [--allow-yanked] [X.Y.Z]"
+DRY_RUN=false
+ALLOW_DIRTY=false
+ALLOW_YANKED=false
+TARGET=""
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --allow-dirty) ALLOW_DIRTY=true ;;
+    --allow-yanked) ALLOW_YANKED=true ;;
+    -*) echo "Unknown option $arg. $USAGE" >&2; exit 2 ;;
+    *)
+      if [[ -n "$TARGET" || ! "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "Expected one X.Y.Z version, got $arg. $USAGE" >&2; exit 2; fi
+      TARGET="$arg"
+      ;;
+  esac
+done
 
 # Pin w stylu szablonu: platformVersion= w backend/gradle.properties (layout produktowy na wiringu
 # z templates/jvm) albo w gradle.properties roota (samodzielny layout JVM).
@@ -54,7 +78,114 @@ fi
 VERSIONS_JSON=""
 RELEASES_JSON=""
 ACTIONS_FILE=""
-trap 'rm -f "$VERSIONS_JSON" "$RELEASES_JSON" "$ACTIONS_FILE"' EXIT
+YANKED_FILE=""
+SNAPSHOT="$(mktemp -d)"
+
+# Każdy plik, który bump może przepisać: zbiór kontroli czystego drzewa, migawki i rollbacku.
+# platform-bump:candidates
+CANDIDATES=()
+while IFS= read -r candidate; do CANDIDATES+=("$candidate"); done < <(
+  printf '%s\n' backend/settings.gradle.kts backend/settings-gradle.lockfile frontend/package.json frontend/package-lock.json
+  for props in ${PROPERTY_PINS[@]+"${PROPERTY_PINS[@]}"}; do printf '%s\n' "$props"; done
+  for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do [[ -f "$workflow" ]] && printf '%s\n' "$workflow"; done
+  for prefix in backend/ ""; do
+    for wrapper_file in gradlew gradlew.bat gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.jar; do
+      printf '%s\n' "$prefix$wrapper_file"
+    done
+  done
+  if [[ -d backend ]]; then
+    find backend \( -name build -o -name .gradle -o -name node_modules \) -prune -o \
+      \( -name gradle.lockfile -o -name verification-metadata.xml \) -type f -print
+  fi
+)
+# platform-bump:candidates-end
+
+# platform-bump:transaction
+snapshot() {
+  local file
+  for file in "${CANDIDATES[@]}"; do
+    if [[ -e "$file" ]]; then
+      mkdir -p "$SNAPSHOT/files/$(dirname "$file")" && cp -p "$file" "$SNAPSHOT/files/$file"
+    else
+      printf '%s\n' "$file" >> "$SNAPSHOT/absent"
+    fi
+  done
+  : > "$SNAPSHOT/taken"
+}
+restore() {
+  local file
+  for file in "${CANDIDATES[@]}"; do
+    rm -f "$file.bak"
+    if [[ -e "$SNAPSHOT/files/$file" ]]; then cp -p "$SNAPSHOT/files/$file" "$file"; fi
+  done
+  if [[ -f "$SNAPSHOT/absent" ]]; then
+    while IFS= read -r file; do rm -f "$file"; done < "$SNAPSHOT/absent"
+  fi
+}
+finish() {
+  local status=$1
+  if [[ -f "$SNAPSHOT/taken" ]]; then
+    if [[ $status -ne 0 ]]; then
+      restore
+      echo "platform-bump failed, so it restored every file it had changed; the working tree is as before the bump." >&2
+    elif [[ "$DRY_RUN" == true ]]; then
+      restore
+    fi
+  fi
+  rm -rf "$SNAPSHOT"
+  rm -f "$VERSIONS_JSON" "$RELEASES_JSON" "$ACTIONS_FILE" "$YANKED_FILE"
+}
+trap 'finish $?' EXIT
+# platform-bump:transaction-end
+
+# Preflight przed pierwszym zapisem: brakujące narzędzie, cudze zmiany albo zły token zatrzymują bump z kodem 2,
+# zanim cokolwiek zostanie przepisane. Token bez nagłówka x-oauth-scopes (fine-grained, GITHUB_TOKEN w Actions)
+# i brak odpowiedzi GitHuba tylko ostrzegają.
+# platform-bump:preflight
+preflight() {
+  local missing=() tool dirty code scopes headers
+  for tool in git curl python3; do command -v "$tool" >/dev/null 2>&1 || missing+=("$tool"); done
+  if [[ -f frontend/package.json ]]; then
+    for tool in node npm; do command -v "$tool" >/dev/null 2>&1 || missing+=("$tool"); done
+  fi
+  if [[ -f backend/settings.gradle.kts ]] && [[ ! -x backend/gradlew ]]; then missing+=("an executable backend/gradlew"); fi
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    echo "platform-bump needs ${missing[*]}; nothing was changed." >&2
+    exit 2
+  fi
+  if [[ -f backend/settings.gradle.kts ]] && [[ "$DRY_RUN" != true ]] && ! (cd backend && ./gradlew --version --quiet >/dev/null 2>&1); then
+    echo "backend/gradlew --version failed: Gradle needs a JDK to regenerate the lockfiles; nothing was changed." >&2
+    exit 2
+  fi
+
+  if [[ "$ALLOW_DIRTY" != true ]]; then
+    dirty="$(git status --porcelain --untracked-files=no -- "${CANDIDATES[@]}")"
+    if [[ -n "$dirty" ]]; then
+      echo "Uncommitted changes in files platform-bump rewrites; commit or stash them, or pass --allow-dirty. Nothing was changed:" >&2
+      printf '%s\n' "$dirty" >&2
+      exit 2
+    fi
+  fi
+
+  headers="$(mktemp)"
+  code="$(curl -s -o /dev/null -D "$headers" -w '%{http_code}' --proto '=https' \
+    -H "Authorization: Bearer $TOKEN" https://api.github.com/user 2>/dev/null || true)"
+  scopes="$(tr -d '\r' < "$headers" | sed -n -E 's/^[Xx]-[Oo][Aa]uth-[Ss]copes:[[:space:]]*//p')"
+  if [[ "$code" == 401 ]]; then
+    rm -f "$headers"
+    echo "GitHub rejected the token (401): it is invalid or expired. Nothing was changed." >&2
+    exit 2
+  elif [[ "$code" == 200 ]] && grep -qi '^x-oauth-scopes:' "$headers" && [[ ! "$scopes" =~ (^|[ ,])(read|write):packages($|[ ,]) ]]; then
+    rm -f "$headers"
+    echo "The token lacks the read:packages scope that GitHub Packages needs (scopes: ${scopes:-none}). Nothing was changed." >&2
+    exit 2
+  elif [[ "$code" != 200 ]]; then
+    echo "WARNING: GitHub did not confirm the token (HTTP ${code:-no answer}); continuing."
+  fi
+  rm -f "$headers"
+}
+preflight
+# platform-bump:preflight-end
 
 # Obecny pin (przed bumpem) — do granicy MAJOR i notatek wydań, przez które bump przechodzi.
 CURRENT=""
@@ -68,7 +199,18 @@ if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
   CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
 fi
 
-TARGET="${1:-}"
+# Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
+# z listy wymaga --allow-yanked. Brak listy (sieć) = głośne ostrzeżenie i bump bez niej (fail-open).
+# platform-bump:yanked
+YANKED_FILE="$(mktemp)"
+if ! curl -fsSL --proto '=https' --proto-redir '=https' \
+  "https://raw.githubusercontent.com/$OWNER/Platform/main/releases/yanked.txt" -o "$YANKED_FILE" 2>/dev/null; then
+  : > "$YANKED_FILE"
+  echo "WARNING: could not read the list of yanked Platform releases (releases/yanked.txt); the bump continues without it."
+fi
+yanked_line() { awk -v version="$1" '{ sub(/#.*/, "") } $1 == version { $1 = ""; sub(/^[[:space:]]+/, ""); print; exit }' "$YANKED_FILE"; }
+# platform-bump:yanked-end
+
 if [[ -z "$TARGET" ]]; then
   echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
   VERSIONS_JSON="$(mktemp)"
@@ -76,14 +218,25 @@ if [[ -z "$TARGET" ]]; then
     -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
     "https://api.github.com/users/$OWNER/packages/maven/$CATALOG_PKG/versions" -o "$VERSIONS_JSON"
   # Bez argumentu: najnowsze wydanie BIEŻĄCEGO majora; nowy MAJOR tylko jawnie (ADR-0002).
-  python3 - "$VERSIONS_JSON" "$CURRENT" > "$VERSIONS_JSON.choice" <<'PY'
+  python3 - "$VERSIONS_JSON" "$CURRENT" "$YANKED_FILE" > "$VERSIONS_JSON.choice" <<'PY'
 # platform-bump:target — marker wycinania dla frontend/packages/versions/test/release-notes.test.sh
 import json, re, sys
 
 versions_path, current = sys.argv[1], sys.argv[2]
+# Opcjonalna lista wycofanych wydań: pierwsze słowo linii to wersja, # zaczyna komentarz.
+yanked = set()
+if len(sys.argv) > 3:
+    for line in open(sys.argv[3]):
+        words = line.split("#", 1)[0].split()
+        if words:
+            yanked.add(words[0])
 key = lambda version: [int(part) for part in version.split(".")]
 releases = sorted(
-    (v["name"] for v in json.load(open(versions_path)) if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v["name"])),
+    (
+        v["name"]
+        for v in json.load(open(versions_path))
+        if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v["name"]) and v["name"] not in yanked
+    ),
     key=key,
 )
 if releases:
@@ -99,6 +252,15 @@ PY
   fi
 fi
 [[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
+YANKED_REASON="$(yanked_line "$TARGET")"
+if [[ -n "$YANKED_REASON" ]]; then
+  if [[ "$ALLOW_YANKED" != true ]]; then
+    echo "Platform $TARGET is yanked: $YANKED_REASON" >&2
+    echo "Bump to the replacement it names, or pass --allow-yanked to take it anyway. Nothing was changed." >&2
+    exit 1
+  fi
+  echo "WARNING: Platform $TARGET is yanked ($YANKED_REASON); --allow-yanked takes it anyway."
+fi
 echo "==> Podbijam piny Platform do: $TARGET"
 # W GitHub Actions (reusable platform-bump.yml) wersja docelowa idzie też do wyjść kroku.
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "target=$TARGET" >> "$GITHUB_OUTPUT"; fi
@@ -150,6 +312,9 @@ PY
 else
   echo "Release notes unavailable: no current Platform pin found, or the GitHub API did not answer."
 fi
+
+# Od tego miejsca bump pisze: migawka każdego pliku-kandydata, który błąd albo --dry-run przywraca.
+snapshot
 
 # --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
 #     i settings-gradle.lockfile; conventions w build.gradle.kts są BEZ wersji (classpath settings). ---
@@ -243,13 +408,13 @@ PY
   else
     echo "ERROR: npm pack @dominiksienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
     cat "$TMPD/pack.err" >&2
-    echo "The frontend pins in frontend/package.json already point at $TARGET; fix the error above and run the bump again." >&2
+    echo "Fix the error above and run the bump again." >&2
     rm -rf "$TMPD"
     exit 1
   fi
   rm -rf "$TMPD"
 
-  ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
+  [[ "$DRY_RUN" == true ]] || ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
 fi
 
 # --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
@@ -264,6 +429,27 @@ for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
     "$workflow" && rm -f "$workflow.bak"
 done
 # platform-bump:workflows-end
+
+# --- Dry run: pokaż zmienione linie względem migawki i zakończ; finish() przywraca pliki, Gradle nie rusza. ---
+# platform-bump:dry-run
+if [[ "$DRY_RUN" == true ]]; then
+  echo "==> Dry run: the bump to $TARGET changes these lines; nothing is written."
+  for file in "${CANDIDATES[@]}"; do
+    if [[ -e "$SNAPSHOT/files/$file" ]]; then
+      diff -u --label "a/$file" --label "b/$file" "$SNAPSHOT/files/$file" "$file" || true
+    elif [[ -e "$file" ]]; then
+      diff -u --label /dev/null --label "b/$file" /dev/null "$file" || true
+    fi
+  done
+  echo "A real bump also runs npm install --package-lock-only, updates the Gradle wrapper and regenerates the lockfiles and verification metadata."
+  if [[ -s "$ACTIONS_FILE" ]]; then
+    echo ""
+    echo "==> CONSUMER ACTION REQUIRED by the releases this bump crosses:"
+    cat "$ACTIONS_FILE"
+  fi
+  exit 0
+fi
+# platform-bump:dry-run-end
 
 # --- Backend: regen ZAMROŻONEGO STANU (analogicznie do `npm install --package-lock-only` dla frontu) ---
 # --write-locks przelicza CAŁY graf (też transytywny: checker-qual itp.), nie tylko podbite wpisy.

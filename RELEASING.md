@@ -227,6 +227,13 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 `platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
+- stops with exit code 2 before writing anything when a tool it needs is missing (`git`, `curl`,
+  `python3`, `node` and `npm` for a frontend, a working `backend/gradlew` for a backend), when a
+  file it rewrites has uncommitted changes (`--allow-dirty` overrides), or when GitHub rejects the
+  token or reports a classic token without `read:packages`;
+- skips the releases listed in [`releases/yanked.txt`](releases/yanked.txt) when it picks the
+  newest one, and refuses an explicit yanked target unless `--allow-yanked` is passed; when the
+  list cannot be read it warns and goes on;
 - prints the GitHub Release notes of every version after the current pin up to the target, and
   repeats their **Consumer action required** entries at the end, followed by a link to the target
   release. The stub runs the installed copy of the bin, so the notes appear from the bump after
@@ -246,6 +253,10 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   `gradle/verification-metadata.xml`;
 - lists the local version overrides in the backend's Gradle scripts (`useVersion`, `force`,
   `strictly`, `extra["….version"]`) that the Platform BOMs do not see, without failing.
+
+If any step fails, the script restores every file it had changed, so the tree is as before the
+bump. `--dry-run` prints the lines the bump would change, including the frontend canon and the
+workflow references, then restores them; it runs neither npm install nor Gradle.
 
 The script does not commit; the diff is left for review. The reusable
 [`platform-bump.yml`](docs/reusable-workflows.md#platform-bumpyml) runs the same bin on a schedule and

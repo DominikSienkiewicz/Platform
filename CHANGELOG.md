@@ -71,6 +71,14 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-bump` is transactional. Before writing anything it checks the tools it needs, that the
+  files it rewrites carry no uncommitted changes (`--allow-dirty` overrides) and that GitHub accepts
+  the token, and exits 2 otherwise. A failure after the first write restores every file it changed.
+  `--dry-run` prints the lines a bump would change without writing them or running Gradle.
+- `releases/yanked.txt` lists releases `platform-bump` no longer offers: a bump without a version skips
+  them, and an explicit one needs `--allow-yanked`. It starts with 1.3.4 and 1.5.1–1.5.3, which were
+  published without the catalog variant or the plugin markers. `docs/runbooks/rollback.md` describes
+  yanking, fixing forward and pinning a consumer back.
 - Contract-first OpenAPI kit (*incubating*; [docs/api-contracts.md](docs/api-contracts.md)), for a
   hand-written spec committed to the repository:
   - `AbstractOpenApiContractTest` in `platform-test-fixtures` fails when the Spring MVC controllers and
