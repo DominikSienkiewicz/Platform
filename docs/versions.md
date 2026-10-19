@@ -89,6 +89,13 @@ Three CVE overrides came back after the first canon scan, because no Boot releas
 Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
 as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
 
+The convention plugins themselves carry one floor of their own. The CycloneDX Gradle plugin brings
+Jackson 2.22.2, with four HIGH advisories fixed in 2.22.3. `gradle/build-logic` therefore imports
+`com.fasterxml.jackson:jackson-bom` at the catalog's `jackson2Tooling` (2.22.3). The import is part of the
+plugin's published metadata, so it also applies on a consumer's Gradle build classpath. It never reaches
+an application, whose Jackson 2 stays at `jackson2Bom` from `platform-bom`. Drop it when CycloneDX brings
+Jackson 2.22.3 or later.
+
 ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
 `spring-modulith-core` 2.1.1 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
 read class-file major 71 (javac 27). Spring Modulith builds `ApplicationModules` at application start,

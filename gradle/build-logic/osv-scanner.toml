@@ -6,3 +6,8 @@
 id = "GHSA-6fmv-xxpf-w3cw"
 ignoreUntil = 2027-01-19
 reason = "plexus-utils 3.3.0 is only on testCompileClasspath, through Checkstyle 13.10.0 that the configuration tests run; nothing calls the vulnerable extractFile, and nothing of it ships with the plugin."
+
+[[IgnoredVulns]]
+id = "GHSA-j288-q9x7-2f5v"
+ignoreUntil = 2027-01-19
+reason = "commons-lang3 3.8.1 is only on the test classpaths, through Checkstyle 13.10.0 that the configuration tests run over Platform's own corpus. Since the Sonar plugin 7.5 shades its dependencies, nothing on those classpaths raises it to the 3.20.0 the plugin used to bring; nothing of it ships with the plugin."

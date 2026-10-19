@@ -165,6 +165,10 @@ dependencies {
 	// Wykrywanie niestabilnych testów (N-REL-13), stosowane tylko na żądanie -Pplatform.test.retry=detect.
 	implementation("org.gradle:test-retry-gradle-plugin:${libs.versions.testRetry.get()}")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
+	// Jackson 2 pluginów: CycloneDX ciągnie 2.22.2 z czterema High, poprawka w 2.22.3 (jackson2Tooling w kanonie).
+	// Platforma trafia do metadanych pluginu, więc obowiązuje też na classpath buildu konsumenta; aplikacji
+	// konsumenta nie dotyczy — tam Jacksona 2 trzyma jackson2Bom z platform-bom.
+	implementation(platform("com.fasterxml.jackson:jackson-bom:${libs.versions.jackson2Tooling.get()}"))
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")
 	// Error Prone + NullAway (N-CAP-11), aplikowany tylko przez opt-in seniordev.nullness-conventions.
 	implementation("net.ltgt.gradle:gradle-errorprone-plugin:${libs.versions.errorpronePlugin.get()}")
