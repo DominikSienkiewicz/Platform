@@ -39,13 +39,14 @@ pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; 
 testRetry = "1.6.6"                      # plugin Gradle org.gradle.test-retry: java-conventions stosuje go tylko z -Pplatform.test.retry=detect (N-REL-13)
 pitestTool = "1.30.0"                    # → PlatformVersions: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
 pitestJunit5 = "1.2.3"                   # → PlatformVersions: junit5PluginVersion w quality-conventions
-cyclonedx = "3.3.0"
+cyclonedx = "3.5.1"
+jackson2Tooling = "2.22.3"               # → build-logic: platform jackson-bom na classpath pluginów — CVE: CycloneDX 3.5.1 ciągnie Jacksona 2.22.2 (4x High, poprawka 2.22.3). Aplikacji konsumenta nie dotyczy (tam jackson2Bom). Zdejmij, gdy CycloneDX przyniesie Jacksona >= 2.22.3
 jacoco = "0.8.15"                        # → PlatformVersions: toolVersion w java-conventions
 foojayResolver = "1.0.0"
 mapstruct = "1.6.3"
 jsoup = "1.23.2"
 wiremock = "3.13.2"
-sonarqube = "7.3.1.8318"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions
+sonarqube = "7.5.0.8588"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions. >= 7.5: skaner 4.2.1 zacieniowany z bcprov 1.85.2 (CVE w 1.84)
 openrewrite = "8.88.3"                   # Attestate (ADR-0005)
 # seniordev.nullness-conventions (N-CAP-11, opt-in): Error Prone + NullAway w trybie JSpecify. Error Prone wpina się
 # w wewnętrzne API javac, więc bump toolchainu sprawdza TestKit PlatformNullnessFunctionalTest.

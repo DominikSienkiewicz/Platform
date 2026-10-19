@@ -512,6 +512,11 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `templates/github/pull_request_template.md` if you want the English checklist.
 - `sonar.yml` is deprecated: no consumer calls it. It keeps working for existing references; run the
   `sonar` task that `seniordev.quality-conventions` configures in the backend job instead.
+- The convention plugins move to the Sonar Gradle plugin 7.5.0.8588 and the CycloneDX Gradle plugin 3.5.1,
+  and build-logic imports `jackson-bom` at the new catalog key `jackson2Tooling` (2.22.3). Their dependencies
+  carried bcprov-jdk18on 1.84 (GHSA-9pwp-9qqc-pr26 CRITICAL, GHSA-qp49-qgx5-5m26) and Jackson 2.20.1 with
+  fifteen advisories onto every Gradle build that applies the plugins; Sonar 7.5 ships its scanner shaded with
+  bcprov 1.85.2. Applications are unaffected: their Jackson 2 stays at `jackson2Bom`.
 - `deploy.yml` builds `bootJar` with `setup-gradle`, which on `release` reads the cache your backend jobs
   wrote on the default branch, and caches the layers of each image in the GitHub Actions cache
   (`type=gha`, `mode=max`, one scope per image). The layer cache shares the repository's 10 GB Actions
