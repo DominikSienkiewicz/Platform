@@ -253,6 +253,8 @@ tasks.withType<Test>().configureEach {
 	val settingsConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts")
 	inputs.file(settingsConventions)
 	inputs.file(gradleModules.file("maven-modules.txt"))
+	// CanonProbeFunctionalTest kompiluje skrypt probe'a, którego poza canon-cve-scan.yml nic nie buduje.
+	inputs.file(gradleModules.file("canon-probe/build.gradle.kts"))
 	inputs.property("minimumConsumerGradle", providers.gradleProperty("minimumConsumerGradle"))
 	systemProperty("platform.gradleModules", gradleModules.asFile.absolutePath)
 	systemProperty("platform.settingsConventions", settingsConventions.asFile.absolutePath)
