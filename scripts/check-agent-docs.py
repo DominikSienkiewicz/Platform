@@ -2,11 +2,14 @@
 """check-agent-docs.py [root]: every command, task, bin and path the agent guidance names exists (N-SHOW-1).
 
 Reads the code spans of templates/agents/platform-block.md and the other templates/agents/*-block.md, AGENTS.md,
-docs/consumer-agents.md and docs/runbooks/*.md:
+docs/consumer-agents.md, docs/runbooks/*.md and the SKILL.md of every skill of the plugins/*/ plugins:
 - a path under a Platform root (scripts/, templates/, docs/, gradle/, frontend/packages/, .github/workflows/) or a
   root script (./release.sh) exists in the tree; a consumer path scripts/<x> may be the template templates/<x>;
 - `./gradlew <task>` names a task the build-logic sources register, or a task of Gradle or of an applied plugin;
-- a platform-<name> word is a bin of one of the frontend/packages/*/package.json.
+- a platform-<name> word is a bin of one of the frontend/packages/*/package.json;
+- a link at a release tag (…/blob/v<version>/docs/gates.md#<code>) names a file that exists in the tree, whatever
+  the link sits in (a code span, a list item or plain text), because the skills and the managed block name their
+  targets that way.
 Paths with placeholders (<…>, {…}, *) and consumer paths (backend/, frontend/package.json) are not checked.
 """
 import glob
@@ -25,11 +28,14 @@ DOCS = (
     )
     + ["AGENTS.md", "docs/consumer-agents.md"]
     + sorted(os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "docs/runbooks/*.md")))
+    + sorted(os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "plugins/*/skills/*/SKILL.md")))
 )
-PLATFORM_ROOTS = ("scripts/", "templates/", "docs/", "gradle/", "frontend/packages/", ".github/workflows/")
+PLATFORM_ROOTS = ("scripts/", "templates/", "docs/", "gradle/", "frontend/packages/", ".github/workflows/",
+                  "plugins/", ".claude-plugin/")
 ROOT_SCRIPTS = re.compile(r"^\./([A-Za-z0-9_-]+\.sh)$")
 PATH = re.compile(r"(?<![\w/.-])((?:\./)?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+)")
 GRADLE = re.compile(r"\./gradlew\s+([:A-Za-z0-9_-]+)")
+TAG_LINK = re.compile(r"/blob/v(?:<version>|\{\{VERSION\}\}|X\.Y\.Z)/([A-Za-z0-9_./-]+)")
 BIN = re.compile(r"(?<![\w/.:-])(platform-[a-z]+(?:-[a-z]+)*)(?![\w.-]*\.[a-z]+)(?![\w/-])")
 STANDARD_TASKS = {"build", "check", "test", "assemble", "dependencies", "bootJar", "bootRun", "jar", "spotlessApply",
                   "spotlessCheck", "jacocoTestReport", "pitest", "sonar", "cyclonedxBom", "help", "tasks", "clean"}
@@ -67,6 +73,10 @@ def main():
             problems.append(f"{doc}: missing")
             continue
         for number, line in enumerate(open(full, encoding="utf-8"), 1):
+            for target in TAG_LINK.findall(line):
+                target = target.rstrip(".,")
+                if not path_exists(target):
+                    problems.append(f"{doc}:{number}: `{target}` (named by a link at a release tag) does not exist")
             for span in re.findall(r"`([^`]+)`", line):
                 if any(mark in span for mark in "<>{}*"):
                     candidates = []

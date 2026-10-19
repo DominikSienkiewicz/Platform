@@ -16,6 +16,7 @@ consumer's `AGENTS.md`.
 | `gradle/test-fixtures/`, `gradle/*-starter/` | the test fixtures and the incubating Spring Boot starters |
 | `frontend/packages/` | the npm packages; `versions/versions.json` is the single source of frontend versions |
 | `.github/workflows/` | the reusable workflows consumers call, and Platform's own CI and release |
+| `.claude-plugin/`, `plugins/platform/` | the Claude Code marketplace and its `platform` plugin: four skills that open the runbooks at the tag a repository pins |
 | `templates/` | files consumers copy byte for byte, with their tests in `templates/tests/` |
 | `docs/` | maintained documentation; `docs/adr/` holds the decisions, `docs/runbooks/` the procedures |
 

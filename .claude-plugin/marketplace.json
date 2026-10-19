@@ -1,0 +1,17 @@
+{
+  "name": "seniordev-platform",
+  "description": "Claude Code skills that send an agent to the Platform runbooks and gate sections of the release a repository pins.",
+  "owner": {
+    "name": "Dominik Sienkiewicz",
+    "url": "https://github.com/DominikSienkiewicz"
+  },
+  "plugins": [
+    {
+      "name": "platform",
+      "source": "./plugins/platform",
+      "description": "Four thin skills for a repository that consumes Platform: bump the pin, fix a failed gate, add a library, preview an unreleased change. Each opens the runbook at the pinned tag.",
+      "category": "development",
+      "homepage": "https://github.com/DominikSienkiewicz/Platform"
+    }
+  ]
+}

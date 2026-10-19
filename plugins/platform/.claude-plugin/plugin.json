@@ -1,0 +1,11 @@
+{
+  "name": "platform",
+  "description": "Thin skills that open the Platform runbook or gate section of the release a repository pins.",
+  "author": {
+    "name": "Dominik Sienkiewicz"
+  },
+  "homepage": "https://github.com/DominikSienkiewicz/Platform",
+  "repository": "https://github.com/DominikSienkiewicz/Platform",
+  "license": "MIT",
+  "keywords": ["platform", "runbooks", "gradle", "consumer"]
+}
