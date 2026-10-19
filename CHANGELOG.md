@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-versions-check --fix` rewrites drifted versions and Platform pins to the installed canon,
+  offline and without adding or removing entries. In GitHub Actions the guard annotates every violation
+  at its line of `package.json` and writes a table to the job summary.
 - `templates/agent-gradle.sh` coordinates separate Gradle invocations: with `AI_AGENT` on, a run of
   `test`, `integrationTest`, `check` or `build` takes one of `AI_AGENT_TEST_SLOTS` (default 3)
   machine-wide slots and waits for one, reclaiming slots of dead processes. `templates/agent-preflight.sh`
