@@ -505,6 +505,10 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   image changes, in the weekly run and in the release gate, and ends with a notice while the latest release does
   not publish every pinned `@dominiksienkiewicz/*` package at its own version. `new-consumer.sh --frontend next`
   now also renders the `public/` directory the image copies.
+- A failing test of a Maven module shows its cause in the `ci.yml` log: `build-logic` logs failing tests in the
+  full exception format, so a TestKit failure prints the output of the consumer build it ran, and the Gradle job
+  uploads the test reports of every module as `platform-gradle-test-reports-<run id>-<attempt>` when it fails.
+  Platform's own CI only; no consumer is affected.
 - Claude Code skills (N-SHOW-1): a marketplace `seniordev-platform` at the repository root
   (`.claude-plugin/marketplace.json`) and one plugin, `platform` (`plugins/platform/`), with four thin skills:
   `bump-consumer`, `fix-gate-failure`, `add-library` and `test-unreleased-change`. Each reads the Platform version

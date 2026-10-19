@@ -63,6 +63,18 @@ jobs:
             echo "::endgroup::"
           done < <(awk '!/^#/ && NF { print $1 }' gradle/maven-modules.txt)
           exit $fail
+      # Tylko przy porażce: raport HTML i XML z wyjściem builda TestKit, którego log joba nie mieści.
+      # run_attempt w nazwie: artefakty są niezmienne, a ponowiony job biegnie w tym samym run_id.
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: platform-gradle-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            gradle/*/build/reports/tests/
+            gradle/*/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   # Obraz z templates/Dockerfile.backend naprawdę się buduje i zdrowieje (N-CAP-5): jar startera spring-app
   # z Platform tego commita (lokalne repo Maven), z actuatorem dołożonym do kopii, bo sam starter go nie ma.

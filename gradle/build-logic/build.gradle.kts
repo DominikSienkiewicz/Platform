@@ -1,4 +1,6 @@
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
 	`kotlin-dsl`
@@ -190,6 +192,12 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
+	// Komunikat UnexpectedBuildFailure niesie całe wyjście builda TestKit; skrócony format zostawiał w logu CI
+	// tylko nazwę wyjątku, bez taska, który padł u konsumenta.
+	testLogging {
+		events(TestLogEvent.FAILED)
+		exceptionFormat = TestExceptionFormat.FULL
+	}
 	// google-java-format używa wewnętrznego API javac; Spotless otwiera te pakiety tak samo.
 	jvmArgs(
 		listOf("api", "code", "file", "parser", "tree", "util").map { "--add-exports=jdk.compiler/com.sun.tools.javac.$it=ALL-UNNAMED" },
