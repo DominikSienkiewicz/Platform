@@ -116,21 +116,22 @@ final class PostgresDatabasePerContextRegistrar
   private static String createDatabase(PostgreSQLContainer server) {
     try (Connection connection = connect(server);
         Statement statement = connection.createStatement()) {
-      String candidate;
+      int candidate;
       do {
-        candidate = DATABASE_PREFIX + LAST_DATABASE.incrementAndGet();
+        candidate = LAST_DATABASE.incrementAndGet();
       } while (!create(statement, candidate));
-      return candidate;
+      return DATABASE_PREFIX + candidate;
     } catch (SQLException exception) {
       throw new IllegalStateException(
           "Cannot create a database for this context on the shared PostgreSQL", exception);
     }
   }
 
-  // false, gdy nazwa jest zajęta: następna próba bierze kolejny numer.
-  private static boolean create(Statement statement, String candidate) throws SQLException {
+  // false, gdy nazwa jest zajęta: następna próba bierze kolejny numer. Numer, nie nazwa: DDL nie
+  // przyjmuje parametrów, więc identyfikator składa się tu tylko ze stałej i liczby.
+  private static boolean create(Statement statement, int candidate) throws SQLException {
     try {
-      statement.execute("CREATE DATABASE " + candidate);
+      statement.execute("CREATE DATABASE " + DATABASE_PREFIX + candidate);
       return true;
     } catch (SQLException exception) {
       if (DUPLICATE_DATABASE.equals(exception.getSQLState())) {

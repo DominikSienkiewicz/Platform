@@ -10,14 +10,12 @@ redirects to the newest released MINOR, or to unreleased while no release carrie
 """
 import argparse
 import html
-import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-import tarfile
 import tempfile
 import tomllib
 
@@ -51,8 +49,15 @@ def run(command, failure, **options):
         fail(failure)
 
 
-def git(repo, *args):
-    return subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True).stdout
+def git(repo, *args, env=None):
+    return subprocess.run(["git", "-C", repo, *args], check=True, capture_output=True, env=env).stdout
+
+
+def checkout(repo, ref, tree, index):
+    """Pliki refu w <tree> prosto z obiektów gita przez osobny indeks: bez rozpakowywania archiwum, indeks repo nietknięty."""
+    private_index = {**os.environ, "GIT_INDEX_FILE": index}
+    git(repo, "read-tree", ref, env=private_index)
+    git(repo, "checkout-index", "--all", f"--prefix={tree}{os.sep}", env=private_index)
 
 
 def has_tooling(repo, ref):
@@ -108,12 +113,11 @@ def configure(path, site_url, label):
 
 
 def build(repo, ref, link_ref, name, site_url, work, zensical):
-    """Jedna wersja: drzewo refu z git archive, jego własny docs-site.py, build strict; zwraca katalog strony."""
+    """Jedna wersja: drzewo refu z gita, jego własny docs-site.py, build strict; zwraca katalog strony."""
     tree = os.path.join(work, "tree", name)
     stage = os.path.join(work, "stage", name)
     os.makedirs(tree)
-    with tarfile.open(fileobj=io.BytesIO(git(repo, "archive", "--format=tar", ref))) as archive:
-        archive.extractall(tree, filter="data")
+    checkout(repo, ref, tree, os.path.join(work, f"index-{name}"))
     run([sys.executable, "-I", os.path.join(tree, "scripts", "docs-site.py"), link_ref, stage],
         f"scripts/docs-site.py of {link_ref} failed to stage /{name}/.")
     site_dir = configure(os.path.join(stage, "zensical.toml"), site_url, link_ref)
