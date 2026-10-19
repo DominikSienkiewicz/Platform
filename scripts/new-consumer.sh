@@ -55,6 +55,26 @@ mkdir -p "$out/backend" "$out/.github/workflows" "$out/scripts"
 cp -R "$templates/jvm/$kind/." "$out/backend/"
 cp "$templates/jvm/java-library/gradlew" "$templates/jvm/java-library/gradlew.bat" "$out/backend/"
 mkdir -p "$out/backend/gradle" && cp -R "$templates/jvm/java-library/gradle/wrapper" "$out/backend/gradle/"
+# Nowy prefiks importu może sortować się inaczej niż example.* (pl.* leży za org.*), a spotlessCheck wymaga
+# kolejności google-java-format: każdy ciąg importów (grupa static i zwykła) bajtowo po nazwie.
+sort_imports() {
+  LC_ALL=C awk '
+    function name(line) { sub(/^import (static )?/, "", line); sub(/;$/, "", line); return line }
+    function flush(   i, j, line) {
+      for (i = 2; i <= n; i++) {
+        line = run[i]
+        for (j = i - 1; j >= 1 && name(run[j]) > name(line); j--) run[j + 1] = run[j]
+        run[j + 1] = line
+      }
+      for (i = 1; i <= n; i++) print run[i]
+      n = 0
+    }
+    /^import / { run[++n] = $0; next }
+    { flush(); print }
+    END { flush() }
+  '
+}
+
 # Podpakiety (moduły Spring Modulith startera spring-app) idą razem z katalogami, a prefiks pakietu znika też
 # z importów. Najpierw do katalogu obok: pakiet docelowy może leżeć pod katalogiem szablonu (example.shop).
 for source_set in main test; do
@@ -65,7 +85,8 @@ for source_set in main test; do
   while IFS= read -r -d '' file; do
     relative=${file#"$from"/}
     mkdir -p "$rendered/$(dirname "$relative")"
-    sed -E "s/^(package|import|import static) ${template_package//./\\.}([.;])/\1 $package\2/" "$file" > "$rendered/$relative"
+    sed -E "s/^(package|import|import static) ${template_package//./\\.}([.;])/\1 $package\2/" "$file" \
+      | sort_imports > "$rendered/$relative"
   done < <(find "$from" -type f -print0)
   rm -rf "${java:?}/${template_package%%.*}"
   mkdir -p "$java/${package//.//}"
