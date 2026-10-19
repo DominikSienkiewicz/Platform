@@ -26,6 +26,7 @@ report() { # report <PASS|WARN|FAIL> <ID> <message> [fix]
   [[ "$1" != FAIL ]] || failures=$((failures + 1))
 }
 version_key() { local IFS=.; read -r -a part <<<"$1"; printf '%05d%05d%05d' "${part[0]:-0}" "${part[1]:-0}" "${part[2]:-0}"; }
+is_blank() { [[ -z "$(printf '%s' "$1" | tr -d '[:space:]')" ]]; } # pusta albo z samych białych znaków, jak isNotBlank() w Gradle
 
 # --- Pins ------------------------------------------------------------------------------------------------
 pins=()
@@ -72,7 +73,9 @@ else
 fi
 
 # --- Gradle side -----------------------------------------------------------------------------------------
-if [[ -f backend/settings.gradle.kts || -f settings.gradle.kts ]]; then
+has_gradle=0
+if [[ -f backend/settings.gradle.kts || -f settings.gradle.kts ]]; then has_gradle=1; fi
+if [[ "$has_gradle" -eq 1 ]]; then
   java_line=$(java -version 2>&1 | head -1)
   java_major=$(sed -n -E 's/.*version "([0-9]+).*/\1/p' <<<"$java_line")
   if [[ -z "$java_major" ]]; then
@@ -127,6 +130,27 @@ if [[ "$offline" -eq 0 && -n "$token" && -n "$PIN" ]]; then
     404) report FAIL PD031 "platform-catalog $PIN is not published (404)" "pin a released version (RELEASING.md) or check releases/yanked.txt" ;;
     *) report WARN PD031 "GitHub Packages did not answer (HTTP ${code:-none})" "retry, or pass --offline" ;;
   esac
+fi
+
+# Login do Gradle: preflight w settings.gradle.kts i settings plugin chcą gpr.user albo GITHUB_ACTOR, a pusta lub
+# złożona z samych białych znaków wartość liczy się jak brak (N-DX-18). W devcontainerze z tokenem i bez loginu
+# PD030 i PD031 przechodzą, a Gradle staje na „No GitHub Packages credentials”. Tylko pliki i środowisko, bez sieci;
+# drukujemy źródło, nie wartość.
+if [[ "$has_gradle" -eq 1 ]]; then
+  gradle_properties="$HOME/.gradle/gradle.properties"
+  gpr_user=""
+  # Properties.load: ostatni wpis klucza wygrywa; `gpr.username=` i wiersze komentarza (#, !) nie pasują do wzorca
+  [[ ! -f "$gradle_properties" ]] || gpr_user=$(sed -n -E 's/^[[:space:]]*gpr\.user[[:space:]]*[=:](.*)$/\1/p' "$gradle_properties" | tail -n 1)
+  login_source=""
+  if ! is_blank "$gpr_user"; then login_source="gpr.user in ~/.gradle/gradle.properties"
+  elif ! is_blank "${GITHUB_ACTOR:-}"; then login_source=GITHUB_ACTOR
+  fi
+  if [[ -n "$login_source" ]]; then
+    report PASS PD032 "the GitHub login for Gradle comes from $login_source"
+  else
+    report WARN PD032 "no GitHub login for Gradle (gpr.user / GITHUB_ACTOR); the settings preflight stops with \"No GitHub Packages credentials\" even when a token is set" \
+      "set gpr.user=<your GitHub login> in ~/.gradle/gradle.properties, or export GITHUB_ACTOR; an empty or whitespace-only value counts as missing"
+  fi
 fi
 
 if [[ -f backend/Dockerfile ]]; then
