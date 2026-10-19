@@ -24,8 +24,9 @@ class TestTaxonomyTest {
   static class Postgres {}
 
   @AfterEach
-  void clearTheTaskProperty() {
+  void clearTheGuardProperties() {
     System.clearProperty(PlatformTestTaskGuard.TASK_PROPERTY);
+    System.clearProperty(PlatformTestTaskGuard.MODE_PROPERTY);
   }
 
   private static List<String> tags(Class<?> type) {
@@ -51,14 +52,34 @@ class TestTaxonomyTest {
   }
 
   @Test
-  void aContainerInTheUnitTestTaskFailsWithTheFix() {
+  void aContainerInTheUnitTestTaskFailsWithTheFixWhenTheGuardFails() {
     System.setProperty(PlatformTestTaskGuard.TASK_PROPERTY, "test");
+    System.setProperty(PlatformTestTaskGuard.MODE_PROPERTY, "fail");
 
     assertThatThrownBy(() -> new PlatformPostgresContainer().pgvectorContainer())
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
             "Testcontainers used in the unit 'test' task (PlatformPostgresContainer): annotate the test class"
                 + " with @IntegrationTest or @PostgresIntegrationTest");
+  }
+
+  @Test
+  void aContainerInTheUnitTestTaskOnlyWarnsByDefault() {
+    System.setProperty(PlatformTestTaskGuard.TASK_PROPERTY, "test");
+    java.io.PrintStream original = System.err;
+    java.io.ByteArrayOutputStream captured = new java.io.ByteArrayOutputStream();
+    System.setErr(new java.io.PrintStream(captured, true, java.nio.charset.StandardCharsets.UTF_8));
+    try {
+      assertThatCode(
+              () -> PlatformTestTaskGuard.requireIntegrationTask("PlatformPostgresContainer"))
+          .doesNotThrowAnyException();
+    } finally {
+      System.setErr(original);
+    }
+    assertThat(captured.toString(java.nio.charset.StandardCharsets.UTF_8))
+        .contains(
+            "WARNING: Testcontainers used in the unit 'test' task (PlatformPostgresContainer)")
+        .contains("A later Platform release fails such a test.");
   }
 
   @Test

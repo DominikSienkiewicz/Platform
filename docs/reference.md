@@ -117,8 +117,9 @@ class OrderRepositoryTest { }
 
 `@IntegrationTest` and `@ModelTest` carry the tags `integration` and `model`; `PlatformTestTags` holds
 their names. When the test task names itself in the system property `platform.test.task`, a platform
-container started under `test` fails with "Testcontainers used in the unit 'test' task … annotate the
-test class with @IntegrationTest or @PostgresIntegrationTest" instead of needing Docker there.
+container started under `test` prints "WARNING: Testcontainers used in the unit 'test' task … annotate
+the test class with @IntegrationTest or @PostgresIntegrationTest". With `platform.test.guard=fail` it
+throws instead; a later MINOR release makes that the default.
 
 The same configuration runs the application locally against a container, from `src/test/java`:
 

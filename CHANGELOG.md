@@ -80,8 +80,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   anchor of the Markdown files offline (`scripts/check-doc-links.py`).
 - `platform-test-fixtures` names the test taxonomy: `@IntegrationTest`, `@ModelTest` and
   `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the platform PostgreSQL in one), with the tag
-  names in `PlatformTestTags`. The platform containers refuse to start in the unit `test` task once the
-  task names itself in `platform.test.task`.
+  names in `PlatformTestTags`. The platform containers warn when they start in the unit `test` task
+  once the task names itself in `platform.test.task`, and throw with `platform.test.guard=fail`, which a
+  later MINOR release makes the default.
 - `PlatformArchRules`, a curated ArchUnit rule set, and the `HexagonalRules` preset in
   `platform-test-fixtures`; `AbstractModulithDocumentationTest` writes the Spring Modulith diagrams and
   canvases, which `backend-ci.yml` uploads as `module-docs-<run id>`.
