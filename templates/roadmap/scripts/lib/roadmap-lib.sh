@@ -8,16 +8,6 @@
 # Source order (required): roadmap-config.sh → roadmap-lib.sh → roadmap-parse.sh.
 # bash 3.2 safe (macOS): indexed arrays + a plain for loop, NO `declare -A`.
 
-# Roadmap status → board Status option (mirrored in the status:* label).
-roadmap_board_status() {
-  case "$1" in
-    proposed) echo backlog ;;
-    ready)    echo ready ;;
-    blocked)  echo blocked ;;
-    *)        echo "$1" ;;   # in-progress/in-review/done — passthrough (work in flight)
-  esac
-}
-
 # Full label set (idempotently created by the generator).
 roadmap_all_labels() {
   printf '%s\n' type:foundation type:slice

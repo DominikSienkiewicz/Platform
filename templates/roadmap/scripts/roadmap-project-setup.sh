@@ -41,9 +41,14 @@ say "Mode:    $([[ "$DRY_RUN" = 1 ]] && echo DRY-RUN || echo APPLY)"
 say ""
 
 # --- 1. Find or create the project -----------------------------------------------
-existing="$(gh project list --owner "$OWNER" --format json --limit 100 \
-  | jq -r --arg t "$TITLE" '.projects[] | select(.title==$t) | "\(.number)\t\(.id)"' | head -1)"
+# --closed: gh lists only open projects by default, so a closed board would get a twin with the same title.
+existing="$(gh project list --owner "$OWNER" --closed --format json --limit 100 \
+  | jq -r --arg t "$TITLE" '.projects[] | select(.title==$t) | "\(.number)\t\(.id)\t\(.closed)"' | head -1)"
 
+if [[ -n "$existing" ]] && [[ "$(printf '%s' "$existing" | cut -f3)" == true ]]; then
+  echo "Project '$TITLE' (#$(printf '%s' "$existing" | cut -f1)) exists but is closed — reopen it on GitHub instead of creating another one." >&2
+  exit 1
+fi
 if [[ -n "$existing" ]]; then
   NUMBER="$(printf '%s' "$existing" | cut -f1)"
   NODE_ID="$(printf '%s' "$existing" | cut -f2)"
