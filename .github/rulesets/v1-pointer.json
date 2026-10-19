@@ -1,0 +1,8 @@
+{
+  "name": "v1-pointer",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/tags/v1"], "exclude": [] } },
+  "rules": [{ "type": "deletion" }],
+  "bypass_actors": []
+}

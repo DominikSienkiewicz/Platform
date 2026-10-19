@@ -200,6 +200,8 @@ it also works in a repository without a frontend.
   opened with the automatic `GITHUB_TOKEN` runs no CI, and that token may not push workflow changes, so
   without `bump_token` the workflow references stay and the pull request says so. The fallback also needs
   **Allow GitHub Actions to create and approve pull requests** in the repository's Actions settings.
+  `scripts/repo-settings.sh --check --consumers`, run by the Platform maintainer, reports both for every
+  repository in `scripts/consumers.txt`, and `--apply --consumers` turns the setting on.
 - Inputs: [platform-bump.yml](../.github/workflows/platform-bump.yml); `version` empty takes the newest
   release of the current MAJOR.
 

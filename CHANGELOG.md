@@ -131,6 +131,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The shared Renovate preset waits three days after a GitHub Actions or Docker release before it opens
+  a pull request, and lets security fixes through at once, outside the Monday window, labelled
+  `security`, with OSV alerts on.
 - Everything a consumer reads is in English: the `infra/` and roadmap toolkit READMEs, the canonical
   pull request template, every npm package description, and the gate messages of `frontend-ci.yml`,
   `semgrep.yml` and `deploy.yml`. The README records the rule. Re-copy

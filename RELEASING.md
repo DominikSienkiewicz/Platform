@@ -67,6 +67,27 @@ export GITHUB_TOKEN=<classic PAT with read:packages>
 # C) Consumer repositories need a GPR_TOKEN secret (classic PAT with read:packages) for CI.
 ```
 
+## Repository settings
+
+The GitHub settings this repository depends on are code: `.github/rulesets/*.json` and
+`scripts/repo-settings.sh`. Run `scripts/repo-settings.sh --check` (GET requests only) to see drift
+and `scripts/repo-settings.sh --apply` to fix it, with `gh` logged in as an admin of the repository.
+It keeps:
+
+- the rulesets: `main` cannot be deleted or force-pushed; release tags `v*.*.*` cannot be deleted or
+  moved, so a published version keeps its source; `v1` cannot be deleted, but stays movable, because
+  `move-v1` moves it with every release while consumers call `@v1`. A ruleset therefore does not
+  protect `v1` from a leaked admin token; that is a known cost of the moving tag. Once consumers call
+  exact `vX.Y.Z` (Decision 3), retire `move-v1` and add `update` to `v1-pointer.json`;
+- secret scanning with push protection, Dependabot alerts without its security-update pull requests
+  (`platform-bump` moves versions), private vulnerability reporting, the requirement to pin every
+  action by commit SHA, and automatic deletion of merged head branches.
+
+It never deletes a branch: it lists remote branches already merged into `main` with the command that
+deletes them. `--consumers` also checks every repository in `scripts/consumers.txt` for what
+`platform-bump.yml` needs: GitHub Actions may create pull requests there, and a `PLATFORM_BUMP_TOKEN`
+secret exists (the secret is only reported; its value is yours to set).
+
 ## Cutting a release
 
 1. Bump the pinned actions by hand. Every action in `.github/workflows/` is pinned by commit SHA

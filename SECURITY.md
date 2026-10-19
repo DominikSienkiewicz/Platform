@@ -30,6 +30,20 @@ Please include:
 Reports are acknowledged within seven days. The fix and the advisory are published together, and
 you are credited in the advisory unless you ask not to be.
 
+## Security mechanisms
+
+- Secret scanning with push protection and Dependabot alerts are on for this repository. Dependabot's
+  security-update pull requests are off, because `platform-bump` moves every version consumers get.
+- Every action in `.github/workflows/` is pinned by commit SHA, and the repository requires it.
+- Repository rulesets keep `main` from being deleted or force-pushed and release tags from being moved
+  or deleted.
+- `release.yml` publishes only from a tag on a commit with green CI, and attests the provenance of every
+  published file; [docs/consuming.md](docs/consuming.md#verifying-provenance) shows how to verify it.
+- `canon-cve-scan.yml` scans the versions Platform imposes every week, and `self-scan.yml` runs
+  Scorecard and Semgrep on Platform itself.
+
+`scripts/repo-settings.sh --check` shows whether the repository settings above are in place.
+
 ## Scope
 
 In scope:
