@@ -28,7 +28,8 @@ import org.testcontainers.utility.DockerImageName;
  *
  * <p>Konteksty dzielą bazę: test, który zakładał świeżą bazę, musi sprzątać po sobie albo używać
  * własnego schematu. Drugi kontekst uruchamia migracje na zmigrowanej już bazie, co zwykle nic nie
- * robi.
+ * robi. Własną bazę dla każdego kontekstu na tym samym serwerze daje {@link
+ * PlatformPostgresDatabasePerContext}.
  *
  * <p>Użycie: {@code @Import(PlatformSharedPostgresContainer.class)}; adres i poświadczenia daje
  * {@link #container()}.

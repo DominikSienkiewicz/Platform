@@ -294,7 +294,8 @@ without durability (`fsync`, `synchronous_commit` and `full_page_writes` off, da
 only in a Testcontainers container, and is reusable across local runs when `~/.testcontainers.properties`
 sets `testcontainers.reuse.enable=true`. `PlatformSharedPostgresContainer.container()` returns it for a test
 that needs the address. The contexts share one database: a test that expects an empty database cleans up
-after itself or uses its own schema. `@PostgresIntegrationTest` below imports it.
+after itself, uses its own schema, or opts into a database per context with
+`@PlatformPostgresDatabasePerContext` (below). `@PostgresIntegrationTest` below imports it.
 
 `AbstractTestcontainersFootprintTest` fails when more than `maximumPostgresContainers()` (1 by default)
 Platform PostgreSQL containers of this Testcontainers session run at once, naming the fix. It counts the
@@ -328,6 +329,25 @@ which stands for:
 @Import(PlatformSharedPostgresContainer.class)
 class OrderRepositoryTest { }
 ```
+
+`@PlatformPostgresDatabasePerContext` gives every Spring context a database of its own on the same server.
+Next to `@PostgresIntegrationTest`, or on a configuration class that `SpringApplicationBuilder` starts, it
+runs `CREATE DATABASE ctx_<n>` once per context and points `spring.datasource.url`, `username` and
+`password` at that database; the server stays one container per JVM. Closing the context, when the context
+cache evicts it or the JVM ends, drops its database. It isolates context signatures, not test classes: test
+classes with the same configuration share the cached context and its database, and the migrations run from
+an empty database in every context. Without the annotation nothing changes.
+
+```java
+@PostgresIntegrationTest
+@PlatformPostgresDatabasePerContext
+class OrderRepositoryIT { }
+```
+
+The annotation imports `PlatformSharedPostgresContainer` ahead of the registrar of the context's database,
+and of two registrations of one property the later wins. A context in which something registers
+`spring.datasource.url` after it, for example `PlatformSharedPostgresContainer` given as an application
+source instead of through `@Import`, fails to start with a message that names the fix.
 
 `@IntegrationTest` and `@ModelTest` carry the tags `integration` and `model`; `PlatformTestTags` holds
 their names. When the test task names itself in the system property `platform.test.task`, a platform
