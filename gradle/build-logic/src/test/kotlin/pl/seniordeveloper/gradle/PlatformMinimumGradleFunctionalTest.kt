@@ -1,10 +1,10 @@
 package pl.seniordeveloper.gradle
 
-import java.nio.file.Path
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 /**
  * Konsumenci jadą na własnym wrapperze, często starszym niż ten, którym Platform kompiluje pluginy

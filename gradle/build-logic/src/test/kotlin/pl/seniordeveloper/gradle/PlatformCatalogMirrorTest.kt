@@ -1,8 +1,8 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.File
 
 /**
  * Guard luster, których nie obejmuje [PlatformToolVersionMirrorTest]: wersje BOM-ów Spring i JUnit
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
  * więc runtime zostaje na starym BOM-ie razem z jego poprawkami CVE. Pełna tabela luster: docs/versions.md.
  */
 class PlatformCatalogMirrorTest {
-
 	private val javaConventions = File(System.getProperty("platform.javaConventions")).readText()
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
@@ -26,7 +25,12 @@ class PlatformCatalogMirrorTest {
 
 	@Test
 	fun `springModulithVersion in spring-modulith-conventions matches the catalog`() {
-		assertMirror(springModulithConventions, valLiteral("springModulithVersion"), "springModulith", "springModulithVersion in spring-modulith-conventions")
+		assertMirror(
+			springModulithConventions,
+			valLiteral("springModulithVersion"),
+			"springModulith",
+			"springModulithVersion in spring-modulith-conventions",
+		)
 	}
 
 	@Test
@@ -57,10 +61,20 @@ class PlatformCatalogMirrorTest {
 
 	@Test
 	fun `junit5PluginVersion in quality-conventions matches the catalog`() {
-		assertMirror(qualityConventions, """junit5PluginVersion\.set\("([^"]+)"\)""", "pitestJunit5", "junit5PluginVersion in quality-conventions")
+		assertMirror(
+			qualityConventions,
+			"""junit5PluginVersion\.set\("([^"]+)"\)""",
+			"pitestJunit5",
+			"junit5PluginVersion in quality-conventions",
+		)
 	}
 
-	private fun assertMirror(source: String, pattern: String, catalogKey: String, mirror: String) {
+	private fun assertMirror(
+		source: String,
+		pattern: String,
+		catalogKey: String,
+		mirror: String,
+	) {
 		assertEquals(listOf(canon(catalogKey)), mirrors(source, pattern), "$mirror must equal catalog entry $catalogKey")
 	}
 
@@ -69,6 +83,8 @@ class PlatformCatalogMirrorTest {
 	private fun canon(name: String): String =
 		checkNotNull(System.getProperty("platform.canon.$name")) { "build-logic test task does not pass platform.canon.$name" }
 
-	private fun mirrors(source: String, pattern: String): List<String> =
-		Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
+	private fun mirrors(
+		source: String,
+		pattern: String,
+	): List<String> = Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
 }

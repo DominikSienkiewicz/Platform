@@ -56,30 +56,33 @@ ext["jackson-2-bom.version"] = "2.21.8"
 // (extra/ext albo gradle.properties), omija kanon: dependency-management podstawia ją do zaimportowanych BOM-ów,
 // a platformDependencyCheck widzi tylko zadeklarowane zależności. Decyzja 18: ostrzeżenie z listą, nie błąd.
 // resolutionStrategy.eachDependency/force są statycznie niewidoczne — zgłasza je platform-bump (docs/versions.md).
-val platformBomProperties = listOf("lombok.version", "tomcat.version", "jackson-bom.version", "jackson-2-bom.version")
-	.associateWith { ext[it].toString() }
-val platformBomOverrideCheck = tasks.register("platformBomOverrideCheck") {
-	description = "Warns about BOM version properties set outside the platform."
-	group = "verification"
-	val overrides = provider {
-		project.properties
-			.filterKeys { it.endsWith(".version") }
-			.mapValues { it.value.toString() }
-			.filter { (key, value) -> platformBomProperties[key] != value }
-			.toSortedMap()
-	}
-	inputs.property("overrides", overrides)
-	doLast {
-		val found = overrides.get()
-		found.forEach { (key, value) ->
-			logger.warn(
-				"platformBomOverrideCheck: $key=$value overrides the Platform BOMs outside the platform. Move the override " +
-					"to Platform (seniordev.spring-modulith-conventions) and release, or remove it once the Platform BOMs manage that version.",
-			)
+val platformBomProperties =
+	listOf("lombok.version", "tomcat.version", "jackson-bom.version", "jackson-2-bom.version")
+		.associateWith { ext[it].toString() }
+val platformBomOverrideCheck =
+	tasks.register("platformBomOverrideCheck") {
+		description = "Warns about BOM version properties set outside the platform."
+		group = "verification"
+		val overrides =
+			provider {
+				project.properties
+					.filterKeys { it.endsWith(".version") }
+					.mapValues { it.value.toString() }
+					.filter { (key, value) -> platformBomProperties[key] != value }
+					.toSortedMap()
+			}
+		inputs.property("overrides", overrides)
+		doLast {
+			val found = overrides.get()
+			found.forEach { (key, value) ->
+				logger.warn(
+					"platformBomOverrideCheck: $key=$value overrides the Platform BOMs outside the platform. Move the override " +
+						"to Platform (seniordev.spring-modulith-conventions) and release, or remove it once the Platform BOMs manage that version.",
+				)
+			}
+			if (found.isEmpty()) logger.lifecycle("platformBomOverrideCheck: OK — no BOM version property is set outside the platform")
 		}
-		if (found.isEmpty()) logger.lifecycle("platformBomOverrideCheck: OK — no BOM version property is set outside the platform")
 	}
-}
 tasks.named("check") {
 	dependsOn(platformBomOverrideCheck)
 }
@@ -128,14 +131,15 @@ tasks.named<Test>("test") {
 }
 
 // Testy integracyjne (Testcontainers) — wolniejsze, osobny task, po `test`.
-val integrationTest = tasks.register<Test>("integrationTest") {
-	description = "Uruchamia testy oznaczone tagiem \"integration\" (Testcontainers)."
-	group = "verification"
-	testClassesDirs = testSourceSet.output.classesDirs
-	classpath = testSourceSet.runtimeClasspath
-	useJUnitPlatform { includeTags("integration") }
-	shouldRunAfter(tasks.named("test"))
-}
+val integrationTest =
+	tasks.register<Test>("integrationTest") {
+		description = "Uruchamia testy oznaczone tagiem \"integration\" (Testcontainers)."
+		group = "verification"
+		testClassesDirs = testSourceSet.output.classesDirs
+		classpath = testSourceSet.runtimeClasspath
+		useJUnitPlatform { includeTags("integration") }
+		shouldRunAfter(tasks.named("test"))
+	}
 
 // `check` (a więc i `build`) odpala oba zestawy.
 tasks.named("check") {

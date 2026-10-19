@@ -1,11 +1,11 @@
 package pl.seniordeveloper.gradle
 
 import com.google.googlejavaformat.java.Formatter
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.File
 
 /**
  * Kod sformatowany przez google-java-format (wersja z katalogu, ta sama co w Spotless konsumenta) musi
@@ -15,23 +15,25 @@ import org.junit.jupiter.api.io.TempDir
  * typ przecięcia i adnotacje pól. Do tego ścieżkowe wyłączenia z checkstyle-suppressions.xml.
  */
 class PlatformFormatterCheckstyleTest {
-
 	@TempDir
 	lateinit var tempDir: File
 
 	@Test
 	fun `google-java-format output of the corpus passes platform-checkstyle`() {
 		val source = checkNotNull(javaClass.classLoader.getResource("formatter-corpus/FormatterCorpus.java")).readText()
-		val formatted = File(tempDir, "src/main/java/pl/seniordeveloper/gradle/fixture/FormatterCorpus.java").apply {
-			parentFile.mkdirs()
-			writeText(Formatter().formatSource(source))
-		}
+		val formatted =
+			File(tempDir, "src/main/java/pl/seniordeveloper/gradle/fixture/FormatterCorpus.java").apply {
+				parentFile.mkdirs()
+				writeText(Formatter().formatSource(source))
+			}
 
 		val violations = CheckstyleAudit.violations(tempDir, listOf(formatted))
 
 		assertTrue(
 			violations.isEmpty(),
-			"platform-checkstyle rejects google-java-format output:\n${CheckstyleAudit.describe(violations)}\n--- formatted ---\n${formatted.readText()}",
+			"platform-checkstyle rejects google-java-format output:\n${CheckstyleAudit.describe(
+				violations,
+			)}\n--- formatted ---\n${formatted.readText()}",
 		)
 	}
 
@@ -55,13 +57,19 @@ class PlatformFormatterCheckstyleTest {
 		assertEquals(listOf("HideUtilityClassConstructorCheck"), checks(helper), "the rule stays active for other classes")
 	}
 
-	private fun source(path: String, content: String): File =
+	private fun source(
+		path: String,
+		content: String,
+	): File =
 		File(tempDir, path).apply {
 			parentFile.mkdirs()
 			writeText(content)
 		}
 
 	private fun checks(file: File): List<String> =
-		CheckstyleAudit.violations(File(tempDir, "audit-${file.nameWithoutExtension}-${file.parentFile.parentFile.parentFile.name}"), listOf(file))
-			.map { it.sourceName.substringAfterLast('.') }
+		CheckstyleAudit
+			.violations(
+				File(tempDir, "audit-${file.nameWithoutExtension}-${file.parentFile.parentFile.parentFile.name}"),
+				listOf(file),
+			).map { it.sourceName.substringAfterLast('.') }
 }

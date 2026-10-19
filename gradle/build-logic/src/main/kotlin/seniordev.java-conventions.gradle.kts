@@ -1,11 +1,11 @@
-import pl.seniordeveloper.gradle.AgentTestBudget
-import pl.seniordeveloper.gradle.RuntimeImageCheck
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
+import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.RuntimeImageCheck
 import java.io.File
 import java.math.BigDecimal
 
@@ -47,12 +47,13 @@ java {
 // FROM z toolchainem; brak Dockerfile albo obraz spoza JVM = pominięcie z logiem.
 val runtimeDockerfiles =
 	listOf(layout.projectDirectory, rootProject.layout.projectDirectory).map { it.file("Dockerfile").asFile }.distinct()
-val platformRuntimeImageCheck = tasks.register<RuntimeImageCheck>("platformRuntimeImageCheck") {
-	description = "Fails when the Dockerfile's final JVM image runs an older Java than the toolchain of the bytecode."
-	group = "verification"
-	dockerfiles.set(runtimeDockerfiles)
-	toolchainVersion.set(java.toolchain.languageVersion.map { it.asInt() })
-}
+val platformRuntimeImageCheck =
+	tasks.register<RuntimeImageCheck>("platformRuntimeImageCheck") {
+		description = "Fails when the Dockerfile's final JVM image runs an older Java than the toolchain of the bytecode."
+		group = "verification"
+		dockerfiles.set(runtimeDockerfiles)
+		toolchainVersion.set(java.toolchain.languageVersion.map { it.asInt() })
+	}
 tasks.named("check") {
 	dependsOn(platformRuntimeImageCheck)
 }
@@ -72,26 +73,34 @@ spotless {
 // Współdzielona konfiguracja Checkstyle żyje w resources tego pluginu (jedno źródło w Platform).
 // Wypakowujemy ją do build/ i wskazujemy configDirectory, by ${config_loc} trafiał na suppressions.
 // Dzięki temu repo konsumenckie NIE trzymają własnych kopii config/checkstyle/.
-val checkstyleDir = layout.buildDirectory.dir("platform-config/checkstyle").get().asFile
-val checkstyleFiles = listOf("checkstyle.xml", "checkstyle-suppressions.xml").associateWith { name ->
-	(object {}.javaClass.classLoader.getResourceAsStream("platform-checkstyle/$name")
-		?: error("Brak zasobu platform-checkstyle/$name w pluginie seniordev.java-conventions")).bufferedReader()
-		.use { it.readText() }
-}
+val checkstyleDir =
+	layout.buildDirectory
+		.dir("platform-config/checkstyle")
+		.get()
+		.asFile
+val checkstyleFiles =
+	listOf("checkstyle.xml", "checkstyle-suppressions.xml").associateWith { name ->
+		(
+			object {}.javaClass.classLoader.getResourceAsStream("platform-checkstyle/$name")
+				?: error("Brak zasobu platform-checkstyle/$name w pluginie seniordev.java-conventions")
+		).bufferedReader()
+			.use { it.readText() }
+	}
 // Lokalne kopie w bloku register: akcja doLast trzyma wtedy tylko je, a nie obiekt skryptu pluginu, którego
 // configuration cache nie serializuje. Pilnuje PlatformTaskActionCaptureTest.
-val extractCheckstyleConfig = tasks.register("extractCheckstyleConfig") {
-	description = "Wypakowuje współdzieloną konfigurację Checkstyle z pluginu do build/."
-	val outputDir = layout.buildDirectory.dir("platform-config/checkstyle")
-	val files = checkstyleFiles
-	inputs.property("files", files)
-	outputs.dir(outputDir)
-	doLast {
-		val dir = outputDir.get().asFile
-		dir.mkdirs()
-		files.forEach { (name, text) -> File(dir, name).writeText(text) }
+val extractCheckstyleConfig =
+	tasks.register("extractCheckstyleConfig") {
+		description = "Wypakowuje współdzieloną konfigurację Checkstyle z pluginu do build/."
+		val outputDir = layout.buildDirectory.dir("platform-config/checkstyle")
+		val files = checkstyleFiles
+		inputs.property("files", files)
+		outputs.dir(outputDir)
+		doLast {
+			val dir = outputDir.get().asFile
+			dir.mkdirs()
+			files.forEach { (name, text) -> File(dir, name).writeText(text) }
+		}
 	}
-}
 
 checkstyle {
 	// Lustro gradle/catalog: version("checkstyle").
@@ -113,9 +122,10 @@ jacoco {
 
 val agentMode = providers.environmentVariable("AI_AGENT").map { it == "1" || it == "true" }.getOrElse(false)
 if (agentMode) {
-	val testBudget = gradle.sharedServices.registerIfAbsent("platformAgentTestBudget", AgentTestBudget::class) {
-		maxParallelUsages.set(1)
-	}
+	val testBudget =
+		gradle.sharedServices.registerIfAbsent("platformAgentTestBudget", AgentTestBudget::class) {
+			maxParallelUsages.set(1)
+		}
 	tasks.withType<Test>().configureEach {
 		maxParallelForks = 1
 		maxHeapSize = "2g"
@@ -152,10 +162,11 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 // To nie jest ratchet — każde repo startuje tam, gdzie ma kod, i samo podnosi próg w stronę 0.80.
 // Walidacja od razu w konfiguracji: "80" dawało próg 80, a "0,8" NumberFormatException bez wskazówki.
 val coverageMinimumProperty = providers.gradleProperty("coverageMinimum")
-val coverageMinimum: BigDecimal = coverageMinimumProperty.orNull?.let { raw ->
-	raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
-		?: throw GradleException("coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'")
-} ?: BigDecimal("0.00")
+val coverageMinimum: BigDecimal =
+	coverageMinimumProperty.orNull?.let { raw ->
+		raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
+			?: throw GradleException("coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'")
+	} ?: BigDecimal("0.00")
 val coverageGate =
 	"Coverage gate: minimum=${coverageMinimum.toPlainString()} " +
 		"(source: ${if (coverageMinimumProperty.isPresent) "coverageMinimum" else "default"})"
@@ -177,25 +188,26 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 // Bramka bez danych to fałszywa zieleń: JacocoCoverageVerification ma onlyIf("Any of the execution data
 // files exists"), więc moduł bez .exec przy coverageMinimum > 0 dostawał SKIPPED i zielony `check`.
 val mainClassesDirs = the<SourceSetContainer>()["main"].output.classesDirs
-val platformCoverageDataCheck = tasks.register("platformCoverageDataCheck") {
-	description = "Fails when coverageMinimum is above 0 but no test task produced JaCoCo execution data."
-	group = "verification"
-	dependsOn(coverageProducers)
-	val gateActive = coverageMinimum.signum() > 0
-	val minimum = coverageMinimum.toPlainString()
-	val executionData = coverageExecutionData
-	val mainClasses = mainClassesDirs
-	inputs.files(mainClasses)
-	doLast {
-		val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
-		if (gateActive && hasMainClasses && executionData.isEmpty()) {
-			throw GradleException(
-				"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
-					"Add tests to this module or set coverageMinimum=0.",
-			)
+val platformCoverageDataCheck =
+	tasks.register("platformCoverageDataCheck") {
+		description = "Fails when coverageMinimum is above 0 but no test task produced JaCoCo execution data."
+		group = "verification"
+		dependsOn(coverageProducers)
+		val gateActive = coverageMinimum.signum() > 0
+		val minimum = coverageMinimum.toPlainString()
+		val executionData = coverageExecutionData
+		val mainClasses = mainClassesDirs
+		inputs.files(mainClasses)
+		doLast {
+			val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
+			if (gateActive && hasMainClasses && executionData.isEmpty()) {
+				throw GradleException(
+					"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
+						"Add tests to this module or set coverageMinimum=0.",
+				)
+			}
 		}
 	}
-}
 
 // ŚWIADOMIE bez `test { finalizedBy(jacocoTestReport) }`: raport zależy teraz też od
 // `integrationTest`, więc finalizer na `test` ciągnąłby Testcontainers przy każdym `./gradlew test`.
@@ -216,19 +228,28 @@ tasks.named("check") {
 // testFixtures*, własne source sety). Konfiguracje narzędzi (checkstyle, pitest, spotbugs*, jacocoAgent,
 // cyclonedx*) zostają poza zakresem z konstrukcji.
 // Wykrywanie w afterEvaluate (deps konsumenta już zadeklarowane), asercja w tasku — CC-safe.
-val governedBuckets = setOf(
-	"api", "implementation", "compileOnly", "compileOnlyApi", "runtimeOnly", "annotationProcessor",
-	"developmentOnly", "testAndDevelopmentOnly",
-)
+val governedBuckets =
+	setOf(
+		"api",
+		"implementation",
+		"compileOnly",
+		"compileOnlyApi",
+		"runtimeOnly",
+		"annotationProcessor",
+		"developmentOnly",
+		"testAndDevelopmentOnly",
+	)
 val governedBucketSuffixes =
 	listOf("Implementation", "Api", "CompileOnly", "CompileOnlyApi", "RuntimeOnly", "AnnotationProcessor")
+
 fun isGovernedBucket(name: String): Boolean =
 	name in governedBuckets || governedBucketSuffixes.any { name.length > it.length && name.endsWith(it) }
 
-val platformDependencyCheck = tasks.register("platformDependencyCheck") {
-	description = "Checks that every explicit dependency version comes from platform-catalog."
-	group = "verification"
-}
+val platformDependencyCheck =
+	tasks.register("platformDependencyCheck") {
+		description = "Checks that every explicit dependency version comes from platform-catalog."
+		group = "verification"
+	}
 afterEvaluate {
 	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 	val violations = mutableListOf<String>()
@@ -242,19 +263,33 @@ afterEvaluate {
 			val v = dep.versionConstraint.requiredVersion
 			if (v.isNotBlank()) canonVersions[key] = v
 		}
-		fun violation(key: String, version: String?, bucket: String): String? {
+
+		fun violation(
+			key: String,
+			version: String?,
+			bucket: String,
+		): String? {
 			if (version.isNullOrBlank()) return null
 			val canonVersion = canonVersions[key]
 			val accessor = accessors[key]
 			return when {
-				canonVersion == version -> null
-				canonVersion != null -> "$key:$version ($bucket) — Platform canon is $canonVersion: declare it as $accessor"
-				accessor != null ->
+				canonVersion == version -> {
+					null
+				}
+
+				canonVersion != null -> {
+					"$key:$version ($bucket) — Platform canon is $canonVersion: declare it as $accessor"
+				}
+
+				accessor != null -> {
 					"$key:$version ($bucket) — managed by the Platform BOMs: remove the explicit version and declare it as $accessor"
-				else ->
+				}
+
+				else -> {
 					"$key:$version ($bucket) — not in the Platform catalog. If the Platform BOMs (Spring Boot / Modulith / " +
 						"Spring AI) manage it, remove the explicit version; otherwise add it to gradle/catalog/libs.versions.toml " +
 						"in DominikSienkiewicz/Platform, release, and bump the Platform pin"
+				}
 			}
 		}
 		configurations.matching { isGovernedBucket(it.name) }.forEach { conf ->

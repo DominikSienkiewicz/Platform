@@ -1,8 +1,8 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.File
 
 /**
  * Nadpisania CVE ponad BOM Boota w spring-modulith-conventions mają lustro w katalogu (tomcat, jacksonBom,
@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
  * wersję z pluginu.
  */
 class PlatformCveOverrideMirrorTest {
-
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
 
