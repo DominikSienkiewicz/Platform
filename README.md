@@ -154,8 +154,9 @@ UI registry build blocks npm publication. Consumers can opt into mandatory front
 checks with `strict: true`.
 
 Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
-from `gradle/build-logic` through `includeBuild`, so the code shipped to consumers passes the same
-Spotless, Checkstyle, coverage and `platformDependencyCheck` gates; they keep Java 25 bytecode.
+and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
+to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
+they keep Java 25 bytecode. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
 
 ## Documentation
 

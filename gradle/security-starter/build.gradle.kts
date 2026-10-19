@@ -2,6 +2,7 @@ plugins {
 	`java-library`
 	`maven-publish`
 	id("seniordev.java-conventions")
+	id("seniordev.quality-conventions")
 }
 
 group = "pl.seniordeveloper"
@@ -16,6 +17,12 @@ java {
 }
 
 repositories { mavenCentral() }
+
+// Decyzja 28: Platform skanuje się w SonarQube Cloud jak konsumenci (zasada 8). projectKey z fallbacku
+// DominikSienkiewicz_<rootProject.name>; job `sonar` w ci.yml biegnie tylko z sekretem SONAR_TOKEN.
+pitest {
+	targetClasses.set(listOf("pl.seniordeveloper.platform.security.*"))
+}
 
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
 dependencyLocking {

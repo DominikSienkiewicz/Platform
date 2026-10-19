@@ -92,6 +92,8 @@ opublikuj, podbij pin w repo konsumenta.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
    (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.
+   Dotyczy też samej Platform (Decyzja 28): test-fixtures i security-starter aplikują quality-conventions,
+   a job `sonar` w `ci.yml` skanuje je, gdy istnieje sekret `SONAR_TOKEN`.
 9. **Bundle'e katalogu** grupują powielane startery (Boot/Modulith). Konsument: `libs.bundles.modulith.web`
    (+ `.tests`, + `dev.docker.compose`). Członkowie są `withoutVersion()` — wersje z BOM-ów.
 

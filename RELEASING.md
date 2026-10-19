@@ -83,6 +83,11 @@ It keeps:
   (`platform-bump` moves versions), private vulnerability reporting, the requirement to pin every
   action by commit SHA, and automatic deletion of merged head branches.
 
+SonarQube Cloud (Decision 28) is set up by hand once: create the projects
+`DominikSienkiewicz_platform-test-fixtures` and `DominikSienkiewicz_platform-security-starter` in the
+`dominiksienkiewicz` organisation, turn off Automatic Analysis, and add a `SONAR_TOKEN` secret. Until the
+secret exists, the `sonar` job of `ci.yml` only leaves a notice.
+
 It never deletes a branch: it lists remote branches already merged into `main` with the command that
 deletes them. `--consumers` also checks every repository in `scripts/consumers.txt` for what
 `platform-bump.yml` needs: GitHub Actions may create pull requests there, and a `PLATFORM_BUMP_TOKEN`
