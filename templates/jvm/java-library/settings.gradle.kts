@@ -1,7 +1,19 @@
 pluginManagement {
 	val platformRepository = providers.gradleProperty("platformRepository").orNull
-	val gprUser = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-	val gprKey = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+	// Pusta albo z samych spacji wartość liczy się jak brak (N-DX-18): devcontainer przekazuje nieustawioną
+	// zmienną hosta jako "", a puste gpr.* w gradle.properties nie może zasłonić GITHUB_ACTOR/GITHUB_TOKEN.
+	val gprUser =
+		providers
+			.gradleProperty("gpr.user")
+			.filter { it.isNotBlank() }
+			.orElse(providers.environmentVariable("GITHUB_ACTOR").filter { it.isNotBlank() })
+			.orNull
+	val gprKey =
+		providers
+			.gradleProperty("gpr.key")
+			.filter { it.isNotBlank() }
+			.orElse(providers.environmentVariable("GITHUB_TOKEN").filter { it.isNotBlank() })
+			.orNull
 	// Bez poświadczeń GitHub Packages odpowiada 401, które Gradle chowa pod „plugin not found” (N-DX-2): nazwij
 	// przyczynę, zanim pójdzie pierwsze żądanie. Lokalna Platform (-PplatformRepository) i --offline ich nie potrzebują.
 	if ((gprUser == null || gprKey == null) && platformRepository == null && !gradle.startParameter.isOffline) {

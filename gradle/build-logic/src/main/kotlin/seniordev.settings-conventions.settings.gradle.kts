@@ -57,9 +57,21 @@ dependencyResolutionManagement {
 		maven {
 			name = "GitHubPackages"
 			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			// Pusta albo z samych spacji wartość liczy się jak brak, jak w preflighcie starterów (N-DX-18): puste gpr.*
+			// nie zasłania GITHUB_ACTOR/GITHUB_TOKEN.
 			credentials {
-				username = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-				password = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+				username =
+					providers
+						.gradleProperty("gpr.user")
+						.filter { it.isNotBlank() }
+						.orElse(providers.environmentVariable("GITHUB_ACTOR").filter { it.isNotBlank() })
+						.orNull
+				password =
+					providers
+						.gradleProperty("gpr.key")
+						.filter { it.isNotBlank() }
+						.orElse(providers.environmentVariable("GITHUB_TOKEN").filter { it.isNotBlank() })
+						.orNull
 			}
 		}
 	}

@@ -19,7 +19,9 @@ into the platform itself. Every task, property and default the plugins add is li
   - Gradle: in `~/.gradle/gradle.properties`, `gpr.user=<your GitHub login>` and
     `gpr.key=<the token>`. The `pluginManagement` block of the templates stops a build without them, or
     without `-PplatformRepository`, with "No GitHub Packages credentials" and both options, before Gradle
-    reports the 401 as a missing plugin; `--offline` skips that check.
+    reports the 401 as a missing plugin; `--offline` skips that check. An empty or whitespace-only value
+    counts as missing: a blank `gpr.user` or `gpr.key` falls back to `GITHUB_ACTOR` or `GITHUB_TOKEN`, and an
+    empty variable gets the same message.
   - npm: `export GITHUB_TOKEN=<the token>` in your shell profile.
   - CI: a repository secret `GPR_TOKEN` with the same token.
 
@@ -138,8 +140,20 @@ repo, not used here, and consumer action required.
 ```kotlin
 pluginManagement {
 	val platformRepository = providers.gradleProperty("platformRepository").orNull
-	val gprUser = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-	val gprKey = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+	// Pusta albo z samych spacji wartość liczy się jak brak (N-DX-18): devcontainer przekazuje nieustawioną
+	// zmienną hosta jako "", a puste gpr.* w gradle.properties nie może zasłonić GITHUB_ACTOR/GITHUB_TOKEN.
+	val gprUser =
+		providers
+			.gradleProperty("gpr.user")
+			.filter { it.isNotBlank() }
+			.orElse(providers.environmentVariable("GITHUB_ACTOR").filter { it.isNotBlank() })
+			.orNull
+	val gprKey =
+		providers
+			.gradleProperty("gpr.key")
+			.filter { it.isNotBlank() }
+			.orElse(providers.environmentVariable("GITHUB_TOKEN").filter { it.isNotBlank() })
+			.orNull
 	// Bez poświadczeń GitHub Packages odpowiada 401, które Gradle chowa pod „plugin not found” (N-DX-2): nazwij
 	// przyczynę, zanim pójdzie pierwsze żądanie. Lokalna Platform (-PplatformRepository) i --offline ich nie potrzebują.
 	if ((gprUser == null || gprKey == null) && platformRepository == null && !gradle.startParameter.isOffline) {
@@ -502,8 +516,9 @@ its README). It stays *incubating* until a first repository adopts it; that pull
 The container needs the credentials of the [prerequisites](#prerequisites) and never stores them: export
 `GITHUB_ACTOR` (your login) and `GITHUB_TOKEN` (a classic token with `read:packages`) in the environment that starts
 the container, and `devcontainer.json` passes them through `remoteEnv`. They are the names `settings.gradle.kts` and
-`frontend/.npmrc` already read. Without a token the container still builds and registers the toolchain JDK, but it prints
-a hint and does not run `npm ci --ignore-scripts`.
+`frontend/.npmrc` already read. A variable the host does not set arrives empty, which Gradle counts as missing, so a
+build stops with "No GitHub Packages credentials". Without a token the container still builds and registers the
+toolchain JDK, but it prints a hint and does not run `npm ci --ignore-scripts`.
 
 ## Catalog bundles (*incubating*)
 
@@ -614,7 +629,7 @@ the release that produced it.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set, and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
+| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a devcontainer forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `UnsupportedClassVersionError` … `class file version 69.0` while the plugins load | Gradle runs on a JDK older than 25 | Run Gradle on JDK 25 or newer (`sdk env`, or `JAVA_HOME`) |
 | `No matching toolchains found for requested specification` with `languageVersion=27` | No JDK 27 is installed or registered | Install a JDK 27 and register it with `org.gradle.java.installations.paths`; on glibc Linux avoid Foojay's Alpine build ([versions](versions.md)) |
