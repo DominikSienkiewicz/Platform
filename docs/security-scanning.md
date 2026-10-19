@@ -41,6 +41,12 @@ An accepted finding is a decision with an owner and an end date, not a silenced 
    renew the entry with a new date and the outcome recorded in the issue. An entry without a date
    only produces a warning, so add one when you see it.
 
+OpenSSF Scorecard's Vulnerabilities check runs osv-scanner over every lockfile of the repository and
+counts each advisory, fixed or not. Platform records an accepted advisory for it in an `osv-scanner.toml`
+next to the lockfile, for example [`frontend/osv-scanner.toml`](../frontend/osv-scanner.toml): one
+`[[IgnoredVulns]]` entry per ID with `ignoreUntil` and `reason`. osv-scanner stops honouring the entry
+after that date, so the advisory counts again until it is fixed or renewed.
+
 Semgrep findings follow the same convention: the comment line above `# nosemgrep: <rule-id>` carries
 `expires`, `tracking` and `reason`. Name the rule ID: a bare `# nosemgrep` silences every rule on that
 line. Nothing checks these dates automatically yet, so they are reviewed with the change that adds them.

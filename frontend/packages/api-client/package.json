@@ -30,5 +30,8 @@
   },
   "scripts": {
     "test": "node --test"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2"
   }
 }

@@ -7,20 +7,31 @@ here=$(cd "$(dirname "$0")" && pwd)
 source "$here/bump-fixture.sh"
 runner="$here/../migrations/run.sh"
 
+# fixture <slug> <before|after>: kopia drzewa w katalogu roboczym. Pliki obrazów leżą w repo jako docker-image.fixture,
+# bo OpenSSF Scorecard (Pinned-Dependencies) liczy każdy plik z „Dockerfile" w nazwie jako build Platform;
+# kopia odzyskuje nazwę Dockerfile, której szuka migracja.
+fixture() {
+  local copy="$fixture_work/fixture-$1-$2"
+  rm -rf "$copy" && cp -R "$here/migrations/$1/$2" "$copy"
+  find "$copy" -name docker-image.fixture -exec sh -c 'mv "$1" "$(dirname "$1")/Dockerfile"' _ {} \;
+  printf '%s\n' "$copy"
+}
+
 # migrate <slug> <current> <target>: kopia before/ w katalogu roboczym, wynik runnera w $fixture_work/<slug>.out
 migrate() {
   local tree="$fixture_work/tree-$1"
-  rm -rf "$tree" && cp -R "$here/migrations/$1/before" "$tree"
+  rm -rf "$tree" && mv "$(fixture "$1" before)" "$tree"
   (cd "$tree" && PLATFORM_CANON="$here/migrations/$1/versions.json" bash "$runner" apply "$2" "$3") > "$fixture_work/$1.out"
   printf '%s\n' "$tree"
 }
 
 for slug in caller-packages-read runtime-image-27 drop-stale-overrides; do
   tree=$(migrate "$slug" 1.5.26 1.6.0)
-  diff -r "$here/migrations/$slug/after" "$tree" || fail "$slug: before/ must become after/"
+  after=$(fixture "$slug" after)
+  diff -r "$after" "$tree" || fail "$slug: before/ must become after/"
   grep -q "applied  .*$slug" "$fixture_work/$slug.out" || { cat "$fixture_work/$slug.out"; fail "$slug: the runner must report it applied"; }
   (cd "$tree" && PLATFORM_CANON="$here/migrations/$slug/versions.json" bash "$runner" apply 1.5.26 1.6.0) > "$fixture_work/$slug.again"
-  diff -r "$here/migrations/$slug/after" "$tree" || fail "$slug: a second run must change nothing"
+  diff -r "$after" "$tree" || fail "$slug: a second run must change nothing"
   if grep -q "applied  .*$slug" "$fixture_work/$slug.again"; then cat "$fixture_work/$slug.again"; fail "$slug: a second run must not apply it again"; fi
 done
 
@@ -37,12 +48,12 @@ grep -qx "RUNTIME_IMAGE=\"$template_image\"" "$here/../migrations/1.6.0-runtime-
 
 # Bramka SINCE: CUR < SINCE <= TARGET; every-* przy każdym bumpie.
 tree=$(migrate caller-packages-read 1.6.0 1.6.1)
-diff -r "$here/migrations/caller-packages-read/before" "$tree" >/dev/null || fail 'a bump from 1.6.0 must not run 1.6.0 migrations'
+diff -r "$(fixture caller-packages-read before)" "$tree" >/dev/null || fail 'a bump from 1.6.0 must not run 1.6.0 migrations'
 tree=$(migrate caller-packages-read 1.5.26 1.5.31)
-diff -r "$here/migrations/caller-packages-read/before" "$tree" >/dev/null || fail 'a bump to 1.5.31 must not run 1.6.0 migrations'
+diff -r "$(fixture caller-packages-read before)" "$tree" >/dev/null || fail 'a bump to 1.5.31 must not run 1.6.0 migrations'
 tree=$(migrate drop-stale-overrides 1.6.0 1.6.1)
-diff -r "$here/migrations/drop-stale-overrides/after" "$tree" || fail 'every-* migrations run on every bump'
-files=$(cd "$here/migrations/runtime-image-27/before" && bash "$runner" files 1.5.26 1.6.0)
+diff -r "$(fixture drop-stale-overrides after)" "$tree" || fail 'every-* migrations run on every bump'
+files=$(cd "$(fixture runtime-image-27 before)" && bash "$runner" files 1.5.26 1.6.0)
 [[ "$files" == $'Dockerfile\nbackend/Dockerfile' ]] || fail "run.sh files must list what the migrations may change, got: $files"
 
 # Pełny bump w kształcie Attestate (1.5.26): referencje, packages: read i obraz runtime w jednym przebiegu.
