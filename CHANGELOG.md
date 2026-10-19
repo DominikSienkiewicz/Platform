@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `@dominiksienkiewicz/api-client` understands RFC 9457 Problem Details: a `application/problem+json`
+  error sets `ApiError.problem` (typed `ProblemDetail`), and the message comes from `detail`, then
+  `message`, then `title`. Bodies with only `message` behave as before.
 - `scripts/new-consumer.sh` renders a new product repository from the canon in the `backend/` layout:
   the `spring-app` or `java-library` starter with your package, group and name, the wrapper, the pin, a
   `ci.yml` caller at the exact tag without `secrets: inherit`, and the canonical scripts and root files.

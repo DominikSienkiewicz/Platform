@@ -4,19 +4,39 @@
 //
 // Zależy wyłącznie od globalnego `fetch` (Node 24 / przeglądarka) — brak zależności runtime.
 
-/** Błąd HTTP niosący status i ciało odpowiedzi (JSON, surowy tekst lub null). */
+/**
+ * Błąd HTTP niosący status i ciało odpowiedzi (JSON, surowy tekst lub null). Odpowiedź
+ * `application/problem+json` (RFC 9457) daje też `problem` z polami ProblemDetail.
+ */
 export class ApiError extends Error {
   /**
    * @param {number} status
    * @param {string} message
    * @param {unknown} [body]
+   * @param {import("./index").ProblemDetail | null} [problem]
    */
-  constructor(status, message, body) {
+  constructor(status, message, body, problem = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.body = body;
+    this.problem = problem;
   }
+}
+
+/**
+ * Komunikat błędu: `detail` (RFC 9457), potem `message` (dotychczasowy kształt), `title`, tekst statusu.
+ * @param {unknown} body
+ * @param {Response} res
+ */
+function errorMessage(body, res) {
+  if (body && typeof body === "object") {
+    const fields = /** @type {Record<string, unknown>} */ (body);
+    for (const key of ["detail", "message", "title"]) {
+      if (typeof fields[key] === "string" && fields[key]) return /** @type {string} */ (fields[key]);
+    }
+  }
+  return res.statusText || `HTTP ${res.status}`;
 }
 
 /**
@@ -78,9 +98,12 @@ export function createApiClient(options = {}) {
     }
 
     if (!res.ok) {
-      const message =
-        (body && typeof body === "object" && body.message) || res.statusText || `HTTP ${res.status}`;
-      throw new ApiError(res.status, message, body);
+      const problemJson = (res.headers.get("Content-Type") ?? "").toLowerCase().includes("application/problem+json");
+      const problem =
+        problemJson && body && typeof body === "object"
+          ? /** @type {import("./index").ProblemDetail} */ ({ status: res.status, ...body })
+          : null;
+      throw new ApiError(res.status, errorMessage(body, res), body, problem);
     }
     return body;
   }

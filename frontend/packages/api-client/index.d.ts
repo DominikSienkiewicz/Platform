@@ -1,8 +1,23 @@
+/** RFC 9457 Problem Details, as Spring's `ProblemDetail` serialises them; extra members are allowed. */
+export interface ProblemDetail {
+  type?: string;
+  title?: string;
+  status: number;
+  detail?: string;
+  instance?: string;
+  /** Field errors, for example `{ pointer: "#/name", detail: "must not be blank" }`. */
+  errors?: { pointer?: string; detail: string }[];
+  traceId?: string;
+  [member: string]: unknown;
+}
+
 export declare class ApiError extends Error {
   readonly name: "ApiError";
   readonly status: number;
   readonly body: unknown;
-  constructor(status: number, message: string, body?: unknown);
+  /** Set when the response was `application/problem+json`; `null` otherwise. */
+  readonly problem: ProblemDetail | null;
+  constructor(status: number, message: string, body?: unknown, problem?: ProblemDetail | null);
 }
 
 export interface ApiClientOptions {

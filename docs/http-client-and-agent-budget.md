@@ -24,9 +24,12 @@ nothing when the variable is unset.
 HTTP errors reject with `ApiError`, including HTML or plain-text responses from
 an upstream service or proxy. The error retains the HTTP status. Its `body` is
 parsed JSON when parsing succeeds, the original response text when parsing fails,
-or `null` when empty. Its message uses the JSON body's `message` when available,
-then the HTTP status text, then `HTTP <status>`. Raw response text is retained for
-diagnostics and is not used as the error message.
+or `null` when empty. Its message uses the JSON body's `detail` (RFC 9457 Problem Details), then
+its `message`, then its `title`, then the HTTP status text, then `HTTP <status>`. A response with
+`Content-Type: application/problem+json` also sets `error.problem`, a `ProblemDetail` with `type`,
+`title`, `status`, `detail`, `instance` and, when the server sends them, `errors` and `traceId`;
+for any other response `problem` is `null`. Raw response text is retained for diagnostics and is not
+used as the error message.
 
 ## Vitest worker budget
 
