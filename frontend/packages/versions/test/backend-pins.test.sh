@@ -12,9 +12,13 @@ trap 'rm -rf "$WORK"' EXIT
 
 fail() { local message="$1"; echo "FAIL: $message"; exit 1; }
 
-mkdir -p "$WORK/bin"
+mkdir -p "$WORK/bin" "$WORK/tool"
 printf '#!/usr/bin/env bash\nexit 22\n' > "$WORK/bin/curl"
 chmod +x "$WORK/bin/curl"
+# A copy without its sibling templates-check.mjs: from its real path the bin also runs the template drift
+# report, which fetches raw.githubusercontent.com and would make this test depend on the network.
+cp "$SRC" "$WORK/tool/platform-bump.sh"
+SRC="$WORK/tool/platform-bump.sh"
 
 # repo <name>: an empty git repository; prints its path.
 repo() {
