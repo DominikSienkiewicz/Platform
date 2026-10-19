@@ -20,6 +20,20 @@ into the platform itself. Every task, property and default the plugins add is li
 
 ## Quickstart
 
+To start a new repository, render it from the canon instead of copying the pieces below by hand. From a
+Platform checkout:
+
+```bash
+scripts/new-consumer.sh --name order-service --package pl.example.orders --kind spring-app --out ../order-service
+```
+
+It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
+`platformVersion=` pin), a `ci.yml` caller of `backend-ci.yml` at the exact tag with `packages: read`
+and an explicit `gpr_token`, the scripts of `templates/` and the root files. `--kind java-library` gives
+a plain library, `--platform-version X.Y.Z` another release. It creates no git repository and no
+GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
+repository.
+
 Backend, for a new repository started from a template:
 
 1. Copy a starter and the pinned Gradle wrapper (`<platform>` is a clone of this repository):
@@ -234,13 +248,22 @@ JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
 Only `AI_AGENT=1` or `AI_AGENT=true` opts in. Java test tasks use one fork, a 2 GiB
 maximum heap and at most four cached Spring contexts. A shared Gradle build service
-serializes test tasks across projects in the same build. This does not coordinate
-separate Gradle invocations or agents: run the machine preflight before dispatching them.
+serializes test tasks across projects in the same build. Separate Gradle invocations are
+coordinated by `scripts/agent-gradle.sh` (below), and how many agents the machine holds right now
+is what [`templates/agent-preflight.sh`](../templates/agent-preflight.sh) answers: run it before
+dispatching agents. It exits 0 to go, 1 to reduce concurrency to the number it prints and 2 to
+stop, from free memory and swap on macOS or Linux; its defaults (4.3 GB per agent, a 6 GB reserve,
+at most 3) were measured on one host, so set `AGENT_COST_GB`, `AGENT_RESERVE_GB` and `AGENT_MAX`
+for yours.
 
 Copy [`templates/agent-gradle.sh`](../templates/agent-gradle.sh) to
 `scripts/agent-gradle.sh` and invoke `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`.
 It runs `./gradlew` from the repository root, or `backend/gradlew` from `backend/` when the
-root has no wrapper. The launcher adds `--max-workers=2 --no-parallel` before Gradle starts. Settings plugins
+root has no wrapper. The launcher adds `--max-workers=2 --no-parallel` before Gradle starts, and a
+run of `test`, `integrationTest`, `check` or `build` first takes one of `AI_AGENT_TEST_SLOTS`
+(default 3) machine-wide slots, so parallel agents never run more test suites at once; it waits
+with a message and gives up with exit code 75 after `AI_AGENT_SLOT_TIMEOUT` seconds (default 3600).
+Slots live under `$TMPDIR`, so agents in separate containers are not coordinated. Settings plugins
 cannot reliably resize services that Gradle already created. Without `AI_AGENT`, the
 launcher passes through the ordinary Gradle defaults. The Vitest preset likewise caps
 workers at two only in agent mode. See [HTTP client and frontend budget](http-client-and-agent-budget.md).
@@ -426,6 +449,27 @@ gate gets 401.
 
 ## Troubleshooting
 
+Run `frontend/node_modules/.bin/platform-doctor` from the repository first (`--offline` skips the
+GitHub Packages calls). It checks the preconditions below without changing anything, names each one
+by its ID with the fix, and exits 1 when one fails:
+
+| ID | Checks |
+|---|---|
+| PD001 | the command runs inside a git repository |
+| PD010 | the `java` on PATH is 25 or newer, which Gradle needs to load Platform's plugins |
+| PD011 | the Gradle wrapper exists and is executable |
+| PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@dominiksienkiewicz/*`) is the same release |
+| PD021 | the reusable workflow references are that exact release (`@v1` warns) |
+| PD030 | where the GitHub Packages credentials come from (never their value) |
+| PD031 | the pinned catalog resolves with them: 401, 403 and 404 each name their cause |
+| PD040 | `frontend/.npmrc` points `@dominiksienkiewicz` at GitHub Packages |
+| PD041 | Node is 22.13 or newer |
+| PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
+| PD043 | npm resolves the pinned `@dominiksienkiewicz/versions` |
+| PD050 | `.secrets.local` is ignored when the repository deploys |
+| PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
+| PD070 | whether `AI_AGENT` is on |
+
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
@@ -434,7 +478,7 @@ gate gets 401.
 | `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version differs from the catalog, or the library is not in it | Follow the action on each line: use the `libs.…` alias, drop a BOM-managed version, or add the library to the catalog first |
 | `platformRuntimeImageCheck` … `Change the final FROM to the image in templates/Dockerfile.backend` | The Dockerfile runs an older Java than the toolchain | Use the final `FROM` of `templates/Dockerfile.backend` |
 | `coverageMinimum=… needs JaCoCo execution data` | A coverage threshold is set, but no test task ran | Add tests to the module, or set `coverageMinimum=0` for it |
-| `platform-versions-check: versions that differ from the Platform canon` | A frontend dependency differs from the canon named in the report's first line | From the repository root run the `scripts/platform-bump.sh <version>` the report prints |
+| `platform-versions-check: versions that differ from the Platform canon` | A frontend dependency differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |
 | npm `E401` or `E403` for `@dominiksienkiewicz/*` | `.npmrc` lacks the registry lines, or `GITHUB_TOKEN` is missing or lacks `read:packages` | Copy `templates/npmrc` to `frontend/.npmrc` and export the token |
 | `No matching variant of pl.seniordeveloper:platform-catalog` | The release is incomplete in GitHub Packages | Pin the previous version and report it; see the idempotency rules in [RELEASING.md](../RELEASING.md) |
 | `Dependency verification failed` after a bump | `gradle/verification-metadata.xml` misses checksums of the new versions | Run `scripts/platform-bump.sh` again; it regenerates the metadata in two passes |

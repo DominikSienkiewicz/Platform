@@ -3,6 +3,8 @@
   "files": [
     { "source": "platform-bump.sh", "target": "scripts/platform-bump.sh" },
     { "source": "merge.sh", "target": "scripts/merge.sh" },
+    { "source": "worktree-new.sh", "target": "scripts/worktree-new.sh", "optional": true },
+    { "source": "worktree-status.sh", "target": "scripts/worktree-status.sh", "optional": true },
     { "source": "bump-version.sh", "target": "scripts/bump-version.sh" },
     { "source": ".editorconfig", "target": ".editorconfig" },
     { "source": "setup-gh-deploy.sh", "target": "scripts/setup-gh-deploy.sh", "optional": true },

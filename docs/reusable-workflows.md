@@ -32,7 +32,10 @@ types and defaults are described in the workflow files themselves (every input h
 
 ## backend-ci.yml
 
-Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`).
+Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`). The test,
+test-result and Checkstyle reports of every module go into the `backend-test-reports-<run id>` artifact
+(seven days). When the job fails, it annotates each failed test and Checkstyle violation at its file
+and line (ten at most), and the job summary lists all of them with Gradle's "What went wrong".
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a classic PAT with `read:packages`. Without it the caller's
@@ -57,7 +60,8 @@ jobs:
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
 Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
 `strict: true` the guard and the scripts `lint`, `typecheck`, `test`, `build` and `format:check` are
-required, and `format:check` runs before lint. A strict caller whose `package.json` configures
+required, and `format:check` runs before lint. When lint, typecheck, test or build fails, an
+annotation and the job summary name that script. A strict caller whose `package.json` configures
 `platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.
@@ -310,6 +314,12 @@ package access, which the deploy does not wait for.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
   workflow; its default `v1` is transitional.
+- Rollback: on the host, `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
+  before it replaces a layer. When the new backend, or a frontend whose compose service defines a
+  healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
+  tag from the local image and the job fails with `ROLLED BACK to <tag>`. Database migrations are never
+  rolled back, so every schema change must be expand/contract: the previous release must still run on
+  the new schema. A first deploy has nothing to roll back to and fails as before.
 
 ```yaml
 permissions:

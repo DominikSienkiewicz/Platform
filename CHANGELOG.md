@@ -75,6 +75,44 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/new-consumer.sh` renders a new product repository from the canon in the `backend/` layout:
+  the `spring-app` or `java-library` starter with your package, group and name, the wrapper, the pin, a
+  `ci.yml` caller at the exact tag without `secrets: inherit`, and the canonical scripts and root files.
+- `platform-doctor`, a bin of `@dominiksienkiewicz/versions`, diagnoses a consumer repository without
+  changing it: Java and Node versions, the wrapper, pin coherence, workflow references, the source and
+  the HTTP status of the GitHub Packages credentials, `.npmrc`, the lockfile, `.secrets.local` and the
+  runtime image. Every check has an ID (`PD0xx`) explained in `docs/consuming.md`, Troubleshooting.
+- `templates/Dockerfile.frontend` and `templates/frontend/next.config.ts`: the canonical Next.js
+  standalone image on `node:24-slim`, installed with `npm ci --ignore-scripts` like CI, with the token
+  only as the BuildKit secret `github_token` and a non-root runner. Moving a frontend onto it lets
+  `deploy.yml` drop the `gh_token` secret alias in a later release.
+- `deploy.yml` rolls an application layer back on the host: when the new backend, or a frontend with a
+  healthcheck, does not become healthy, `scripts/deploy-remote.sh` recreates it with the previous tag
+  from the local image and fails the job with `ROLLED BACK to <tag>`. Migrations are not rolled back, so
+  schema changes must be expand/contract (`docs/reusable-workflows.md`).
+- `platform-versions-check --fix` rewrites drifted versions and Platform pins to the installed canon,
+  offline and without adding or removing entries. In GitHub Actions the guard annotates every violation
+  at its line of `package.json` and writes a table to the job summary.
+- `templates/agent-gradle.sh` coordinates separate Gradle invocations: with `AI_AGENT` on, a run of
+  `test`, `integrationTest`, `check` or `build` takes one of `AI_AGENT_TEST_SLOTS` (default 3)
+  machine-wide slots and waits for one, reclaiming slots of dead processes. `templates/agent-preflight.sh`
+  says whether the machine can take more agents (exit 0, 1 or 2) on macOS and Linux. Re-copy
+  `scripts/agent-gradle.sh` to get the slots.
+- `templates/worktree-new.sh <type> <description>` starts a feature branch in its own worktree under
+  `.worktrees/`, named `<type>/<description>-YYYY-MM-DD` from the latest `origin/main`, and
+  `templates/worktree-status.sh` shows every worktree with whether `merge.sh` can take it. Copy them to
+  `scripts/` next to `merge.sh` if you want them.
+- Platform's CI has duration budgets: after every CI run, `ci-budget.yml` compares each job with
+  `.github/ci-budgets.json`, warns on an overrun and lists every job in its summary. A test fails when a
+  `ci.yml` job has no budget.
+- Platform's CI runs the frontend workspace on Node 22.13.0, the floor its packages declare, as well as
+  on Node 24. A weekly `upstream-canary.yml` builds the `java-library` starter on the current Gradle
+  release candidate and reports when `eclipse-temurin:<java>-jre` exists and passes the container-scan
+  gate, each in one issue that later runs update.
+- `backend-ci.yml` uploads the test and Checkstyle reports of every module, not only the root's, and a
+  failed job annotates each failed test and Checkstyle violation at its line and summarises them with
+  Gradle's "What went wrong". `frontend-ci.yml` names the script that failed. A multi-module consumer
+  can drop the block that moved its reports into the root build directory.
 - `scripts/preview-on-consumer.sh <consumer>` runs an unreleased Platform on a real consumer: a
   `-canary` version of the four modules in a temporary repository, the consumer's pins rewritten in a
   throwaway worktree, and Gradle on the fast lane (`docs/local-development.md`).

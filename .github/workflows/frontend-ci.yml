@@ -123,10 +123,26 @@ jobs:
           fi
           node node_modules/@dominiksienkiewicz/openapi/bin/check.mjs
 
-      - run: npm run lint --if-present
-      - run: npm run typecheck --if-present
-      - run: npm run test --if-present
-      - run: npm run build --if-present
+      - id: lint
+        run: npm run lint --if-present
+      - id: typecheck
+        run: npm run typecheck --if-present
+      - id: test
+        run: npm run test --if-present
+      - id: build
+        run: npm run build --if-present
+
+      # Który skrypt czerwieni job, jako adnotacja i wiersz podsumowania (widoczne w `gh run view` bez logów).
+      - name: Name the failing script
+        if: ${{ failure() }}
+        env:
+          OUTCOMES: "lint=${{ steps.lint.outcome }} typecheck=${{ steps.typecheck.outcome }} test=${{ steps.test.outcome }} build=${{ steps.build.outcome }}"
+        run: |
+          for outcome in $OUTCOMES; do
+            [ "${outcome#*=}" = failure ] || continue
+            echo "::error title=npm run ${outcome%%=*} failed::The ${outcome%%=*} script failed; its step log has the details."
+            echo "- \`npm run ${outcome%%=*}\` failed" >> "$GITHUB_STEP_SUMMARY"
+          done
 
       - name: E2E (Playwright)
         if: ${{ inputs.run-e2e }}
