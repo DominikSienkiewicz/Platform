@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- ADR-0011 (contract-first OpenAPI) and ADR-0012 (Platform's own modules in SonarQube Cloud). The ADR index
+  is generated from the ADR headers (`scripts/adr-index.sh`), and CI checks it and every relative link and
+  anchor of the Markdown files offline (`scripts/check-doc-links.py`).
 - `platform-test-fixtures` names the test taxonomy: `@IntegrationTest`, `@ModelTest` and
   `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the platform PostgreSQL in one), with the tag
   names in `PlatformTestTags`. The platform containers refuse to start in the unit `test` task once the
