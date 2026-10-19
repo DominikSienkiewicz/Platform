@@ -230,7 +230,8 @@ Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend package
 Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a
 starter on the current Gradle release candidate and watches for an `eclipse-temurin` image of the
-toolchain; each finding opens or updates one issue.
+toolchain; each finding opens or updates one issue. After every CI run, `ci-budget.yml` compares each
+job's duration with `.github/ci-budgets.json` and warns on an overrun.
 
 ## License
 

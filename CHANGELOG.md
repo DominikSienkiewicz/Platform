@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Platform's CI has duration budgets: after every CI run, `ci-budget.yml` compares each job with
+  `.github/ci-budgets.json`, warns on an overrun and lists every job in its summary. A test fails when a
+  `ci.yml` job has no budget.
 - Platform's CI runs the frontend workspace on Node 22.13.0, the floor its packages declare, as well as
   on Node 24. A weekly `upstream-canary.yml` builds the `java-library` starter on the current Gradle
   release candidate and reports when `eclipse-temurin:<java>-jre` exists and passes the container-scan

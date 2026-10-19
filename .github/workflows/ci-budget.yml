@@ -1,0 +1,32 @@
+name: CI budget
+
+# Po każdym zakończonym runie CI: czas każdego joba kontra .github/ci-budgets.json (N-REL-15). Przekroczenie to tylko
+# ostrzeżenie i wiersz podsumowania — twardym sufitem zostaje timeout-minutes joba. Osobny workflow (workflow_run),
+# bo ci.yml woła też release.yml, który nie nadaje actions: read.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  budget:
+    name: Compare job durations with their budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Read the run's jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh api --paginate "repos/$REPOSITORY/actions/runs/$RUN_ID/jobs" --jq '.jobs[]' | jq -s '{jobs: .}' > "$RUNNER_TEMP/jobs.json"
+      - name: Compare with .github/ci-budgets.json
+        run: python3 scripts/ci-budget.py "$RUNNER_TEMP/jobs.json" .github/ci-budgets.json CI
