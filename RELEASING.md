@@ -107,7 +107,10 @@ secret exists (the secret is only reported; its value is yours to set).
    with a `# vX.Y.Z` comment. Renovate moves them once the Renovate app runs in Platform; until then
    nothing does.
    Check each one against its latest release and update SHA and comment together.
-2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches, and who
+2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
+   (`--lag` adds how many releases and days each consumer is behind, whether it pins a yanked release
+   and how many `@v1` references it keeps; the report describes private repositories, so it stays
+   local and never runs in CI), and who
    still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick

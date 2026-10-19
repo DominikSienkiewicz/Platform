@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/consumer-audit.sh --lag` reports, per consumer, how many releases and days its pin is behind
+  the newest tag, whether it pins a yanked release and how many `@v1` references it keeps. It reads the
+  local tags and `releases/yanked.txt` and stays a local report.
 - ADR-0011 (contract-first OpenAPI) and ADR-0012 (Platform's own modules in SonarQube Cloud). The ADR index
   is generated from the ADR headers (`scripts/adr-index.sh`), and CI checks it and every relative link and
   anchor of the Markdown files offline (`scripts/check-doc-links.py`).

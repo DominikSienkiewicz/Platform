@@ -5,6 +5,8 @@
 #
 #   scripts/consumer-audit.sh              # na żywo: wyłącznie GET przez `gh api` (wymaga `gh auth login`)
 #   scripts/consumer-audit.sh --from DIR   # offline: DIR/<owner>/<name>/ z plikami repo i branches.txt
+#   scripts/consumer-audit.sh --lag [--from DIR]   # zaległość: wydania i dni za najnowszym tagiem, pin na
+#                                                  # wycofanym wydaniu (releases/yanked.txt), referencje @v1
 #
 # Wynik opisuje prywatne repozytoria: uruchamiaj lokalnie przed ./release.sh, nie w CI ani w publicznym logu.
 set -euo pipefail
@@ -13,7 +15,10 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 consumers="${CONSUMERS_FILE:-$root/scripts/consumers.txt}"
 platform_repo="${PLATFORM_REPO:-DominikSienkiewicz/Platform}"
 
-usage() { echo "Usage: $0 [--from DIR]" >&2; }
+usage() { echo "Usage: $0 [--lag] [--from DIR]" >&2; }
+# Tagi wydań i lista wycofanych z lokalnego checkoutu Platform (bez sieci); testy podają własne.
+platform_git="${PLATFORM_GIT_DIR:-$root}"
+yanked_file="${YANKED_FILE:-$root/releases/yanked.txt}"
 
 repos() { grep -vE '^[[:space:]]*(#|$)' "$consumers"; }
 
@@ -116,6 +121,33 @@ renovate_branches() {
   if [ -f "$1/branches.txt" ]; then grep -c '^renovate/' "$1/branches.txt" || true; else echo "—"; fi
 }
 
+# Wydania Platform od najstarszego: "<wersja> <data tagu YYYY-MM-DD>".
+releases() {
+  git -C "$platform_git" for-each-ref --format='%(refname:short) %(creatordate:short)' 'refs/tags/v*.*.*' \
+    | sed -nE 's/^v([0-9]+\.[0-9]+\.[0-9]+) /\1 /p' | sort -t. -k1,1n -k2,2n -k3,3n
+}
+
+lag_row() {
+  local repo=$1 dir=$2 version behind first_after days yanked refs
+  version=$(pin "$dir")
+  behind=$(releases | awk -v pin="$version" '
+    function key(v, part) { split(v, part, "."); return part[1] * 1000000 + part[2] * 1000 + part[3] }
+    pin != "—" && key($1) > key(pin) { n++ } END { print n + 0 }')
+  first_after=$(releases | awk -v pin="$version" '
+    function key(v, part) { split(v, part, "."); return part[1] * 1000000 + part[2] * 1000 + part[3] }
+    pin != "—" && key($1) > key(pin) { print $2; exit }')
+  days=0
+  if [ -n "$first_after" ]; then
+    days=$(( ($(date -u +%s) - $(date -u -j -f '%Y-%m-%d' "$first_after" +%s 2>/dev/null || date -u -d "$first_after" +%s)) / 86400 ))
+  fi
+  yanked=no
+  if [ "$version" != "—" ] && [ -f "$yanked_file" ] && awk -v pin="$version" '{ sub(/#.*/, "") } $1 == pin { found = 1 } END { exit !found }' "$yanked_file"; then
+    yanked=yes
+  fi
+  refs=$(workflow_uses "$dir" | grep -cE '@v1$' || true)
+  printf '| %s | %s | %s | %s | %s | %s |\n' "$repo" "$version" "$behind" "$days" "$yanked" "$refs"
+}
+
 row() {
   local repo=$1 dir=$2
   printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
@@ -126,22 +158,31 @@ row() {
 }
 
 main() {
-  local from="" repo
-  case $# in
-    0) ;;
-    2) [ "$1" = --from ] || { usage; exit 2; }; from=$2 ;;
-    *) usage; exit 2 ;;
-  esac
+  local from="" repo lag=0 render=row
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --lag) lag=1 ;;
+      --from) [ $# -ge 2 ] || { usage; exit 2; }; from=$2; shift ;;
+      *) usage; exit 2 ;;
+    esac
+    shift
+  done
   # Globalne, nie local: trap EXIT działa już po wyjściu z main.
   work=$(mktemp -d)
   trap 'rm -rf "$work"' EXIT
-  echo '| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | security-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |'
-  echo '|---|---|---|---|---|---|---|---|---|---|---|'
+  if [ "$lag" -eq 1 ]; then
+    render=lag_row
+    echo '| Repository | Platform pin | Releases behind | Days behind | Yanked pin | @v1 refs |'
+    echo '|---|---|---|---|---|---|'
+  else
+    echo '| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | security-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |'
+    echo '|---|---|---|---|---|---|---|---|---|---|---|'
+  fi
   while IFS= read -r repo; do
     if [ -n "$from" ]; then
-      row "$repo" "$from/$repo"
+      "$render" "$repo" "$from/$repo"
     elif fetch "$repo" "$work/$repo" 2> "$work/error"; then
-      row "$repo" "$work/$repo"
+      "$render" "$repo" "$work/$repo"
     else
       printf '| %s | not readable: %s |\n' "$repo" "$(tr '\n' ' ' < "$work/error" | cut -c1-120)"
     fi
