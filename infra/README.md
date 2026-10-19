@@ -1,27 +1,27 @@
-# infra — szablon środowiska dev
+# infra — development environment template
 
-Współdzielony `docker-compose` dla repo konsumenckich. **PostgreSQL + pgvector** zawsze;
-**Ollama** opcjonalnie (profil `ai`, dla repo local-first jak Attestate).
+A shared `docker-compose` for the consumer repositories. **PostgreSQL with pgvector** always;
+**Ollama** optionally (profile `ai`, for local-first repositories such as Attestate).
 
 ```bash
-cp .env.example .env            # dostosuj POSTGRES_DB/USER/PASSWORD
-docker compose up -d            # samo Postgres+pgvector
-docker compose --profile ai up -d   # + Ollama
+cp .env.example .env                 # adjust POSTGRES_DB/USER/PASSWORD
+docker compose up -d                 # PostgreSQL with pgvector only
+docker compose --profile ai up -d    # plus Ollama
 ```
 
-| Usługa | Obraz | Port (default) |
+| Service | Image | Port (default) |
 |---|---|---|
 | postgres | `pgvector/pgvector` | 5432 |
-| ollama (profil `ai`) | `ollama/ollama` | 11434 |
+| ollama (profile `ai`) | `ollama/ollama` | 11434 |
 
-`postgres/init/01-extensions.sql` tworzy rozszerzenie `vector` przy pierwszej inicjalizacji wolumenu.
+`postgres/init/01-extensions.sql` creates the `vector` extension when the volume is first initialised.
 
-Wolumen `postgres-data` jest montowany w `/var/lib/postgresql`, nie w `/var/lib/postgresql/data`:
-od PostgreSQL 18 oficjalny obraz ustawia `PGDATA=/var/lib/postgresql/18/docker`, więc przy starym
-punkcie montowania pg18 odmawia startu, a dane spoza wolumenu nie przetrwałyby `docker compose down`.
+The `postgres-data` volume is mounted at `/var/lib/postgresql`, not at `/var/lib/postgresql/data`:
+from PostgreSQL 18 on, the official image sets `PGDATA=/var/lib/postgresql/18/docker`, so with the old
+mount point pg18 refuses to start, and data outside the volume would not survive `docker compose down`.
 
-> Jak używać: skopiuj `infra/` do repo konsumenta (lub trzymaj jako submodule) i nadpisz `.env`.
-> Źródłem tagów obrazów jest `PlatformImages.java` w `gradle/test-fixtures` (obrazy Testcontainers);
-> `docker-compose.yml` jest jego lustrem, a rozjazd wywala `templates/tests/image-tags-sync.test.sh`.
-> Renovate (preset Platform) bumpuje oba pliki w jednej gałęzi, gdy aplikacja Renovate działa w repo. Tagi celowo nie stoją w tabeli wyżej — trzecia kopia
-> nie miałaby managera.
+> How to use it: copy `infra/` into the consumer repository (or keep it as a submodule) and override
+> `.env`. The image tags come from `PlatformImages.java` in `gradle/test-fixtures` (the Testcontainers
+> images); `docker-compose.yml` mirrors it, and `templates/tests/image-tags-sync.test.sh` fails when they
+> drift. Renovate (the Platform preset) bumps both files in one branch once the Renovate app runs in the
+> repository. The tags are deliberately not in the table above: a third copy would have no manager.

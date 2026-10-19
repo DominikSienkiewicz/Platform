@@ -90,7 +90,7 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 |---|---|
 | `backend-ci.yml` | runs the Gradle tasks of a Spring backend (default `build`) on the platform toolchain |
 | `frontend-ci.yml` | installs, lints, type-checks, tests and builds a frontend; `strict: true` makes every standard script and the `platform-versions-check` guard mandatory |
-| `sonar.yml` | SonarQube Cloud analysis for a backend + frontend monorepo |
+| `sonar.yml` | **Deprecated:** SonarQube Cloud analysis for a backend + frontend monorepo; no consumer calls it, so run the `sonar` task in your backend job instead |
 | `scorecard.yml` | OpenSSF Scorecard |
 | `security-scan.yml` | dependency CVE scan: CycloneDX SBOM + Grype for the backend, `package-lock.json` for the frontend; CRITICAL and HIGH fail the build |
 | `semgrep.yml` | Semgrep SAST over the source code |
@@ -176,6 +176,13 @@ checks with `strict: true`.
 - **What the security scans gate and how to accept a finding** →
   [docs/security-scanning.md](docs/security-scanning.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
+
+### Documentation language
+
+Everything a consumer or an outside reader sees is in English: this README, `docs/**`, RELEASING.md,
+the `templates/**` and `infra/` READMEs, the pull request templates, package descriptions, workflow
+input descriptions and the messages of every gate. Polish appears only in CLAUDE.md and in code and
+workflow comments, which are written for the maintainer.
 
 ## Requirements
 

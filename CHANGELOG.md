@@ -17,6 +17,13 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `deploy.yml` reads `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` as secrets of the
+  `production` environment, whose deployment branch policy admits only `release`; its preflight no
+  longer checks them. Sync `templates/setup-gh-deploy.sh` into `scripts/`, run it once (it creates the
+  environment, the policy and the secrets), then delete the repository-level `SSH_*` secrets it lists,
+  and drop `SSH_*` from the caller's `secrets:` block. A job of your own that uses the SSH key needs
+  `environment: production`. A private repository needs GitHub Pro, Team or Enterprise for
+  environment secrets. `--with-release` now requires a pull request without an approval.
 - `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
   lint. No caller uses `strict` today; one that does adds the script, for example with
   `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows.
@@ -59,6 +66,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/merge.sh` warns when the source branch re-applies commits whose changes are already on the
+  target, lists them and prints the command that drops the copies. It still integrates the branch and
+  keeps its exit code. Sync the copy in `scripts/`.
+- Every published jar, the catalog TOML and every npm tarball carry a GitHub artifact attestation
+  (SLSA build provenance) from `release.yml`. Verify a file with
+  `gh attestation verify <file> --repo DominikSienkiewicz/Platform`, as `docs/consuming.md` shows.
 - `platform-templates-check`, a bin of `@dominiksienkiewicz/versions`, compares the scripts and the
   `.editorconfig` a repository copied from `templates/` with the canon of its pinned release and prints
   the command that restores each drifted or missing file. `platform-bump` runs it after every bump. It
@@ -118,6 +131,16 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- Everything a consumer reads is in English: the `infra/` and roadmap toolkit READMEs, the canonical
+  pull request template, every npm package description, and the gate messages of `frontend-ci.yml`,
+  `semgrep.yml` and `deploy.yml`. The README records the rule. Re-copy
+  `templates/github/pull_request_template.md` if you want the English checklist.
+- `sonar.yml` is deprecated: no consumer calls it. It keeps working for existing references; run the
+  `sonar` task that `seniordev.quality-conventions` configures in the backend job instead.
+- `deploy.yml` builds `bootJar` with `setup-gradle`, which on `release` reads the cache your backend jobs
+  wrote on the default branch, and caches the layers of each image in the GitHub Actions cache
+  (`type=gha`, `mode=max`, one scope per image). The layer cache shares the repository's 10 GB Actions
+  cache with Gradle; GitHub evicts the oldest entries.
 - The README no longer lists an HTTP JSON channel for `@dominiksienkiewicz/ui`: nothing builds or hosts
   one, and the npm package ships the registry sources only. Its description names its two items.
 - `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are private and no longer published;
@@ -188,6 +211,17 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- The platform Checkstyle config accepts an empty arrow `case` block, `case 1 -> {}`, which
+  google-java-format produces and `WhitespaceAround` rejected, so `spotlessApply` and `checkstyleMain`
+  no longer contradict each other on it. A corpus of formatter output now guards the pair.
+- `templates/bump-version.sh db new-migration` writes the repository name as the changeset author when it
+  runs from a worktree such as `<repo>/.worktrees/<name>`; it wrote the worktree name. Sync the copy in
+  `scripts/`.
+- `platform-bump` rewrites a settings plugin pin with extra spaces around `version`, and fails when a
+  Platform pin in `backend/settings.gradle.kts` is written in a form it cannot rewrite, instead of moving
+  the catalog and leaving the plugin behind. An `npm pack` error other than a missing release (an E401,
+  a network failure) now stops the bump with npm's message; before, every error read as "an old
+  Platform release" and the bump went on without the frontend canon.
 - `@dominiksienkiewicz/api-client` keeps headers passed as a `Headers` instance or an array of pairs,
   which the object spread dropped, and a call's header replaces a default of the same name in any case.
 - `AbstractFlywayMigrationTest` checks every `db/migration` root on the classpath, jars included, with

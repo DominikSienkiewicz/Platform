@@ -46,6 +46,9 @@ dependencies {
 	// a tu bierzemy tę samą wartość z kanonu.
 	testImplementation(gradleTestKit())
 	testImplementation("com.puppycrawl.tools:checkstyle:${libs.versions.checkstyle.get()}")
+	// google-java-format z kanonu (lustro googleJavaFormat(...) w java-conventions): PlatformFormatterCheckstyleTest
+	// formatuje korpus tym samym formaterem, którego używa Spotless konsumenta, i sprawdza wynik Checkstyle.
+	testImplementation("com.google.googlejavaformat:google-java-format:${libs.versions.googleJavaFormat.get()}")
 	testImplementation(platform("org.junit:junit-bom:${libs.versions.junit.get()}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -53,6 +56,10 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
+	// google-java-format używa wewnętrznego API javac; Spotless otwiera te pakiety tak samo.
+	jvmArgs(
+		listOf("api", "code", "file", "parser", "tree", "util").map { "--add-exports=jdk.compiler/com.sun.tools.javac.$it=ALL-UNNAMED" },
+	)
 	// Guard luster wersji: test porównuje wersje wpisane w źródłach convention pluginów z kanonem.
 	val javaConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.java-conventions.gradle.kts")
 	val springModulithConventions =

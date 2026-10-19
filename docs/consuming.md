@@ -320,6 +320,24 @@ export default mergeConfig(
 );
 ```
 
+## Verifying provenance
+
+Every release from 1.6.0 on carries GitHub artifact attestations: SLSA build provenance that ties
+each published jar, the catalog TOML and each npm tarball to the `release.yml` run and commit that
+built it in `DominikSienkiewicz/Platform`. Verify a file you downloaded before you trust it:
+
+```bash
+npm pack @dominiksienkiewicz/versions@X.Y.Z
+```
+
+```bash
+gh attestation verify dominiksienkiewicz-versions-X.Y.Z.tgz --repo DominikSienkiewicz/Platform
+```
+
+A Maven artifact works the same way, for example `platform-test-fixtures-X.Y.Z.jar` from the Gradle
+cache (`~/.gradle/caches/modules-2/files-2.1/pl.seniordeveloper/`). A file without an attestation was
+published before 1.6.0 or not by Platform's CI.
+
 ## Development environment
 
 Copy [`infra/`](../infra) from Platform to the repository root; it runs Postgres with pgvector,

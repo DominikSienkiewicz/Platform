@@ -12,3 +12,6 @@ Decisions taken for this repository, in MADR-lite format: `Status` / `Context` /
 | [0005](0005-spotbugs-report-only.md) | SpotBugs stays report-only until a measurable exit criterion is met | Accepted |
 | [0006](0006-pnpm-in-platform-npm-in-consumers.md) | pnpm in Platform's workspace, npm with a committed lockfile in consumers | Accepted |
 | [0007](0007-public-naming.md) | Public naming of Platform artifacts and configuration keys | Accepted |
+| [0008](0008-overrides-are-a-last-resort.md) | Overrides above the Boot BOM and npm overrides are a last resort, each with a removal condition | Accepted |
+| [0009](0009-integration-tag-is-a-contract.md) | Test taxonomy: the `integration` JUnit tag is a public contract | Accepted |
+| [0010](0010-agent-resource-profile.md) | Opt-in agent resource profile via AI_AGENT | Accepted |

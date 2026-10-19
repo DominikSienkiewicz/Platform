@@ -9,8 +9,13 @@
 # copies; edit here and re-sync to each consumer's scripts/ (see templates/README.md).
 #
 # Contract pushed (must match the reusable deploy.yml):
-#   secrets:   GPR_USER GPR_KEY NPM_GH_TOKEN SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS
-#   variables: GHCR_OWNER DEPLOY_PATH
+#   repository secrets:  GPR_USER GPR_KEY NPM_GH_TOKEN
+#   environment `production` (deployment branch `release` only) with its secrets:
+#                        SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS
+#   variables:           GHCR_OWNER DEPLOY_PATH
+# Only a job that runs in `production`, and so only a workflow run from `release`, can read the SSH
+# secrets. Repository-level SSH_* secrets left from an older bootstrap are reported with the command
+# that deletes them. Environment secrets in a private repository need GitHub Pro, Team or Enterprise.
 # SSH_KEY is read from a file (SSH_KEY_FILE); SSH_KNOWN_HOSTS is generated with ssh-keyscan and,
 # when SSH_HOST_KEY_SHA256 is set, verified against that fingerprint before anything is pushed.
 # Exits non-zero when any gh call fails, so a partial bootstrap never ends in "Gotowe".
@@ -20,7 +25,7 @@
 #   cp .secrets.local.example .secrets.local   # then fill in real values
 #   ./scripts/setup-gh-deploy.sh
 #   ./scripts/setup-gh-deploy.sh --gen-key       # generate an ed25519 deploy key if missing
-#   ./scripts/setup-gh-deploy.sh --with-release  # also create branch `release` + protection
+#   ./scripts/setup-gh-deploy.sh --with-release  # also create branch `release`: PR required, no approval
 #   GH_REPO=owner/repo ./scripts/setup-gh-deploy.sh   # force target repo
 #
 # Requires: gh CLI authenticated (`gh auth status`) with ADMIN on the repo and `repo` scope.
@@ -124,6 +129,14 @@ set_secret() { # name value — value via stdin, never on the command line
     echo "  secret   $n ✓"
   else echo "  secret   $n — BŁĄD gh (dostęp/repo?)"; failures=$((failures + 1)); fi
 }
+set_env_secret() { # name value — a secret of the production environment, value via stdin
+  local n="$1" val="${2:-}"
+  if [ "$ENV_READY" -ne 1 ]; then echo "  secret   $n — skipped (environment production is missing)"; return; fi
+  [ -n "$val" ] || { echo "  secret   $n — pominięto (PUSTE w $ENVFILE)"; return; }
+  if printf '%s' "$val" | gh secret set "$n" -R "$REPO" --env production >/dev/null 2>&1; then
+    echo "  secret   $n ✓ (environment production)"
+  else echo "  secret   $n — BŁĄD gh (dostęp/repo?)"; failures=$((failures + 1)); fi
+}
 set_var() {
   local n="$1" val="${2:-}"
   [ -n "$val" ] || { echo "  variable $n — pominięto (PUSTE w $ENVFILE)"; return; }
@@ -147,24 +160,58 @@ echo "==> Secrets"
 set_secret GPR_USER     "${VAL_GPR_USER:-}"
 set_secret GPR_KEY      "${VAL_GPR_KEY:-}"
 set_secret NPM_GH_TOKEN "${VAL_NPM_GH_TOKEN:-}"
-set_secret SSH_HOST     "${VAL_SSH_HOST:-}"
-set_secret SSH_USER     "${VAL_SSH_USER:-}"
 
-if [ -n "$keyfile" ] && [ -f "$keyfile" ]; then
-  if gh secret set SSH_KEY -R "$REPO" < "$keyfile" >/dev/null 2>&1; then echo "  secret   SSH_KEY ✓ (z pliku)"; else echo "  secret   SSH_KEY — BŁĄD gh"; failures=$((failures + 1)); fi
+# The deploy job runs in `production`; a deployment branch policy limits it to `release`, so a workflow
+# on any other branch can neither deploy nor read the SSH secrets below.
+echo "==> Environment production (deployment branch: release)"
+ENV_READY=0
+if gh api -X PUT "repos/$REPO/environments/production" --input - >/dev/null 2>&1 <<'JSON'
+{ "deployment_branch_policy": { "protected_branches": false, "custom_branch_policies": true } }
+JSON
+then
+  ENV_READY=1
+  echo "  environment production ✓"
+  if gh api "repos/$REPO/environments/production/deployment-branch-policies" --jq '.branch_policies[].name' 2>/dev/null | grep -qx release; then
+    echo "  branch policy release — already set"
+  elif gh api -X POST "repos/$REPO/environments/production/deployment-branch-policies" -f name=release -f type=branch >/dev/null 2>&1; then
+    echo "  branch policy release ✓"
+  else
+    echo "  branch policy release — BŁĄD gh"; failures=$((failures + 1))
+  fi
+else
+  echo "  environment production — BŁĄD gh (admin on the repo? a private repo needs GitHub Pro, Team or Enterprise)"
+  failures=$((failures + 1))
+fi
+
+set_env_secret SSH_HOST "${VAL_SSH_HOST:-}"
+set_env_secret SSH_USER "${VAL_SSH_USER:-}"
+
+if [ "$ENV_READY" -ne 1 ]; then
+  echo "  secret   SSH_KEY — skipped (environment production is missing)"
+elif [ -n "$keyfile" ] && [ -f "$keyfile" ]; then
+  if gh secret set SSH_KEY -R "$REPO" --env production < "$keyfile" >/dev/null 2>&1; then echo "  secret   SSH_KEY ✓ (z pliku, environment production)"; else echo "  secret   SSH_KEY — BŁĄD gh"; failures=$((failures + 1)); fi
 else
   echo "  secret   SSH_KEY — pominięto (ustaw SSH_KEY_FILE na istniejący klucz prywatny; --gen-key wygeneruje)"
 fi
 
 # SSH_KNOWN_HOSTS pinned from the host itself (no blind SSH in the deploy), verified above.
-if [ -n "${VAL_SSH_HOST:-}" ]; then
+if [ "$ENV_READY" -ne 1 ]; then
+  echo "  secret   SSH_KNOWN_HOSTS — skipped (environment production is missing)"
+elif [ -n "${VAL_SSH_HOST:-}" ]; then
   if [ -n "$known" ]; then
-    if printf '%s\n' "$known" | gh secret set SSH_KNOWN_HOSTS -R "$REPO" >/dev/null 2>&1; then echo "  secret   SSH_KNOWN_HOSTS ✓ (ssh-keyscan)"; else echo "  secret   SSH_KNOWN_HOSTS — BŁĄD gh"; failures=$((failures + 1)); fi
+    if printf '%s\n' "$known" | gh secret set SSH_KNOWN_HOSTS -R "$REPO" --env production >/dev/null 2>&1; then echo "  secret   SSH_KNOWN_HOSTS ✓ (ssh-keyscan, environment production)"; else echo "  secret   SSH_KNOWN_HOSTS — BŁĄD gh"; failures=$((failures + 1)); fi
   else
     echo "  secret   SSH_KNOWN_HOSTS — pominięto (ssh-keyscan nic nie zwrócił dla $VAL_SSH_HOST)"
   fi
 else
   echo "  secret   SSH_KNOWN_HOSTS — pominięto (brak SSH_HOST)"
+fi
+
+# Repository-level copies from an older bootstrap stay readable from every branch until deleted.
+leftover="$(gh secret list -R "$REPO" --json name --jq '.[].name' 2>/dev/null | grep -xE 'SSH_(HOST|USER|KEY|KNOWN_HOSTS)' || true)"
+if [ -n "$leftover" ]; then
+  echo "WARNING: repository-level secrets $(tr '\n' ' ' <<<"$leftover")are readable from any branch. The deploy reads the environment copies; delete these:" >&2
+  while IFS= read -r n; do echo "  gh secret delete $n -R $REPO" >&2; done <<<"$leftover"
 fi
 
 echo "==> Variables"
@@ -180,9 +227,9 @@ if [ "$WITH_RELEASE" -eq 1 ]; then
   fi
   if gh api -X PUT "repos/$REPO/branches/release/protection" --input - >/dev/null 2>&1 <<'JSON'
 { "required_status_checks": null, "enforce_admins": true,
-  "required_pull_request_reviews": { "required_approving_review_count": 1 }, "restrictions": null }
+  "required_pull_request_reviews": { "required_approving_review_count": 0 }, "restrictions": null }
 JSON
-  then echo "  protection ustawiona (PR + 1 review); wymagane statusy CI dodaj w UI."
+  then echo "  protection set: a pull request is required, no approval (one maintainer can merge); add required CI checks in the UI."
   else echo "  UWAGA: protection nie ustawiona automatycznie — ustaw w UI (Settings → Branches)."; fi
 fi
 

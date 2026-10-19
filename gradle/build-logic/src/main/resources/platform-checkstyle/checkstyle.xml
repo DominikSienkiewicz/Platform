@@ -117,6 +117,9 @@
             <!-- google-java-format (Spotless) renderuje pustą lambdę jako `() -> {}` — bez tego
                  zezwolenia żadne formatowanie nie spełnia jednocześnie Spotless i Checkstyle. -->
             <property name="allowEmptyLambdas" value="true"/>
+            <!-- Tak samo pusty blok case w switchu ze strzałkami: google-java-format daje `case 1 -> {}`.
+                 Pilnuje tego korpus w PlatformFormatterCheckstyleTest. -->
+            <property name="allowEmptySwitchBlockStatements" value="true"/>
         </module>
     </module>
 </module>

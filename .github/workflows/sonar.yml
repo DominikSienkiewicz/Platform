@@ -1,7 +1,11 @@
 name: Sonar (reusable)
 
+# DEPRECATED (Decyzja 14): żaden konsument nie woła tego workflowu — SkillSprintPlus i BookOfStyling usunęły
+# swoje joby Sonar 2026-08-05, a Azimuth skanuje inline, w limicie 50 000 LOC SonarQube Cloud dla prywatnych
+# projektów. Plik zostaje, żeby istniejące referencje dalej się rozwiązywały; nie adoptuj go. Zamiast tego
+# uruchom task `sonar` w jobie backendu — seniordev.quality-conventions go konfiguruje.
+#
 # Reusable: skan SonarQube Cloud dla monorepo (backend Gradle + frontend npm).
-# Zastępuje ~100 linii zduplikowanego inline-YAML z ci.yml obu repo (SkillSprintPlus, BookOfStyling).
 # Wołane z cienkiego callera z jawnymi sekretami:
 #   uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
 #   secrets: { SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}, gpr_token: ${{ secrets.GPR_TOKEN }} }

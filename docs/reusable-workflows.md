@@ -160,6 +160,11 @@ jobs:
 
 ## sonar.yml
 
+**Deprecated.** No consumer calls this workflow: two removed their Sonar jobs on 2026-08-05, and
+the third scans inline, within SonarQube Cloud's 50,000-line limit for private projects. It stays so
+that existing references resolve; do not adopt it. Run the `sonar` task in the backend job instead,
+which `seniordev.quality-conventions` configures.
+
 SonarQube Cloud for a backend plus frontend monorepo. Both jobs are skipped until the repository has
 a `SONAR_TOKEN` secret.
 
@@ -253,11 +258,19 @@ Builds, scans (optionally), pushes and deploys the application images to a host 
 package access, which the deploy does not wait for.
 
 - Permissions: `contents: read`, `packages: write` (to push to GHCR).
-- Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY`,
-  `SSH_KNOWN_HOSTS`, optionally `SNYK_TOKEN`. They are declared optional so that the `preflight` job,
-  not GitHub, names the missing ones. Set them with `templates/setup-gh-deploy.sh` from
-  `templates/secrets.local.example`; give it `SSH_HOST_KEY_SHA256` from a trusted channel, and it
-  refuses a scanned host key with another fingerprint instead of trusting it on first use.
+- Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, passed by the caller.
+  They are declared optional so that the `preflight` job, not GitHub, names the missing ones.
+- Environment `production`: the `deploy` job runs in it. Its deployment branch policy admits only
+  `release`, and `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` are secrets of that
+  environment, so a workflow on any other branch can neither deploy nor read the SSH key. The job
+  checks them in its first step. GitHub offers required reviewers for private repositories only on
+  Enterprise, so the branch policy is the gate. Environment secrets in a private repository need
+  GitHub Pro, Team or Enterprise.
+- Set all of it with `templates/setup-gh-deploy.sh` from `templates/secrets.local.example`: it creates
+  the environment and its `release` policy, stores the SSH secrets there, and names the
+  repository-level `SSH_*` secrets an older bootstrap left, with the commands that delete them. Give it
+  `SSH_HOST_KEY_SHA256` from a trusted channel, and it refuses a scanned host key with another
+  fingerprint instead of trusting it on first use.
 - Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
@@ -277,9 +290,5 @@ jobs:
       GPR_USER: ${{ secrets.GPR_USER }}
       GPR_KEY: ${{ secrets.GPR_KEY }}
       NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_KEY: ${{ secrets.SSH_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 ```
