@@ -117,6 +117,159 @@ jobs:
           [ "$status" = healthy ] || { echo "::error::the image of templates/Dockerfile.backend did not become healthy ($status)"; exit 1; }
           echo "templates/Dockerfile.backend: layered image healthy"
 
+  # Obraz z templates/Dockerfile.frontend naprawdę się buduje i odpowiada na porcie 3000 (N-CAP-6): frontend
+  # z scripts/new-consumer.sh --frontend next przypięty do ostatniego WYDANIA, bo paczek @dominiksienkiewicz/*
+  # wersji checkoutu nie ma jeszcze w GitHub Packages. GITHUB_TOKEN (packages: read) czyta je przez .npmrc
+  # konsumenta, a do obrazu trafia wyłącznie jako sekret BuildKit github_token, nigdy jako build-arg.
+  # Koszt ograniczony: PR i push do main budują obraz tylko, gdy zmieniło się jego wejście (Dockerfile,
+  # next.config.ts, npmrc, generator, ten workflow); cron i wywołanie z Release (ref = tag) budują zawsze, bo nowe
+  # wydanie i dryf node:24-slim, npm czy Next zmieniają wynik bez żadnej zmiany w repo.
+  # Bloki między markerami frontend-image-* uruchamia templates/tests/ci-frontend-image.test.sh.
+  frontend-image:
+    name: Frontend image — templates/Dockerfile.frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      # fetch-depth 0: tagi wydań i gałąź bazowa PR-a bez osobnego `git fetch` z tokenem.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Did an input of the image change
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # >>> frontend-image-changes
+          set -euo pipefail
+          inputs='^(templates/Dockerfile\.frontend|templates/npmrc|scripts/new-consumer\.sh|\.github/workflows/ci\.yml)$|^templates/frontend/'
+          if { [ "$EVENT" != push ] && [ "$EVENT" != pull_request ]; } || [ "$REF_TYPE" = tag ]; then
+            build=true
+          else
+            if [ "$EVENT" = pull_request ]; then
+              range="origin/$BASE_REF...HEAD"
+            elif [ -z "$BEFORE" ] || [ "$BEFORE" = 0000000000000000000000000000000000000000 ]; then
+              range="HEAD^...HEAD"
+            else
+              range="$BEFORE...HEAD"
+            fi
+            changed=$(git diff --name-only "$range")
+            if grep -qE -- "$inputs" <<<"$changed"; then build=true; else build=false; fi
+          fi
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          [ "$build" = true ] || echo "::notice::No input of the frontend image changed, so it is not built."
+          # <<< frontend-image-changes
+      - name: Find the latest release
+        id: release
+        if: ${{ steps.changes.outputs.build == 'true' }}
+        run: |
+          # >>> frontend-image-release
+          set -euo pipefail
+          # Tag na HEAD albo za nim to wydanie, które ten bieg dopiero bramkuje (Release woła ci.yml jako verify),
+          # więc jego paczek jeszcze nie opublikowano. Ruchomy v1 i tagi spoza vX.Y.Z odpadają.
+          tags=$(git tag --list 'v*' --no-contains HEAD --sort=-v:refname)
+          tag=$(awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ { print; exit }' <<<"$tags")
+          [ -n "$tag" ] || { echo "::error::No release tag vX.Y.Z before HEAD to take the @dominiksienkiewicz/* packages from."; exit 1; }
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          echo "The frontend pins the packages of Platform $tag."
+          # <<< frontend-image-release
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        if: ${{ steps.changes.outputs.build == 'true' }}
+        with:
+          node-version: "24"
+      - name: Render a frontend pinned at the release
+        id: render
+        if: ${{ steps.changes.outputs.build == 'true' }}
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          MANIFEST: ${{ runner.temp }}/consumer/frontend/package.json
+        run: |
+          set -euo pipefail
+          # Wersje zależności z kanonu wydania, nie checkoutu: peery eslint-config i prettier-config są dokładne,
+          # więc nowszy next czy eslint z kanonu checkoutu nie zainstalowałby się obok paczek wydania. Wpisy, których
+          # wydanie nie zna, zostają z checkoutu, bo generator może już ich potrzebować.
+          git show "v$VERSION:frontend/packages/versions/versions.json" > "$RUNNER_TEMP/released-versions.json"
+          node - frontend/packages/versions/versions.json "$RUNNER_TEMP/released-versions.json" <<'NODE'
+          const { readFileSync, writeFileSync } = require("node:fs");
+          const [canonPath, releasedPath] = process.argv.slice(2);
+          const canon = JSON.parse(readFileSync(canonPath, "utf8"));
+          Object.assign(canon.versions, JSON.parse(readFileSync(releasedPath, "utf8")).versions);
+          writeFileSync(canonPath, `${JSON.stringify(canon, null, 2)}\n`);
+          NODE
+          bash scripts/new-consumer.sh --name frontend-image --package pl.example.image --kind java-library \
+            --frontend next --platform-version "$VERSION" --out "$RUNNER_TEMP/consumer"
+          # >>> frontend-image-shipped
+          # Wydania sprzed 1.6.0 publikowały paczki npm w wersjach własnych (1.0.0), nie w wersji Platform, więc pin
+          # na takim wydaniu nie istnieje w rejestrze. Wtedy notka zamiast czerwieni; pierwsze wydanie, które
+          # publikuje każdą przypiętą paczkę w swojej wersji, włącza budowanie obrazu samo.
+          missing=$(node - "$MANIFEST" "$VERSION" <<'NODE'
+          const { execFileSync } = require("node:child_process");
+          const { readFileSync } = require("node:fs");
+          const [manifestPath, version] = process.argv.slice(2);
+          const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+          const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+          const published = new Map();
+          for (const directory of git("ls-tree", "--name-only", `v${version}`, "frontend/packages/").split("\n").filter(Boolean)) {
+            try {
+              const released = JSON.parse(git("show", `v${version}:${directory}/package.json`));
+              if (released.private !== true) published.set(released.name, released.version);
+            } catch {
+              // katalog bez package.json nie jest paczką
+            }
+          }
+          const pinned = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies })
+            .filter((name) => name.startsWith("@dominiksienkiewicz/"));
+          process.stdout.write(pinned.filter((name) => published.get(name) !== version).join(" "));
+          NODE
+          )
+          if [ -n "$missing" ]; then
+            echo "::notice::Platform v$VERSION does not publish $missing at $VERSION, so the frontend image is not built; the first release that does turns this job on."
+            echo "shipped=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "shipped=true" >> "$GITHUB_OUTPUT"
+          fi
+          # <<< frontend-image-shipped
+      - name: Lock the dependencies through the consumer's .npmrc
+        if: ${{ steps.render.outputs.shipped == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd "$RUNNER_TEMP/consumer/frontend" && npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Build the image with the token as the BuildKit secret github_token
+        if: ${{ steps.render.outputs.shipped == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker build --secret id=github_token,env=GITHUB_TOKEN -t platform-frontend-image:ci "$RUNNER_TEMP/consumer/frontend"
+      - name: Start the container and wait for an answer on port 3000
+        if: ${{ steps.render.outputs.shipped == 'true' }}
+        timeout-minutes: 5
+        run: |
+          # >>> frontend-image-health
+          set -euo pipefail
+          docker run -d --name platform-frontend-image -p 3000:3000 platform-frontend-image:ci > /dev/null
+          answered=false
+          for _ in $(seq 1 30); do
+            if curl -fs -o /dev/null --max-time 5 http://localhost:3000/; then answered=true; break; fi
+            [ "$(docker inspect -f '{{.State.Running}}' platform-frontend-image)" = true ] || break
+            sleep 2
+          done
+          if [ "$answered" != true ]; then
+            docker logs platform-frontend-image 2>&1 | tail -50
+            echo "::error::the image of templates/Dockerfile.frontend did not answer on http://localhost:3000/"
+            exit 1
+          fi
+          echo "templates/Dockerfile.frontend: the standalone server answers on port 3000"
+          # <<< frontend-image-health
+      # Zawsze, także po porażce lub anulowaniu; `|| true`, gdy kontenera nie było (obraz pominięty albo niezbudowany).
+      - name: Remove the container
+        if: ${{ always() }}
+        run: docker rm -f platform-frontend-image > /dev/null 2>&1 || true
+
   # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).
   # Bez sekretu SONAR_TOKEN (fork, brak projektu w SonarCloud) krok kończy się notką i nic nie robi.
   sonar:

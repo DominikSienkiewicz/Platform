@@ -16,8 +16,9 @@
 #   frontend/           with --frontend next: a Next.js app (src/ layout) whose package.json pins every dependency
 #                       at the canon of frontend/packages/versions and every @dominiksienkiewicz/* package at
 #                       <version>, the strict scripts (lint, typecheck, test, build, format:check), .npmrc, the
-#                       tsconfig/eslint/vitest/prettier/Tailwind configs of the packages, next.config.ts and
-#                       Dockerfile.frontend, plus a frontend-ci.yml caller with strict: true. Run npm install once
+#                       tsconfig/eslint/vitest/prettier/Tailwind configs of the packages, next.config.ts,
+#                       Dockerfile.frontend and the public/ directory it copies, plus a frontend-ci.yml caller
+#                       with strict: true. Run npm install once
 #                       to create package-lock.json, which npm ci in frontend-ci needs.
 # It does not create a git repository, a remote or any GitHub setting; docs/consuming.md lists what follows.
 set -euo pipefail
@@ -108,7 +109,9 @@ YML
 
 if [[ "$frontend" == next ]]; then
   web="$out/frontend"
-  mkdir -p "$web/src/app"
+  mkdir -p "$web/src/app" "$web/public"
+  # Etap runner Dockerfile.frontend kopiuje /app/public, a git nie przechowuje pustego katalogu.
+  : > "$web/public/.gitkeep"
   cp "$templates/npmrc" "$web/.npmrc"
   cp "$templates/gitignore/frontend.gitignore" "$web/.gitignore"
   cp "$templates/frontend/next.config.ts" "$web/next.config.ts"

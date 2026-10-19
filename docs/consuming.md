@@ -42,7 +42,8 @@ It writes `backend/` (the starter with your package, group and name, the Gradle 
 and an explicit `gpr_token`, the scripts of `templates/` and the root files. `--kind java-library` gives
 a plain library, `--platform-version X.Y.Z` another release. `--frontend next` adds `frontend/`: a
 Next.js app in the `src/` layout whose `package.json` pins every dependency at the canon and every
-`@dominiksienkiewicz/*` package at the release, with the strict scripts, `.npmrc`, the configs below, and a
+`@dominiksienkiewicz/*` package at the release, with the strict scripts, `.npmrc`, the configs below, the
+[runtime image](#frontend-runtime-image) with the `public/` directory it copies, and a
 `frontend-ci.yml` caller with `strict: true`. It creates no git repository and no GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
 repository.
 
@@ -442,6 +443,16 @@ export default mergeConfig(
   }),
 );
 ```
+
+### Frontend runtime image
+
+`frontend/Dockerfile` is [`templates/Dockerfile.frontend`](../templates/Dockerfile.frontend), a Next.js
+standalone image that needs `output: "standalone"` from
+[`templates/frontend/next.config.ts`](../templates/frontend/next.config.ts) and a `public/` directory. Build it
+with `docker build --secret id=github_token,env=GITHUB_TOKEN -t <image> frontend`, so the token reaches only
+`npm ci`. Platform's `ci.yml` proves the image: it renders a frontend with `new-consumer.sh --frontend next` at
+the latest release, builds it with the workflow's `GITHUB_TOKEN` as that BuildKit secret and waits until the
+container answers on port 3000.
 
 ## Verifying provenance
 

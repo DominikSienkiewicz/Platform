@@ -486,6 +486,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   counts them.
 - `frontend/osv-scanner.toml` records the accepted advisories of the frontend lockfile for OpenSSF
   Scorecard's Vulnerabilities check, with an end date and a reason (`docs/security-scanning.md`).
+- `ci.yml` builds `templates/Dockerfile.frontend` from a frontend that `scripts/new-consumer.sh --frontend next`
+  renders at the latest release, with the workflow's `GITHUB_TOKEN` (`packages: read`) only as the BuildKit secret
+  `github_token`, and waits until the container answers on port 3000 (N-CAP-6). It builds when an input of the
+  image changes, in the weekly run and in the release gate, and ends with a notice while the latest release does
+  not publish every pinned `@dominiksienkiewicz/*` package at its own version. `new-consumer.sh --frontend next`
+  now also renders the `public/` directory the image copies.
 
 ### Changed
 
