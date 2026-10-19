@@ -28,7 +28,9 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python3 scripts/canon-diff.py "$BASE_SHA" "$HEAD_SHA" --github-output "$GITHUB_OUTPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          set -o pipefail
+          python3 scripts/canon-diff.py "$BASE_SHA" "$HEAD_SHA" --github-output "$GITHUB_OUTPUT" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Label consumer action
         if: ${{ steps.diff.outputs.consumer_action == 'true' }}
         env:

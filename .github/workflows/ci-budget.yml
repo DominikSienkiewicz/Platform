@@ -27,6 +27,7 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
           REPOSITORY: ${{ github.repository }}
         run: |
+          set -o pipefail
           gh api --paginate "repos/$REPOSITORY/actions/runs/$RUN_ID/jobs" --jq '.jobs[]' | jq -s '{jobs: .}' > "$RUNNER_TEMP/jobs.json"
       - name: Compare with .github/ci-budgets.json
         run: python3 scripts/ci-budget.py "$RUNNER_TEMP/jobs.json" .github/ci-budgets.json CI

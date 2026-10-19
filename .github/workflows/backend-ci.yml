@@ -74,10 +74,12 @@ jobs:
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
       # Lokalnie konsument może dołożyć jawne -PplatformRepository (ADR-0003); tu działa GitHub Packages.
       # Wyjście Gradle także do pliku: sekcję „What went wrong” (bramki Platform, kompilacja) powtarza digest niżej.
+      # pipefail jest konieczny: domyślna powłoka kroku to `bash -e` bez niego, a wtedy tee ukryłby porażkę Gradle.
       - name: ./gradlew ${{ inputs.gradle-task }}
         run: |
+          set -o pipefail
           read -r -a gradle_tasks <<< "$GRADLE_TASK"
-          ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
+          ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gradle-output.log"
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
           GITHUB_ACTOR: ${{ github.actor }}
