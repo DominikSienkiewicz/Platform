@@ -75,6 +75,20 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- ADR-0011 (contract-first OpenAPI) and ADR-0012 (Platform's own modules in SonarQube Cloud). The ADR index
+  is generated from the ADR headers (`scripts/adr-index.sh`), and CI checks it and every relative link and
+  anchor of the Markdown files offline (`scripts/check-doc-links.py`).
+- `platform-test-fixtures` names the test taxonomy: `@IntegrationTest`, `@ModelTest` and
+  `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the platform PostgreSQL in one), with the tag
+  names in `PlatformTestTags`. The platform containers warn when they start in the unit `test` task
+  once the task names itself in `platform.test.task`, and throw with `platform.test.guard=fail`, which a
+  later MINOR release makes the default.
+- `PlatformArchRules`, a curated ArchUnit rule set, and the `HexagonalRules` preset in
+  `platform-test-fixtures`; `AbstractModulithDocumentationTest` writes the Spring Modulith diagrams and
+  canvases, which `backend-ci.yml` uploads as `module-docs-<run id>`.
+- `@dominiksienkiewicz/api-client` understands RFC 9457 Problem Details: a `application/problem+json`
+  error sets `ApiError.problem` (typed `ProblemDetail`), and the message comes from `detail`, then
+  `message`, then `title`. Bodies with only `message` behave as before.
 - `scripts/new-consumer.sh` renders a new product repository from the canon in the `backend/` layout:
   the `spring-app` or `java-library` starter with your package, group and name, the wrapper, the pin, a
   `ci.yml` caller at the exact tag without `secrets: inherit`, and the canonical scripts and root files.

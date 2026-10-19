@@ -19,6 +19,7 @@ public class PlatformOllamaContainer {
   @Bean
   @ServiceConnection
   public OllamaContainer ollamaContainer() {
+    PlatformTestTaskGuard.requireIntegrationTask("PlatformOllamaContainer");
     return new OllamaContainer(DockerImageName.parse(PlatformImages.OLLAMA));
   }
 }

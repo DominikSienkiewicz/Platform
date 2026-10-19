@@ -98,6 +98,16 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+      # Diagramy i kanwy modułów z AbstractModulithDocumentationTest (test-fixtures), gdy konsument go używa.
+      - name: Upload Spring Modulith documentation
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: module-docs-${{ github.run_id }}
+          path: ${{ inputs.working-directory }}/**/build/spring-modulith-docs/
+          if-no-files-found: ignore
+          retention-days: 7
+
       # Zwięzły obraz porażki bez pobierania artefaktu (widać go w `gh run view`): nieudane testy i naruszenia
       # Checkstyle ze wszystkich modułów jako adnotacje (z limitem poniżej progu GitHuba) i tabela w podsumowaniu
       # joba, plus sekcja „What went wrong” Gradle. Tylko python3 z runnera; blok testuje templates/tests/ci-digest.test.sh.
