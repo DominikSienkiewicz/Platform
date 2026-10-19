@@ -1,7 +1,7 @@
 {
   "_comment": "Expected minutes per job of ci.yml, matched by the longest name prefix. Overruns only warn (ci-budget.yml); the hard ceiling is each job's timeout-minutes. Raise a budget in the pull request that makes the job slower.",
   "CI": {
-    "Gradle — ": 8,
+    "Gradle — ": 11,
     "SonarQube Cloud": 10,
     "Gradle wrapper validation": 2,
     "Shellcheck": 2,

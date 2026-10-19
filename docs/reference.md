@@ -102,6 +102,56 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 | `platform.cors.allowed-headers` | `*` | allowed headers |
 | `platform.cors.allow-credentials` | `true` | whether credentials are allowed |
 
+## Observability starter (*incubating*)
+
+`pl.seniordeveloper:platform-observability-starter` brings the actuator and a Prometheus registry, and sets
+the operational baseline as defaults of the lowest precedence, so every property of the application
+wins. Source: [`PlatformObservabilityEnvironmentPostProcessor`](../gradle/observability-starter/src/main/java/pl/seniordeveloper/platform/observability/PlatformObservabilityEnvironmentPostProcessor.java).
+
+| Default | Value |
+|---|---|
+| `management.endpoints.web.exposure.include` | `health,info`, plus `prometheus` with `platform.observability.prometheus=true` |
+| `management.endpoint.health.probes.enabled` | `true`: `/actuator/health/liveness` and `/readiness`, which the `Dockerfile.backend` HEALTHCHECK probes |
+| `management.endpoint.health.show-details` | `when-authorized` |
+| `management.metrics.tags.application` | `${spring.application.name}` |
+
+| Property | Default | Effect |
+|---|---|---|
+| `platform.observability.prometheus` | `false` | exposes `/actuator/prometheus`; metrics leak information, so it is opt-in |
+| `platform.observability.public-metrics` | `false` | with `prometheus=true`, adds `/actuator/prometheus` to the default `platform.security.permitted-paths` of the security starter, for a scraper inside the network; an application that sets its own list adds the path itself |
+| `platform.observability.json-logs` | `false` | `logging.structured.format.console=ecs` |
+
+The `tracing` feature adds `spring-boot-starter-opentelemetry` (traces and OTLP export):
+
+```kotlin
+implementation(libs.platform.observability.starter)
+implementation(libs.platform.observability.starter) { capabilities { requireFeature("tracing") } }
+implementation(libs.bundles.observability.modulith) // spring-modulith-actuator and -observability
+```
+
+## Web starter (*incubating*)
+
+`pl.seniordeveloper:platform-web-starter` answers every error of a Spring MVC application as RFC 9457
+`application/problem+json` in one shape, the one `@dominiksienkiewicz/api-client` reads into
+`ApiError.problem` ([api-contracts.md](api-contracts.md#errors-problem-details)). It replaces Spring Boot's
+`ProblemDetailsExceptionHandler` and backs off when the application defines its own
+`ResponseEntityExceptionHandler`. Source: [`PlatformProblemDetailsExceptionHandler`](../gradle/web-starter/src/main/java/pl/seniordeveloper/platform/web/PlatformProblemDetailsExceptionHandler.java).
+
+| Exception | Status | Body |
+|---|---|---|
+| `@Valid` failure, `jakarta.validation.ConstraintViolationException` | 400 | `errors[]` of `{ pointer, detail }`, the pointer a JSON Pointer such as `#/items/0/quantity` |
+| any other Spring MVC exception (404, 405, 415 …) | as Spring MVC | Spring's Problem Details |
+| `DataIntegrityViolationException`, optimistic or pessimistic locking failure | 409 | a fixed detail, never the database message |
+| anything else | 500 | a fixed detail; the exception goes to the log only |
+
+Every body carries `traceId` when tracing put one in the MDC, and `message`, a copy of `detail` for
+clients of the old shape, throughout the 1.x line.
+
+| Property | Default | Effect |
+|---|---|---|
+| `platform.web.problem-details.enabled` | `true` | `false` hands the errors back to Spring Boot |
+| `platform.web.problem-details.legacy-message` | `true` | the `message` member |
+
 ## Test fixtures
 
 `pl.seniordeveloper:platform-test-fixtures` (`testImplementation(libs.platform.test.fixtures)`). Source:

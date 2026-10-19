@@ -1,0 +1,11 @@
+{
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Validation failed for 2 fields.",
+  "instance": "/orders",
+  "errors": [
+    { "pointer": "#/items/0/quantity", "detail": "must be greater than 0" },
+    { "pointer": "#/name", "detail": "must not be blank" }
+  ],
+  "message": "Validation failed for 2 fields."
+}

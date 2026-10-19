@@ -70,6 +70,8 @@ openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref
 platform-bom = { group = "pl.seniordeveloper", name = "platform-bom", version.ref = "platform" }
 platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
 platform-security-starter = { group = "pl.seniordeveloper", name = "platform-security-starter", version.ref = "platform" }
+platform-observability-starter = { group = "pl.seniordeveloper", name = "platform-observability-starter", version.ref = "platform" }
+platform-web-starter = { group = "pl.seniordeveloper", name = "platform-web-starter", version.ref = "platform" }
 
 # --- Startery Spring Boot / Modulith (BOM-managed → BEZ wersji; spina je bundle poniżej) ---
 boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
@@ -78,6 +80,8 @@ boot-starter-validation = { group = "org.springframework.boot", name = "spring-b
 boot-starter-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc" }
 modulith-starter-core = { group = "org.springframework.modulith", name = "spring-modulith-starter-core" }
 modulith-starter-jpa = { group = "org.springframework.modulith", name = "spring-modulith-starter-jpa" }
+modulith-actuator = { group = "org.springframework.modulith", name = "spring-modulith-actuator" }
+modulith-observability = { group = "org.springframework.modulith", name = "spring-modulith-observability" }
 boot-docker-compose = { group = "org.springframework.boot", name = "spring-boot-docker-compose" }
 spring-ai-docker-compose = { group = "org.springframework.ai", name = "spring-ai-spring-boot-docker-compose" }
 boot-test-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator-test" }
@@ -90,6 +94,8 @@ boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-sta
 modulith-web = ["boot-starter-actuator", "boot-starter-data-jpa", "boot-starter-validation", "boot-starter-webmvc", "modulith-starter-core", "modulith-starter-jpa"]
 modulith-web-tests = ["boot-test-actuator", "boot-test-data-jpa", "boot-test-validation", "boot-test-webmvc"]
 dev-docker-compose = ["boot-docker-compose", "spring-ai-docker-compose"]
+# Modulith przy platform-observability-starter: endpoint modułów i obserwacje między modułami (BOM Modulith).
+observability-modulith = ["modulith-actuator", "modulith-observability"]
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "springBoot" }

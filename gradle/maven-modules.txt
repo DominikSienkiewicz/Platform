@@ -7,3 +7,5 @@ catalog pl.seniordeveloper.platform-catalog
 bom pl.seniordeveloper.platform-bom
 test-fixtures pl.seniordeveloper.platform-test-fixtures
 security-starter pl.seniordeveloper.platform-security-starter
+observability-starter pl.seniordeveloper.platform-observability-starter
+web-starter pl.seniordeveloper.platform-web-starter

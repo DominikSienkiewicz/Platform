@@ -155,7 +155,7 @@ lag_row() {
 
 # Artefakty Platform: "maven <alias libs>", "bundle <nazwa z kropkami>", "npm <nazwa paczki>".
 artifacts() {
-  printf 'maven platform.bom\nmaven platform.test.fixtures\nmaven platform.security.starter\n'
+  printf 'maven %s\n' platform.bom platform.test.fixtures platform.security.starter platform.observability.starter platform.web.starter
   sed -n '/^\[bundles\]/,/^\[plugins\]/p' "$catalog" | sed -nE 's/^([a-z0-9-]+)[[:space:]]*=.*/\1/p' | tr '-' '.' | sed 's/^/bundle /'
   local manifest
   for manifest in "$packages_dir"/*/package.json; do
