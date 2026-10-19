@@ -1,9 +1,11 @@
 name: platform-infra
 
 # Szablon środowiska dev współdzielony przez repo konsumentów (scripts/consumers.txt).
-# PostgreSQL+pgvector zawsze; Ollama tylko z profilem "ai" (local-first, np. Attestate):
-#   docker compose up -d                  # samo PG
-#   docker compose --profile ai up -d     # PG + Ollama
+# PostgreSQL+pgvector zawsze; Ollama tylko z profilem "ai" (local-first, np. Attestate); metryki i ślady
+# aplikacji uruchomionej na hoście tylko z profilem "observability" (stos z Azimuth/observability, N-CAP-4):
+#   docker compose up -d                            # samo PG
+#   docker compose --profile ai up -d               # PG + Ollama
+#   docker compose --profile observability up -d    # PG + otel-collector, Tempo, Prometheus, Grafana
 
 services:
   postgres:
@@ -42,6 +44,59 @@ services:
       retries: 5
     restart: unless-stopped
 
+  otel-collector:
+    image: otel/opentelemetry-collector:0.130.1
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-otel-collector
+    profiles: ["observability"]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.8.1
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-tempo
+    profiles: ["observability"]
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/config.yaml:ro
+      - tempo-data:/var/tempo
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-prometheus
+    profiles: ["observability"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    container_name: ${COMPOSE_PROJECT_NAME:-platform}-grafana
+    profiles: ["observability"]
+    # Tylko lokalnie: anonimowy administrator bez logowania, źródła danych Prometheus i Tempo z provisioningu.
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./observability/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+    depends_on: [prometheus, tempo]
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   ollama-data:
+  tempo-data:
+  prometheus-data:

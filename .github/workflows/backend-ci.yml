@@ -27,6 +27,10 @@ on:
         description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.testRetry=off here turns that off."
         type: string
         default: "build"
+      verify-provenance:
+        description: "Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars."
+        type: boolean
+        default: false
       lint-task:
         description: "Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step."
         type: string
@@ -102,6 +106,36 @@ jobs:
           PLATFORM_TEST_RETRY: detect
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+
+      # Proweniencja (N-REL-16): jary Platform z cache Gradle'a muszą mieć atestację release.yml Platform, czyli
+      # pochodzić z jego wydania, nie z podmienionego rejestru. Blok testuje templates/tests/backend-ci-provenance.test.sh.
+      - name: Verify the provenance of the Platform artifacts
+        if: ${{ inputs.verify-provenance }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # >>> verify-provenance
+          set -euo pipefail
+          cache="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
+          jars=()
+          while IFS= read -r jar; do jars+=("$jar"); done < <(find "$cache" -path '*/pl.seniordeveloper*' -name '*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' 2>/dev/null | sort)
+          if [ "${#jars[@]}" -eq 0 ]; then
+            echo "::error title=PLAT-PROV-001::[PLAT-PROV-001] No Platform jar in the Gradle cache, so there is nothing to verify; did the build resolve Platform?"
+            exit 1
+          fi
+          failed=0
+          for jar in "${jars[@]}"; do
+            if gh attestation verify "$jar" --repo DominikSienkiewicz/Platform \
+              --signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml > /dev/null 2>&1; then
+              echo "verified $(basename "$jar")"
+            else
+              echo "::error title=PLAT-PROV-001::[PLAT-PROV-001] $(basename "$jar") carries no attestation from Platform's release.yml"
+              failed=1
+            fi
+          done
+          exit "$failed"
+          # <<< verify-provenance
 
       # Raporty WSZYSTKICH modułów (globy), nie tylko roota: konsument wielomodułowy nie musi ich przenosić.
       - name: Upload test reports

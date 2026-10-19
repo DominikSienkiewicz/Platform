@@ -90,8 +90,10 @@ jobs:
         run: |
           set -o pipefail
           read -r -a version <<< "$VERSION"
-          npx --yes --package "@dominiksienkiewicz/versions@latest" -- platform-bump "${version[@]}" 2>&1 \
-            | tee "$RUNNER_TEMP/platform-bump.log"
+          # Najnowszy bin ustala cel i oddaje sterowanie binowi wydania docelowego (handoff, N-DX-4), więc logika
+          # pochodzi z celu także w repo bez frontendu; --report daje raport wpływu na to repo do opisu PR (N-REL-8).
+          npx --yes --package "@dominiksienkiewicz/versions@latest" -- platform-bump "${version[@]}" \
+            --report="$RUNNER_TEMP/platform-bump-report.md" 2>&1 | tee "$RUNNER_TEMP/platform-bump.log"
 
       - name: Save the diff as a patch
         run: |
@@ -99,6 +101,7 @@ jobs:
           git add -A
           git diff --cached --binary > "$RUNNER_TEMP/platform-bump/bump.patch"
           cp "$RUNNER_TEMP/platform-bump.log" "$RUNNER_TEMP/platform-bump/bump.log"
+          if [ -f "$RUNNER_TEMP/platform-bump-report.md" ]; then cp "$RUNNER_TEMP/platform-bump-report.md" "$RUNNER_TEMP/platform-bump/report.md"; fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: platform-bump-${{ github.run_id }}
@@ -130,6 +133,7 @@ jobs:
           TARGET: ${{ needs.bump.outputs.target }}
           BASE: ${{ github.ref_name }}
           BUMP_LOG: ${{ runner.temp }}/platform-bump/bump.log
+          BUMP_REPORT: ${{ runner.temp }}/platform-bump/report.md
           BUMP_TOKEN: ${{ secrets.bump_token }}
           PUSH_TOKEN: ${{ secrets.bump_token || secrets.GITHUB_TOKEN }}
         run: |
@@ -166,6 +170,8 @@ jobs:
             echo "the reusable workflow references, the lockfiles and the dependency verification metadata."
             if [ -n "$note" ]; then echo; echo "> $note"; fi
             echo
+            # Raport wpływu (platform-bump --report): co z wydań dotyczy tego repo, czego tu nie ma, co wymaga akcji.
+            if [ -s "${BUMP_REPORT:-}" ]; then cat "$BUMP_REPORT"; echo; fi
             echo "Review the release notes and the consumer actions below before merging."
             echo
             echo '```text'

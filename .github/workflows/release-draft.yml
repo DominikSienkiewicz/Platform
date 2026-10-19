@@ -1,0 +1,53 @@
+name: Release draft
+
+# Po każdym pushu na main: szkic GitHub Release „Next” z notatkami od ostatniego taga (scripts/release-notes.sh,
+# N-REL-7), żeby przed ./release.sh było widać, co pójdzie do sekcji CHANGELOG i czy jakiś commit niesie trailer
+# Consumer-Action. Szkic nie tworzy taga i jest jeden, aktualizowany w miejscu. Osobny workflow, bo tylko on
+# potrzebuje contents: write.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-draft
+  cancel-in-progress: true
+
+jobs:
+  draft:
+    name: Draft the next release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Draft the notes since the last release
+        run: |
+          set -euo pipefail
+          last=$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || true)
+          {
+            echo "Unreleased changes since ${last:-the first commit}, drafted by scripts/release-notes.sh. Edit them into the"
+            echo "CHANGELOG.md section before ./release.sh; this draft is replaced on every push to main."
+            echo ""
+            bash scripts/release-notes.sh "${last:+$last..}HEAD"
+          } > "$RUNNER_TEMP/next.md"
+          cat "$RUNNER_TEMP/next.md" >> "$GITHUB_STEP_SUMMARY"
+      - name: Update the draft release Next
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          id=$(gh api --paginate "repos/$GH_REPO/releases" --jq '.[] | select(.draft and .name == "Next") | .id' | head -1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GH_REPO/releases/$id" -F body=@"$RUNNER_TEMP/next.md" > /dev/null
+          else
+            gh api -X POST "repos/$GH_REPO/releases" -f tag_name=next -f name=Next -F draft=true -F body=@"$RUNNER_TEMP/next.md" > /dev/null
+          fi

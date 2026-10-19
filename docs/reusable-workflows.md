@@ -38,6 +38,12 @@ step, so a style failure arrives before the tests run. The test,
 test-result and Checkstyle reports of every module go into the `backend-test-reports-<run id>` artifact
 (seven days). When the job fails, it annotates each failed test and Checkstyle violation at its file
 and line (ten at most), and the job summary lists all of them with Gradle's "What went wrong".
+The Gradle step sets `PLATFORM_TEST_RETRY=detect`: a failing test runs once more, a test that passes only
+then still fails the build, and a "Test health" summary lists the flaky tests, the `quarantineTest` result
+when the caller runs it, and every quarantine deadline (`-Pplatform.testRetry=off` in `gradle-task` turns
+the retry off). With `verify-provenance: true` the job checks the artifact attestation of every Platform
+jar the build resolved against Platform's `release.yml` and fails with
+[PLAT-PROV-001](gates.md#plat-prov-001) on one without it; Platform attests its jars from 1.6.0 on.
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a classic PAT with `read:packages`. Without it the caller's
@@ -228,8 +234,11 @@ jobs:
 
 Bumps the repository to a Platform release and opens a pull request with the diff: the Gradle and npm
 pins, the frontend canon, the reusable workflow references, the lockfiles and the dependency
-verification metadata. Schedule it in the caller; it runs the newest published `platform-bump` bin, so
-it also works in a repository without a frontend.
+verification metadata. Schedule it in the caller; it starts the newest published `platform-bump` bin,
+which hands over to the bin of the target release (from that release's assets, checked against its
+`SHA256SUMS`), so the bump always runs the logic of the release it goes to, also in a repository without a
+frontend. The pull request body opens with the impact report of `platform-bump --report`: what of the
+crossed releases affects this repository, what it does not use, and what needs action.
 
 - Permissions: `contents: write`, `pull-requests: write`, `packages: read`. Platform's commands run in a
   job that can only read; a second job applies the diff, pushes `platform-bump/v<version>` and opens the
@@ -316,7 +325,12 @@ package access, which the deploy does not wait for.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
   workflow; its default `v1` is transitional.
-- Rollback: on the host, `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
+- Rollback dispatch: `rollback-to-backend` and `rollback-to-frontend` take a tag that is already in GHCR.
+  Either one skips `build-push`, the `versions` job checks that the tags exist, and the deploy runs the
+  given tag; an empty one keeps the version of the checkout. Wire them to `workflow_dispatch` inputs of
+  the caller. The migrate tag follows the backend, so a rollback runs the older changelog, which finds
+  nothing pending.
+- Rollback on the host: `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
   before it replaces a layer. When the new backend, or a frontend whose compose service defines a
   healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
   tag from the local image and the job fails with `ROLLED BACK to <tag>`. Database migrations are never

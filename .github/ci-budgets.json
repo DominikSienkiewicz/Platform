@@ -3,6 +3,7 @@
   "CI": {
     "Gradle — ": 11,
     "SonarQube Cloud": 10,
+    "Runtime image — ": 8,
     "Gradle wrapper validation": 2,
     "Shellcheck": 2,
     "Renovate": 3,

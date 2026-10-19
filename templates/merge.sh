@@ -26,7 +26,7 @@
 #
 # Arguments:
 #   <branch>          local feature branch to merge and delete (required)
-#   <message>         merge commit message (required and not blank)
+#   <message>         merge commit message, a Conventional Commit such as "feat: add X" (required)
 #
 # Options:
 #   --into <target>                 local target branch (default: main)
@@ -198,6 +198,12 @@ done
 [ -n "$BRANCH" ] || usage_error "feature branch is required"
 if [ "$MSG_SET" -ne 1 ] || [[ ! "$MESSAGE" =~ [^[:space:]] ]]; then
   usage_error "merge message is required and must not be blank"
+fi
+# The merge commit is what release notes and the bump type are drawn from (scripts/release-notes.sh), so it follows
+# the same Conventional Commit rule as release.sh.
+CONVENTIONAL='^(feat|fix|docs|chore|refactor|test|build|ci|perf|revert)(\([a-z0-9-]+\))?!?: .+'
+if [[ ! "$MESSAGE" =~ $CONVENTIONAL ]]; then
+  usage_error "merge message must be a Conventional Commit, <type>[(scope)][!]: <description> with a type of feat, fix, docs, chore, refactor, test, build, ci, perf or revert (got \"$MESSAGE\")"
 fi
 if [ "$LEGACY_FORCE" -eq 1 ]; then
   echo "warning: --force is deprecated; use --discard-worktree-changes" >&2

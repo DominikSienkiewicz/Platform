@@ -271,6 +271,27 @@ that version of the affected package on GitHub Packages, or release a higher ver
 An npm package is published in a single request, so re-running the job after a partial failure is
 safe: it publishes only the packages that are still missing.
 
+## Merge messages and the draft release
+
+`scripts/merge.sh` (`./merge.sh` in Platform) refuses a merge message that is not a Conventional Commit, as
+`release.sh` does: the merge commits on `main` are what `scripts/release-notes.sh` turns into the next
+section. After every push to `main`, `release-draft.yml` replaces the draft GitHub Release **Next** with those
+notes since the last tag, so the next section and any `Consumer-Action:` trailer are visible before
+`./release.sh`. The draft creates no tag.
+
+## Rolling a release out
+
+`scripts/ring-rollout.sh <version>` bumps the consumers in rings, run by the maintainer: Touchstone first,
+then every other repository of `scripts/consumers.txt` once the checks of Touchstone's bump pull request are
+green (`--dry-run` prints the plan; `RING_ROLLOUT_FIRST` changes the first ring). It dispatches each
+consumer's caller of `platform-bump.yml` with `gh`, so it needs a token that may run their workflows.
+
+## Reproducibility
+
+Every Tuesday `reproducibility.yml` rebuilds the latest tag, with the commit date of the tag as the release
+date, and compares the SHA-256 of every jar with its copy in GitHub Packages (`scripts/compare-rebuild.sh`).
+Matching digests are logged; a difference or a missing copy opens or updates one issue.
+
 ## Support policy
 
 Platform has one release line, `main`; there are no backport branches. So:

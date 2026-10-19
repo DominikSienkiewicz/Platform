@@ -1,0 +1,16 @@
+# Ślady z aplikacji uruchomionej lokalnie (OTLP HTTP na 4318, wariant `tracing` observability-startera) idą do Tempo.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/tempo]

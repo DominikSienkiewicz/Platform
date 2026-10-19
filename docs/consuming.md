@@ -114,8 +114,15 @@ consumer's `gradle.properties` on an **already published** release. Add your own
 package name, group and project name, then replace the example code. In a product repository
 with `backend/` and `frontend/`, `scripts/platform-bump.sh` bumps both the literal pins in
 `backend/settings.gradle.kts` and a `platformVersion=` pin in `backend/gradle.properties`, and fails
-when it finds no pin. A standalone JVM repository without `frontend/` cannot run the stub yet, so
-update `platformVersion` there directly.
+when it finds no pin. A standalone JVM repository without `frontend/` runs the stub too: without
+`frontend/node_modules/.bin/platform-bump` it downloads `@dominiksienkiewicz/versions` of the target (or of
+the latest release) from the Platform release assets, checks it against that release's `SHA256SUMS` and runs
+its bin, so no npm and no token are needed for the logic itself. Whatever copy starts, the bump runs the logic
+of the release it goes to: a copy that is not the target hands over to the target's bin.
+`scripts/platform-bump.sh --report` (or `--report=<file>`) prints what the crossed releases change for this
+repository: the `libs.…` aliases it uses, the versions the conventions impose, the frontend packages and the
+called workflows, with the Dockerfile flagged when the toolchain moves, in three sections: affects this
+repo, not used here, and consumer action required.
 
 `settings.gradle.kts` reads `platformVersion` once, for the settings plugin and the catalog:
 
@@ -271,6 +278,15 @@ runs an older Java than the toolchain the bytecode is compiled for (Java 27). Mo
 build without a Dockerfile, a non-JVM image or an image taken from a build argument is skipped
 with a log line. A repository-local test that compares the class-file version with the
 Dockerfile is redundant once the consumer pins a Platform release that runs this gate.
+
+The template builds the image in layers: a `layers` stage runs
+`java -Djarmode=tools -jar app.jar extract --layers --launcher`, and the final stage copies the Boot layers
+one by one, dependencies first and the application last, so a code change replaces only the small last layer
+in the registry and on the host. The container starts Spring Boot's `JarLauncher`, not `java -jar`.
+`--build-arg AOT_CACHE=true` trains a JDK AOT cache (JEP 514) with one context refresh during the build
+(`spring.context.exit=onRefresh`), which shortens the start; an application that needs a database or the
+network to start cannot train in the build, so it keeps the default `false`, and the JVM then starts as
+before. `ci.yml` builds the image from the `spring-app` starter and waits for `healthy`.
 
 The template also declares how the container reports health and sizes its heap:
 

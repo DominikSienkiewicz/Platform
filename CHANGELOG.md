@@ -129,6 +129,13 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - The security starter's `platform.security.csrf` is now `ON`, `OFF` or `SPA`; `true` and `false` still bind, and
   its 401 and 403 bodies are `application/problem+json`. No consumer has adopted the starter (none).
 
+- `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does. Re-copy it
+  from `templates/merge.sh` when `platform-templates-check` reports it, and write messages such as
+  `feat: add X` (manual).
+- `templates/Dockerfile.backend` builds in layers and starts `JarLauncher` from `/app` instead of
+  `java -jar /app/app.jar`. Re-copy it to `backend/Dockerfile`; a compose `command:` or `entrypoint:` that named
+  `/app/app.jar` must go (manual).
+
 ### Added
 
 - Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
@@ -400,6 +407,25 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   without the resource-server dependency or a `JwtDecoder` it fails at startup and names the fix. 401 and 403 are
   `application/problem+json` with the mode's `WWW-Authenticate` challenge, and `platform.security.csrf=spa` uses
   Spring Security's `csrf.spa()`. The api-client's `xsrf` option echoes the `XSRF-TOKEN` cookie in `X-XSRF-TOKEN`.
+
+- `platform-bump --report[=<file>]` prints the impact of the crossed releases on the repository on the engine of
+  `scripts/canon-diff.py` (now `bin/canon_diff.py` in the versions package, with a TOML reader for Python 3.9),
+  and `platform-bump.yml` puts it into the pull request body (N-REL-8).
+- The bump always runs the logic of its target: a copy of `platform-bump` that is not the target release hands
+  over to the target's bin from the release assets, checked against `SHA256SUMS` and the attestation, and the
+  stub bumps a repository without a frontend the same way; `--print-target` prints the target only (N-DX-4).
+- `release-draft.yml` keeps a draft GitHub Release **Next** with the notes since the last tag (N-REL-7).
+- `scripts/ring-rollout.sh` bumps Touchstone first and the other consumers after its pull request is green
+  (N-REL-1).
+- `deploy.yml` takes `rollback-to-backend` and `rollback-to-frontend`: a dispatch redeploys tags already in GHCR
+  without building (N-REL-12).
+- `backend-ci.yml` takes `verify-provenance` ([PLAT-PROV-001](docs/gates.md#plat-prov-001)), and
+  `reproducibility.yml` rebuilds the latest tag every week and compares every jar with GitHub Packages
+  (N-REL-16).
+- `templates/Dockerfile.backend` copies one image layer per Boot layer and trains an optional JDK AOT cache with
+  `--build-arg AOT_CACHE=true`; `ci.yml` builds it from the `spring-app` starter and waits for `healthy` (N-CAP-5).
+- `infra/docker-compose.yml` has an `observability` profile: otel-collector, Tempo, Prometheus and Grafana for an
+  application on the host (N-CAP-4).
 
 ### Changed
 

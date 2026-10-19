@@ -151,6 +151,13 @@ an image (`security-scan.yml`, `container-scan.yml`).
 **Fix:** move to a fixed version; accept a finding without a fix only through `.grype.yaml`
 ([security-scanning.md](security-scanning.md)).
 
+### PLAT-PROV-001
+
+**Cause:** with `verify-provenance: true`, `backend-ci.yml` found a Platform jar in the Gradle cache without an
+artifact attestation from Platform's `release.yml`, or found no Platform jar at all (N-REL-16).
+**Fix:** a jar of a release older than 1.6.0 has no attestation: bump Platform. Otherwise the jar did not come
+from a Platform release; resolve it again from GitHub Packages, and report it if it still fails.
+
 ## Deprecations
 
 ### PLAT-DEPR-001

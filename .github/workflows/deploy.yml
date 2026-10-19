@@ -81,6 +81,14 @@ on:
         description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
         type: string
         default: "v1"
+      rollback-to-backend:
+        description: "Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
+        type: string
+        default: ""
+      rollback-to-frontend:
+        description: "Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
+        type: string
+        default: ""
     # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
     # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
     secrets:
@@ -154,12 +162,14 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      packages: read
     outputs:
       owner: ${{ steps.v.outputs.owner }}
       backend: ${{ steps.v.outputs.backend }}
       frontend: ${{ steps.v.outputs.frontend }}
       migrate: ${{ steps.v.outputs.migrate }}
       worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
+      rollback: ${{ steps.v.outputs.rollback }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -169,21 +179,51 @@ jobs:
         env:
           GHCR_OWNER: ${{ vars.GHCR_OWNER || github.repository_owner }}
           MIGRATE_TAG_SOURCE: ${{ inputs.migrate-tag-source }}
+          ROLLBACK_BACKEND: ${{ inputs.rollback-to-backend }}
+          ROLLBACK_FRONTEND: ${{ inputs.rollback-to-frontend }}
         run: |
+          # >>> versions
           set -euo pipefail
           owner="$(echo "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')"
           backend="$(grep -E '^version=' backend/gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')"
           frontend="$(node -p "require('./frontend/package.json').version")"
+          # Rollback (N-REL-12): tag z wejścia zamiast wersji checkoutu; build-push wtedy nie rusza.
+          backend="${ROLLBACK_BACKEND:-$backend}"
+          frontend="${ROLLBACK_FRONTEND:-$frontend}"
+          rollback=false
+          if [ -n "${ROLLBACK_BACKEND}${ROLLBACK_FRONTEND}" ]; then rollback=true; fi
           if [ "$MIGRATE_TAG_SOURCE" = "changelog" ]; then
             migrate="$(find backend/src/main/resources/db/changelog/changes -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | grep -oE '^[0-9]{4}' | sort | tail -1)"
           else
             migrate="$backend"
           fi
-          { echo "owner=$owner"; echo "backend=$backend"; echo "frontend=$frontend"; echo "migrate=$migrate"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "owner=$owner"; echo "backend=$backend"; echo "frontend=$frontend"; echo "migrate=$migrate"; echo "rollback=$rollback"; } | tee -a "$GITHUB_OUTPUT"
+          # <<< versions
+      # Rollback wdraża tylko istniejące obrazy: brak tagu w GHCR zatrzymuje go przed SSH na boks.
+      - name: Check that the rollback tags exist in GHCR
+        if: steps.v.outputs.rollback == 'true'
+        env:
+          OWNER: ${{ steps.v.outputs.owner }}
+          APP: ${{ inputs.app-name }}
+          ROLLBACK_BACKEND: ${{ inputs.rollback-to-backend }}
+          ROLLBACK_FRONTEND: ${{ inputs.rollback-to-frontend }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin > /dev/null
+          for image in ${ROLLBACK_BACKEND:+"$APP-backend:$ROLLBACK_BACKEND"} ${ROLLBACK_FRONTEND:+"$APP-frontend:$ROLLBACK_FRONTEND"}; do
+            if ! docker manifest inspect "ghcr.io/$OWNER/$image" > /dev/null 2>&1; then
+              echo "::error::ghcr.io/$OWNER/$image does not exist, so there is nothing to roll back to."
+              exit 1
+            fi
+            echo "Rolling back to ghcr.io/$OWNER/$image"
+          done
 
   # ---- Build + push: build-push-action (z SSP) + idempotentny skip istniejącego tagu (z BoS) ----
   build-push:
     needs: versions
+    if: needs.versions.outputs.rollback != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
     permissions:
@@ -377,6 +417,8 @@ jobs:
   # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
   deploy:
     needs: [versions, build-push]
+    # Rollback pomija build-push, więc deploy biegnie także po pominiętym buildzie, ale nie po porażce.
+    if: ${{ !cancelled() && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.deploy-timeout-minutes }}
     permissions:

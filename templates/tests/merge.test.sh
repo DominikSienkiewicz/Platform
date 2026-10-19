@@ -105,6 +105,22 @@ test_platform_delegate_exposes_canonical_help() {
   return $?
 }
 
+test_message_must_be_conventional() {
+  local repo before
+  repo="$(new_repo conventional-message)"
+  git -C "$repo" branch feature
+  before="$(git -C "$repo" rev-parse main)"
+
+  run_merge "$repo" feature "merge the feature"
+
+  assert_eq 2 "$MERGE_RC" "a free-text merge message should be a usage error"
+  assert_contains "$MERGE_OUTPUT" "merge message must be a Conventional Commit" "the error should name the rule"
+  assert_contains "$MERGE_OUTPUT" "(got \"merge the feature\")" "the error should quote the message"
+  assert_eq "$before" "$(git -C "$repo" rev-parse main)" "a refused message must not move main"
+  assert_ref_exists "$repo" refs/heads/feature
+  return $?
+}
+
 test_whitespace_message_is_rejected() {
   local repo
   repo="$(new_repo whitespace-message)"
@@ -123,7 +139,7 @@ test_release_is_protected() {
   git -C "$repo" branch release
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" release "merge release"
+  run_merge "$repo" release "chore: merge release"
 
   [[ $MERGE_RC -ne 0 ]] || fail "release must be rejected"
   assert_contains "$MERGE_OUTPUT" "protected branch 'release'" "release rejection should explain protection"
@@ -140,7 +156,7 @@ test_target_must_be_a_local_branch() {
   git -C "$repo" switch -q main
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge feature" --into HEAD
+  run_merge "$repo" feature "chore: merge feature" --into HEAD
 
   [[ $MERGE_RC -ne 0 ]] || fail "non-branch target HEAD must be rejected"
   assert_contains "$MERGE_OUTPUT" "target branch" "target error should identify the invalid local branch"
@@ -158,7 +174,7 @@ test_dirty_source_is_rejected_before_merge() {
   touch "$feature_wt/uncommitted.txt"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge dirty feature"
+  run_merge "$repo" feature "chore: merge dirty feature"
 
   [[ $MERGE_RC -ne 0 ]] || fail "dirty source worktree must be rejected"
   assert_contains "$MERGE_OUTPUT" "source worktree" "dirty-source error should identify the source worktree"
@@ -179,7 +195,7 @@ test_ignored_source_file_is_rejected_before_merge() {
   printf 'SECRET=preserve-me\n' >"$feature_wt/.env.local"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge ignored source" --offline
+  run_merge "$repo" feature "chore: merge ignored source" --offline
 
   [[ $MERGE_RC -ne 0 ]] || fail "ignored source file must be rejected without explicit discard"
   assert_contains "$MERGE_OUTPUT" ".env.local" "ignored-source error should identify the preserved file"
@@ -202,7 +218,7 @@ test_ignored_build_output_does_not_block_merge() {
   printf 'cache\n' >"$feature_wt/backend/.gradle/cache.bin"
   printf 'dep\n' >"$feature_wt/frontend/node_modules/index.js"
 
-  run_merge "$repo" feature "merge with build output" --offline
+  run_merge "$repo" feature "chore: merge with build output" --offline
 
   assert_eq 0 "$MERGE_RC" "regenerable build output must not block the merge"
   assert_ref_missing "$repo" refs/heads/feature
@@ -223,7 +239,7 @@ test_ignored_secret_still_blocks_alongside_build_output() {
   printf 'SECRET=preserve-me\n' >"$feature_wt/.env.local"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge with secret" --offline
+  run_merge "$repo" feature "chore: merge with secret" --offline
 
   [[ $MERGE_RC -ne 0 ]] || fail "an irreplaceable ignored file must still block, even next to build output"
   assert_contains "$MERGE_OUTPUT" ".env.local" "error should name the file that blocks"
@@ -239,7 +255,7 @@ test_discard_flag_is_explicit_and_effective() {
   add_feature_worktree "$repo" feature "$feature_wt"
   touch "$feature_wt/uncommitted.txt"
 
-  run_merge "$repo" feature "merge and discard" --offline --discard-worktree-changes
+  run_merge "$repo" feature "chore: merge and discard" --offline --discard-worktree-changes
 
   assert_eq 0 "$MERGE_RC" "explicit discard should allow merge and cleanup"
   assert_ref_missing "$repo" refs/heads/feature
@@ -254,7 +270,7 @@ test_force_remains_a_deprecated_alias() {
   add_feature_worktree "$repo" feature "$feature_wt"
   touch "$feature_wt/uncommitted.txt"
 
-  run_merge "$repo" feature "merge through alias" --offline --force
+  run_merge "$repo" feature "chore: merge through alias" --offline --force
 
   assert_eq 0 "$MERGE_RC" "legacy --force alias should remain compatible"
   assert_contains "$MERGE_OUTPUT" "deprecated" "legacy --force should advertise the safer option name"
@@ -270,7 +286,7 @@ test_locked_source_is_rejected_before_merge() {
   git -C "$repo" worktree lock --reason "test lock" "$feature_wt"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge locked feature" --offline
+  run_merge "$repo" feature "chore: merge locked feature" --offline
 
   [[ $MERGE_RC -ne 0 ]] || fail "locked source worktree must be rejected"
   assert_contains "$MERGE_OUTPUT" "locked" "locked-source error should explain the blocker"
@@ -286,7 +302,7 @@ test_dry_run_has_no_worktree_or_ref_side_effects() {
   add_feature_worktree "$repo" feature "$feature_wt"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "preview merge" --offline --dry-run
+  run_merge "$repo" feature "chore: preview merge" --offline --dry-run
 
   assert_eq 0 "$MERGE_RC" "dry-run should succeed"
   assert_contains "$MERGE_OUTPUT" "DRY RUN" "dry-run should label its output"
@@ -304,7 +320,7 @@ test_origin_is_required_without_offline_mode() {
   git -C "$repo" switch -q main
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "merge without origin"
+  run_merge "$repo" feature "chore: merge without origin"
 
   [[ $MERGE_RC -ne 0 ]] || fail "missing origin must fail closed"
   assert_contains "$MERGE_OUTPUT" "remote 'origin' is not configured" "missing-origin error should explain --offline"
@@ -332,7 +348,7 @@ test_remote_ahead_is_rejected() {
   git -C "$seed" push -q origin main
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "stale target merge"
+  run_merge "$repo" feature "chore: stale target merge"
 
   [[ $MERGE_RC -ne 0 ]] || fail "remote-ahead target must be rejected"
   assert_contains "$MERGE_OUTPUT" "behind or diverged" "remote freshness error should explain the state"
@@ -359,12 +375,12 @@ test_local_target_ahead_of_remote_is_allowed() {
   before="$(git -C "$repo" rev-parse main)"
   source_oid="$(git -C "$repo" rev-parse feature)"
 
-  run_merge "$repo" feature "merge exact message"
+  run_merge "$repo" feature "chore: merge exact message"
 
   assert_eq 0 "$MERGE_RC" "local target ahead of origin should be allowed"
   assert_eq "$before" "$(git -C "$repo" rev-parse main^1)" "merge first parent should be the old target"
   assert_eq "$source_oid" "$(git -C "$repo" rev-parse main^2)" "merge second parent should be the source tip"
-  assert_eq "merge exact message" "$(git -C "$repo" log -1 --format=%s main)" "merge subject should preserve the requested message"
+  assert_eq "chore: merge exact message" "$(git -C "$repo" log -1 --format=%s main)" "merge subject should preserve the requested message"
   assert_ref_missing "$repo" refs/heads/feature
   return $?
 }
@@ -382,7 +398,7 @@ test_conflict_is_reported_and_preserved() {
   printf 'main\n' >"$repo/value.txt"
   git -C "$repo" commit -qam main
 
-  run_merge "$repo" feature "conflicting merge" --offline
+  run_merge "$repo" feature "chore: conflicting merge" --offline
 
   [[ $MERGE_RC -ne 0 ]] || fail "conflicting merge must fail"
   assert_contains "$MERGE_OUTPUT" "merge conflict" "real conflict should be reported as a conflict"
@@ -403,7 +419,7 @@ test_non_conflict_merge_failure_is_not_mislabeled() {
   printf '#!/usr/bin/env bash\nexit 17\n' >"$hook"
   chmod +x "$hook"
 
-  run_merge "$repo" feature "hook must fail" --offline
+  run_merge "$repo" feature "chore: hook must fail" --offline
 
   [[ $MERGE_RC -ne 0 ]] || fail "failing commit hook must fail the merge"
   assert_contains "$MERGE_OUTPUT" "merge failed" "non-conflict failure should be reported generically"
@@ -423,7 +439,7 @@ test_repository_lock_blocks_parallel_helper() {
   mkdir "$lock_dir"
   before="$(git -C "$repo" rev-parse main)"
 
-  run_merge "$repo" feature "locked helper" --offline --dry-run
+  run_merge "$repo" feature "chore: locked helper" --offline --dry-run
 
   [[ $MERGE_RC -ne 0 ]] || fail "existing helper lock must reject another run"
   assert_contains "$MERGE_OUTPUT" "another merge helper" "lock error should explain concurrent execution"
@@ -447,7 +463,7 @@ test_tracked_feature_branch_is_deleted_safely() {
   feature_wt="$WORK/tracked feature worktree"
   add_feature_worktree "$repo" feature "$feature_wt" origin/main
 
-  run_merge "$repo" feature "merge tracked feature" --offline
+  run_merge "$repo" feature "chore: merge tracked feature" --offline
 
   assert_eq 0 "$MERGE_RC" "tracked feature should merge and clean up"
   assert_ref_missing "$repo" refs/heads/feature
@@ -465,7 +481,7 @@ test_invocation_from_source_worktree_succeeds() {
   add_feature_worktree "$repo" feature "$feature_wt"
 
   MERGE_RC=0
-  MERGE_OUTPUT="$(cd "$feature_wt" && GIT_MERGE_AUTOEDIT=no bash "$CANON" feature "merge from linked worktree" --offline 2>&1)" || MERGE_RC=$?
+  MERGE_OUTPUT="$(cd "$feature_wt" && GIT_MERGE_AUTOEDIT=no bash "$CANON" feature "chore: merge from linked worktree" --offline 2>&1)" || MERGE_RC=$?
 
   assert_eq 0 "$MERGE_RC" "helper should remain operational after removing its original working directory"
   assert_ref_missing "$repo" refs/heads/feature
@@ -487,7 +503,7 @@ test_success_is_marked_with_a_check() {
   feature_wt="$WORK/success glyph worktree"
   add_feature_worktree "$repo" feature "$feature_wt"
 
-  run_merge "$repo" feature "merge with a check mark" --offline
+  run_merge "$repo" feature "chore: merge with a check mark" --offline
 
   assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
   assert_contains "$MERGE_OUTPUT" "✓ merged feature into main" "success should be marked with a check"
@@ -522,7 +538,7 @@ test_conflict_is_marked_with_a_cross() {
   git -C "$repo" add collide.txt
   git -C "$repo" commit -q -m "main side"
 
-  run_merge "$repo" feature "merge that conflicts" --offline
+  run_merge "$repo" feature "chore: merge that conflicts" --offline
 
   [[ "$MERGE_RC" -ne 0 ]] || fail "a conflicting merge should not report success"
   assert_contains "$MERGE_OUTPUT" "✗ merge conflict" "a conflict should be marked with a cross"
@@ -536,7 +552,7 @@ test_marks_are_plain_when_output_is_captured() {
   feature_wt="$WORK/plain glyph worktree"
   add_feature_worktree "$repo" feature "$feature_wt"
 
-  run_merge "$repo" feature "merge without a terminal" --offline
+  run_merge "$repo" feature "chore: merge without a terminal" --offline
 
   assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
   assert_contains "$MERGE_OUTPUT" "✓" "the mark itself must survive capture so output stays greppable"
@@ -553,11 +569,11 @@ test_forced_colour_reaches_both_marks() {
   add_feature_worktree "$repo" feature "$feature_wt"
 
   export FORCE_COLOR=1
-  run_merge "$repo" feature "merge with forced colour" --offline
+  run_merge "$repo" feature "chore: merge with forced colour" --offline
   assert_eq 0 "$MERGE_RC" "a clean merge should succeed"
   assert_contains "$MERGE_OUTPUT" "$(printf '\033[32m✓\033[0m')" "forced colour should reach the success mark"
 
-  run_merge "$repo" absent "merge with forced colour" --offline
+  run_merge "$repo" absent "chore: merge with forced colour" --offline
   assert_contains "$MERGE_OUTPUT" "$(printf '\033[31m✗\033[0m')" "forced colour should reach the failure mark"
   unset FORCE_COLOR
   return $?
@@ -568,7 +584,7 @@ test_no_colour_wins_over_forced_colour() {
   repo="$(new_repo no-colour-precedence)"
 
   export NO_COLOR=1 FORCE_COLOR=1
-  run_merge "$repo" absent "merge without colour" --offline
+  run_merge "$repo" absent "chore: merge without colour" --offline
   unset NO_COLOR FORCE_COLOR
 
   assert_contains "$MERGE_OUTPUT" "✗" "the glyph must survive with colour disabled"
@@ -593,6 +609,7 @@ run_test() {
 run_test message-required test_message_is_required
 run_test platform-delegate test_platform_delegate_exposes_canonical_help
 run_test whitespace-message test_whitespace_message_is_rejected
+run_test conventional-message test_message_must_be_conventional
 run_test protected-release test_release_is_protected
 run_test local-target test_target_must_be_a_local_branch
 run_test dirty-source test_dirty_source_is_rejected_before_merge
