@@ -582,6 +582,13 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 
 ### Fixed
 
+- `canon-cve-scan.yml` scans the versions consumers get again. Since the conventions import `platform-bom`,
+  `gradle/canon-probe` could not resolve it (it is not on Maven Central), so its SBOM carried Spring Boot's
+  Jackson 3.1.5 and a Micrometer that Boot's BOM did not manage instead of the catalog's floors, and Grype failed
+  on advisories no consumer has. The workflow now publishes the scanned commit's `platform-bom` to Maven local,
+  the probe declares it as a platform and recognises a BOM by its catalog alias, so `spring-boot-bom` (the
+  artifact `spring-boot-dependencies`) applies too, and `scripts/check-canon-floors.py` fails the scan when a
+  Jackson or Tomcat component is below its catalog floor.
 - `scorecard.yml` pins `ossf/scorecard-action` v2.4.3 by its commit, `4eaacf0`, instead of the SHA of its
   annotated tag, `99c09fe`. The runner resolved the tag, but publishing the result failed with "imposter
   commit … does not belong to ossf/scorecard-action". Platform's own `ci.yml` and `release.yml` pinned

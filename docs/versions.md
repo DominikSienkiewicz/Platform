@@ -112,7 +112,10 @@ in the canon is therefore Platform's to fix, with a patch release.
 
 [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml) scans what the platform imposes: a
 lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-probe`, a consumer that
-applies the convention plugins from source and declares every catalog library. It runs every Monday
+applies the convention plugins from source and declares every catalog library. Before the probe runs,
+the workflow publishes the scanned commit's `platform-bom` to Maven local, and the probe declares it as a
+platform, so the SBOM carries the CVE floors a consumer gets; `scripts/check-canon-floors.py` fails the
+scan when a Jackson or Tomcat component of the SBOM is below its catalog floor. It runs every Monday
 at 04:00 UTC, before the consumers' weekly scans, and on every push to `main` that changes the canon.
 Grype fails it on a HIGH or CRITICAL finding that has a fix. It is advisory and does not gate releases.
 `workflow_dispatch` with `ref=vX.Y.Z` scans the canon of an older release, for example to tell a
@@ -121,7 +124,7 @@ consumer which releases are affected.
 When it is red, the maintainer:
 
 1. bumps the canon entry or the catalog version, or, for a library the Spring Boot BOM manages, adds
-   a CVE override in `seniordev.spring-modulith-conventions` (see
+   a CVE floor to the catalog and `platform-bom` (with its key in `scripts/check-canon-floors.py`; see
    [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)) until a Boot release
    manages a fixed version;
 2. ships a patch release within seven days of the finding, three for a CRITICAL one;

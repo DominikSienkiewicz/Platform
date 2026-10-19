@@ -11,6 +11,10 @@ pluginManagement {
 
 dependencyResolutionManagement {
 	repositories {
+		// pl.seniordeveloper:platform-bom skanowanego commita: canon-cve-scan.yml publikuje go tu z gradle/bom.
+		mavenLocal {
+			content { includeGroup("pl.seniordeveloper") }
+		}
 		mavenCentral()
 	}
 	versionCatalogs {
