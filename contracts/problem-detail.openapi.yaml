@@ -1,0 +1,51 @@
+# Komponent OpenAPI 3.1 błędów platform-web-starter (RFC 9457); złoty przykład: problem-detail.json.
+# Spec konsumenta wkleja `components` i odwołuje się do `#/components/responses/Problem` (docs/api-contracts.md).
+components:
+  schemas:
+    ProblemDetail:
+      type: object
+      description: RFC 9457 Problem Details as platform-web-starter writes them.
+      required: [status]
+      properties:
+        type:
+          type: string
+          format: uri
+          description: Absent means about:blank.
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        errors:
+          type: array
+          description: One entry per rejected field of a 400.
+          items:
+            $ref: "#/components/schemas/ProblemFieldError"
+        traceId:
+          type: string
+          description: The trace of the request when tracing runs.
+        message:
+          type: string
+          deprecated: true
+          description: Copy of detail for clients of the old error shape, kept throughout the 1.x line.
+    ProblemFieldError:
+      type: object
+      required: [detail]
+      properties:
+        pointer:
+          type: string
+          description: JSON Pointer (RFC 6901) of the field as a URI fragment, such as "#/items/0/quantity".
+        detail:
+          type: string
+  responses:
+    Problem:
+      description: An error as RFC 9457 Problem Details.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"

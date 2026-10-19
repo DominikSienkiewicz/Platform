@@ -96,6 +96,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `pl.seniordeveloper:platform-observability-starter` (`libs.platform.observability.starter`, *incubating*):
+  the actuator with probes, `health` and `info` exposed, `show-details=when-authorized` and an
+  `application` tag as lowest-precedence defaults; Prometheus behind `platform.observability.prometheus`,
+  public scraping behind `public-metrics`, ECS console logs behind `json-logs`, and a `tracing` feature
+  with OpenTelemetry. The catalog gains the `observability-modulith` bundle.
+- `pl.seniordeveloper:platform-web-starter` (`libs.platform.web.starter`, *incubating*): RFC 9457 Problem
+  Details for every Spring MVC error (400 with `errors[]`, 409 for data conflicts, a generic 500,
+  `traceId`, a legacy `message`). `contracts/problem-detail.json` is the golden body that its test and the
+  api-client test share, and `contracts/problem-detail.openapi.yaml` the component for consumer specs.
 - `pl.seniordeveloper:platform-bom` (`libs.platform.bom`, *incubating*): a `java-platform` that imports the
   Spring Boot, Spring Modulith, Spring AI and JUnit BOMs and carries the CVE floors (Tomcat, Jackson 3 and 2)
   and compatibility overrides (Lombok, ArchUnit) with their reasons, all from the catalog's versions

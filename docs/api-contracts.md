@@ -79,6 +79,17 @@ so build it with a template literal. The result is the union of the operation's 
 `@dominiksienkiewicz/api-client` is private until its first adopter
 ([http-client-and-agent-budget.md](http-client-and-agent-budget.md)).
 
+## Errors: Problem Details
+
+Errors have one shape across Platform: RFC 9457 `application/problem+json`, which
+`platform-web-starter` writes ([reference](reference.md#web-starter-incubating)) and `api-client` reads
+into `ApiError.problem`. [`contracts/problem-detail.json`](../contracts/problem-detail.json) is the golden
+example: the starter's test compares a real 400 response with it, and the api-client test parses the same
+file, so neither side can change the shape alone. Describe the errors in the committed spec with the
+component in [`contracts/problem-detail.openapi.yaml`](../contracts/problem-detail.openapi.yaml): copy its
+`components` and answer each error with `$ref: "#/components/responses/Problem"`.
+`templates/tests/problem-detail-contract.test.sh` keeps the golden example inside that schema.
+
 ## Pull requests: breaking changes
 
 `api-contract.yml` compares the spec at the pull request's base with the one in the pull request,

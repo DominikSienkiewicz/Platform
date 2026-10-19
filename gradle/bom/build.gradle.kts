@@ -44,6 +44,8 @@ dependencies {
 		api(libs.archunit.junit5)
 		api(libs.platform.test.fixtures)
 		api(libs.platform.security.starter)
+		api(libs.platform.observability.starter)
+		api(libs.platform.web.starter)
 	}
 }
 

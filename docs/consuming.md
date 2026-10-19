@@ -458,6 +458,20 @@ developmentOnly(libs.bundles.dev.docker.compose)    // spring-boot-docker-compos
 Keep any starter outside these lists on its own line. The bundles stay *incubating* until a first
 backend adopts them; that pull request removes the label in README.md.
 
+## Adopting the observability and web starters (*incubating*)
+
+`implementation(libs.platform.observability.starter)` replaces the `management:` block most backends
+write by hand: probes on, `health` and `info` exposed, details only when authorized, and an `application`
+tag on every metric. Keep only what differs, such as `platform.observability.prometheus=true` where a
+scraper reads `/actuator/prometheus` (BookOfStyling, Azimuth), and drop a separate
+`micrometer-registry-prometheus` line, which the starter brings. `libs.bundles.observability.modulith`
+adds the Spring Modulith actuator and observability modules.
+
+`implementation(libs.platform.web.starter)` replaces a hand-written `@ControllerAdvice` for errors; the
+shapes it answers with are in the [reference](reference.md#web-starter-incubating). An application with its
+own `ResponseEntityExceptionHandler` keeps it, because the starter backs off. Both starters stay
+*incubating* until the first application adopts them; that pull request removes the label in README.md.
+
 ## Adopting the security starter (*incubating*)
 
 Add `implementation(libs.platform.security.starter)`, delete the application's own `SecurityConfig`, and
