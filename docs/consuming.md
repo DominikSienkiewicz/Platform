@@ -492,6 +492,19 @@ and optionally Ollama:
 cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
 ```
 
+### Devcontainer (*incubating*)
+
+[`templates/devcontainer/`](../templates/devcontainer/README.md) is a development container for a repository with
+`backend/` and, optionally, `frontend/`: the JDK that runs Gradle, the catalog's toolchain JDK, and Node with npm, all
+from the canon. Copy its `Dockerfile`, `devcontainer.json` and `post-create.sh` to `.devcontainer/` (the command is in
+its README). It stays *incubating* until a first repository adopts it; that pull request removes the label.
+
+The container needs the credentials of the [prerequisites](#prerequisites) and never stores them: export
+`GITHUB_ACTOR` (your login) and `GITHUB_TOKEN` (a classic token with `read:packages`) in the environment that starts
+the container, and `devcontainer.json` passes them through `remoteEnv`. They are the names `settings.gradle.kts` and
+`frontend/.npmrc` already read. Without a token the container still builds and registers the toolchain JDK, but it prints
+a hint and does not run `npm ci --ignore-scripts`.
+
 ## Catalog bundles (*incubating*)
 
 The catalog groups the Spring starters every product backend declares into three bundles. Their members

@@ -510,6 +510,16 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   runs it and publishes. `docs/openssf-best-practices.md` maps the 67 criteria of the OpenSSF Best Practices
   *passing* level to evidence in this repository and marks what needs a decision from the owner, who earns the badge.
   `templates/tests/community-health.test.sh` guards the files, their neutrality, the issue-form gate and the script.
+- A devcontainer template for consumer repositories (N-SHOW-11, *incubating*): `templates/devcontainer/` holds a
+  `Dockerfile` (base image pinned by digest next to its tag, the JDK that runs Gradle, the catalog's toolchain JDK
+  and Node with npm), a `devcontainer.json` and a `post-create.sh` that registers the toolchain JDK for Gradle and runs
+  `npm ci --ignore-scripts` when `frontend/package-lock.json` exists and a token is set. The GitHub Packages
+  credentials come from `GITHUB_ACTOR` and `GITHUB_TOKEN` through `remoteEnv`, never from the image or a file; without
+  a token the script prints a hint instead. `templates/tests/consumer-devcontainer.test.sh` ties the versions to the
+  daemon criteria of the starters, the catalog and `frontend/.nvmrc`, checks the credential wiring, and runs
+  `post-create.sh` against a stub `npm`; the three files are optional entries of `templates/manifest.json`, so
+  `platform-templates-check` reports drift where a repository adopts them. Nothing changes for a repository that does
+  not (see [docs/consuming.md](docs/consuming.md#devcontainer-incubating)).
 
 ### Changed
 
