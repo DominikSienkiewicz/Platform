@@ -102,7 +102,7 @@ jobs:
           FAIL_ON: ${{ inputs.fail-on }}
           IMAGE: ${{ inputs.oasdiff-image }}
         run: |
-          set -uo pipefail   # bez -e: kod wyjścia oasdiff (1 = zmiana łamiąca) obsługujemy sami
+          set -euo pipefail
           if [ "$SKIP" = "true" ]; then
             echo "breaking=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -120,8 +120,10 @@ jobs:
             if [ -s changelog.md ]; then cat changelog.md; else echo "No changes."; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-          oasdiff breaking "$BASE" "head/$SPEC" --fail-on "$FAIL_ON" --format singleline > breaking.txt
-          rc=$?
+          # Kod wyjścia oasdiff (1 = zmiana łamiąca) łapie `||`: runner i tak odpala krok jako `bash -e`,
+          # więc goły `rc=$?` po komendzie nigdy by się nie wykonał.
+          rc=0
+          oasdiff breaking "$BASE" "head/$SPEC" --fail-on "$FAIL_ON" --format singleline > breaking.txt || rc=$?
           cat breaking.txt
           case "$rc" in
             0) echo "breaking=false" >> "$GITHUB_OUTPUT" ;;

@@ -35,6 +35,9 @@ echo "openapi: 3.1.0" > head/contract/openapi.yaml
 echo "openapi: 3.1.0" > head/contract/base.yaml
 export PATH="$tmp/bin:$PATH" DOCKER_LOG="$tmp/docker.log" GITHUB_OUTPUT="$tmp/output" GITHUB_STEP_SUMMARY="$tmp/summary"
 run() { : > "$GITHUB_OUTPUT"; : > "$GITHUB_STEP_SUMMARY"; bash "$tmp/$1.sh" > "$tmp/out.txt" 2>&1; }
+# Runner GitHuba odpala `run:` bez jawnego `shell:` jako `bash -e {0}` — errexit jest włączony, zanim skrypt
+# cokolwiek ustawi, a `set -uo pipefail` go nie zdejmuje.
+run_on_runner() { : > "$GITHUB_OUTPUT"; : > "$GITHUB_STEP_SUMMARY"; bash -e "$tmp/$1.sh" > "$tmp/out.txt" 2>&1; }
 
 # Rozwiązanie bazy.
 SPEC=contract/openapi.yaml BASE_SPEC=contract/base.yaml BASE_SHA='' run resolve || fail "base-spec-path must resolve: $(cat "$tmp/out.txt")"
@@ -68,6 +71,15 @@ if STUB_RC=2 SKIP='' FAIL_ON=ERR run compare; then fail 'an oasdiff error must f
 grep -q 'oasdiff breaking failed with exit code 2' "$tmp/out.txt" || fail "unexpected message: $(cat "$tmp/out.txt")"
 if SKIP='' FAIL_ON=error run compare; then fail 'an unknown fail-on level must fail'; fi
 grep -q 'fail-on must be ERR, WARN or INFO' "$tmp/out.txt" || fail "unexpected message: $(cat "$tmp/out.txt")"
+
+# Regresja: pod `bash -e` runnera kod wyjścia 1 ubijał krok bez komunikatu, zanim `rc=$?` go odczytał,
+# więc para łamiąca w ci.yml (fail-on-breaking: false) kończyła się czerwono, a etykieta nie miała szans.
+STUB_RC=1 SKIP='' FAIL_ON=ERR run_on_runner compare \
+  || fail "under the runner's bash -e a breaking change must still pass the comparison: $(cat "$tmp/out.txt")"
+grep -qx 'breaking=true' "$GITHUB_OUTPUT" || fail "under the runner's bash -e exit code 1 must still mean breaking"
+grep -q 'error api-path-removed' "$tmp/out.txt" || fail 'the breaking changes must reach the log'
+if STUB_RC=2 SKIP='' FAIL_ON=ERR run_on_runner compare; then fail "under the runner's bash -e an oasdiff error must fail the step"; fi
+grep -q 'oasdiff breaking failed with exit code 2' "$tmp/out.txt" || fail "an oasdiff error must be named under bash -e: $(cat "$tmp/out.txt")"
 
 # Bramka: etykieta przepuszcza zmianę łamiącą, brak etykiety ją blokuje.
 export FAIL_ON=ERR ALLOW_LABEL=api-breaking
