@@ -112,14 +112,7 @@ without durability (`fsync`, `synchronous_commit` and `full_page_writes` off, da
 only in a Testcontainers container, and is reusable across local runs when `~/.testcontainers.properties`
 sets `testcontainers.reuse.enable=true`. `PlatformSharedPostgresContainer.container()` returns it for a test
 that needs the address. The contexts share one database: a test that expects an empty database cleans up
-after itself or uses its own schema.
-
-```java
-@IntegrationTest
-@SpringBootTest
-@Import(PlatformSharedPostgresContainer.class)
-class OrderRepositoryTest { }
-```
+after itself or uses its own schema. `@PostgresIntegrationTest` below imports it.
 
 `AbstractTestcontainersFootprintTest` fails when more than `maximumPostgresContainers()` (1 by default)
 Platform PostgreSQL containers of this Testcontainers session run at once, naming the fix. It counts the
@@ -138,7 +131,7 @@ DevTools, a restart closes the context and that container with it, so the databa
 every restart, unless the application declares its own container bean with `@RestartScope`. The shared
 container lives outside the context and keeps its data across restarts.
 
-It needs Docker, so tag the test `integration`. `@PostgresIntegrationTest` is the three annotations in one:
+Both need Docker, so tag the test `integration`. `@PostgresIntegrationTest` is the three annotations in one:
 
 ```java
 @PostgresIntegrationTest
@@ -150,7 +143,7 @@ which stands for:
 ```java
 @IntegrationTest // @Tag("integration")
 @SpringBootTest
-@Import(PlatformPostgresContainer.class)
+@Import(PlatformSharedPostgresContainer.class)
 class OrderRepositoryTest { }
 ```
 

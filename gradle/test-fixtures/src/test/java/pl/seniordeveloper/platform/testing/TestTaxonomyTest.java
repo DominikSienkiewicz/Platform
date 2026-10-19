@@ -48,7 +48,8 @@ class TestTaxonomyTest {
     assertThat(AnnotationSupport.findAnnotation(Postgres.class, Import.class))
         .hasValueSatisfying(
             imported ->
-                assertThat(imported.value()).containsExactly(PlatformPostgresContainer.class));
+                assertThat(imported.value())
+                    .containsExactly(PlatformSharedPostgresContainer.class));
   }
 
   @Test

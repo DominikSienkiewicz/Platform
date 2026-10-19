@@ -10,7 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
 /**
- * Pełny kontekst Spring Boot na współdzielonym PostgreSQL z {@link PlatformPostgresContainer},
+ * Pełny kontekst Spring Boot na jednym na JVM PostgreSQL z {@link PlatformSharedPostgresContainer},
  * otagowany jako {@link IntegrationTest} — zamiast trzech adnotacji, z których brak tagu uruchamiał
  * Dockera w {@code test}.
  */
@@ -20,5 +20,5 @@ import org.springframework.context.annotation.Import;
 @Inherited
 @IntegrationTest
 @SpringBootTest
-@Import(PlatformPostgresContainer.class)
+@Import(PlatformSharedPostgresContainer.class)
 public @interface PostgresIntegrationTest {}
