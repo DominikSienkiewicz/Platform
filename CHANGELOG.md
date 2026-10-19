@@ -96,6 +96,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/canary.sh` previews the unreleased Platform on every consumer of `scripts/consumers.txt`
+  locally (backend fast lane and the frontend's `platform-versions-check` on the new canon) and records
+  the result for `HEAD`; `release.sh` refuses a commit without a green record unless `--skip-canary
+  "<reason>"` is given, and keeps the reason as a `Canary-Skipped:` trailer. `preview-on-consumer.sh`
+  gains `--frontend` and `--staging`.
 - `pl.seniordeveloper:platform-observability-starter` (`libs.platform.observability.starter`, *incubating*):
   the actuator with probes, `health` and `info` exposed, `show-details=when-authorized` and an
   `application` tag as lowest-precedence defaults; Prometheus behind `platform.observability.prometheus`,

@@ -127,7 +127,9 @@ trafia do BODY commita `chore(release): platform X.Y.Z` (`Użycie: ./release.sh 
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
 
 Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main`, `HEAD` ≠ `origin/main`, message nie jest
-angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG albo patch miałby akcję konsumenta.
+angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG, patch miałby akcję konsumenta albo
+`scripts/canary.sh` nie zapisał PASS dla `HEAD` na każdym konsumencie (lokalnie, `.git/platform-canary/`;
+`--skip-canary "<powód>"` pomija, powód idzie do trailera `Canary-Skipped`).
 Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
 zielonym CI (`verify` = `ci.yml`) na otagowanym commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do
 przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
