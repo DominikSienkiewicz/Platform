@@ -71,8 +71,10 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
   resolve the alias; add the library to the Platform catalog first, as for any new library (none).
 - The JVM starters carry `gradle/gradle-daemon-jvm.properties` and stop a build without GitHub Packages credentials
-  before the first request. Copy both into an existing backend when convenient: the criteria file, and the
-  `pluginManagement` block of `templates/jvm/spring-app/settings.gradle.kts` (manual, optional).
+  before the first request; an empty or whitespace-only `gpr.user`, `gpr.key`, `GITHUB_ACTOR` or `GITHUB_TOKEN`
+  counts as missing, like the empty variable the devcontainer forwards when the host has none. Copy both into an
+  existing backend when convenient: the criteria file, and the `pluginManagement` block of
+  `templates/jvm/spring-app/settings.gradle.kts` (manual, optional).
 - `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead of looking
   for the word `databaseChangeLog`, so a typo in an include path or invalid YAML fails the fast test instead of
   the Testcontainers context test. It also gains a second test: every file in `db/changelog/changes/` is named
@@ -439,7 +441,9 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   (N-CAP-11). The catalog gains `jspecify`, `errorprone-core`, `nullaway` and the `errorprone` plugin.
 - `platform.javac.werror=true` turns javac warnings, Error Prone's included, into errors (N-CAP-11).
 - Daemon JVM criteria in `templates/jvm/*`: the wrapper starts from any JDK and Gradle selects or downloads Java 25
-  for the daemon; the starters' `pluginManagement` names the credential fix instead of a nested 401 (N-DX-2).
+  for the daemon; the starters' `pluginManagement` names the credential fix instead of a nested 401 (N-DX-2). An
+  empty or whitespace-only credential counts as missing, so a blank `gpr.*` falls back to `GITHUB_ACTOR` and
+  `GITHUB_TOKEN` and an empty variable gets the same message instead of a request with an empty token (N-DX-18).
 
 - Security starter (N-CAP-13): `platform.security.mode=jwt` makes the application an OAuth2 resource server on
   Spring Boot's `spring.security.oauth2.resourceserver.jwt.*`, stateless, with `platform.security.jwt.authorities-claim`;
@@ -694,6 +698,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   (`gradle/build-logic`, a consumer's `buildSrc`), as regenerable build output. A worktree whose only leftover is
   that cache merges, and the cache goes with the worktree; before, the merge stopped with "has local or ignored
   files". A look-alike such as an ignored `.kotlin-notes` file still blocks.
+- `seniordev.settings-conventions` counts an empty or whitespace-only `gpr.user`, `gpr.key`, `GITHUB_ACTOR` or
+  `GITHUB_TOKEN` as unset, as the starters' preflight does (N-DX-18). A blank `gpr.key=` in `gradle.properties` no
+  longer hides `GITHUB_TOKEN` from the GitHub Packages repository the plugin adds, where the catalog request then
+  failed with a 401, and an empty variable sends no credentials instead of empty ones. The fix arrives with the
+  bump; a backend's own `pluginManagement` block reads them the old way until it takes the starters' block (see
+  Consumer action required).
 - `extractCheckstyleConfig` and `extractSpotbugsConfig` no longer capture the plugin script object in
   their actions, which the configuration cache cannot serialize; a consumer that turns the cache on
   no longer fails `check` on them.

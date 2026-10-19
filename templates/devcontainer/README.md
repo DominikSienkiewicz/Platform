@@ -51,7 +51,9 @@ environment that starts the container, with `remoteEnv`, so they exist only in t
 
 These are the names `settings.gradle.kts` falls back to after `gpr.user` and `gpr.key`, and `frontend/.npmrc` reads, so
 Gradle and npm need nothing else. Export both in the shell that starts the editor or the
-`devcontainer` CLI, before the container is created or restarted.
+`devcontainer` CLI, before the container is created or restarted. A variable the host does not set arrives as an
+empty string; the starters' `settings.gradle.kts` counts an empty value as missing and stops with "No GitHub
+Packages credentials" instead of sending an empty token that GitHub Packages answers with a 401.
 
 Without a token, `post-create.sh` registers the toolchain JDK, prints a hint, and skips `npm ci` instead of failing.
 Once the variables are set, rebuild the container, or restart it and run `npm ci --ignore-scripts` in `frontend/` by
