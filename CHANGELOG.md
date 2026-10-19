@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-doctor`, a bin of `@dominiksienkiewicz/versions`, diagnoses a consumer repository without
+  changing it: Java and Node versions, the wrapper, pin coherence, workflow references, the source and
+  the HTTP status of the GitHub Packages credentials, `.npmrc`, the lockfile, `.secrets.local` and the
+  runtime image. Every check has an ID (`PD0xx`) explained in `docs/consuming.md`, Troubleshooting.
 - `templates/Dockerfile.frontend` and `templates/frontend/next.config.ts`: the canonical Next.js
   standalone image on `node:24-slim`, installed with `npm ci --ignore-scripts` like CI, with the token
   only as the BuildKit secret `github_token` and a non-root runner. Moving a frontend onto it lets

@@ -435,6 +435,27 @@ gate gets 401.
 
 ## Troubleshooting
 
+Run `frontend/node_modules/.bin/platform-doctor` from the repository first (`--offline` skips the
+GitHub Packages calls). It checks the preconditions below without changing anything, names each one
+by its ID with the fix, and exits 1 when one fails:
+
+| ID | Checks |
+|---|---|
+| PD001 | the command runs inside a git repository |
+| PD010 | the `java` on PATH is 25 or newer, which Gradle needs to load Platform's plugins |
+| PD011 | the Gradle wrapper exists and is executable |
+| PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@dominiksienkiewicz/*`) is the same release |
+| PD021 | the reusable workflow references are that exact release (`@v1` warns) |
+| PD030 | where the GitHub Packages credentials come from (never their value) |
+| PD031 | the pinned catalog resolves with them: 401, 403 and 404 each name their cause |
+| PD040 | `frontend/.npmrc` points `@dominiksienkiewicz` at GitHub Packages |
+| PD041 | Node is 22.13 or newer |
+| PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
+| PD043 | npm resolves the pinned `@dominiksienkiewicz/versions` |
+| PD050 | `.secrets.local` is ignored when the repository deploys |
+| PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
+| PD070 | whether `AI_AGENT` is on |
+
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
