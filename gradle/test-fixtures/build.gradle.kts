@@ -70,10 +70,26 @@ dependencies {
 	testImplementation("org.springframework:spring-tx")
 	testImplementation("jakarta.persistence:jakarta.persistence-api")
 	testImplementation("org.junit.jupiter:junit-jupiter-params")
+	// SharedPostgresContainerIT: dwa konteksty Boota z DataSource na wspólnym kontenerze.
+	testImplementation("org.springframework.boot:spring-boot-starter-jdbc")
+	testRuntimeOnly("org.postgresql:postgresql")
+	// AbstractSchemaValidationIT i szablony templates/db: aplikacja z Modulith JPA migrowana Liquibase albo Flyway.
+	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	testImplementation("org.springframework.modulith:spring-modulith-starter-jpa")
+	testImplementation("org.springframework.boot:spring-boot-starter-liquibase")
+	testImplementation("org.springframework.boot:spring-boot-starter-flyway")
+	testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }
+
+// ModulithEventPublicationSchemaIT czyta kanoniczne migracje z templates/db, nie z kopii w zasobach testu.
+val platformTemplates = layout.projectDirectory.dir("../../templates")
+tasks.test {
+	inputs.dir(platformTemplates.dir("db")).withPropertyName("dbTemplates").withPathSensitivity(PathSensitivity.RELATIVE)
+	systemProperty("platform.templates.dir", platformTemplates.asFile.absolutePath)
+}
 
 val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")
 val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentVariable("GPR_REPO")).getOrElse("Platform")

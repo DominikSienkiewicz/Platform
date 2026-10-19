@@ -13,7 +13,12 @@ import org.testcontainers.utility.DockerImageName;
  *
  * <p>Użycie: {@code @Import(PlatformPostgresContainer.class)} lub {@code
  * SpringApplication.from(App::main).with(PlatformPostgresContainer.class)}.
+ *
+ * @deprecated kontener per kontekst Springa — każda sygnatura kontekstu w cache startuje własny;
+ *     użyj {@link PlatformSharedPostgresContainer}, jednego na JVM. Ta klasa zostaje bez zmian,
+ *     więc nic nie trzeba robić od razu.
  */
+@Deprecated
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformPostgresContainer {
 

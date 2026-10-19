@@ -39,6 +39,7 @@ public final class PlatformArchRules {
   private static final Set<String> PLATFORM_CONTAINERS =
       Set.of(
           "pl.seniordeveloper.platform.testing.PlatformPostgresContainer",
+          "pl.seniordeveloper.platform.testing.PlatformSharedPostgresContainer",
           "pl.seniordeveloper.platform.testing.PlatformOllamaContainer");
 
   /** Logowanie, nie {@code System.out}/{@code System.err}/{@code printStackTrace}. */

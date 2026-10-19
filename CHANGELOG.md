@@ -17,6 +17,21 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `templates/Dockerfile.backend` declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
+  `backend/Dockerfile`, then delete the backend's `healthcheck:` in the compose files, which replaces the
+  image's: BookOfStyling only checks that the port is open, and SkillSprintPlus runs `curl`, which
+  `sapmachine:27-jre` does not contain, so its backend never becomes healthy. Drop a compose-level
+  `JAVA_TOOL_OPTIONS` unless it means to replace both flags (manual,
+  [consuming.md](docs/consuming.md#runtime-image)).
+- `AbstractLiquibaseChangelogTest` gains a second test: every file in `db/changelog/changes/` is named
+  `NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master, because
+  `deploy.yml` tags the migrate image with the highest prefix there. Today's consumer changelogs pass; a
+  failure names the file and the fix (manual).
+- Attestate_io and BookOfStyling use `spring-modulith-starter-jpa` without an `event_publication` table,
+  so the event registry does not persist publications. Copy
+  `templates/db/liquibase/modulith-event-publication.yaml` as the next `changes/NNNN-…` file and include it
+  in the master; `AbstractSchemaValidationIT` then proves the schema (manual,
+  [consuming.md](docs/consuming.md#database-migrations)).
 - The roadmap toolkit (BookOfStyling, SkillSprintPlus) is marked *experimental*: only its marker contract
   is stable. Re-copy `templates/roadmap/scripts/**` and the new issue form
   `templates/roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml`; `roadmap-unblock.yml` now runs only for
@@ -75,6 +90,21 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/Dockerfile.backend`: a `HEALTHCHECK` on `/actuator/health/liveness` through bash's
+  `/dev/tcp`, falling back to `/actuator/health` while the probes are off, and
+  `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"`.
+  `templates/tests/dockerfile-backend.test.sh` runs the probe against a stub HTTP server.
+- `PlatformSharedPostgresContainer` in `platform-test-fixtures`: one fsync-off PostgreSQL on tmpfs for the
+  whole JVM, shared by every cached Spring context through a `DynamicPropertyRegistrar` and reusable
+  locally with `testcontainers.reuse.enable=true`. It is not a bean, because Spring Boot stops a container
+  bean when its context closes. `AbstractTestcontainersFootprintTest` fails when more Platform PostgreSQL
+  containers run at once than allowed (1 by default).
+- `AbstractSchemaValidationIT` boots the application on the shared PostgreSQL with
+  `spring.jpa.hibernate.ddl-auto=validate`, so Hibernate checks every entity, Spring Modulith's included,
+  against the migrated schema. The canonical `event_publication` migrations
+  `templates/db/liquibase/modulith-event-publication.yaml` and `templates/db/flyway/V__modulith_event_publication.sql`
+  are validated in Platform's CI against the catalog's Spring Modulith version, and `docs/consuming.md`
+  gains a "Database migrations" section.
 - A reviewer's tour (`docs/tour.md`), five incident notes (`docs/notes/`: the swallowed 409, discarded
   integration coverage, two-pass verification metadata, ArchUnit and class-file 71, Foojay's musl JDK) and
   `docs/engineering-with-agents.md`, linked from the README.
@@ -256,6 +286,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `PlatformPostgresContainer` is deprecated in favour of `PlatformSharedPostgresContainer`: as a
+  `@ServiceConnection` bean it starts one container per cached context signature. It keeps working
+  unchanged.
 - The versions the convention plugins impose (toolchain, quality tools, BOMs and the overrides above the
   Boot BOM) are generated from the catalog into `PlatformVersions` when `build-logic` compiles, instead
   of literals mirrored in the plugin sources; a bump is one catalog entry. The versions consumers get

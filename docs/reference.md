@@ -98,7 +98,41 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 [`gradle/test-fixtures`](../gradle/test-fixtures/src/main/java/pl/seniordeveloper/platform/testing/); the
 published sources jar shows the same examples in the IDE.
 
-`PlatformPostgresContainer` starts one PostgreSQL with pgvector, wired through `@ServiceConnection`.
+`PlatformSharedPostgresContainer` starts one PostgreSQL with pgvector for the whole JVM and points
+`spring.datasource.*` of every context that imports it at that server, through a `DynamicPropertyRegistrar`.
+Every cached Spring context shares it, so a suite with many context signatures still runs one container.
+The container is not a bean, because Spring Boot stops a container bean when its context closes, and the
+context cache closes contexts while others still use them; Ryuk removes it when the JVM exits. It runs
+without durability (`fsync`, `synchronous_commit` and `full_page_writes` off, data on tmpfs), which is safe
+only in a Testcontainers container, and is reusable across local runs when `~/.testcontainers.properties`
+sets `testcontainers.reuse.enable=true`. `PlatformSharedPostgresContainer.container()` returns it for a test
+that needs the address. The contexts share one database: a test that expects an empty database cleans up
+after itself or uses its own schema.
+
+```java
+@IntegrationTest
+@SpringBootTest
+@Import(PlatformSharedPostgresContainer.class)
+class OrderRepositoryTest { }
+```
+
+`AbstractTestcontainersFootprintTest` fails when more than `maximumPostgresContainers()` (1 by default)
+Platform PostgreSQL containers of this Testcontainers session run at once, naming the fix. It counts the
+containers running when it runs, so order it after the tests that build contexts, with
+`junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$OrderAnnotation` in
+`src/test/resources/junit-platform.properties`:
+
+```java
+@Order(Integer.MAX_VALUE)
+class TestcontainersFootprintIT extends AbstractTestcontainersFootprintTest { }
+```
+
+`PlatformPostgresContainer` is deprecated: it is a `@ServiceConnection` bean, so each context signature in
+the cache starts its own container. It keeps working unchanged. In a dev-time launcher with Spring Boot
+DevTools, a restart closes the context and that container with it, so the database starts empty after
+every restart, unless the application declares its own container bean with `@RestartScope`. The shared
+container lives outside the context and keeps its data across restarts.
+
 It needs Docker, so tag the test `integration`. `@PostgresIntegrationTest` is the three annotations in one:
 
 ```java
@@ -126,7 +160,7 @@ The same configuration runs the application locally against a container, from `s
 ```java
 public class TestApplication {
   public static void main(String[] args) {
-    SpringApplication.from(Application::main).with(PlatformPostgresContainer.class).run(args);
+    SpringApplication.from(Application::main).with(PlatformSharedPostgresContainer.class).run(args);
   }
 }
 ```
@@ -134,7 +168,7 @@ public class TestApplication {
 `PlatformOllamaContainer` adds Ollama; the consumer also needs `org.testcontainers:testcontainers-ollama`:
 
 ```java
-@Import({PlatformPostgresContainer.class, PlatformOllamaContainer.class})
+@Import({PlatformSharedPostgresContainer.class, PlatformOllamaContainer.class})
 ```
 
 `PlatformImages` holds the image tags those containers use (`PGVECTOR`, `OLLAMA`). The same tags run
@@ -154,7 +188,10 @@ class ModulithVerificationTest extends AbstractModulithVerificationTest {
 Two Docker-free guards fail the fast `test` when Spring Boot would start without migrations.
 `AbstractLiquibaseChangelogTest` parses `db/changelog/db.changelog-master.yaml` with Liquibase, no
 database needed, and fails when it is missing, is not valid YAML, or includes a file that does not exist;
-the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. `AbstractFlywayMigrationTest` checks every
+the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. Its second
+test holds `db/changelog/changes/` to the naming `deploy.yml` tags the migrate image with: every file is
+`NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master
+([Database migrations](consuming.md#database-migrations)). `AbstractFlywayMigrationTest` checks every
 `db/migration` root on the classpath, main, test and jars, with subdirectories, as Flyway scans them: it
 fails when there is none or no `.sql` file, on a file not named `V<n>__<description>.sql` or
 `R__<description>.sql`, and on two migrations with one version (`V3__a` and `V3__b`, `V1.1` and `V1_1`):
@@ -163,6 +200,20 @@ fails when there is none or no `.sql` file, on a file not named `V<n>__<descript
 class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }
 
 class FlywayMigrationTest extends AbstractFlywayMigrationTest { }
+```
+
+`AbstractSchemaValidationIT` checks the migrations against the entities on a real database: it boots the
+application on `PlatformSharedPostgresContainer` with `spring.jpa.hibernate.ddl-auto=validate`, so Liquibase
+or Flyway runs first and Hibernate then compares every entity with the schema, Spring Modulith's
+`JpaEventPublication` included. A missing table fails the context with Hibernate's message, for example
+`missing table [event_publication]`. Put the subclass in the application's package or below it, so
+`@SpringBootTest` finds the application. A column type Hibernate cannot compare, such as pgvector without
+`hibernate-vector`, is excluded through a schema filter
+(`spring.jpa.properties.hibernate.hbm2ddl.schema_filter_provider` in the subclass's `@TestPropertySource`),
+with a comment that says why:
+
+```java
+class SchemaValidationIT extends AbstractSchemaValidationIT { }
 ```
 
 `PlatformArchRules` (package `…testing.arch`) is a small set of ArchUnit rules, one field each, so a
