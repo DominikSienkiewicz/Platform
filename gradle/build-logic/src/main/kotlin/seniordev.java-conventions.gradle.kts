@@ -502,7 +502,7 @@ afterEvaluate {
 	} else {
 		tasks.register("lint") {
 			description =
-				"Runs the formatter check and the linters without tests: spotlessCheck, Checkstyle, platformDependencyCheck, platformPinCheck."
+				"Runs the formatter check and the linters without tests: spotlessCheck, Checkstyle, platformDependencyCheck, platformPinCheck, platformQuarantineCheck."
 			group = "verification"
 			dependsOn("spotlessCheck", tasks.withType<Checkstyle>(), platformDependencyCheck, platformPinCheck, platformQuarantineCheck)
 		}
