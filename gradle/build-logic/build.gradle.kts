@@ -1,4 +1,5 @@
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.artifacts.verification.DependencyVerificationMode
 
 plugins {
 	`kotlin-dsl`
@@ -330,9 +331,38 @@ val publishFunctionalTestBom =
 			)
 	}
 
+// N-CAP-14: starter spring-app ma test dokumentacji z platform-test-fixtures, więc konsument w TestKit rozwiązuje
+// i ten artefakt. test-fixtures bierze wtedy konwencje z tego repozytorium zamiast z includeBuild("../build-logic")
+// (gradle/test-fixtures/settings.gradle.kts): zagnieżdżony build nie kompiluje build-logic drugi raz na tych samych
+// katalogach build/. Weryfikacja zależności łagodna, bo świeżo opublikowane pl.seniordeveloper:* nie mają sum
+// w verification-metadata.xml test-fixtures.
+val publishFunctionalTestFixtures =
+	tasks.register<GradleBuild>("publishFunctionalTestFixtures") {
+		dependsOn("publishAllPublicationsToFunctionalTestRepository")
+		// Oba zagnieżdżone buildy budują gradle/bom (test-fixtures przez includeBuild): jeden po drugim.
+		mustRunAfter(publishFunctionalTestBom)
+		dir = file("../test-fixtures")
+		tasks = listOf("publishAllPublicationsToFunctionalTestRepository")
+		startParameter.projectProperties =
+			mapOf(
+				"platformVersion" to project.version.toString(),
+				"functionalTestRepository" to functionalTestRepository.get().asFile.absolutePath,
+			)
+		startParameter.dependencyVerificationMode = DependencyVerificationMode.LENIENT
+	}
+
 tasks.named<Test>("test") {
-	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog, publishFunctionalTestBom)
+	dependsOn(
+		"publishAllPublicationsToFunctionalTestRepository",
+		publishFunctionalTestCatalog,
+		publishFunctionalTestBom,
+		publishFunctionalTestFixtures,
+	)
 	inputs.file(layout.projectDirectory.file("../bom/build.gradle.kts"))
+	inputs.dir(layout.projectDirectory.dir("../test-fixtures/src/main"))
+	inputs.file(layout.projectDirectory.file("../test-fixtures/build.gradle.kts"))
+	// PlatformModuleDiagramFunctionalTest porównuje wygenerowany diagram startera z wersją, którą pokazuje README.
+	inputs.file(layout.projectDirectory.file("../../docs/diagrams/spring-app-modules.mmd"))
 	val templates = layout.projectDirectory.dir("../../templates/jvm")
 	inputs.dir(templates)
 	// GeneratedConsumerFunctionalTest renderuje backend generatorem, który kopiuje też te pliki templates/.

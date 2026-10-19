@@ -11,4 +11,5 @@ version = "0.1.0-SNAPSHOT"
 dependencies {
 	implementation(libs.boot.starter.webmvc)
 	implementation(libs.modulith.starter.core)
+	testImplementation(libs.platform.test.fixtures)
 }

@@ -9,7 +9,9 @@ import org.springframework.modulith.docs.Documenter;
 /**
  * Dokumentacja modułów Spring Modulith z tej samej struktury, którą weryfikuje {@link
  * AbstractModulithVerificationTest}: diagramy komponentów C4 w PlantUML ({@code components.puml} i
- * jeden na moduł) oraz kanwy modułów w AsciiDoc, do {@link #outputFolder()} — domyślnie {@code
+ * jeden na moduł), kanwy modułów w AsciiDoc oraz diagram modułów w Mermaid ({@code modules.mmd}:
+ * {@code flowchart} z węzłem na moduł i krawędzią na zależność), który GitHub renderuje w bloku
+ * {@code ```mermaid}. Wszystko trafia do {@link #outputFolder()} — domyślnie {@code
  * build/spring-modulith-docs}, który backend-ci dołącza jako artefakt. Bez renderowania SVG: ten
  * zostaje przeglądarce PlantUML. Wymaga {@code org.springframework.modulith:spring-modulith-docs}
  * na classpath testów, który {@code spring-modulith-starter-test} już dostarcza.
@@ -51,8 +53,11 @@ public abstract class AbstractModulithDocumentationTest {
   @Test
   @DisplayName("Spring Modulith writes the module diagrams and canvases")
   protected void writesModuleDocumentation() {
+    var modules = modules();
     new Documenter(
-            modules(), Documenter.Options.defaults().withOutputFolder(outputFolder().toString()))
+            modules, Documenter.Options.defaults().withOutputFolder(outputFolder().toString()))
         .writeDocumentation();
+    // Po Documenterze: przed pierwszym zapisem czyści on cały katalog wyjściowy.
+    ModulithMermaidDiagram.write(modules, outputFolder());
   }
 }

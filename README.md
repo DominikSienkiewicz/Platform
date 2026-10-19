@@ -171,6 +171,22 @@ and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBu
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
 they keep Java 25 bytecode. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
 
+### The starter's modules
+
+The Spring starter, [`templates/jvm/spring-app`](templates/jvm/spring-app/), has two Spring Modulith
+modules: `accounts` publishes `AccountOpened`, and `notifications` listens to it. Its documentation test, a subclass of `AbstractModulithDocumentationTest`,
+writes this diagram as `build/spring-modulith-docs/modules.mmd` next to the PlantUML. A TestKit case fails
+when the generated file differs from [`docs/diagrams/spring-app-modules.mmd`](docs/diagrams/spring-app-modules.mmd),
+and `scripts/docs-gen.sh` keeps the block below equal to that file.
+
+<!-- include: docs/diagrams/spring-app-modules.mmd -->
+```mermaid
+flowchart LR
+    module_accounts["Accounts"]
+    module_notifications["Notifications"]
+    module_notifications -->|listens to| module_accounts
+```
+
 ### Try it without credentials
 
 GitHub Packages refuses anonymous reads, so resolving Platform from it needs a token even though the

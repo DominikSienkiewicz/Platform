@@ -438,8 +438,15 @@ class ArchitectureTest {
 
 `AbstractModulithDocumentationTest` writes the Spring Modulith component diagrams (PlantUML) and module
 canvases (AsciiDoc) of the same modules to `build/spring-modulith-docs`, which `backend-ci.yml` uploads as
-the `module-docs-<run id>` artifact; `spring-modulith-starter-test` already brings the documenter:
+the `module-docs-<run id>` artifact; `spring-modulith-starter-test` already brings the documenter. After the
+documenter, which empties the folder first, the same test writes `modules.mmd`: a Mermaid `flowchart LR`
+that GitHub renders in a `mermaid` code block, with one node per application module (labelled with its
+display name) and one edge per dependency between two modules, labelled `uses` (an injected bean),
+`listens to` (an event listener) or `depends on` (any other reference, left out when a more specific edge
+joins the same modules). Nodes and edges are sorted by module identifier, so the file only changes when the
+modules do. The `spring-app` starter carries this test:
 
+<!-- include: templates/jvm/spring-app/src/test/java/example/app/ModulithDocumentationTest.java#L5-L10 -->
 ```java
 class ModulithDocumentationTest extends AbstractModulithDocumentationTest {
   @Override

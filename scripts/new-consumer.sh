@@ -54,15 +54,22 @@ mkdir -p "$out/backend" "$out/.github/workflows" "$out/scripts"
 cp -R "$templates/jvm/$kind/." "$out/backend/"
 cp "$templates/jvm/java-library/gradlew" "$templates/jvm/java-library/gradlew.bat" "$out/backend/"
 mkdir -p "$out/backend/gradle" && cp -R "$templates/jvm/java-library/gradle/wrapper" "$out/backend/gradle/"
+# Podpakiety (moduły Spring Modulith startera spring-app) idą razem z katalogami, a prefiks pakietu znika też
+# z importów. Najpierw do katalogu obok: pakiet docelowy może leżeć pod katalogiem szablonu (example.shop).
 for source_set in main test; do
-  from="$out/backend/src/$source_set/java/${template_package//.//}"
-  to="$out/backend/src/$source_set/java/${package//.//}"
+  java="$out/backend/src/$source_set/java"
+  from="$java/${template_package//.//}"
   [[ -d "$from" ]] || continue
-  mkdir -p "$to"
-  for file in "$from"/*.java; do
-    sed "s/^package ${template_package//./\\.};/package $package;/" "$file" > "$to/${file##*/}"
-  done
-  rm -rf "$out/backend/src/$source_set/java/example"
+  rendered="$out/backend/src/$source_set/java.rendered"
+  while IFS= read -r -d '' file; do
+    relative=${file#"$from"/}
+    mkdir -p "$rendered/$(dirname "$relative")"
+    sed -E "s/^(package|import|import static) ${template_package//./\\.}([.;])/\1 $package\2/" "$file" > "$rendered/$relative"
+  done < <(find "$from" -type f -print0)
+  rm -rf "${java:?}/${template_package%%.*}"
+  mkdir -p "$java/${package//.//}"
+  cp -R "$rendered/." "$java/${package//.//}/"
+  rm -rf "$rendered"
 done
 sed -i.bak -E "s/^rootProject\.name = \".*\"$/rootProject.name = \"$name\"/" "$out/backend/settings.gradle.kts"
 sed -i.bak -E "s/^group = \".*\"$/group = \"$package\"/" "$out/backend/build.gradle.kts"
