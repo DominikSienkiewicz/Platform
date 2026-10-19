@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose a change or an addition, before you write the code.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you cannot do today, or what is harder than it should be.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would change or add, and how you would use it.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: What you tried or considered instead, and why it does not fit.
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you implement it?
+      options:
+        - "Yes, once the issue is agreed"
+        - "No, I only propose it"
+    validations:
+      required: true

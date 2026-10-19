@@ -501,6 +501,15 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   [docs/consumer-agents.md](docs/consumer-agents.md#claude-code-skills). `scripts/check-agent-docs.py` now also checks
   the commands, paths and tag links the skills name, and `templates/tests/platform-plugin.test.sh` the manifests and
   that each skill points at its own runbook only.
+- Community defaults for every public repository of the owner (N-SHOW-13): `templates/github/community/` holds a
+  code of conduct, contributing guide, security policy (GitHub Private Vulnerability Reporting, like `SECURITY.md`),
+  support file, pull request template and bug, feature request and question forms (blank issues off, no labels),
+  free of anything specific to Platform and in the layout of a `<owner>/.github` repository, where GitHub applies them
+  to each public repository that lacks a file of its own. `scripts/seed-community-health.sh <checkout-dir>` copies them
+  into a local clone of that repository with no network call, commit or remote; the owner creates the repository,
+  runs it and publishes. `docs/openssf-best-practices.md` maps the 67 criteria of the OpenSSF Best Practices
+  *passing* level to evidence in this repository and marks what needs a decision from the owner, who earns the badge.
+  `templates/tests/community-health.test.sh` guards the files, their neutrality, the issue-form gate and the script.
 
 ### Changed
 

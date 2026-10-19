@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/DominikSienkiewicz/.github/security/policy
+    about: Report security issues privately, never in a public issue (SECURITY.md).
