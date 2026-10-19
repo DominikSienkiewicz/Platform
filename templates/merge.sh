@@ -19,7 +19,7 @@
 # merge helper is running, or the source is protected (main/master/develop/release/**).
 #
 # "Unsafe to touch" excludes regenerable build output (build/, node_modules/, .gradle/,
-# … — see REGENERABLE_IGNORED_RE). Those are ignored paths that a rebuild recreates, so
+# .kotlin/, … — see REGENERABLE_IGNORED_RE). Those are ignored paths that a rebuild recreates, so
 # they are removed with the worktree and reported, never treated as work to preserve.
 # Every other ignored file — .env.local, credentials, anything irreplaceable — still
 # blocks until you pass --discard-worktree-changes.
@@ -78,7 +78,7 @@ LOCK_DIR=""
 # `backend/build/`, `frontend/node_modules/` and `gradle/x/build/libs/a.jar` all qualify.
 # Keep this list conservative: anything absent from it keeps blocking, which is the safe
 # direction to be wrong in.
-REGENERABLE_IGNORED_RE='^!! (.*/)?((build|dist|target|bin|node_modules|coverage|test-results|playwright-report|__pycache__|\.gradle|\.next|\.turbo|\.venv|\.pytest_cache)(/.*)?|tsconfig\.tsbuildinfo)$'
+REGENERABLE_IGNORED_RE='^!! (.*/)?((build|dist|target|bin|node_modules|coverage|test-results|playwright-report|__pycache__|\.gradle|\.kotlin|\.next|\.turbo|\.venv|\.pytest_cache)(/.*)?|tsconfig\.tsbuildinfo)$'
 
 # Status lines that must block the merge: everything except regenerable build output.
 # Tracked modifications and untracked non-ignored files are never filtered.

@@ -97,9 +97,9 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - The pg18 image keeps its data in `/var/lib/postgresql/18/docker`, so `infra/docker-compose.yml` now mounts
   `postgres-data` at `/var/lib/postgresql`. With the old `/var/lib/postgresql/data` mount, pg18 refuses to
   start. Change the mount in your copy: Attestate_io still has the old one (manual).
-- `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does. Re-copy it
-  from `templates/merge.sh` when `platform-templates-check` reports it, and write messages such as
-  `feat: add X` (manual).
+- `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does, and treats the
+  `.kotlin/` cache as regenerable output. Re-copy it from `templates/merge.sh` when `platform-templates-check`
+  reports it, and write messages such as `feat: add X` (manual).
 - `platform-bump` writes managed blocks between their markers, each file created when missing: the
   `platform-agents` rules into the root `AGENTS.md`, and the stack, rules and commands of the pinned release into
   `backend/AGENTS.md` (`platform-agents-backend`; the root `AGENTS.md` when Gradle sits at the root) and
@@ -582,6 +582,10 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 
 ### Fixed
 
+- `merge.sh` treats `.kotlin/`, the cache the Kotlin Gradle plugin leaves in every module that compiles Kotlin
+  (`gradle/build-logic`, a consumer's `buildSrc`), as regenerable build output. A worktree whose only leftover is
+  that cache merges, and the cache goes with the worktree; before, the merge stopped with "has local or ignored
+  files". A look-alike such as an ignored `.kotlin-notes` file still blocks.
 - `extractCheckstyleConfig` and `extractSpotbugsConfig` no longer capture the plugin script object in
   their actions, which the configuration cache cannot serialize; a consumer that turns the cache on
   no longer fails `check` on them.
