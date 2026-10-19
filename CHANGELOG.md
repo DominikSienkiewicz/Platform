@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `release.yml` proves every release consumable (new `verify-consumable` job): the `java-library` and
+  `spring-app` starters resolve it from GitHub Packages with an empty Gradle home, test-fixtures and
+  security-starter included, and every public npm package installs with the files it declares.
 - Upgrade migrations: `platform-bump` runs the migrations of the target release from its downloaded
   package, idempotent edits of the working tree that carry out a consumer action. The first three add
   `packages: read` to the callers of `backend-ci.yml` and `frontend-ci.yml`, move a final

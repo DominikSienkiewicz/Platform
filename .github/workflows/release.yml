@@ -304,6 +304,37 @@ jobs:
           echo "All ${#maven[@]} Maven packages and every public npm package carry $V."
           # <<< verify-published
 
+  # Istnienie wersji (verify-published) nie znaczy, że da się ją skonsumować: 1.3.4 nie miał wariantu katalogu,
+  # 1.5.1–1.5.3 markerów pluginów. Tu startery z templates/jvm i paczki npm rozwiązują wydanie z GitHub Packages
+  # tak jak konsument — czysty GRADLE_USER_HOME, bez -PplatformRepository (scripts/verify-consumable.sh).
+  verify-consumable:
+    needs: [version, verify-published]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    env:
+      V: ${{ needs.version.outputs.version }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@dominiksienkiewicz"
+      - name: Resolve the release as a consumer
+        run: bash scripts/verify-consumable.sh "$V"
+
   # Ruchomy v1 (reusable workflows konsumentów) idzie za wydaniem dopiero po obu zielonych
   # publikacjach i tylko do przodu: re-run starszego taga go nie cofa, a v1 spoza historii
   # wydawanego commita zostaje na miejscu do decyzji człowieka. Do wygaszenia, gdy konsumenci

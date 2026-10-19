@@ -175,6 +175,13 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    version: the main build-logic artifact, the marker of every convention plugin, the catalog,
    test-fixtures, security-starter and every npm package not marked `private`. The publish jobs
    skip versions that already exist, so this is the one place that proves the release is complete.
+7. **`verify-consumable`**, after `verify-published`, resolves the release the way a consumer does,
+   from GitHub Packages with an empty Gradle home and no `-PplatformRepository`
+   (`scripts/verify-consumable.sh`). Copies of the `java-library` and `spring-app` starters pinned to
+   the version resolve the settings plugin, every convention plugin marker, the catalog's variant,
+   test-fixtures and security-starter; every public npm package installs at the version and ships the
+   files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
+   lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.
