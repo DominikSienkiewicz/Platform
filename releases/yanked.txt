@@ -1,0 +1,8 @@
+# Yanked Platform releases. platform-bump reads this file from main: a bump without a version skips them,
+# and an explicit one needs --allow-yanked. One line per release: the version, then the reason and the
+# replacement. A release stays installable; yanking only stops the bump from offering it.
+# docs/runbooks/rollback.md describes when and how to yank.
+1.3.4 platform-catalog was published without its version-catalog variant ("No matching variant"); use 1.3.5
+1.5.1 build-logic plugin markers were not published; use 1.5.4
+1.5.2 build-logic plugin markers were not published; use 1.5.4
+1.5.3 build-logic plugin markers were not published; use 1.5.4

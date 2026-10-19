@@ -1,7 +1,7 @@
 {
   "name": "@dominiksienkiewicz/versions",
   "version": "1.5.31",
-  "description": "The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, and platform-templates-check.",
+  "description": "The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check and platform-workflows-check.",
   "license": "MIT",
   "engines": {
     "node": ">=22.13"
@@ -10,10 +10,13 @@
     "versions.json",
     "bin/check.mjs",
     "bin/platform-bump.sh",
-    "bin/templates-check.mjs"
+    "bin/templates-check.mjs",
+    "migrations",
+    "bin/workflows-check.py",
+    "workflow-contract.txt"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh && bash test/bump-transaction.test.sh && bash test/yank.test.sh && bash test/migrations.test.sh && bash test/workflows-check.test.sh && bash test/provenance.test.sh"
   },
   "exports": {
     ".": "./versions.json",
@@ -22,7 +25,8 @@
   "bin": {
     "platform-versions-check": "bin/check.mjs",
     "platform-bump": "bin/platform-bump.sh",
-    "platform-templates-check": "bin/templates-check.mjs"
+    "platform-templates-check": "bin/templates-check.mjs",
+    "platform-workflows-check": "bin/workflows-check.py"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

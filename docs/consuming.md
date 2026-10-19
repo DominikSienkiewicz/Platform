@@ -355,6 +355,10 @@ A Maven artifact works the same way, for example `platform-test-fixtures-X.Y.Z.j
 cache (`~/.gradle/caches/modules-2/files-2.1/pl.seniordeveloper/`). A file without an attestation was
 published before 1.6.0 or not by Platform's CI.
 
+`platform-bump` checks the package it downloads this way before it uses it, for every target from
+1.6.0 on: an attestation that does not verify stops the bump with nothing changed. Without `gh`
+installed it only warns; `--skip-provenance "<reason>"` bumps anyway and logs the reason.
+
 ## Development environment
 
 Copy [`infra/`](../infra) from Platform to the repository root; it runs Postgres with pgvector,

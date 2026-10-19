@@ -1,0 +1,5 @@
+on: [pull_request]
+permissions: { contents: read }
+jobs:
+  backend:
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31

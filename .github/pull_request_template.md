@@ -16,7 +16,8 @@
 <!--
 Anything a consumer must do beyond bumping the pin: a new or renamed property, task or input, a
 removed dependency, a new required secret, a stricter gate. Ships as a minor version in the 1.x line.
-Write "None" if nothing is required.
+Write "None" if nothing is required. Also add it to the commit that causes it as a trailer,
+`Consumer-Action: <what consumers do>`: release.sh then refuses to ship it as a patch.
 -->
 
 None.

@@ -1,0 +1,42 @@
+name: Consumer impact
+
+# Każdy PR do Platform: co zmiana robi konsumentom — katalog, kanon frontendu, kontrakt reusable workflowów
+# i kopiowane szablony, porównane na sparsowanych wartościach (scripts/canon-diff.py). Raport idzie do
+# podsumowania joba, a reguła akcji konsumenta dokłada etykietę consumer-action, jeśli ta istnieje w repo.
+# Osobny workflow, nie job w ci.yml: ci.yml woła też release.yml, który nie nadaje pull-requests: write.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  impact:
+    name: Consumer impact
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Diff what consumers pin and call
+        id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 scripts/canon-diff.py "$BASE_SHA" "$HEAD_SHA" --github-output "$GITHUB_OUTPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Label consumer action
+        if: ${{ steps.diff.outputs.consumer_action == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "::notice::This change needs consumer action: release it as a MINOR with a Consumer action required entry."
+          if ! gh pr edit "$PR" --repo "$REPOSITORY" --add-label consumer-action; then
+            echo "::warning::The consumer-action label was not added: create it in the repository, or the pull request comes from a fork."
+          fi

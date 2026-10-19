@@ -1,0 +1,4 @@
+on: [workflow_dispatch]
+jobs:
+  backend:
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31

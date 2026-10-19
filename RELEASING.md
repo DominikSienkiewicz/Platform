@@ -89,6 +89,13 @@ SonarQube Cloud (Decision 28) is set up by hand once: create the projects
 `dominiksienkiewicz` organisation, turn off Automatic Analysis, and add a `SONAR_TOKEN` secret. Until the
 secret exists, the `sonar` job of `ci.yml` only leaves a notice.
 
+The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
+`scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon
+package, or a reusable workflow that loses an input or secret, gains a required input or a
+permission, or changes a default. Create the label once (`gh label create consumer-action`); until
+it exists the job only warns. The rule is the one `release.sh` applies: such a change ships in a
+MINOR release with a **Consumer action required** entry.
+
 It never deletes a branch: it lists remote branches already merged into `main` with the command that
 deletes them. `--consumers` also checks every repository in `scripts/consumers.txt` for what
 `platform-bump.yml` needs: GitHub Actions may create pull requests there, and a `PLATFORM_BUMP_TOKEN`
@@ -105,7 +112,10 @@ secret exists (the secret is only reported; its value is yours to set).
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
    the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
-   action means a MINOR, anything else a PATCH. In [docs/compatibility.md](docs/compatibility.md),
+   action means a MINOR, anything else a PATCH. `scripts/release-notes.sh v<previous>..HEAD` drafts
+   the section from history: the first-parent subjects grouped by Conventional Commit type, and the
+   consumer actions from the `Consumer-Action:` trailers of every commit since the previous tag
+   (`None.` when there are none). In [docs/compatibility.md](docs/compatibility.md),
    give the top row that version and the release date when it reads `unreleased`.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
@@ -134,7 +144,11 @@ Before it changes anything, `release.sh` refuses to run when:
   `### Consumer action required` subsection;
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
-- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given.
+- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;
+- a commit since the previous release's tag carries a `Consumer-Action: <what to do>` trailer, a `!`
+  in its subject or a `BREAKING CHANGE:` footer, and the release would be a patch or its section
+  says `None.`; the error lists those commits. Record a consumer action in the commit that causes
+  it, as the pull request template asks.
 
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
@@ -175,6 +189,19 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    version: the main build-logic artifact, the marker of every convention plugin, the catalog,
    test-fixtures, security-starter and every npm package not marked `private`. The publish jobs
    skip versions that already exist, so this is the one place that proves the release is complete.
+7. **`verify-consumable`**, after `verify-published`, resolves the release the way a consumer does,
+   from GitHub Packages with an empty Gradle home and no `-PplatformRepository`
+   (`scripts/verify-consumable.sh`). Copies of the `java-library` and `spring-app` starters pinned to
+   the version resolve the settings plugin, every convention plugin marker, the catalog's variant,
+   test-fixtures and security-starter; every public npm package installs at the version and ships the
+   files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
+   lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
+8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release
+   (`scripts/release-assets.sh`): `platform-maven-repo-X.Y.Z.zip`, a Maven repository of the four
+   modules published to a local directory, the npm tarballs packed from the registry, and
+   `SHA256SUMS`, all attested. **`verify-bundle`** then builds the `spring-app` starter from the zip
+   alone, with an empty Gradle home and no `GITHUB_TOKEN`
+   ([README](README.md#try-it-without-credentials)).
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.
@@ -227,6 +254,13 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 `platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
+- stops with exit code 2 before writing anything when a tool it needs is missing (`git`, `curl`,
+  `python3`, `node` and `npm` for a frontend, a working `backend/gradlew` for a backend), when a
+  file it rewrites has uncommitted changes (`--allow-dirty` overrides), or when GitHub rejects the
+  token or reports a classic token without `read:packages`;
+- skips the releases listed in [`releases/yanked.txt`](releases/yanked.txt) when it picks the
+  newest one, and refuses an explicit yanked target unless `--allow-yanked` is passed; when the
+  list cannot be read it warns and goes on;
 - prints the GitHub Release notes of every version after the current pin up to the target, and
   repeats their **Consumer action required** entries at the end, followed by a link to the target
   release. The stub runs the installed copy of the bin, so the notes appear from the bump after
@@ -240,12 +274,27 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
   `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
   `deploy.yml` caller; a reference by commit SHA stays;
+- verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from
+  1.6.0 on) with `gh attestation verify`, tied to Platform's `release.yml`, and stops when it fails;
+  `--skip-provenance "<reason>"` overrides it, and a machine without `gh` gets a warning;
+- runs the upgrade migrations of the target release (`frontend/packages/versions/migrations/`) from
+  the downloaded package, so it always applies the target's logic: each migration whose `SINCE` lies
+  after the current pin and up to the target, and the `every-*` ones on every bump. It prints which it
+  applied, skipped or left for a manual fix;
+- checks every caller of a Platform reusable workflow against the target's caller contract with
+  `platform-workflows-check`: the permissions it grants, its inputs and its secrets. It reports
+  `ERROR` and `WARN` lines and does not fail the bump; run it on its own (exit 1 on an error) to
+  gate a pull request;
 - moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
   distribution's SHA-256;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
   `gradle/verification-metadata.xml`;
 - lists the local version overrides in the backend's Gradle scripts (`useVersion`, `force`,
   `strictly`, `extra["….version"]`) that the Platform BOMs do not see, without failing.
+
+If any step fails, the script restores every file it had changed, so the tree is as before the
+bump. `--dry-run` prints the lines the bump would change, including the frontend canon and the
+workflow references, then restores them; it runs neither npm install nor Gradle.
 
 The script does not commit; the diff is left for review. The reusable
 [`platform-bump.yml`](docs/reusable-workflows.md#platform-bumpyml) runs the same bin on a schedule and

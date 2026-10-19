@@ -51,11 +51,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `check` now fails when the final `FROM` of the project's Dockerfile runs an older Java than
   the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
   post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
-  (`sapmachine:27-jre`) before taking this release.
+  (`sapmachine:27-jre`) before taking this release; `platform-bump` does it for a final
+  `eclipse-temurin:<N>-jre` or `-jdk` stage (migration `1.6.0-runtime-image-27`) and names any other
+  image for a manual fix.
 - Callers of `frontend-ci.yml` must grant `packages: read`. The workflow now requests it, so the
   automatic `GITHUB_TOKEN` fallback can read `@dominiksienkiewicz/*`, and a caller that grants only
   `contents: read` fails with `startup_failure`. Pass `gpr_token` explicitly as shown in
-  `docs/reusable-workflows.md`.
+  `docs/reusable-workflows.md`. `platform-bump` adds `packages: read` to the callers of `backend-ci.yml`
+  and `frontend-ci.yml` (migration `1.6.0-caller-packages-read`) and names a `permissions:` it cannot
+  edit for a manual fix.
 - `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
   the build instead of setting a threshold of 80 or crashing with a parse error.
 
@@ -71,6 +75,44 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/preview-on-consumer.sh <consumer>` runs an unreleased Platform on a real consumer: a
+  `-canary` version of the four modules in a temporary repository, the consumer's pins rewritten in a
+  throwaway worktree, and Gradle on the fast lane (`docs/local-development.md`).
+- Every GitHub Release carries the release as attested files that need no credentials:
+  `platform-maven-repo-X.Y.Z.zip` with all four Maven modules, the npm tarballs and `SHA256SUMS`.
+  `release.yml` builds the `spring-app` starter from the zip alone, without a token, and the README
+  shows how (`-PplatformRepository=file://…`).
+- `platform-bump` verifies the attestation of the package it downloads before it uses it, for targets
+  from 1.6.0 on, and stops with nothing changed when it does not verify (`--skip-provenance "<reason>"`
+  overrides it; without `gh` it warns).
+- Every Platform pull request gets a consumer impact report (`consumer-impact.yml`, `scripts/canon-diff.py`):
+  the catalog, the frontend canon, the reusable workflow contract and the copied templates compared as
+  parsed values. A change that needs consumer action labels the pull request `consumer-action`.
+- `platform-workflows-check`, a bin of `@dominiksienkiewicz/versions`, holds every caller of a Platform
+  reusable workflow to the release's caller contract: the permissions it grants (its own block, else
+  the workflow's), its inputs, required inputs and secrets, and an exact ref. It exits 1 on an error;
+  `platform-bump` runs it against the target release as a report.
+- Consumer action recorded in history: `release.sh` refuses a patch, or a section that says `None.`,
+  when a commit since the previous tag carries a `Consumer-Action:` trailer, a `!` or a
+  `BREAKING CHANGE:` footer. `scripts/release-notes.sh <range>` drafts the CHANGELOG section from
+  first-parent subjects and those trailers, and a `pr-title` job in `ci.yml` checks pull request
+  titles with the Conventional Commit pattern of `release.sh`.
+- `release.yml` proves every release consumable (new `verify-consumable` job): the `java-library` and
+  `spring-app` starters resolve it from GitHub Packages with an empty Gradle home, test-fixtures and
+  security-starter included, and every public npm package installs with the files it declares.
+- Upgrade migrations: `platform-bump` runs the migrations of the target release from its downloaded
+  package, idempotent edits of the working tree that carry out a consumer action. The first three add
+  `packages: read` to the callers of `backend-ci.yml` and `frontend-ci.yml`, move a final
+  `eclipse-temurin` stage below 27 to `sapmachine:27-jre`, and remove `overrides` the canon no longer
+  lists (on every bump). A shape a migration does not recognise is reported for a manual fix.
+- `platform-bump` is transactional. Before writing anything it checks the tools it needs, that the
+  files it rewrites carry no uncommitted changes (`--allow-dirty` overrides) and that GitHub accepts
+  the token, and exits 2 otherwise. A failure after the first write restores every file it changed.
+  `--dry-run` prints the lines a bump would change without writing them or running Gradle.
+- `releases/yanked.txt` lists releases `platform-bump` no longer offers: a bump without a version skips
+  them, and an explicit one needs `--allow-yanked`. It starts with 1.3.4 and 1.5.1–1.5.3, which were
+  published without the catalog variant or the plugin markers. `docs/runbooks/rollback.md` describes
+  yanking, fixing forward and pinning a consumer back.
 - Contract-first OpenAPI kit (*incubating*; [docs/api-contracts.md](docs/api-contracts.md)), for a
   hand-written spec committed to the repository:
   - `AbstractOpenApiContractTest` in `platform-test-fixtures` fails when the Spring MVC controllers and
