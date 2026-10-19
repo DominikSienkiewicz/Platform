@@ -2,16 +2,20 @@
 # platform-doctor — read-only diagnosis of a consumer repository against Platform's preconditions (N-DX-1).
 # Each check prints PASS, WARN or FAIL with a stable ID, what it saw and the fix; secrets are named by their
 # source, never printed. Exit 1 only when a check FAILs. Run it from anywhere in the repository:
-#   frontend/node_modules/.bin/platform-doctor [--offline]
+#   frontend/node_modules/.bin/platform-doctor [--offline] [--gradle]
 # --offline skips the two checks that call GitHub Packages (PD031, PD043).
+# --gradle also runs the Gradle-side checks of the platformDoctor task (PD080-PD082) through the wrapper.
 set -uo pipefail
 
 offline=0
-case "${1:-}" in
-  "") ;;
-  --offline) offline=1 ;;
-  *) echo "usage: platform-doctor [--offline]" >&2; exit 2 ;;
-esac
+gradle=0
+for arg in "$@"; do
+  case "$arg" in
+    --offline) offline=1 ;;
+    --gradle) gradle=1 ;;
+    *) echo "usage: platform-doctor [--offline] [--gradle]" >&2; exit 2 ;;
+  esac
+done
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "FAIL PD001 not inside a git repository"; exit 1; }
 cd "$root" || exit 1
 OWNER=DominikSienkiewicz
@@ -83,6 +87,21 @@ if [[ -f backend/settings.gradle.kts || -f settings.gradle.kts ]]; then
     report PASS PD011 "$wrapper_dir/gradlew is executable"
   else
     report FAIL PD011 "$wrapper_dir/gradlew is missing or not executable" "copy the wrapper from Platform (templates/jvm/java-library) and chmod +x it"
+  fi
+  if [[ "$gradle" -eq 1 && -x "$wrapper_dir/gradlew" ]]; then
+    # Wiersze taska mają format tego binu; liczą się jego FAIL-e. Brak wierszy = Gradle nie doszedł do taska.
+    gradle_out=$(cd "$wrapper_dir" && ./gradlew -q --console=plain platformDoctor 2>&1)
+    gradle_status=$?
+    doctor_lines=$(grep -E '^(PASS|WARN|FAIL) PD08[0-9] |^          fix: ' <<<"$gradle_out" || true)
+    if [[ -n "$doctor_lines" ]]; then
+      printf '%s\n' "$doctor_lines"
+      failures=$((failures + $(grep -c '^FAIL ' <<<"$doctor_lines")))
+    elif [[ "$gradle_status" -ne 0 ]]; then
+      reason=$(sed -n '/^\* What went wrong:/{n;p;q;}' <<<"$gradle_out")
+      [[ -n "$reason" ]] || reason=$(grep -m1 -E '[^[:space:]]' <<<"$gradle_out")
+      report FAIL PD083 "$wrapper_dir/gradlew platformDoctor did not run: $reason" \
+        "pin a Platform release that has the platformDoctor task (CHANGELOG), then rerun; the Gradle output says what failed"
+    fi
   fi
 fi
 

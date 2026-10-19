@@ -17,7 +17,7 @@
     "bin/platform-doctor.sh"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh && bash test/bump-transaction.test.sh && bash test/yank.test.sh && bash test/migrations.test.sh && bash test/workflows-check.test.sh && bash test/provenance.test.sh && bash test/check-fix.test.sh && bash test/doctor.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh && bash test/bump-transaction.test.sh && bash test/yank.test.sh && bash test/migrations.test.sh && bash test/workflows-check.test.sh && bash test/provenance.test.sh && bash test/check-fix.test.sh && bash test/doctor.test.sh && bash test/doctor-gradle.test.sh"
   },
   "exports": {
     ".": "./versions.json",

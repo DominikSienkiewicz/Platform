@@ -90,6 +90,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `seniordev.settings-conventions` registers `platformDoctor` on the root project, compatible with the
+  configuration cache: PD080 compares the settings plugin, the catalog's `platform` version and
+  `platformVersion`, PD081 resolves the root project's Java toolchain and PD082 checks `coverageMinimum`.
+  `platform-doctor --gradle` runs it through the wrapper and reports PD083 when the task does not run.
 - `templates/Dockerfile.backend`: a `HEALTHCHECK` on `/actuator/health/liveness` through bash's
   `/dev/tcp`, falling back to `/actuator/health` while the probes are off, and
   `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"`.
@@ -118,7 +122,7 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   is generated from the ADR headers (`scripts/adr-index.sh`), and CI checks it and every relative link and
   anchor of the Markdown files offline (`scripts/check-doc-links.py`).
 - `platform-test-fixtures` names the test taxonomy: `@IntegrationTest`, `@ModelTest` and
-  `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the platform PostgreSQL in one), with the tag
+  `@PostgresIntegrationTest` (the tag, `@SpringBootTest` and the shared platform PostgreSQL in one), with the tag
   names in `PlatformTestTags`. The platform containers warn when they start in the unit `test` task
   once the task names itself in `platform.test.task`, and throw with `platform.test.guard=fail`, which a
   later MINOR release makes the default.

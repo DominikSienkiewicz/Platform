@@ -494,7 +494,9 @@ gate gets 401.
 
 Run `frontend/node_modules/.bin/platform-doctor` from the repository first (`--offline` skips the
 GitHub Packages calls). It checks the preconditions below without changing anything, names each one
-by its ID with the fix, and exits 1 when one fails:
+by its ID with the fix, and exits 1 when one fails. `--gradle` adds the checks only Gradle can make,
+through the `platformDoctor` task of `seniordev.settings-conventions` (PD080-PD082), which also runs on
+its own as `./gradlew platformDoctor`; resolving the toolchain may provision a JDK, as any build would:
 
 | ID | Checks |
 |---|---|
@@ -512,6 +514,10 @@ by its ID with the fix, and exits 1 when one fails:
 | PD050 | `.secrets.local` is ignored when the repository deploys |
 | PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
 | PD070 | whether `AI_AGENT` is on |
+| PD080 | (`platformDoctor`) the settings plugin, the catalog's `platform` version and `platformVersion` are the same release |
+| PD081 | (`platformDoctor`) the root project's Java toolchain resolves to an installation |
+| PD082 | (`platformDoctor`) `coverageMinimum` is a decimal between 0 and 1; unset warns, because the gate then accepts any coverage |
+| PD083 | (`--gradle`) `./gradlew platformDoctor` ran at all; an older pin has no such task |
 
 | Symptom | Cause | Fix |
 |---|---|---|
