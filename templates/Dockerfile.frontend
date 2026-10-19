@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+# Next.js standalone runtime image; copy to <repo>/frontend/Dockerfile. Needs `output: "standalone"`
+# (templates/frontend/next.config.ts) and a public/ directory.
+# Build: docker build --secret id=github_token,env=GITHUB_TOKEN -t <image> frontend
+# The token (read:packages, for @dominiksienkiewicz/*) reaches only the npm ci step, never a layer.
+# node:24-slim (glibc, like the CI runners), not alpine: sharp and other native packages install their
+# prebuilt glibc binaries, as in CI; the choice is in docs/versions.md.
+
+FROM node:24-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json .npmrc ./
+# --ignore-scripts as in frontend-ci: native binaries arrive as optionalDependencies, no install script runs.
+RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN npm ci --ignore-scripts
+
+FROM node:24-slim AS builder
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+FROM node:24-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+RUN groupadd --system nextjs && useradd --system --gid nextjs --uid 1001 nextjs
+COPY --from=builder --chown=nextjs:nextjs /app/public ./public
+COPY --from=builder --chown=nextjs:nextjs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nextjs /app/.next/static ./.next/static
+USER nextjs
+EXPOSE 3000
+CMD ["node", "server.js"]

@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/Dockerfile.frontend` and `templates/frontend/next.config.ts`: the canonical Next.js
+  standalone image on `node:24-slim`, installed with `npm ci --ignore-scripts` like CI, with the token
+  only as the BuildKit secret `github_token` and a non-root runner. Moving a frontend onto it lets
+  `deploy.yml` drop the `gh_token` secret alias in a later release.
 - `deploy.yml` rolls an application layer back on the host: when the new backend, or a frontend with a
   healthcheck, does not become healthy, `scripts/deploy-remote.sh` recreates it with the previous tag
   from the local image and fails the job with `ROLLED BACK to <tag>`. Migrations are not rolled back, so

@@ -156,6 +156,15 @@ Move back to `eclipse-temurin:27-jre` when that tag exists and a Grype scan of i
 `container-scan.yml` gate (`high`, `only-fixed`). Change only the `FROM` line; the rest of the
 template is image-neutral.
 
+## Frontend runtime image
+
+`templates/Dockerfile.frontend` runs Next.js standalone on `node:24-slim`, the Node major of
+`frontend/.nvmrc`. Slim (Debian, glibc) rather than alpine (musl): `npm ci --ignore-scripts` installs
+the prebuilt glibc binaries of `sharp` and other native packages as optionalDependencies, exactly as on
+the Ubuntu CI runners, so the image runs the dependency tree CI tested. The token reaches only the
+`npm ci` step, as the BuildKit secret `github_token`; `templates/tests/dockerfile-frontend.test.sh`
+pins all of it.
+
 ## JDK 27 toolchain on CI
 
 The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
