@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // BOM-y i nadpisania ze spring-modulith-conventions, CycloneDX (tylko runtimeClasspath) z quality-conventions.
 plugins {
 	id("seniordev.spring-modulith-conventions")
@@ -14,10 +16,11 @@ val canon = extensions.getByType<VersionCatalogsExtension>().named("libs")
 // publikuje go do Maven local), żeby jego podłogi CVE trafiły do SBOM-u niezależnie od importu w konwencjach.
 // Na b6877bf probe nie miał skąd go wziąć (nie ma go w Maven Central) i Grype dostał Jacksona 3.1.5 z Boota
 // zamiast podłogi 3.1.8. Starszy tag bez gradle/bom importuje BOM-y Springa w konwencjach.
+// Properties z importu: w skrypcie z pluginem Java `java` to rozszerzenie `java { }`, więc `java.util` się nie kompiluje.
 val platformBomVersion =
 	file(providers.gradleProperty("canonRoot").get() + "/gradle/bom/gradle.properties")
 		.takeIf { it.isFile }
-		?.let { properties -> java.util.Properties().apply { properties.inputStream().use { load(it) } }.getProperty("platformVersion") }
+		?.let { properties -> Properties().apply { properties.inputStream().use { load(it) } }.getProperty("platformVersion") }
 
 dependencies {
 	platformBomVersion?.let { implementation(platform("pl.seniordeveloper:platform-bom:$it")) }
