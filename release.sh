@@ -14,14 +14,31 @@
 #   - wydanie z akcją konsumenta (podsekcja inna niż "None.") miałoby być patchem;
 #   - message feat / "!:" / BREAKING CHANGE miałby dostać automatyczny patch (podaj wersję jawnie);
 #   - commit od poprzedniego wydania niesie trailer "Consumer-Action:", "!" w temacie albo stopkę
-#     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.".
+#     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.";
+#   - scripts/canary.sh nie zapisał zielonego wyniku dla HEAD na każdym konsumencie z scripts/consumers.txt
+#     (N-REL-1); --skip-canary "<powód>" pomija bramkę i zapisuje powód jako trailer Canary-Skipped commita.
 #
 # Użycie:
 #   ./release.sh "fix: opis zmiany"            # patch +0.0.1 od aktualnej wersji
 #   ./release.sh "feat: opis" 1.2.0            # konkretna wersja
 #   ./release.sh "..." 1.2.0 -y                # bez pytania o potwierdzenie (też: ASSUME_YES=1)
+#   ./release.sh "..." 1.2.0 --skip-canary "consumers offline"   # bez canary, z powodem w historii
 set -euo pipefail
 cd "$(dirname "$0")"   # zawsze z roota Platform
+
+SKIP_CANARY=""
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --skip-canary)
+      SKIP_CANARY="${2:-}"
+      [[ -n "$SKIP_CANARY" ]] || { echo "--skip-canary needs a reason, e.g. --skip-canary \"consumers offline\"."; exit 1; }
+      shift 2
+      ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 MSG="${1:-}"
 VERSION="${2:-}"
@@ -58,6 +75,31 @@ fi
 git fetch --quiet origin main
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
   || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
+
+# Canary (N-REL-1): wynik scripts/canary.sh dla TEGO commita — niewydana Platform na każdym konsumencie, zanim
+# niezmienny tag trafi do wszystkich. Bez listy konsumentów nie ma kogo sprawdzać.
+if [[ -f scripts/consumers.txt ]]; then
+  if [[ -n "$SKIP_CANARY" ]]; then
+    echo "Consumer canary skipped: $SKIP_CANARY"
+  else
+    HEAD_SHA="$(git rev-parse HEAD)"
+    RECORD="$(git rev-parse --path-format=absolute --git-common-dir)/platform-canary/$HEAD_SHA"
+    [[ -f "$RECORD" ]] || {
+      echo "No consumer canary for ${HEAD_SHA:0:7}: run scripts/canary.sh, or pass --skip-canary \"<reason>\"."
+      exit 1
+    }
+    NOT_GREEN="$(grep -Ev '^[[:space:]]*(#|$)' scripts/consumers.txt | while read -r repo; do
+      status=$(awk -v repo="$repo" '$2 == repo { print $1 }' "$RECORD" | tail -1)
+      [[ "$status" == PASS ]] || echo "${status:-NOT RUN} $repo"
+    done)"
+    if [[ -n "$NOT_GREEN" ]]; then
+      echo "The consumer canary for ${HEAD_SHA:0:7} is not green on every consumer:"
+      sed 's/^/  /' <<< "$NOT_GREEN"
+      echo "Fix the consumers (scripts/preview-on-consumer.sh <dir> shows the failure), rerun scripts/canary.sh, or pass --skip-canary \"<reason>\"."
+      exit 1
+    fi
+  fi
+fi
 
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
@@ -150,7 +192,11 @@ for f in "${PACKAGE_FILES[@]}"; do
 done
 
 git add -- "${PROPERTY_FILES[@]}" "${PACKAGE_FILES[@]}"
-git commit -m "chore(release): platform $VERSION" -m "$MSG"
+if [[ -n "$SKIP_CANARY" ]]; then
+  git commit -m "chore(release): platform $VERSION" -m "$MSG" -m "Canary-Skipped: $SKIP_CANARY"
+else
+  git commit -m "chore(release): platform $VERSION" -m "$MSG"
+fi
 git push origin main
 # --cleanup=verbatim: domyślne "strip" wycina linie zaczynające się od '#', czyli nagłówki Markdown sekcji.
 TAG_MESSAGE="$(mktemp)"

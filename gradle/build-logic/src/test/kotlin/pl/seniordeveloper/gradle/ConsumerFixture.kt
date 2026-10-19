@@ -12,12 +12,16 @@ import java.nio.file.Path
  * obejmuje CC, a deprecacja Gradle'a w konwencjach ma wywalić test dziś, nie konsumentów przy Gradle 10. Toolchain
  * przez `-D`, bo konfigurowanie toolchainów przez `-P` jest deprecated i znika w Gradle 10.
  */
-internal class ConsumerFixture(
+internal class ConsumerFixture private constructor(
 	private val directory: Path,
-	template: String,
 ) {
-	init {
+	constructor(directory: Path, template: String) : this(directory) {
 		Path.of(System.getProperty("platform.templates"), template).toFile().copyRecursively(directory.toFile(), true)
+	}
+
+	companion object {
+		/** Konsument, który już leży w katalogu, np. wyrenderowany przez scripts/new-consumer.sh. */
+		fun existing(directory: Path): ConsumerFixture = ConsumerFixture(directory)
 	}
 
 	fun file(relativePath: String): File = directory.resolve(relativePath).toFile()
