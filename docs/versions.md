@@ -138,6 +138,10 @@ When it is red, the maintainer:
 3. or, when no fix can be adopted yet, accepts the finding in Platform's own `.grype.yaml`, with an
    expiry as described in [security-scanning.md](security-scanning.md), so that the scan is green again.
 
+The `CHANGELOG.md` entry of any release that fixes a publicly known vulnerability, a patch or not, names its CVE ids
+(the GHSA id when no CVE exists). A consumer then reads from the notes which releases are affected; the OpenSSF
+Best Practices criterion `release_notes_vulns` asks for exactly this ([self-assessment](openssf-best-practices.md)).
+
 ## What platformDependencyCheck does not see
 
 `platformDependencyCheck` compares the versions a build *declares* with the canon embedded in the plugin

@@ -13,8 +13,8 @@ shows no badge until the badge is earned.
 | **Not met** | no evidence today; the row says what it would take |
 | **Owner action** | the answer depends on something only the maintainer can state or check, or the evidence is partial |
 
-Of the 67 criteria, 43 are **Met**, 11 **N/A**, 3 **Not met** (all SUGGESTED) and 10 **Owner action**. Seven of the
-Owner actions are MUST criteria; they are listed in [what is left](#what-is-left) with a recommended answer each.
+Of the 67 criteria, 45 are **Met**, 11 **N/A**, 2 **Not met** (both SUGGESTED) and 9 **Owner action**. Six of the
+Owner actions are MUST criteria; they are listed in [what is left](#what-is-left) with the answer to give each.
 
 ## Basics
 
@@ -46,7 +46,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `version_semver` | SUGGESTED | **Owner action** | The format is `MAJOR.MINOR.PATCH`, but ADR-0002 makes a MINOR carry consumer action and says it deviates from strict SemVer on purpose. Recommended answer: Met, with that sentence as the justification. |
 | `version_tags` | SUGGESTED | **Met** | Annotated tags `vX.Y.Z` made by `release.sh`, protected by [`release-tags.json`](../.github/rulesets/release-tags.json). |
 | `release_notes` | MUST | **Met** | [CHANGELOG](../CHANGELOG.md) has a section per version with "Consumer action required"; [`release.yml`](../.github/workflows/release.yml) publishes it as the GitHub Release through [`changelog-section.sh`](../scripts/changelog-section.sh). |
-| `release_notes_vulns` | MUST | **Owner action** | A release that raises a CVE floor says so in the changelog, but no entry lists CVE identifiers, and the [CVE response](versions.md#cve-response) procedure does not ask for them. Recommended: add that step to the procedure and name the identifiers in the notes of the release that fixes them. Otherwise answer N/A, because the fixed vulnerabilities are in third-party dependencies. |
+| `release_notes_vulns` | MUST | **Owner action** | The [CVE response](versions.md#cve-response) procedure now requires the CVE ids in the `CHANGELOG.md` entry of a release that fixes a vulnerability, so it is met from the next release. Published releases name no ids, and the `[Unreleased]` entry on the Tomcat, Jackson, jsoup and js-yaml bumps in [CHANGELOG](../CHANGELOG.md) names none yet; add them before that release is cut. |
 
 ## Reporting
 
@@ -72,9 +72,9 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `test_invocation` | SHOULD | **Met** | `./gradlew test`, `pnpm test` and `bash templates/tests/<name>.test.sh`. |
 | `test_most` | SUGGESTED | **Owner action** | The four published Java modules gate JaCoCo coverage at 0.88 to 0.95 (`coverageMinimum` in each `gradle.properties`) and every script has a test, but frontend and workflow coverage is not measured. Answer Met only if that counts as most. |
 | `test_continuous_integration` | SUGGESTED | **Met** | [`ci.yml`](../.github/workflows/ci.yml) runs the test suites on each push to `main`, each pull request and every Monday. |
-| `test_policy` | MUST | **Owner action** | Practice and gates exist (coverage thresholds; [CONTRIBUTING](../CONTRIBUTING.md) requires a regression test for a bug fix), but no sentence says that new functionality comes with tests. Recommended: add that sentence to CONTRIBUTING, then answer Met. |
+| `test_policy` | MUST | **Met** | [CONTRIBUTING](../CONTRIBUTING.md) "Rules a change must follow": new functionality comes with tests that cover it, and a bug fix starts with a regression test. The coverage thresholds (`coverageMinimum` 0.88 to 0.95) enforce it in the four published Java modules. |
 | `tests_are_added` | MUST | **Met** | Recent features carry their guard, for example [`platform-plugin.test.sh`](../templates/tests/platform-plugin.test.sh) with the Claude Code plugin and [`ci-frontend-image.test.sh`](../templates/tests/ci-frontend-image.test.sh) with the frontend image build. |
-| `tests_documented_added` | SUGGESTED | **Not met** | Neither CONTRIBUTING nor the pull request template asks for tests of new functionality. Closed by the same sentence as `test_policy`, plus a checklist line. |
+| `tests_documented_added` | SUGGESTED | **Met** | The rule is in the change instructions: [CONTRIBUTING](../CONTRIBUTING.md) and the checklist of Platform's [pull request template](../.github/pull_request_template.md). |
 | `warnings` | MUST | **Met** | Checkstyle and Spotless in the Java modules, ESLint and Prettier in the frontend, ShellCheck over every tracked script (the `shellcheck` job of [`ci.yml`](../.github/workflows/ci.yml)). |
 | `warnings_fixed` | MUST | **Met** | Checkstyle runs with `maxWarnings=0`, so a warning fails `check`; a ShellCheck finding fails its CI job. |
 | `warnings_strict` | SUGGESTED | **Met** | `maxWarnings=0`, ShellCheck at `--severity=warning`, and `strict: true` for the frontend CI. |
@@ -115,15 +115,14 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 ## What is left
 
-The seven MUST criteria marked **Owner action**, each with the answer to give:
+The six MUST criteria marked **Owner action**, each with the answer to give:
 
 1. `know_secure_design` and `know_common_errors`: the maintainer attests on the form. Nothing to change in the repository.
 2. `report_responses` and `vulnerability_report_response`: read the tracker and the advisories of the last 12 and 6 months.
    With no vulnerability reports in 6 months, answer N/A for the second.
 3. `vulnerabilities_fixed_60_days`: open the Security tab and clear every alert older than 60 days, medium included.
-4. `test_policy`: add one sentence to `CONTRIBUTING.md` that new functionality comes with tests. This also closes
-   `tests_documented_added` once the pull request template repeats it.
-5. `release_notes_vulns`: ask for CVE identifiers in the notes of a release that fixes one, or answer N/A.
+4. `release_notes_vulns`: put the CVE ids of the Tomcat, Jackson, jsoup and js-yaml bumps into their `[Unreleased]`
+   entry before the next release is cut. From that release the criterion is met.
 
 ## Applying
 
