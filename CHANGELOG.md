@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/preview-on-consumer.sh <consumer>` runs an unreleased Platform on a real consumer: a
+  `-canary` version of the four modules in a temporary repository, the consumer's pins rewritten in a
+  throwaway worktree, and Gradle on the fast lane (`docs/local-development.md`).
 - Every GitHub Release carries the release as attested files that need no credentials:
   `platform-maven-repo-X.Y.Z.zip` with all four Maven modules, the npm tarballs and `SHA256SUMS`.
   `release.yml` builds the `spring-app` starter from the zip alone, without a token, and the README

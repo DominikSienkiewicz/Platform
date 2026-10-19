@@ -63,3 +63,26 @@ npm install --no-save <absolute path>/Platform/frontend/packages/<name>
 > `platformRepository` line of [`templates/jvm/spring-app/settings.gradle.kts`](../templates/jvm/spring-app/settings.gradle.kts);
 > otherwise plugins still resolve from GitHub Packages. A missing local artifact may still need
 > remote access.
+
+### Previewing a change on a real consumer
+
+`buildAndPublishLocal.sh` publishes under the released version, and on a real consumer that collides
+with the published bytes, trips dependency verification and leaves literal pins untouched.
+`scripts/preview-on-consumer.sh` avoids all of that:
+
+```bash
+scripts/preview-on-consumer.sh ../Azimuth
+```
+
+```bash
+scripts/preview-on-consumer.sh ../Azimuth --gradle "check" --keep
+```
+
+It publishes the four modules as `<next patch>-canary.<commit>`, a version no release can have, to a
+temporary repository; checks the consumer's `HEAD` out in a throwaway worktree
+(`<consumer>/.worktrees/platform-preview-<commit>`); rewrites its pins there with the same rules as
+`platform-bump`; and runs Gradle with `-PplatformRepository`, an init script that adds the repository to
+`pluginManagement` (so consumers that do not read `platformRepository` there work too), `--write-locks`
+and `--dependency-verification=lenient`, which are acceptable only in that throwaway worktree. The
+default tasks are `compileJava compileTestJava platformDependencyCheck`. The consumer's own checkout is
+never touched, and the worktree is removed afterwards unless `--keep` is passed.
