@@ -134,7 +134,8 @@ tasks.withType<Test>().configureEach {
 // pokazywał liczbę zaniżoną o kilka punktów. Wiązanie po NAZWIE, bo `integrationTest` rejestruje
 // późniejszy plugin; `modelTest` (pobiera wagi modelu, poza `check`) świadomie zostaje poza sumą,
 // żeby wynik lokalny i wynik CI były tą samą liczbą.
-val coverageProducers = tasks.matching { it.name == "test" || it.name == "integrationTest" }
+// named { } (Gradle 8.6+) filtruje po nazwie bez realizowania wszystkich zarejestrowanych tasków, jak robił matching.
+val coverageProducers = tasks.named { it == "test" || it == "integrationTest" }
 val coverageExecutionData =
 	fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco/integrationTest.exec") }
 
