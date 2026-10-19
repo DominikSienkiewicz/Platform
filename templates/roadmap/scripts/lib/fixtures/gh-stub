@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# gh stub for the roadmap toolkit tests: logs every call to $GH_LOG and answers from files in $GH_STATE.
+#   issues.json            gh issue list (and gh issue view N)       issue-list.rc       exit code of issue list
+#   projects.json          gh project list (closed ones only with --closed)
+#   fields.json, items.json gh project field-list / item-list        item-list.rc, item-edit.rc
+#   blocked_by.N.json      GET of the native blocked_by links of #N
+#   label-create.rc, issue-edit-labels.rc, assignee.rc, blocked-by-post.rc   exit codes of those writes
+# Writes leave traces: body.N (last --body-file), comment.N (comments, appended), created (counter).
+set -euo pipefail
+printf '%s\n' "$*" >> "$GH_LOG"
+
+arg() { # arg FLAG ARGS…: the value after FLAG
+  local flag="$1"; shift
+  while [[ $# -gt 0 ]]; do
+    if [[ "$1" == "$flag" ]]; then printf '%s' "${2:-}"; return 0; fi
+    shift
+  done
+  return 1
+}
+has() { local flag="$1"; shift; local a; for a in "$@"; do [[ "$a" == "$flag" ]] && return 0; done; return 1; }
+rc() { if [[ -f "$GH_STATE/$1" ]]; then cat "$GH_STATE/$1"; else echo 0; fi; }
+filter() { # apply --jq / -q when given
+  local expr
+  if expr="$(arg --jq "$@")" || expr="$(arg -q "$@")"; then jq -r "$expr"; else cat; fi
+}
+
+case "$1 ${2:-}" in
+  "auth status") exit 0 ;;
+  "issue list")
+    status="$(rc issue-list.rc)"
+    if [[ "$status" != 0 ]]; then echo "HTTP 502: Bad Gateway" >&2; exit "$status"; fi
+    filter "$@" < "$GH_STATE/issues.json" ;;
+  "issue view")
+    jq --argjson n "$3" '.[] | select(.number == $n)' "$GH_STATE/issues.json" | filter "$@" ;;
+  "issue create")
+    n=$(( $(cat "$GH_STATE/created" 2>/dev/null || echo 100) + 1 )); echo "$n" > "$GH_STATE/created"
+    echo "https://github.com/${GH_REPO}/issues/$n" ;;
+  "issue edit")
+    if file="$(arg --body-file "$@")"; then cp "$file" "$GH_STATE/body.$3"; fi
+    if has --add-label "$@" || has --remove-label "$@"; then
+      status="$(rc issue-edit-labels.rc)"; [[ "$status" == 0 ]] || { echo "label edit failed" >&2; exit "$status"; }
+    fi
+    if has --add-assignee "$@"; then
+      status="$(rc assignee.rc)"; [[ "$status" == 0 ]] || { echo "could not assign user" >&2; exit "$status"; }
+    fi ;;
+  "issue comment") arg --body "$@" >> "$GH_STATE/comment.$3"; echo >> "$GH_STATE/comment.$3" ;;
+  "label create")
+    status="$(rc label-create.rc)"; [[ "$status" == 0 ]] || { echo "HTTP 403: Resource not accessible" >&2; exit "$status"; } ;;
+  "project list")
+    if has --closed "$@"; then filter "$@" < "$GH_STATE/projects.json"
+    else jq '{projects: [.projects[] | select(.closed != true)]}' "$GH_STATE/projects.json" | filter "$@"; fi ;;
+  "project field-list") filter "$@" < "$GH_STATE/fields.json" ;;
+  "project item-list")
+    status="$(rc item-list.rc)"; [[ "$status" == 0 ]] || { echo "item list failed" >&2; exit "$status"; }
+    filter "$@" < "$GH_STATE/items.json" ;;
+  "project item-add") url="$(arg --url "$@")"; printf '{"id":"ITEM-%s"}\n' "${url##*/}" | filter "$@" ;;
+  "project item-edit")
+    status="$(rc item-edit.rc)"; [[ "$status" == 0 ]] || { echo "item edit failed" >&2; exit "$status"; } ;;
+  "project create") echo '{"number":99,"id":"PVT_new"}' | filter "$@" ;;
+  "api graphql") echo '' ;;
+  "api "*)
+    method="$(arg --method "$@" || echo GET)"
+    path=""; for a in "$@"; do case "$a" in repos/*) path="$a" ;; esac; done
+    case "$method $path" in
+      "GET "*/dependencies/blocked_by)
+        n="${path%/dependencies/blocked_by}"; n="${n##*/}"
+        if [[ -f "$GH_STATE/blocked_by.$n.json" ]]; then filter "$@" < "$GH_STATE/blocked_by.$n.json"; else echo '[]' | filter "$@"; fi ;;
+      "POST "*/dependencies/blocked_by)
+        status="$(rc blocked-by-post.rc)"; [[ "$status" == 0 ]] || { echo "HTTP 500" >&2; exit "$status"; } ;;
+      "DELETE "*) : ;;
+      "GET "*/issues/*) n="${path##*/}"; printf '{"id":%s,"number":%s}\n' "$((1000 + n))" "$n" | filter "$@" ;;
+    esac ;;
+esac

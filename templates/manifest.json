@@ -10,6 +10,7 @@
     { "source": "roadmap/scripts/roadmap-unblock.sh", "target": "scripts/roadmap-unblock.sh", "optional": true },
     { "source": "roadmap/scripts/roadmap-project-setup.sh", "target": "scripts/roadmap-project-setup.sh", "optional": true },
     { "source": "roadmap/scripts/lib/roadmap-lib.sh", "target": "scripts/lib/roadmap-lib.sh", "optional": true },
-    { "source": "roadmap/scripts/lib/roadmap-parse.sh", "target": "scripts/lib/roadmap-parse.sh", "optional": true }
+    { "source": "roadmap/scripts/lib/roadmap-parse.sh", "target": "scripts/lib/roadmap-parse.sh", "optional": true },
+    { "source": "roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml", "target": ".github/ISSUE_TEMPLATE/roadmap-item.yml", "optional": true }
   ]
 }

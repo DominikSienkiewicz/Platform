@@ -1,0 +1,81 @@
+name: Roadmap item
+description: A roadmap item added by hand, with the same structure as the issues roadmap-to-issues.sh projects.
+title: "ID: <short title>"
+labels: ["type:slice", "status:backlog"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form mirrors the issues that `scripts/roadmap-to-issues.sh` generates. **Keep the Marker section
+        at the bottom:** idempotency and auto-unblock read it. The better way is to add the item to the
+        roadmap document and generate the issue with the script; this form is for exceptions.
+  - type: input
+    id: roadmap_id
+    attributes:
+      label: Roadmap ID
+      description: A stable, unique identifier such as F-03 or S-10.
+      placeholder: S-10
+    validations:
+      required: true
+  - type: input
+    id: change_id
+    attributes:
+      label: Change ID
+      description: kebab-case, matching `context/changes/<change-id>/`.
+      placeholder: my-new-slice
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      options: [slice, foundation]
+    validations:
+      required: true
+  - type: dropdown
+    id: stream
+    attributes:
+      label: Stream
+      description: One of the streams in ROADMAP_STREAMS of scripts/lib/roadmap-config.sh.
+      options: [A, B, C, D, E]
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What the user will be able to do, in one user-visible sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: The conditions for done, as a checklist.
+      value: |
+        - [ ] <condition 1>
+        - [ ] <condition 2>
+    validations:
+      required: true
+  - type: input
+    id: prd_refs
+    attributes:
+      label: PRD refs
+      placeholder: "FR-0xx, US-0x"
+  - type: input
+    id: depends_on
+    attributes:
+      label: Depends on
+      description: Comma-separated roadmap IDs of the prerequisites; empty for none.
+      placeholder: "S-01,S-02"
+  - type: textarea
+    id: marker
+    attributes:
+      label: Marker (do not remove; the automation reads it)
+      description: >
+        Fill it with the values above and keep it on one line, in this field order. The grammar is in
+        the "Marker contract" section of the roadmap toolkit README.
+      value: |
+        <!-- roadmap-id: S-10 | change-id: my-new-slice | stream: A | depends-on: S-01 | status: backlog -->
+    validations:
+      required: true

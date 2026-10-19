@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Regression: every script calling a roadmap_* helper MUST source the file that defines it,
 # and in the canonical order (config → lib → parse). Catches "command not found: roadmap_…".
-# Additionally: the parallel VALUES arrays must be equal length (using the bookofstyling example
-# config), so a mis-sized palette never silently indexes past the end. Purely static — no GitHub.
+# Additionally: the parallel VALUES arrays must be equal length in every shipped config (the example
+# and both repository configs), so a mis-sized palette never silently indexes past the end. Purely
+# static — no GitHub.
 set -uo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -45,10 +46,12 @@ done
 
 echo
 
-# ---- 2. parallel array lengths (bookofstyling example config) --------------------
+# ---- 2. parallel array lengths (every shipped config) ----------------------------
+for config in "$SCRIPTS_DIR/lib/roadmap-config.sh.example" "$TEMPLATE_ROOT"/examples/roadmap-config.*.sh; do
+echo "  ${config#"$TEMPLATE_ROOT"/}"
 (
-  # shellcheck disable=SC1091
-  source "$TEMPLATE_ROOT/examples/roadmap-config.bookofstyling.sh"
+  # shellcheck disable=SC1090
+  source "$config"
   arr_fail=0
   eq() {
     local name_a="$1" len_a="$2" name_b="$3" len_b="$4"
@@ -57,7 +60,7 @@ echo
     else
       printf '  ✗ %s (%s) != %s (%s)\n' "$name_a" "$len_a" "$name_b" "$len_b"; arr_fail=1
     fi
-    return $?
+    return "$arr_fail"
   }
   ns="${#ROADMAP_STATUSES[@]}"
   eq "#STATUSES" "$ns" "#STATUS_COLORS"       "${#ROADMAP_STATUS_COLORS[@]}"
@@ -67,6 +70,7 @@ echo
   eq "#STREAMS"  "$nr" "#STREAM_LABEL_COLORS" "${#ROADMAP_STREAM_LABEL_COLORS[@]}"
   exit "$arr_fail"
 ) || fails=$((fails+1))
+done
 
 echo
 if [[ "$fails" -eq 0 ]]; then echo "OK: PASS"; else echo "FAIL ($fails checks)"; exit 1; fi

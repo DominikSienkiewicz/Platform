@@ -12,8 +12,12 @@
 #                 roadmap_title_en ID FALLBACK               – EN title from sidecar or fallback
 #
 # TSV columns: id  change_id  type  stream  status_roadmap  status_board  depends_on  prd_refs  outcome  unknowns  blockers
+#              suggested_title  risk  notes  ready_for_plan   (12–15, appended so positional readers keep working)
 #   • type:           F-* → foundation, S-* → slice
-#   • stream:         derived from the "## Streams" table (first stream A→E mentioning the ID wins)
+#   • stream:         derived from the "## Streams" table (first stream of ROADMAP_STREAMS mentioning the ID wins)
+#   • suggested_title, ready_for_plan, notes: the "## Backlog Handoff" table, columns found by their header
+#   • risk:           the **Risk** field of the item
+#   • a duplicate ID heading stops the parser with exit 2 (it would create two issues for one ID)
 #   • status_board:   proposed→backlog, ready→ready, blocked→blocked (rest passthrough)
 #   • depends_on:     IDs pulled from the **Prerequisites** field (e.g. "F-01,F-02"); empty = none
 #   • unknowns/blockers: sub-bullets joined by the sentinel " ¶ " (the generator splits them back)
@@ -61,10 +65,13 @@ else
 fi
 
 roadmap_tsv() {
-  local file="${1:-$ROADMAP_DEFAULT}"
+  local file="${1:-$ROADMAP_DEFAULT}" streams="A B C D E"
   [[ -f "$file" ]] || { echo "roadmap-parse: roadmap file not found: $file" >&2; return 1; }
-  # Two passes over the same file: (1) FNR==NR builds stream[ID]; (2) parses item blocks.
-  awk '
+  # Streams from the per-repo config when it is sourced; the canonical five otherwise.
+  if [[ -n "${ROADMAP_STREAMS+x}" ]]; then streams="${ROADMAP_STREAMS[*]}"; fi
+  # Two passes over the same file: (1) FNR==NR builds stream[ID] and the Backlog Handoff columns;
+  # (2) parses item blocks.
+  awk -v streams="$streams" '
     function boardstatus(s) {
       if (s=="proposed") return "backlog"
       if (s=="ready")    return "ready"
@@ -80,28 +87,54 @@ roadmap_tsv() {
       }
       return out
     }
+    function trim(s) { gsub(/^[ \t]+|[ \t]+$/, "", s); return s }
     function flush(   bs, st) {
       if (cur=="") return
       st=stream[cur]
       bs=boardstatus(status)
       if (unknowns=="—") unknowns=""
       if (blockers=="—") blockers=""
-      printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
-        cur, change, type, st, status, bs, deps, prd, outcome, unknowns, blockers
+      if (risk=="—") risk=""
+      printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", \
+        cur, change, type, st, status, bs, deps, prd, outcome, unknowns, blockers, \
+        htitle[cur], risk, hnotes[cur], hready[cur]
       cur=""
     }
     BEGIN {
-      print "id\tchange_id\ttype\tstream\tstatus_roadmap\tstatus_board\tdepends_on\tprd_refs\toutcome\tunknowns\tblockers"
+      print "id\tchange_id\ttype\tstream\tstatus_roadmap\tstatus_board\tdepends_on\tprd_refs\toutcome\tunknowns\tblockers\tsuggested_title\trisk\tnotes\tready_for_plan"
+      ns=split(streams, sl, " "); for (i=1; i<=ns; i++) known_stream[sl[i]]=1
     }
 
-    # ---------- Pass 1: "## Streams" table → stream[ID] ----------
+    # ---------- Pass 1: "## Streams" → stream[ID]; "## Backlog Handoff" → title/ready/notes ----------
     FNR==NR {
-      if ($0 ~ /^## Streams[ \t]*$/) { in_streams=1; next }
-      if (in_streams && $0 ~ /^## /)  { in_streams=0 }
+      if ($0 ~ /^## /) {
+        in_streams=($0 ~ /^## Streams[ \t]*$/)
+        in_handoff=($0 ~ /^## Backlog Handoff[ \t]*$/); hcol_id=0
+        next
+      }
+      if (in_handoff && $0 ~ /^\|/) {
+        n=split($0, c, "|")
+        if (!hcol_id) {                                 # header row: find the columns by name
+          for (i=2; i<n; i++) {
+            h=trim(c[i])
+            if (h=="Roadmap ID" || h=="ID")    hcol_id=i
+            else if (h ~ /^Suggested issue title/) hcol_title=i
+            else if (h ~ /^Ready for/)         hcol_ready=i
+            else if (h ~ /^Notes/)             hcol_notes=i
+          }
+          next
+        }
+        rid=trim(c[hcol_id])
+        if (rid !~ /^[FS]-[0-9]+$/) next                 # separator row and anything else
+        if (hcol_title) htitle[rid]=trim(c[hcol_title])
+        if (hcol_ready) hready[rid]=trim(c[hcol_ready])
+        if (hcol_notes) hnotes[rid]=trim(c[hcol_notes])
+        next
+      }
       if (in_streams && $0 ~ /^\|/) {
         n=split($0, c, "|")
-        cell=c[2]; gsub(/^[ \t]+|[ \t]+$/, "", cell)   # first column = stream letter
-        if (cell ~ /^[A-E]$/) {
+        cell=trim(c[2])                                 # first column = stream name
+        if (cell in known_stream) {
           letter=cell; tmp=$0
           while (match(tmp, /[FS]-[0-9]+/)) {           # first stream mentioning an ID wins
             tok=substr(tmp, RSTART, RLENGTH)
@@ -118,8 +151,10 @@ roadmap_tsv() {
       flush()
       line=$0; sub(/^### /,"",line); ci=index(line,":"); id=substr(line,1,ci-1)
       if (id ~ /^[FS]-[0-9]+$/) {
+        if (id in seen) { print "roadmap-parse: duplicate id " id > "/dev/stderr"; duplicate=1; exit 2 }
+        seen[id]=1
         cur=id; type=(substr(id,1,1)=="F" ? "foundation" : "slice")
-        change=""; prd=""; status=""; outcome=""; deps=""; unknowns=""; blockers=""; lastlabel=""
+        change=""; prd=""; status=""; outcome=""; deps=""; unknowns=""; blockers=""; risk=""; lastlabel=""
       } else cur=""
       next
     }
@@ -136,6 +171,7 @@ roadmap_tsv() {
         else if (label=="Prerequisites") deps=extract_ids(val)
         else if (label=="Unknowns")      unknowns=val
         else if (label=="Blockers")      blockers=val
+        else if (label=="Risk")          risk=val
       }
       next
     }
@@ -146,7 +182,7 @@ roadmap_tsv() {
       next
     }
 
-    END { flush() }
+    END { if (!duplicate) flush() }
   ' "$file" "$file"
 }
 
@@ -167,7 +203,8 @@ roadmap_depends_contains() {
   esac
 }
 
-# EN title from the sidecar (ID<TAB>title); no entry → fallback (e.g. the roadmap's own title).
+# EN title from the sidecar (ID<TAB>title); no entry → the fallback the caller passes: the suggested
+# title from the Backlog Handoff table, or the change ID when the table has no row for the item.
 roadmap_title_en() {
   local id="$1" fallback="${2:-}"
   if [[ -n "$ROADMAP_TITLES_EN" ]] && [[ -f "$ROADMAP_TITLES_EN" ]]; then
