@@ -10,7 +10,8 @@ the notes since the last tag.
    (`None.` when there is none), and merge that change the usual way.
 3. `./release.sh "<conventional commit>" X.Y.Z` (a consumer action needs a MINOR; ADR-0002). It commits the
    version files, pushes `main` and pushes the annotated tag; `release.yml` publishes after `ci.yml` is green
-   on the tagged commit.
+   on the tagged commit. Once Pages is on, `docs-site.yml` also publishes the tag's docs as version `X.Y` of the
+   site ([RELEASING.md](../../RELEASING.md#the-documentation-site)).
 4. Roll it out: `scripts/ring-rollout.sh X.Y.Z` (Touchstone first).
 
 **Done when:** `release.yml` is green for the tag and the GitHub Release `vX.Y.Z` carries its assets.

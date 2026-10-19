@@ -217,8 +217,9 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
-- **The documentation as a site** → built from `docs/` with Zensical in strict mode (`docs-site.yml`); it goes
-  live on GitHub Pages once the maintainer enables Pages.
+- **The documentation as a site** → built from `docs/` with Zensical in strict mode (`docs-site.yml`), one version
+  per released MINOR plus `unreleased (main)`, with a version selector; it goes live on GitHub Pages once the
+  maintainer enables Pages ([RELEASING.md](RELEASING.md#the-documentation-site)).
 - **A reviewer's tour, incident notes and how agents build it** → [docs/tour.md](docs/tour.md),
   [docs/notes/](docs/notes/), [docs/engineering-with-agents.md](docs/engineering-with-agents.md).
 - **Guidance for coding agents** → [AGENTS.md](AGENTS.md) for this repository, the
