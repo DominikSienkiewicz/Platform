@@ -75,6 +75,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- A reviewer's tour (`docs/tour.md`), five incident notes (`docs/notes/`: the swallowed 409, discarded
+  integration coverage, two-pass verification metadata, ArchUnit and class-file 71, Foojay's musl JDK) and
+  `docs/engineering-with-agents.md`, linked from the README.
+- `scripts/consumer-audit.sh --adoption` compares each artifact's declared status (the README's
+  *incubating* labels) with the consumers that use it, reports whether `move-v1` can retire (no `@v1`
+  reference left) and names the oldest pinned release as the floor for cleaning up GitHub Packages.
 - `scripts/consumer-audit.sh --lag` reports, per consumer, how many releases and days its pin is behind
   the newest tag, whether it pins a yanked release and how many `@v1` references it keeps. It reads the
   local tags and `releases/yanked.txt` and stays a local report.
