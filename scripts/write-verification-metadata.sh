@@ -2,7 +2,7 @@
 # write-verification-metadata.sh — regeneruje gradle/verification-metadata.xml modułów Platform po zmianie
 # katalogu, lockfile'a albo pluginów (docs/versions.md, „Dependency verification”).
 #
-#   scripts/write-verification-metadata.sh                  # build-logic, test-fixtures, security-starter
+#   scripts/write-verification-metadata.sh                  # każdy moduł z gradle/maven-modules.txt z plikiem metadanych
 #   scripts/write-verification-metadata.sh build-logic      # wybrane moduły
 #
 # Dwa przebiegi, jak `platform-bump` u konsumentów: build (artefakty i konfiguracje odłączone, które tworzą
@@ -13,14 +13,22 @@
 # gradle/catalog nie ma pliku: plugin version-catalog niczego nie pobiera (pusty gradle.lockfile).
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
-if [[ $# -gt 0 ]]; then modules=("$@"); else modules=(build-logic test-fixtures security-starter); fi
+if [[ $# -gt 0 ]]; then
+  modules=("$@")
+else
+  modules=()
+  for module in $(awk '!/^#/ && NF { print $1 }' "$root/gradle/maven-modules.txt"); do
+    [[ -f "$root/gradle/$module/gradle/verification-metadata.xml" ]] && modules+=("$module")
+  done
+fi
 flags=(--write-verification-metadata sha256 --refresh-dependencies --no-daemon)
 
 for module in "${modules[@]}"; do
   case "$module" in
     build-logic) first=(build -x test) ;;
-    test-fixtures | security-starter) first=(build) ;;
-    *) echo "Unknown module: $module (build-logic, test-fixtures, security-starter)" >&2; exit 2 ;;
+    *) [[ -f "$root/gradle/$module/gradle/verification-metadata.xml" ]] \
+      || { echo "Unknown module: $module (a gradle/ module with gradle/verification-metadata.xml)" >&2; exit 2; }
+      first=(build) ;;
   esac
   echo "==> gradle/$module: ${first[*]}"
   (cd "$root/gradle/$module" && ./gradlew "${first[@]}" "${flags[@]}")

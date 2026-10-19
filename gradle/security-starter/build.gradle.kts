@@ -30,8 +30,8 @@ dependencyLocking {
 }
 
 dependencies {
-	// Natywna platforma Gradle (poprawne Gradle Module Metadata). Wersja z gradle/catalog.
-	api(platform(libs.spring.boot.bom))
+	// Natywna platforma Gradle (poprawne Gradle Module Metadata): platform-bom (Boot + podłogi CVE).
+	api(platform(libs.platform.bom))
 
 	// Starter wnosi Spring Security do konsumenta (api) + spring-web dla klas CORS. Wersje z BOM-a.
 	api("org.springframework.boot:spring-boot-starter-security")
@@ -40,9 +40,9 @@ dependencies {
 	compileOnly("org.springframework.boot:spring-boot-autoconfigure")
 	// Konfiguracja annotationProcessor nie dziedziczy BOM-a z api/implementation — trzeba jej podać platformę
 	// osobno, inaczej spring-boot-configuration-processor rozwiązuje się bez wersji (build fail).
-	annotationProcessor(platform(libs.spring.boot.bom))
+	annotationProcessor(platform(libs.platform.bom))
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-	testImplementation(platform(libs.junit.bom))
+	testImplementation(platform(libs.platform.bom))
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("org.springframework:spring-webmvc")

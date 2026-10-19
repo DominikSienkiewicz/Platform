@@ -12,23 +12,31 @@ It reads the file rather than the published artifact because `platform-catalog` 
 yet exist at the time `build-logic` is compiled. The plugin marker artifacts on the
 `build-logic` classpath therefore take their versions straight from the canonical file.
 
-## Why a version catalog and not a java-platform BOM
+## Catalog for aliases, BOM for constraints
 
-Platform publishes its versions as a version catalog (`pl.seniordeveloper:platform-catalog`) and no
-`java-platform` BOM. That is a choice, not an omission:
+Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)):
 
-- The Spring Boot, Spring Modulith and Spring AI BOMs already align the transitive versions of every
-  Spring consumer: `seniordev.spring-modulith-conventions` imports them through
-  `io.spring.dependency-management`, and Platform overrides them only as ADR-0008 allows.
-- `platformDependencyCheck` governs declared versions and fails on drift. An `enforcedPlatform` BOM
-  would instead override a drifted version silently, so the consumer would never learn that its build
-  file disagrees with the canon.
-- A second version mechanism next to `io.spring.dependency-management` makes precedence hard to read:
-  which of a BOM constraint, a dependency-management import and a catalog version wins depends on
-  plugin internals.
-- Revisit when a consumer without Spring needs transitive alignment. Generate that BOM from
-  `gradle/catalog/libs.versions.toml` then, so that the catalog stays the single source of every
-  version (hard rule 1).
+- `pl.seniordeveloper:platform-catalog`, the version catalog, holds every alias and version. Consumers
+  declare dependencies through it, and `platformDependencyCheck` holds explicit versions to it.
+- `pl.seniordeveloper:platform-bom`, a `java-platform` built from the same TOML, holds what a catalog
+  cannot express: the imports of the Spring Boot, Spring Modulith, Spring AI and JUnit BOMs, the CVE
+  floors and compatibility overrides with their `because(...)` reasons (the table in
+  [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)), and the Platform artifacts.
+
+`platform-test-fixtures` and `platform-security-starter` import `platform-bom`, so their consumers get
+the floors on the classpaths they reach. `seniordev.spring-modulith-conventions` still imports the
+Spring BOMs and sets the `ext` overrides itself until a TestKit run confirms how
+`io.spring.dependency-management` treats the nested imports. A build without the Spring conventions
+takes the same floors with:
+
+```kotlin
+dependencies {
+    implementation(platform(libs.platform.bom))
+}
+```
+
+`platformDependencyCheck` still fails on drift instead of letting a BOM override a declared version
+silently: the BOM aligns transitive versions, the gate governs declared ones.
 
 ## Versions the convention plugins impose
 

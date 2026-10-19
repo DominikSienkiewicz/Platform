@@ -27,7 +27,8 @@ chmod +x "$tmp/gradlew" "$tmp/bin/npm"
 export PATH="$tmp/bin:$PATH" RELEASE_ASSETS_GRADLEW="$tmp/gradlew" FAKE_LOG="$tmp/gradle.log"
 
 bash "$root/scripts/release-assets.sh" 9.9.9 "$tmp/out" > "$tmp/output" 2>&1 || { cat "$tmp/output"; fail 'the assets must build'; }
-[[ "$(tr '\n' ' ' < "$FAKE_LOG")" == 'build-logic catalog test-fixtures security-starter ' ]] || fail 'all four Maven modules must be bundled'
+expected=$(awk '!/^#/ && NF { printf "%s ", $1 }' "$root/gradle/maven-modules.txt")
+[[ "$(tr '\n' ' ' < "$FAKE_LOG")" == "$expected" ]] || fail "every module of gradle/maven-modules.txt must be bundled, in order: $expected"
 listing=$(unzip -l "$tmp/out/platform-maven-repo-9.9.9.zip")
 grep -qF 'platform-maven-repo/pl/seniordeveloper/catalog/9.9.9/catalog-9.9.9.jar' <<<"$listing" \
   || fail 'the zip must hold the Maven repository layout under platform-maven-repo/'

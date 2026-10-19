@@ -18,3 +18,4 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0010](0010-agent-resource-profile.md) | Opt-in agent resource profile via AI_AGENT | Accepted |
 | [0011](0011-contract-first-openapi.md) | Contract-first OpenAPI: the committed spec is the contract | Accepted |
 | [0012](0012-platform-scans-itself-in-sonarqube-cloud.md) | Platform's own Java modules are analysed in SonarQube Cloud like a consumer | Accepted |
+| [0013](0013-catalog-for-aliases-bom-for-constraints.md) | The catalog carries aliases and versions, platform-bom carries constraints | Accepted |

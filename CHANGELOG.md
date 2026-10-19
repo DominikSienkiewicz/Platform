@@ -96,6 +96,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `pl.seniordeveloper:platform-bom` (`libs.platform.bom`, *incubating*): a `java-platform` that imports the
+  Spring Boot, Spring Modulith, Spring AI and JUnit BOMs and carries the CVE floors (Tomcat, Jackson 3 and 2)
+  and compatibility overrides (Lombok, ArchUnit) with their reasons, all from the catalog's versions
+  (ADR-0013). `gradle/maven-modules.txt` is now the one list of published Maven modules.
 - `platformPinCheck`, `lint` and `format` in `seniordev.java-conventions`, and the `lint-task` input of
   `backend-ci.yml`.
 - `seniordev.settings-conventions` registers `platformDoctor` on the root project, compatible with the
@@ -298,6 +302,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `platform-test-fixtures` and `platform-security-starter` import `platform-bom` instead of the separate
+  BOMs, so the classpaths they reach get its floors: Jackson 3.1.8 instead of 3.1.5 and ArchUnit 1.5.0 on
+  the runtime classpath. A consumer that locks dependencies regenerates its lockfile and verification
+  metadata, as after any bump.
 - `platformDependencyCheck` tells a library the Platform BOMs manage (with the managed version and the
   BOM-property escape hatch) apart from one no BOM manages; the BOMs are resolved only in the task action
   and only when such a line exists.
