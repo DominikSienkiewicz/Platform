@@ -284,6 +284,9 @@ jobs:
 
   # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).
   # Bez sekretu SONAR_TOKEN (fork, brak projektu w SonarCloud) krok kończy się notką i nic nie robi.
+  # sonar.qualitygate.wait: scanner tylko wysyła raport, a SonarQube Cloud przetwarza go asynchronicznie, więc bez
+  # czekania odrzucona analiza (gałąź `main` przy gałęzi głównej projektu `master`) albo czerwona bramka zostawiały
+  # zielony job i pusty dashboard. Pilnuje templates/tests/ci-sonar.test.sh.
   sonar:
     name: SonarQube Cloud — test-fixtures and security-starter
     runs-on: ubuntu-latest
@@ -311,7 +314,7 @@ jobs:
           fi
           for m in test-fixtures security-starter; do
             echo "::group::gradle/$m — sonar"
-            ( cd "gradle/$m" && ./gradlew --no-daemon build sonar )
+            ( cd "gradle/$m" && ./gradlew --no-daemon build sonar -Dsonar.qualitygate.wait=true )
             echo "::endgroup::"
           done
 

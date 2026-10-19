@@ -40,3 +40,13 @@ the reusable `sonar.yml` that no consumer calls today.
 A multi-module consumer applies `seniordev.sonar-conventions` in its root project (Decision 24, F-13): one analysis
 under one project key, waiting for the JaCoCo report of every module. `seniordev.quality-conventions` applies the
 Sonar plugin only in the root project, so a module never runs a partial analysis of its own.
+
+## Update — the job waits for the analysis (2026-10-20)
+
+The scanner only uploads the report; SonarQube Cloud processes it afterwards. The first analyses after the
+projects were created landed nowhere: CI analyses `main`, the projects' main branch was still `master`, and no
+`main` branch appeared, since the Free plan analyses only the main branch and pull requests of a private project,
+yet the `sonar` job stayed green. The job now runs with
+`sonar.qualitygate.wait=true`, so a rejected analysis or a red quality gate fails Platform's CI, and the one-time
+setup renames each project's main branch to `main`. Consumers keep the scanner's default; the wait is Platform's
+own job only.

@@ -92,8 +92,12 @@ It keeps:
 
 SonarQube Cloud (Decision 28) is set up by hand once: create the projects
 `DominikSienkiewicz_platform-test-fixtures` and `DominikSienkiewicz_platform-security-starter` in the
-`dominiksienkiewicz` organisation, turn off Automatic Analysis, and add a `SONAR_TOKEN` secret. Until the
-secret exists, the `sonar` job of `ci.yml` only leaves a notice.
+`dominiksienkiewicz` organisation, rename each project's main branch from `master`, the default for a project
+created by hand, to `main` (Administration → Branches and Pull Requests), turn off Automatic Analysis, and add a
+`SONAR_TOKEN` secret. Until the secret exists, the `sonar` job of `ci.yml` only leaves a notice. CI analyses
+`main`; while the project's main branch has another name, `main` is a secondary branch, which the Free plan
+does not analyse for a private project, and the job fails because it waits for the result
+(`sonar.qualitygate.wait`).
 
 The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
 `scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon
