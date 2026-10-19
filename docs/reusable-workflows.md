@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 10 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 11 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -52,7 +52,8 @@ jobs:
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
 Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
 `strict: true` the guard and the scripts `lint`, `typecheck`, `test`, `build` and `format:check` are
-required, and `format:check` runs before lint.
+required, and `format:check` runs before lint. A strict caller whose `package.json` configures
+`platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.
@@ -71,6 +72,33 @@ jobs:
       strict: true
     secrets:
       gpr_token: ${{ secrets.GPR_TOKEN }}
+```
+
+## api-contract.yml
+
+Fails a pull request that breaks the committed OpenAPI spec for existing clients: oasdiff compares the
+spec at the pull request's base with the one in the pull request and writes its changelog to the job
+summary. A pull request labelled `allow-label` (default `api-breaking`) passes with a warning. The
+`breaking` output is `true` when oasdiff found a change at or above `fail-on`. See
+[api-contracts.md](api-contracts.md).
+
+- Permissions: `contents: read`.
+- No secrets.
+- Trigger on `pull_request` with the `labeled` and `unlabeled` types, so adding the label re-runs the
+  gate. The job runs oasdiff from a digest-pinned image, without network access.
+- Inputs: [api-contract.yml](../.github/workflows/api-contract.yml).
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions:
+  contents: read
+jobs:
+  api-contract:
+    uses: DominikSienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z
+    with:
+      spec-path: contract/openapi.yaml
 ```
 
 ## security-scan.yml

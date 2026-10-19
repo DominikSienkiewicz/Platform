@@ -1,0 +1,60 @@
+openapi: 3.1.0
+info: { title: Pets, version: "1" }
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Pet" } } } }
+    post:
+      operationId: createPet
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/NewPet" } } }
+      responses:
+        "201":
+          description: created
+          content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } }
+  /pets/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+    get:
+      operationId: getPet
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } }
+        "404": { description: missing }
+    patch:
+      operationId: renamePet
+      requestBody:
+        content: { application/json: { schema: { $ref: "#/components/schemas/NewPet" } } }
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } }
+    delete:
+      operationId: deletePet
+      responses:
+        "204": { description: deleted }
+  /owners/{ownerId}/pets/{petId}:
+    get:
+      operationId: getOwnedPet
+      parameters:
+        - { name: ownerId, in: path, required: true, schema: { type: string } }
+        - { name: petId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: ok
+          content: { application/json: { schema: { $ref: "#/components/schemas/Pet" } } }
+components:
+  schemas:
+    Pet:
+      type: object
+      required: [id, name]
+      properties: { id: { type: string }, name: { type: string } }
+    NewPet:
+      type: object
+      required: [name]
+      properties: { name: { type: string } }

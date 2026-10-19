@@ -2,6 +2,7 @@ plugins {
 	`java-library`
 	`maven-publish`
 	id("seniordev.java-conventions")
+	id("seniordev.quality-conventions")
 }
 
 group = "pl.seniordeveloper"
@@ -16,6 +17,12 @@ java {
 }
 
 repositories { mavenCentral() }
+
+// Decyzja 28: Platform skanuje się w SonarQube Cloud jak konsumenci (zasada 8). projectKey z fallbacku
+// DominikSienkiewicz_<rootProject.name>; job `sonar` w ci.yml biegnie tylko z sekretem SONAR_TOKEN.
+pitest {
+	targetClasses.set(listOf("pl.seniordeveloper.platform.testing.*"))
+}
 
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
 // Regeneracja po bumpie BOM-ów/wersji wyżej: ./gradlew dependencies --write-locks
@@ -40,10 +47,20 @@ dependencies {
 	compileOnly("org.testcontainers:testcontainers-ollama")
 	// Parser Liquibase dla AbstractLiquibaseChangelogTest — konsument na Liquibase ma go z własnego startera.
 	compileOnly("org.liquibase:liquibase-core")
+	// AbstractOpenApiContractTest: mappingi Spring MVC i spec JSON/YAML. Konsument z REST API ma je z własnych
+	// starterów (webmvc, Jackson); YAML tylko, gdy jego spec jest w YAML-u.
+	compileOnly("org.springframework:spring-webmvc")
+	compileOnly("jakarta.servlet:jakarta.servlet-api")
+	compileOnly("tools.jackson.core:jackson-databind")
+	compileOnly("tools.jackson.dataformat:jackson-dataformat-yaml")
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
 	testImplementation("org.liquibase:liquibase-core")
+	testImplementation("org.springframework:spring-webmvc")
+	testImplementation("jakarta.servlet:jakarta.servlet-api")
+	testImplementation("tools.jackson.core:jackson-databind")
+	testImplementation("tools.jackson.dataformat:jackson-dataformat-yaml")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

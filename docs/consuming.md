@@ -178,11 +178,16 @@ jobs:
 ```
 
 `strict: true` requires nonempty `lint`, `typecheck`, `test`, `build` and `format:check` scripts and
-the `@dominiksienkiewicz/versions` guard, and runs `format:check` before lint; `run-e2e: true` additionally requires `test:e2e`, and uploads
+the `@dominiksienkiewicz/versions` guard, runs `format:check` before lint, and runs
+`platform-openapi-check` when `package.json` configures `platform.openapi`; `run-e2e: true` additionally requires `test:e2e`, and uploads
 `playwright-report/` and `test-results/` (HTML report, traces, screenshots) as the artifact
 `playwright-report-<run id>`, kept for seven days, whether the tests pass or fail. Missing
 checks fail the job instead of producing a successful partial pipeline. Existing callers without
 `strict` keep the optional checks.
+
+A repository with a committed OpenAPI spec adds the breaking-change gate as a pull request job,
+`api-contract.yml` with `spec-path`; its snippet and triggers are in
+[reusable-workflows.md](reusable-workflows.md#api-contractyml).
 
 Pass `gradle-task` as one line of whitespace-separated task arguments, for example
 `lint test :app:integrationTest :app:bootJar`. Wildcard characters are passed
@@ -290,6 +295,18 @@ Prettier (*incubating*), in `package.json`, with `prettier`, `prettier-plugin-ta
 Strict `frontend-ci` requires `format:check`. The plugin sorts Tailwind class lists, so the first
 `npm run format` in a repository that formatted without it rewrites many `className` values; commit
 that diff on its own.
+
+OpenAPI types (*incubating*): with `@dominiksienkiewicz/openapi` and `openapi-typescript` in
+`devDependencies` at the canon versions, name the committed spec and the generated file, and commit
+what `platform-openapi-gen` writes. Strict `frontend-ci` then fails on stale types. The whole flow,
+backend test and breaking-change gate included, is in [api-contracts.md](api-contracts.md).
+
+```json
+{
+  "platform": { "openapi": { "spec": "../contract/openapi.yaml", "output": "src/api/schema.d.ts" } },
+  "scripts": { "gen:api": "platform-openapi-gen", "gen:api:check": "platform-openapi-check" }
+}
+```
 
 `globals.css` (`app/globals.css`, or `src/app/globals.css` in a `src/` layout):
 

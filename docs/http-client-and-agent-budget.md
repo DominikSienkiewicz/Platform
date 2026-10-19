@@ -7,6 +7,8 @@
 > release and for the source, and becomes public again with its first adopter.
 
 `@dominiksienkiewicz/api-client` returns parsed JSON for successful responses.
+`createApiClient<paths>()` types the same client by the `paths` interface that `platform-openapi-gen`
+generates from the committed spec ([api-contracts.md](api-contracts.md#frontend-typed-calls)).
 A response with status 204 returns `null` without reading its body; other empty
 responses also produce a `null` body. Invalid JSON in a successful response still
 rejects with the original JSON parsing error.

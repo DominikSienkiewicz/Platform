@@ -151,3 +151,25 @@ class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }
 
 class FlywayMigrationTest extends AbstractFlywayMigrationTest { }
 ```
+
+`AbstractOpenApiContractTest` holds the committed OpenAPI spec to the Spring MVC controllers, both ways
+and without Docker ([docs/api-contracts.md](api-contracts.md)). It reports an operation missing from the
+spec, a stale one, an operation without `operationId` or `responses`, a duplicate `operationId`, a mapping
+without an explicit HTTP method and an unresolved local `$ref`. `/actuator` and `/error` are ignored on
+both sides unless `ignoredPathPrefixes()` says otherwise. The test classpath needs `spring-webmvc` and
+`tools.jackson.core:jackson-databind`, and `tools.jackson.dataformat:jackson-dataformat-yaml` for a YAML
+spec:
+
+```java
+class OpenApiContractTest extends AbstractOpenApiContractTest {
+  @Override
+  protected Path specPath() {
+    return Path.of("contract/openapi.yaml");
+  }
+
+  @Override
+  protected String basePackage() {
+    return "pl.seniordeveloper.myapp";
+  }
+}
+```

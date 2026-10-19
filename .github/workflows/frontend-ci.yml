@@ -18,7 +18,7 @@ on:
         type: string
         default: "24"
       strict:
-        description: "Require the Platform guard and the lint, typecheck, test, build and format:check scripts, and run format:check."
+        description: "Require the Platform guard and the lint, typecheck, test, build and format:check scripts, run format:check, and check the OpenAPI types when package.json configures platform.openapi."
         type: boolean
         default: false
       run-e2e:
@@ -107,6 +107,21 @@ jobs:
             exit 1
           fi
           npm run format:check
+
+      # Tylko strict: kontrakt OpenAPI (Decyzja 30) — repo z platform.openapi w package.json musi mieć
+      # commitowane typy zgodne z commitowanym specem. Repo bez kontraktu = krok pominięty (notice).
+      - name: OpenAPI types check
+        if: ${{ inputs.strict }}
+        run: |
+          if ! node -e 'process.exit(require("./package.json").platform?.openapi ? 0 : 1)'; then
+            echo "::notice::package.json configures no platform.openapi contract, so the OpenAPI types check is skipped"
+            exit 0
+          fi
+          if [ ! -e node_modules/@dominiksienkiewicz/openapi/bin/check.mjs ]; then
+            echo "::error::package.json configures platform.openapi, but @dominiksienkiewicz/openapi is not installed"
+            exit 1
+          fi
+          node node_modules/@dominiksienkiewicz/openapi/bin/check.mjs
 
       - run: npm run lint --if-present
       - run: npm run typecheck --if-present

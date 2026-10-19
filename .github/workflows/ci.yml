@@ -64,6 +64,39 @@ jobs:
           done
           exit $fail
 
+  # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).
+  # Bez sekretu SONAR_TOKEN (fork, brak projektu w SonarCloud) krok kończy się notką i nic nie robi.
+  sonar:
+    name: SonarQube Cloud — test-fixtures and security-starter
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0 # blame i nowy kod w SonarCloud potrzebują historii
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+      - name: Analyse with SonarQube Cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SONAR_TOKEN:-}" ]; then
+            echo "::notice::SONAR_TOKEN is not set, so the SonarQube Cloud analysis is skipped."
+            exit 0
+          fi
+          for m in test-fixtures security-starter; do
+            echo "::group::gradle/$m — sonar"
+            ( cd "gradle/$m" && ./gradlew --no-daemon build sonar )
+            echo "::endgroup::"
+          done
+
   # Jawna walidacja gradle-wrapper.jar każdego modułu wobec sum publikowanych przez Gradle. setup-gradle
   # robi to domyślnie także w innych jobach, ale Scorecard (Binary-Artifacts) uznaje wyłącznie tę akcję.
   # Release woła ci.yml jako `verify`, więc walidacja bramkuje też wydania.
@@ -118,6 +151,35 @@ jobs:
     with:
       working-directory: templates/jvm/java-library
       gradle-task: build
+
+  # Reusable api-contract na prawdziwym oasdiff: para zgodna musi dać breaking=false, para łamiąca
+  # breaking=true. Para łamiąca idzie z fail-on-breaking: false, żeby wynik sprawdzał job niżej, a nie
+  # czerwony status. Logikę kroków na stubie pilnuje templates/tests/api-contract.test.sh.
+  api-contract-compatible:
+    uses: ./.github/workflows/api-contract.yml
+    with:
+      spec-path: templates/tests/fixtures/openapi/compatible.yaml
+      base-spec-path: templates/tests/fixtures/openapi/base.yaml
+
+  api-contract-breaking:
+    uses: ./.github/workflows/api-contract.yml
+    with:
+      spec-path: templates/tests/fixtures/openapi/breaking.yaml
+      base-spec-path: templates/tests/fixtures/openapi/base.yaml
+      fail-on-breaking: false
+
+  api-contract-self-test:
+    name: api-contract — self-test
+    needs: [api-contract-compatible, api-contract-breaking]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - env:
+          COMPATIBLE: ${{ needs.api-contract-compatible.outputs.breaking }}
+          BREAKING: ${{ needs.api-contract-breaking.outputs.breaking }}
+        run: |
+          [ "$COMPATIBLE" = "false" ] || { echo "::error::the compatible pair reported breaking=$COMPATIBLE"; exit 1; }
+          [ "$BREAKING" = "true" ] || { echo "::error::the breaking pair reported breaking=$BREAKING"; exit 1; }
 
   templates:
     name: Templates — testy skryptów
