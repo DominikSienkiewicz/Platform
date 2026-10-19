@@ -18,10 +18,30 @@ class PlatformConsumerFunctionalTest {
 
 	@Test
 	fun `published conventions run the consumer CI build on a pure Java consumer`() {
-		val result = ConsumerFixture(directory, "java-library").runner("build", "cyclonedxBom", "pitest").build()
+		val consumer = ConsumerFixture(directory, "java-library")
+		val result = consumer.runner("lint", "build", "cyclonedxBom", "pitest").build()
 
-		assertSucceeded(result, ":test", ":pitest", *CONSUMER_GATES)
+		assertSucceeded(result, ":lint", ":test", ":pitest", *CONSUMER_GATES)
 		assertAnalyzersReadTheBytecode(result)
+
+		// E1-15: drugi przebieg tych samych tasków musi wziąć konfigurację z cache, nie liczyć jej od nowa.
+		val again = consumer.runner("lint", "test").build()
+		val reused = consumer.runner("lint", "test").build()
+		assertSucceeded(again, ":lint", ":test")
+		assertTrue(reused.output.contains("Reusing configuration cache."), "the conventions must be configuration-cache compatible")
+	}
+
+	@Test
+	fun `lint fails on a formatting violation without running the tests`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+		val source =
+			consumer.file("src/main/java").walkTopDown().first { it.isFile && it.name.endsWith(".java") }
+		source.writeText(source.readText().replaceFirst("{", "{   "))
+
+		val result = consumer.runner("lint").buildAndFail()
+
+		assertEquals(TaskOutcome.FAILED, result.task(":spotlessJavaCheck")?.outcome)
+		assertEquals(null, result.task(":test"), "lint must not run the tests")
 	}
 
 	@Test
@@ -31,9 +51,9 @@ class PlatformConsumerFunctionalTest {
 		buildScript.writeText("import java.time.Duration\n\n" + buildScript.readText())
 		consumer.appendToBuildScript(SMOKE_START_BOOT_JAR)
 
-		val result = consumer.runner("build", "cyclonedxBom", "smokeStartBootJar").build()
+		val result = consumer.runner("lint", "build", "cyclonedxBom", "smokeStartBootJar").build()
 
-		assertSucceeded(result, ":test", ":integrationTest", ":bootJar", ":smokeStartBootJar", *CONSUMER_GATES)
+		assertSucceeded(result, ":lint", ":test", ":integrationTest", ":bootJar", ":smokeStartBootJar", *CONSUMER_GATES)
 		assertAnalyzersReadTheBytecode(result)
 		assertTrue(consumer.file("build/jacoco/integrationTest.exec").isFile, "integrationTest must record JaCoCo execution data")
 		assertTrue(
@@ -144,6 +164,7 @@ class PlatformConsumerFunctionalTest {
 		val CONSUMER_GATES =
 			arrayOf(
 				":platformDependencyCheck",
+				":platformPinCheck",
 				":spotlessCheck",
 				":checkstyleMain",
 				":checkstyleTest",

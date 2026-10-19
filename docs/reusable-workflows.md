@@ -32,7 +32,9 @@ types and defaults are described in the workflow files themselves (every input h
 
 ## backend-ci.yml
 
-Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`). The test,
+Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`). With
+`lint-task: lint` it first runs the formatter and linters of `seniordev.java-conventions` as a separate
+step, so a style failure arrives before the tests run. The test,
 test-result and Checkstyle reports of every module go into the `backend-test-reports-<run id>` artifact
 (seven days). When the job fails, it annotates each failed test and Checkstyle violation at its file
 and line (ten at most), and the job summary lists all of them with Gradle's "What went wrong".

@@ -27,6 +27,10 @@ on:
         description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing."
         type: string
         default: "build"
+      lint-task:
+        description: "Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step."
+        type: string
+        default: ""
     secrets:
       gpr_token:
         description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
@@ -75,6 +79,18 @@ jobs:
       # Lokalnie konsument może dołożyć jawne -PplatformRepository (ADR-0003); tu działa GitHub Packages.
       # Wyjście Gradle także do pliku: sekcję „What went wrong” (bramki Platform, kompilacja) powtarza digest niżej.
       # pipefail jest konieczny: domyślna powłoka kroku to `bash -e` bez niego, a wtedy tee ukryłby porażkę Gradle.
+      # Opcjonalny szybki krok: formatter i lintery przed testami, więc porażka stylu przychodzi po minucie, nie po suite.
+      - name: ./gradlew ${{ inputs.lint-task }}
+        if: ${{ inputs.lint-task != '' }}
+        run: |
+          set -o pipefail
+          read -r -a lint_tasks <<< "$LINT_TASK"
+          ./gradlew "${lint_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gradle-output.log"
+        env:
+          LINT_TASK: ${{ inputs.lint-task }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+
       - name: ./gradlew ${{ inputs.gradle-task }}
         run: |
           set -o pipefail
