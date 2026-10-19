@@ -204,7 +204,9 @@ scripts/write-verification-metadata.sh
 It runs two passes per module with `--refresh-dependencies`, as `platform-bump` does for consumers:
 `build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
 bumps the catalog stays red on verification until you run the script and push its result to that branch.
-`gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows.
+`gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows. `test-fixtures` and
+`security-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
+root's file verifies everything, so their files also hold the checksums of the plugin classpath.
 
 ## Gradle wrapper
 

@@ -9,6 +9,7 @@ import org.springframework.modulith.core.ApplicationModules;
  * modułów). Docker-free, szybka — bez tagu integration.
  *
  * <p>Konsument podaje klasę główną aplikacji:
+ *
  * <pre>{@code
  * class ModulithVerificationTest extends AbstractModulithVerificationTest {
  *   @Override protected Class<?> applicationClass() { return MyApplication.class; }

@@ -15,7 +15,8 @@ class FlywayMigrationViolationsTest {
 
   @Test
   void wellNamedVersionedAndRepeatableMigrationsPass() {
-    assertThat(violations(Map.of("main", List.of("V1__a.sql", "V1_1__b.sql", "R__c.sql")))).isEmpty();
+    assertThat(violations(Map.of("main", List.of("V1__a.sql", "V1_1__b.sql", "R__c.sql"))))
+        .isEmpty();
   }
 
   @Test

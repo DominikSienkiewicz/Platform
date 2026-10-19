@@ -153,6 +153,10 @@ using these templates. Main CI includes all four published Maven modules; a fail
 UI registry build blocks npm publication. Consumers can opt into mandatory frontend
 checks with `strict: true`.
 
+Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
+from `gradle/build-logic` through `includeBuild`, so the code shipped to consumers passes the same
+Spotless, Checkstyle, coverage and `platformDependencyCheck` gates; they keep Java 25 bytecode.
+
 ## Documentation
 
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —

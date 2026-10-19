@@ -11,9 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Wspólny strażnik master changeloga Liquibase. Spring Boot auto-uruchamia migracje z
- * {@code classpath:/db/changelog/db.changelog-master.yaml} przy każdym starcie kontekstu — brak
- * tego pliku czyni start niedeterministycznym. Test jest Docker-free (szybki, bez tagu integration).
+ * Wspólny strażnik master changeloga Liquibase. Spring Boot auto-uruchamia migracje z {@code
+ * classpath:/db/changelog/db.changelog-master.yaml} przy każdym starcie kontekstu — brak tego pliku
+ * czyni start niedeterministycznym. Test jest Docker-free (szybki, bez tagu integration).
  *
  * <p>Master jest parsowany parserem Liquibase bez bazy, więc literówka w ścieżce {@code include},
  * brakujący plik, niepoprawny YAML albo {@code databaseChangeLog} tylko w komentarzu failują tutaj,
@@ -30,7 +30,8 @@ public abstract class AbstractLiquibaseChangelogTest {
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   @Test
-  @DisplayName("The Liquibase master changelog exists on the classpath and parses with its includes")
+  @DisplayName(
+      "The Liquibase master changelog exists on the classpath and parses with its includes")
   protected void masterChangelogExists() throws Exception {
     verifyMasterChangelog(MASTER_CHANGELOG, getClass().getClassLoader());
   }
@@ -50,7 +51,12 @@ public abstract class AbstractLiquibaseChangelogTest {
               .parse(location, new ChangeLogParameters(), accessor);
       assertNotNull(changeLog, "Liquibase parsed no changelog from classpath:/" + location);
     } catch (LiquibaseException | RuntimeException e) {
-      fail("The Liquibase master changelog classpath:/" + location + " does not parse: " + e.getMessage(), e);
+      fail(
+          "The Liquibase master changelog classpath:/"
+              + location
+              + " does not parse: "
+              + e.getMessage(),
+          e);
     }
   }
 }

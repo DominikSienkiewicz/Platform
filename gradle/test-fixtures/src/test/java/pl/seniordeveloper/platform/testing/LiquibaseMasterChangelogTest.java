@@ -10,8 +10,9 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
- * Master changelog sprawdzany parserem Liquibase, bez bazy. Każdy przypadek dostaje własny classloader
- * z katalogu {@code liquibase-fixtures/<przypadek>}, bez rodzica, więc nie widzi changelogu testów.
+ * Master changelog sprawdzany parserem Liquibase, bez bazy. Każdy przypadek dostaje własny
+ * classloader z katalogu {@code liquibase-fixtures/<przypadek>}, bez rodzica, więc nie widzi
+ * changelogu testów.
  */
 class LiquibaseMasterChangelogTest {
 
@@ -52,7 +53,8 @@ class LiquibaseMasterChangelogTest {
   }
 
   private static void verify(String fixture) throws Exception {
-    URL root = LiquibaseMasterChangelogTest.class.getResource("/liquibase-fixtures/" + fixture + "/");
+    URL root =
+        LiquibaseMasterChangelogTest.class.getResource("/liquibase-fixtures/" + fixture + "/");
     assertThat(root).as("fixture " + fixture).isNotNull();
     try (var loader = new URLClassLoader(new URL[] {Path.of(root.toURI()).toUri().toURL()}, null)) {
       AbstractLiquibaseChangelogTest.verifyMasterChangelog(MASTER, loader);

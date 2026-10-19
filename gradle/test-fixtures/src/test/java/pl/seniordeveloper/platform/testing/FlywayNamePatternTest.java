@@ -9,7 +9,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class FlywayNamePatternTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"V1__init.sql", "V1_1__add_index.sql", "V1.1__add_index.sql", "R__view.sql"})
+  @ValueSource(
+      strings = {"V1__init.sql", "V1_1__add_index.sql", "V1.1__add_index.sql", "R__view.sql"})
   void acceptsVersionedAndRepeatableMigrations(String name) {
     assertTrue(AbstractFlywayMigrationTest.FLYWAY_NAME.matcher(name).matches(), name);
   }

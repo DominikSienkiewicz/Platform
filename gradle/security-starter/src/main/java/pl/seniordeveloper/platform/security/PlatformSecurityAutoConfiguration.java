@@ -21,17 +21,17 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 /**
  * Wspólny, parametryzowalny seam bezpieczeństwa/CORS. Zbiera dwie rozjechane konfiguracje
  * (BookOfStyling: stateless + permitAll + CORS; SkillSprintPlus: authenticated + httpBasic) w JEDEN
- * starter sterowany property. Każdy bean jest {@code @ConditionalOnMissingBean} —
- * konsument nadpisuje własnym, gdy potrzebuje.
+ * starter sterowany property. Każdy bean jest {@code @ConditionalOnMissingBean} — konsument
+ * nadpisuje własnym, gdy potrzebuje.
  *
  * <p>Świadomie NIE zamraża postawy: domyślne wartości są bezpieczne (authenticated + csrf on), a
  * BookOfStyling odtwarza swoje zachowanie przez {@code platform.security.mode=permit-all}, {@code
  * stateless=true}, {@code csrf=false} + {@code platform.cors.allowed-origins}.
  *
- * <p>Porządek {@code before} jest konieczny: bez niego sorter Boota ustawia {@code org.springframework.*}
- * przed {@code pl.seniordeveloper.*}, domyślny chain Boota ({@code @ConditionalOnDefaultWebSecurity})
- * rejestruje się pierwszy, a chain Platform się wycofuje. Pilnuje tego
- * PlatformSecurityBootAutoConfigurationTest.
+ * <p>Porządek {@code before} jest konieczny: bez niego sorter Boota ustawia {@code
+ * org.springframework.*} przed {@code pl.seniordeveloper.*}, domyślny chain Boota
+ * ({@code @ConditionalOnDefaultWebSecurity}) rejestruje się pierwszy, a chain Platform się
+ * wycofuje. Pilnuje tego PlatformSecurityBootAutoConfigurationTest.
  */
 @AutoConfiguration(
     beforeName = {
@@ -104,7 +104,8 @@ public class PlatformSecurityAutoConfiguration {
     config.setAllowedMethods(cors.getAllowedMethods());
     config.setAllowedHeaders(cors.getAllowedHeaders());
     config.setAllowCredentials(cors.isAllowCredentials());
-    // Wildcard origin z credentials Spring odrzuca dopiero przy pierwszym żądaniu CORS; tu błąd przy starcie.
+    // Wildcard origin z credentials Spring odrzuca dopiero przy pierwszym żądaniu CORS; tu błąd
+    // przy starcie.
     config.validateAllowCredentials();
     var source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
