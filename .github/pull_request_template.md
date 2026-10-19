@@ -25,6 +25,7 @@ None.
 ## Checklist
 
 - [ ] CI is green: every Gradle module, the frontend workspace and `templates/tests/*.test.sh`
+- [ ] New functionality has tests that cover it, and a bug fix has a regression test that fails without the fix
 - [ ] A new library or version is declared in `gradle/catalog/libs.versions.toml` or
       `frontend/packages/versions/versions.json` first
 - [ ] `CHANGELOG.md` `[Unreleased]` entry for every published change, consumer action included

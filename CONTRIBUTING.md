@@ -22,6 +22,7 @@ Node 24 and pnpm. Without it, follow [docs/local-development.md](docs/local-deve
   consumer must do in a `Consumer-Action:` trailer and under `### Consumer action required` in `CHANGELOG.md`
   ([release contract](docs/adr/0002-release-and-versioning-contract.md)).
 - **No AI attribution** in commits, pull requests or titles.
+- **New functionality comes with tests** that cover it, in the same pull request.
 - **A bug fix starts with a regression test** that fails without the fix. An existing test changes only when the
   contract it pins changes on purpose, and the pull request says why.
 - **English** for everything except `CLAUDE.md` and code and workflow comments, which are Polish.

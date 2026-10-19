@@ -19,6 +19,7 @@ reusable GitHub workflows and the templates every repository copies. One release
 - [Runbooks](runbooks/README.md): adding a library, bumping a consumer, testing an unreleased change, releasing.
 - [Architecture decisions](adr/README.md) and [engineering with agents](engineering-with-agents.md).
 - [A reviewer's tour](tour.md) and the [incident notes](notes/).
+- [OpenSSF Best Practices self-assessment](openssf-best-practices.md): the passing-level criteria, each with its evidence.
 
 This site is built from `docs/` of the repository with [Zensical](https://zensical.org); the source of truth stays
 in the repository, so a page links to the code it describes on GitHub.

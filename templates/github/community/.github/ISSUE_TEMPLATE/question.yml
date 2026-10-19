@@ -1,0 +1,15 @@
+name: Question
+description: You need help using something, and the documentation does not answer it.
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What you are trying to do and where you are stuck.
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you already tried
+      description: The documentation you read, the issues you searched and what you ran.
