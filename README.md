@@ -4,7 +4,10 @@
 [![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Designed and maintained by [Dominik](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change.
+**Designed and maintained by [Dominik](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change. How that works: [engineering with agents](docs/engineering-with-agents.md).
+
+**Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
+solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them.
 
 A shared build platform for a multi-repository JVM and frontend organisation. Build
 configuration, quality gates, dependency versions and frontend presets live here once,
@@ -189,6 +192,8 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
+- **A reviewer's tour, incident notes and how agents build it** → [docs/tour.md](docs/tour.md),
+  [docs/notes/](docs/notes/), [docs/engineering-with-agents.md](docs/engineering-with-agents.md).
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
@@ -197,7 +202,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 - **Building and publishing locally** → **[docs/local-development.md](docs/local-development.md)** —
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single
-  source of truth, the versions mirrored in convention plugin sources, and dependency locking.
+  source of truth, the versions the convention plugins take from it, and dependency locking.
 - **Which Java, Gradle, Spring and Node each release brings** →
   **[docs/compatibility.md](docs/compatibility.md)**.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
