@@ -548,9 +548,14 @@ jobs:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
           scope: "@dominiksienkiewicz"
+      # npm biegnie w wygenerowanym frontend/, którego .npmrc (templates/npmrc) czyta ${GITHUB_TOKEN} i wygrywa
+      # z plikiem setup-node (${NODE_AUTH_TOKEN}); bez GITHUB_TOKEN npm wysłałby dosłowny placeholder i dostał 401.
+      # Odczyt paczek = GITHUB_TOKEN workflowu z packages: read; PLATFORM_EXAMPLE_TOKEN służy tylko do pusha niżej.
+      # Pilnuje templates/tests/release-example-npm-auth.test.sh.
       - name: Render platform-example from the release
         if: ${{ env.EXAMPLE_TOKEN != '' }}
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/render-example.sh "$V" "$RUNNER_TEMP/example"
       - name: Replace the contents of platform-example
