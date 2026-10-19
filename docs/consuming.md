@@ -102,17 +102,17 @@ Frontend:
 Start from [`templates/jvm/java-library`](../templates/jvm/java-library) for a pure
 library or [`templates/jvm/spring-app`](../templates/jvm/spring-app) for a minimal
 Spring application. These are the inputs to `PlatformConsumerFunctionalTest`, which
-publishes the current plugins, catalog, BOM and test fixtures to an isolated local Maven
-repository and then runs the consumer CI entry point through Gradle TestKit: `build cyclonedxBom`, plus
+publishes the current plugins and catalog to an isolated local Maven repository and
+then runs the consumer CI entry point through Gradle TestKit: `build cyclonedxBom`, plus
 `pitest` for the library, with Checkstyle, Spotless, SpotBugs, JaCoCo and the platform gates
 included. The Spring check also starts the packaged `bootJar` from its own classpath, so a
 dependency missing only at runtime fails it. No database is needed.
 
 The Spring starter has two Spring Modulith modules joined by one event: `accounts` publishes
-`AccountOpened` and `notifications` listens to it. Its `ModulithDocumentationTest` extends
-`AbstractModulithDocumentationTest` from `platform-test-fixtures` and writes their diagrams to
-`build/spring-modulith-docs`; the README shows the [Mermaid one](../README.md#the-starters-modules).
-Replace both modules with your own.
+`AccountOpened` and `notifications` listens to it; the README shows
+[their diagram](../README.md#the-starters-modules). Replace both modules with your own, and add
+`AbstractModulithDocumentationTest` from `platform-test-fixtures` ([reference](reference.md#test-fixtures))
+to get the diagrams of yours.
 
 The template is pinned to the latest Platform release: `release.sh` bumps its
 `platformVersion` together with every other version file. Keep `platformVersion` in the
@@ -197,7 +197,6 @@ version = "0.1.0-SNAPSHOT"
 dependencies {
 	implementation(libs.boot.starter.webmvc)
 	implementation(libs.modulith.starter.core)
-	testImplementation(libs.platform.test.fixtures)
 }
 ```
 

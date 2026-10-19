@@ -174,10 +174,11 @@ they keep Java 25 bytecode. The `sonar` job of `ci.yml` analyses both in SonarQu
 ### The starter's modules
 
 The Spring starter, [`templates/jvm/spring-app`](templates/jvm/spring-app/), has two Spring Modulith
-modules: `accounts` publishes `AccountOpened`, and `notifications` listens to it. Its documentation test, a subclass of `AbstractModulithDocumentationTest`,
-writes this diagram as `build/spring-modulith-docs/modules.mmd` next to the PlantUML. A TestKit case fails
-when the generated file differs from [`docs/diagrams/spring-app-modules.mmd`](docs/diagrams/spring-app-modules.mmd),
-and `scripts/docs-gen.sh` keeps the block below equal to that file.
+modules: `accounts` publishes `AccountOpened`, and `notifications` listens to it. A consumer gets this
+diagram from `AbstractModulithDocumentationTest`, as `build/spring-modulith-docs/modules.mmd` next to the
+PlantUML. A unit test of `platform-test-fixtures` compiles the starter, renders its modules the same way and
+fails when they differ from [`docs/diagrams/spring-app-modules.mmd`](docs/diagrams/spring-app-modules.mmd);
+`scripts/docs-gen.sh` keeps the block below equal to that file.
 
 <!-- include: docs/diagrams/spring-app-modules.mmd -->
 ```mermaid

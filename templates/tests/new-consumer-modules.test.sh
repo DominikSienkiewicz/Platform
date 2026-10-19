@@ -27,7 +27,7 @@ grep -qx 'package pl.example.bank.notifications;' "$main/notifications/WelcomeNo
   || fail 'every module must get the new package'
 grep -qx 'import pl.example.bank.accounts.AccountOpened;' "$main/notifications/WelcomeNotifications.java" \
   || fail 'an import between modules must get the new package'
-grep -qx 'package pl.example.bank;' "$backend/src/test/java/pl/example/bank/ModulithDocumentationTest.java" \
+grep -qx 'package pl.example.bank;' "$backend/src/test/java/pl/example/bank/ApplicationTest.java" \
   || fail 'the test sources must get the new package'
 if grep -rqF 'example.app' "$backend/src"; then fail 'no reference to the template package may remain'; fi
 [[ ! -e "$backend/src/main/java.rendered" ]] || fail 'the staging directory must be gone'
