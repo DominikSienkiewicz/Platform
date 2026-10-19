@@ -194,6 +194,11 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   locally with `testcontainers.reuse.enable=true`. It is not a bean, because Spring Boot stops a container
   bean when its context closes. `AbstractTestcontainersFootprintTest` fails when more Platform PostgreSQL
   containers run at once than allowed (1 by default).
+- `@PlatformPostgresDatabasePerContext` in `platform-test-fixtures`, an opt-in next to
+  `@PostgresIntegrationTest`: every Spring context runs `CREATE DATABASE ctx_<n>` on the shared server and gets
+  that database in `spring.datasource.*`, so two context signatures no longer see each other's tables, while
+  the server stays one container per JVM. Closing the context drops its database; without the annotation the
+  contexts keep sharing one database.
 - `AbstractSchemaValidationIT` boots the application on the shared PostgreSQL with
   `spring.jpa.hibernate.ddl-auto=validate`, so Hibernate checks every entity, Spring Modulith's included,
   against the migrated schema. The canonical `event_publication` migrations
