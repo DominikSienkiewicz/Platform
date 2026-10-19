@@ -533,6 +533,13 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `post-create.sh` against a stub `npm`; the three files are optional entries of `templates/manifest.json`, so
   `platform-templates-check` reports drift where a repository adopts them. Nothing changes for a repository that does
   not (see [docs/consuming.md](docs/consuming.md#devcontainer-incubating)).
+- `platform-doctor` PD032 warns when a Gradle build has no GitHub login, `gpr.user` in `~/.gradle/gradle.properties`
+  or `GITHUB_ACTOR`, counting an empty or whitespace-only value as missing like the starters' preflight. With
+  `GITHUB_TOKEN` set and an empty `GITHUB_ACTOR`, as in the consumer devcontainer on a host without the
+  variable, PD030 and PD031 pass while Gradle stops with "No GitHub Packages credentials"; PD032 names the
+  fix. It reads files and the environment only, prints no value, and is a warning, so it does not change the
+  exit code. PD030 now counts an empty or whitespace-only `GPR_TOKEN`, `GITHUB_TOKEN` or `gpr.key` as missing
+  too and falls through to the next source, so a blank token no longer passes PD030 and goes to PD031.
 
 ### Changed
 

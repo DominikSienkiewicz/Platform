@@ -610,8 +610,9 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD011 | the Gradle wrapper exists and is executable |
 | PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@dominiksienkiewicz/*`) is the same release |
 | PD021 | the reusable workflow references are that exact release (`@v1` warns) |
-| PD030 | where the GitHub Packages credentials come from (never their value) |
+| PD030 | where the GitHub Packages credentials come from (never their value); an empty or whitespace-only `GPR_TOKEN`, `GITHUB_TOKEN` or `gpr.key` counts as missing and falls through to the next source |
 | PD031 | the pinned catalog resolves with them: 401, 403 and 404 each name their cause |
+| PD032 | (Gradle builds) a GitHub login for Gradle exists, `gpr.user` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR`; an empty or whitespace-only value counts as missing, so a token alone warns |
 | PD040 | `frontend/.npmrc` points `@dominiksienkiewicz` at GitHub Packages |
 | PD041 | Node is 22.13 or newer |
 | PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
