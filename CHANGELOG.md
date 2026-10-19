@@ -769,6 +769,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `.js` files in `node_modules`. `test/consumer-types.test.mjs` unpacks the published tarball into a consumer
   fixture and type-checks the `vitest.config.ts` that `new-consumer.sh --frontend next` renders. No consumer
   action: the fix arrives with the bump.
+- The `sonar` job of Platform's own `ci.yml` waits for SonarQube Cloud to process the analysis
+  (`-Dsonar.qualitygate.wait=true`) and fails when the analysis is rejected or the quality gate is red. The
+  first analyses of `platform-test-fixtures` and `platform-security-starter` left the job green and both
+  dashboards empty: CI analyses `main`, the hand-made projects' main branch was `master`, and the Free plan
+  analyses only the main branch and pull requests of a private project. RELEASING.md and ADR-0012 add renaming the main branch to `main` to the
+  one-time setup, and `templates/tests/ci-sonar.test.sh` checks the job's flag. No consumer is affected (none).
 
 ## [1.5.31] - 2026-10-14
 
