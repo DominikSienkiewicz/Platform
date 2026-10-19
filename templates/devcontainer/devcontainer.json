@@ -1,0 +1,16 @@
+{
+  "name": "Platform consumer",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+  "remoteEnv": {
+    "GITHUB_ACTOR": "${localEnv:GITHUB_ACTOR}",
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "hostRequirements": { "cpus": 4, "memory": "8gb" },
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-java-pack", "mathiasfrohlich.Kotlin", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode", "timonwong.shellcheck"]
+    }
+  }
+}
