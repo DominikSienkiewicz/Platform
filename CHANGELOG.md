@@ -75,6 +75,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Consumer action recorded in history: `release.sh` refuses a patch, or a section that says `None.`,
+  when a commit since the previous tag carries a `Consumer-Action:` trailer, a `!` or a
+  `BREAKING CHANGE:` footer. `scripts/release-notes.sh <range>` drafts the CHANGELOG section from
+  first-parent subjects and those trailers, and a `pr-title` job in `ci.yml` checks pull request
+  titles with the Conventional Commit pattern of `release.sh`.
 - `release.yml` proves every release consumable (new `verify-consumable` job): the `java-library` and
   `spring-app` starters resolve it from GitHub Packages with an empty Gradle home, test-fixtures and
   security-starter included, and every public npm package installs with the files it declares.

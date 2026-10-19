@@ -181,6 +181,30 @@ jobs:
           [ "$COMPATIBLE" = "false" ] || { echo "::error::the compatible pair reported breaking=$COMPATIBLE"; exit 1; }
           [ "$BREAKING" = "true" ] || { echo "::error::the breaking pair reported breaking=$BREAKING"; exit 1; }
 
+  # Tytuł PR-a w formie Conventional Commit, tym samym wzorcem co message wydania w release.sh (jedno źródło);
+  # notatki (scripts/release-notes.sh) grupują tematy po typie, a "ci fix" nie mówi, co się zmieniło.
+  pr-title:
+    name: PR title — Conventional Commit
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: release.sh
+          sparse-checkout-cone-mode: false
+      - name: Check the title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern=$(sed -n "s/^CONVENTIONAL='\(.*\)'$/\1/p" release.sh)
+          [ -n "$pattern" ] || { echo "::error::release.sh defines no CONVENTIONAL pattern"; exit 1; }
+          if ! grep -Eq "$pattern" <<<"$TITLE"; then
+            echo "::error::The pull request title must be a Conventional Commit, for example \"fix(versions): keep the lockfile\" (got \"$TITLE\")."
+            exit 1
+          fi
+
   templates:
     name: Templates — testy skryptów
     runs-on: ubuntu-latest

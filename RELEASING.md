@@ -105,7 +105,10 @@ secret exists (the secret is only reported; its value is yours to set).
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
    the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
-   action means a MINOR, anything else a PATCH. In [docs/compatibility.md](docs/compatibility.md),
+   action means a MINOR, anything else a PATCH. `scripts/release-notes.sh v<previous>..HEAD` drafts
+   the section from history: the first-parent subjects grouped by Conventional Commit type, and the
+   consumer actions from the `Consumer-Action:` trailers of every commit since the previous tag
+   (`None.` when there are none). In [docs/compatibility.md](docs/compatibility.md),
    give the top row that version and the release date when it reads `unreleased`.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
@@ -134,7 +137,11 @@ Before it changes anything, `release.sh` refuses to run when:
   `### Consumer action required` subsection;
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
-- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given.
+- the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;
+- a commit since the previous release's tag carries a `Consumer-Action: <what to do>` trailer, a `!`
+  in its subject or a `BREAKING CHANGE:` footer, and the release would be a patch or its section
+  says `None.`; the error lists those commits. Record a consumer action in the commit that causes
+  it, as the pull request template asks.
 
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,

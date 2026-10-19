@@ -12,7 +12,9 @@
 #   - message nie jest angielskim Conventional Commit;
 #   - CHANGELOG.md nie ma sekcji "## [X.Y.Z] - YYYY-MM-DD" z podsekcją "### Consumer action required";
 #   - wydanie z akcją konsumenta (podsekcja inna niż "None.") miałoby być patchem;
-#   - message feat / "!:" / BREAKING CHANGE miałby dostać automatyczny patch (podaj wersję jawnie).
+#   - message feat / "!:" / BREAKING CHANGE miałby dostać automatyczny patch (podaj wersję jawnie);
+#   - commit od poprzedniego wydania niesie trailer "Consumer-Action:", "!" w temacie albo stopkę
+#     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.".
 #
 # Użycie:
 #   ./release.sh "fix: opis zmiany"            # patch +0.0.1 od aktualnej wersji
@@ -90,6 +92,37 @@ NEXT_MINOR="$VMA.$((VMI + 1)).0"
 if [[ "$AUTO_VERSION" == 1 ]] && { grep -Eq '^[a-z]+(\([a-z0-9-]+\))?!:|^feat' <<< "$MSG" || grep -q 'BREAKING CHANGE' <<< "$MSG"; }; then
   echo "A feat or breaking release needs an explicit version: ./release.sh \"$MSG\" <X.Y.Z> (see $CONTRACT)."
   exit 1
+fi
+# Akcja konsumenta zapisana w historii od poprzedniego wydania (N-REL-7): trailer "Consumer-Action: …", "!"
+# w temacie albo stopka "BREAKING CHANGE:"/"BREAKING-CHANGE:". Bez taga poprzedniego wydania nie ma zakresu.
+history_reasons() {
+  git log --no-merges --format='%h %s%x1f%b%x1e' "$1" | awk -v RS=$'\036' -v FS=$'\037' '
+    {
+      sub(/^\n+/, "", $1)
+      if ($1 == "") next
+      if ($1 ~ /^[0-9a-f]+ [a-z]+(\([a-z0-9-]+\))?!:/) print "  " $1 " (\"!\" marks a breaking change)"
+      if ($2 ~ /(^|\n)BREAKING[ -]CHANGE: /) print "  " $1 " (BREAKING CHANGE footer)"
+      if (match($2, /(^|\n)Consumer-Action: [^\n]+/)) {
+        trailer = substr($2, RSTART, RLENGTH)
+        sub(/^\n/, "", trailer)
+        print "  " $1 " (" trailer ")"
+      }
+    }'
+}
+if git rev-parse -q --verify "refs/tags/v$CUR" >/dev/null; then
+  REASONS="$(history_reasons "v$CUR..HEAD")"
+  if [[ -n "$REASONS" ]] && [[ "${VERSION%.*}" == "${CUR%.*}" ]]; then
+    echo "Commits since v$CUR record consumer action, so this must be a MINOR release ($NEXT_MINOR):"
+    echo "$REASONS"
+    echo "See $CONTRACT."
+    exit 1
+  fi
+  if [[ -n "$REASONS" ]] && [[ "$ACTION" =~ ^None\.?$ ]]; then
+    echo "Commits since v$CUR record consumer action, but the $VERSION section of CHANGELOG.md says None."
+    echo "Describe it under ### Consumer action required:"
+    echo "$REASONS"
+    exit 1
+  fi
 fi
 if [[ "${VERSION%.*}" == "${CUR%.*}" ]] && ! [[ "$ACTION" =~ ^None\.?$ ]]; then
   echo "CHANGELOG.md lists consumer action for $VERSION, so it must be a MINOR release:"
