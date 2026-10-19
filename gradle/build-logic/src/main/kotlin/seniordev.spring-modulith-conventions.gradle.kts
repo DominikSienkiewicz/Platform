@@ -63,11 +63,13 @@ val platformBomOverrideCheck =
 	tasks.register("platformBomOverrideCheck") {
 		description = "Warns about BOM version properties set outside the platform."
 		group = "verification"
+		// Właściwości z gradle.properties/-P i ext/extra skryptu, bez przestarzałego Project.getProperties (Gradle 10).
+		val gradleProperties = providers.gradlePropertiesPrefixedBy("")
+		val extraProperties = project.extensions.extraProperties
 		val overrides =
 			provider {
-				project.properties
+				(gradleProperties.get() + extraProperties.properties.mapValues { it.value.toString() })
 					.filterKeys { it.endsWith(".version") }
-					.mapValues { it.value.toString() }
 					.filter { (key, value) -> platformBomProperties[key] != value }
 					.toSortedMap()
 			}

@@ -19,7 +19,11 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageDir = join(dirname(fileURLToPath(import.meta.url)), "..");
-const canon = JSON.parse(readFileSync(join(packageDir, "versions.json"), "utf8")).versions;
+const canonFile = JSON.parse(readFileSync(join(packageDir, "versions.json"), "utf8"));
+const canon = canonFile.versions;
+// Kanał deprecacji (N-REL-9): paczka, która dalej działa, ale zniknie z kanonu — ostrzeżenie, nie czerwony build.
+/** @type {Record<string, { since: string, removeIn: string, replacement: string }>} */
+const deprecated = canonFile.deprecated ?? {};
 // Wersja paczki versions = wydanie Platform, z którego pochodzi kanon (jedna platformVersion dla wszystkich
 // paczek). Bez niej konsument nie wie, czy podbić pin, czy powtórzyć bump. Kopia bez package.json (testy
 // hermetyczne) nie zna wersji — wtedy raport podaje ścieżkę versions.json.
@@ -96,6 +100,18 @@ if (fix && (drift.length > 0 || (canonVersion && looseOrMixedPins.length > 0))) 
   looseOrMixedPins = looseOrMixedPins.filter((p) => !fixedPins.includes(p));
 }
 
+// Kody bramek (N-SHOW-8) z linkiem do docs wydania, z którego pochodzi kanon.
+/** @param {string} code */
+const gateLink = (code) =>
+  `https://github.com/DominikSienkiewicz/Platform/blob/v${canonVersion ?? "main"}/docs/gates.md#${code.toLowerCase()}`;
+const deprecations = declared.filter(({ name }) => deprecated[name]);
+for (const d of deprecations) {
+  const { since, removeIn, replacement } = deprecated[d.name];
+  const text = `${d.name}${d.at ? ` [${d.at}]` : ""} is deprecated since Platform ${since} and goes in ${removeIn}: use ${replacement}`;
+  console.warn(`[PLAT-DEPR-001] platform-versions-check: ${text} (${gateLink("PLAT-DEPR-001")})`);
+  if (process.env.GITHUB_ACTIONS === "true") console.log(`::warning title=Platform deprecation::${text}`);
+}
+
 if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0) {
   console.log(
     `platform-versions-check: OK (${governed} governed dependencies, canon ${canonLabel} with ${Object.keys(canon).length} entries)`,
@@ -133,17 +149,17 @@ if (process.env.GITHUB_ACTIONS === "true") {
 }
 console.error(`platform-versions-check (canon: ${canonLabel})`);
 if (missing.length > 0) {
-  console.error("platform-versions-check: dependencies without a Platform canon entry:");
+  console.error("[PLAT-FE-001] platform-versions-check: dependencies without a Platform canon entry:");
   for (const m of missing)
     console.error(`  ${m.name}${where(m)} (${m.have}): add it to ${platformCanon}, release, then bump`);
 }
 if (drift.length > 0) {
-  console.error("platform-versions-check: versions that differ from the Platform canon:");
+  console.error("[PLAT-FE-002] platform-versions-check: versions that differ from the Platform canon:");
   for (const d of drift) console.error(`  ${d.name}${where(d)}: declared "${d.have}", canon "${d.want}"`);
 }
 if (looseOrMixedPins.length > 0) {
   const release = canonVersion ? `, the canon release ${canonVersion}` : "";
-  console.error(`platform-versions-check: Platform packages must share one exact version${release}:`);
+  console.error(`[PLAT-FE-003] platform-versions-check: Platform packages must share one exact version${release}:`);
   for (const p of looseOrMixedPins) console.error(`  ${p.name}: declared "${p.have}"`);
 }
 // Guard biegnie z frontend/ (working-directory frontend-ci), a stub żyje w <repo>/scripts/ — stąd „from the root”.
@@ -151,4 +167,10 @@ console.error(
   `Fix: run platform-versions-check --fix for drift (offline), or from the repository root run ` +
     `scripts/platform-bump.sh ${canonVersion ?? "<version>"} (applies the canon), or change ${platformCanon} and release.`,
 );
+const codes = [
+  ...(missing.length > 0 ? ["PLAT-FE-001"] : []),
+  ...(drift.length > 0 ? ["PLAT-FE-002"] : []),
+  ...(looseOrMixedPins.length > 0 ? ["PLAT-FE-003"] : []),
+];
+for (const code of codes) console.error(`  ${code}: ${gateLink(code)}`);
 process.exit(1);

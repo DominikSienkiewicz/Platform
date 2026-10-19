@@ -8,9 +8,10 @@ import java.nio.file.Path
  * Kopia startera z templates/jvm w katalogu testu, podpięta pod konwencje i katalog opublikowane
  * przez ten build do izolowanego repozytorium (platform.testRepository).
  *
- * Każdy przebieg idzie pod configuration cache i z `--warning-mode=fail` (E1-15, Decyzja 10): kontrakt konsumenta
- * obejmuje CC, a deprecacja Gradle'a w konwencjach ma wywalić test dziś, nie konsumentów przy Gradle 10. Toolchain
- * przez `-D`, bo konfigurowanie toolchainów przez `-P` jest deprecated i znika w Gradle 10.
+ * Każdy przebieg idzie pod configuration cache i z `--warning-mode=all` (E1-15, Decyzja 10). `fail` byłoby właściwe,
+ * ale gradle-pitest-plugin 1.19.0 woła przestarzałe Configuration.setVisible i nie ma wydania z poprawką; zamiast tego
+ * [assertNoPlatformDeprecation] wywala test, gdy deprecacja pochodzi z konwencji Platform. Wróć do `fail`, gdy plugin
+ * PIT przestanie ją zgłaszać. Toolchain przez `-D`, bo konfigurowanie toolchainów przez `-P` znika w Gradle 10.
  */
 internal class ConsumerFixture private constructor(
 	private val directory: Path,
@@ -47,7 +48,9 @@ internal class ConsumerFixture private constructor(
 				"--max-workers=2",
 				"--no-parallel",
 				"--configuration-cache",
-				"--warning-mode=fail",
+				"--warning-mode=all",
+				// Kanał deprecacji w trybie strict (N-REL-9): starter użyty przez Platform nie może być przestarzały.
+				"-Pplatform.deprecations=fail",
 				"-PplatformVersion=${System.getProperty("platform.version")}",
 				"-PplatformRepository=${System.getProperty("platform.testRepository")}",
 			)
@@ -56,4 +59,32 @@ internal class ConsumerFixture private constructor(
 		}
 		return arguments.toTypedArray()
 	}
+}
+
+/**
+ * Deprecacja Gradle'a z kodu Platform: pierwsza ramka stosu (`--stacktrace`) spoza Gradle'a i JDK, czyli kod, który
+ * wywołał przestarzałe API, to skrypt convention pluginu (`Seniordev_…`) albo klasa pl.seniordeveloper.gradle.
+ * Deprecacje zewnętrznych pluginów (np. PIT aplikowany z quality-conventions) zostają w logu, ale nie wywalają testu.
+ */
+internal fun assertNoPlatformDeprecation(output: String) {
+	val warnings =
+		Regex("""(?m)^.*(?:has been deprecated|is deprecated).*(?:\n\s+at .*)*""")
+			.findAll(output)
+			.map { it.value }
+			.filter { warning ->
+				val caller =
+					warning
+						.lineSequence()
+						.map { it.trim() }
+						.filter { it.startsWith("at ") }
+						.map { it.removePrefix("at ") }
+						.firstOrNull { frame ->
+							listOf("org.gradle.", "java.", "jdk.", "sun.", "kotlin.", "groovy.", "org.codehaus.groovy.").none { frame.startsWith(it) }
+						}
+				caller != null && (caller.startsWith("Seniordev_") || caller.startsWith("pl.seniordeveloper.gradle."))
+			}.toList()
+	org.junit.jupiter.api.Assertions.assertTrue(
+		warnings.isEmpty(),
+		"Platform conventions use deprecated Gradle API:\n" + warnings.joinToString("\n\n"),
+	)
 }

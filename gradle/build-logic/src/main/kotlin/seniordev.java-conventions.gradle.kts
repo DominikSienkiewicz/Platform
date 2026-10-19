@@ -6,6 +6,11 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.DeclaredDependency
+import pl.seniordeveloper.gradle.DependencyGovernance
+import pl.seniordeveloper.gradle.PlatformDependencyCheck
+import pl.seniordeveloper.gradle.PlatformDeprecations
+import pl.seniordeveloper.gradle.PlatformGates
 import pl.seniordeveloper.gradle.PlatformPinCheck
 import pl.seniordeveloper.gradle.PlatformVersions
 import pl.seniordeveloper.gradle.RuntimeImageCheck
@@ -169,7 +174,10 @@ val coverageMinimumProperty = providers.gradleProperty("coverageMinimum")
 val coverageMinimum: BigDecimal =
 	coverageMinimumProperty.orNull?.let { raw ->
 		raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
-			?: throw GradleException("coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'")
+			?: throw GradleException(
+				PlatformGates.line(PlatformGates.COVERAGE_INVALID, "coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'") +
+					"\n" + PlatformGates.footer(listOf(PlatformGates.COVERAGE_INVALID)),
+			)
 	} ?: BigDecimal("0.00")
 val coverageGate =
 	"Coverage gate: minimum=${coverageMinimum.toPlainString()} " +
@@ -201,13 +209,17 @@ val platformCoverageDataCheck =
 		val minimum = coverageMinimum.toPlainString()
 		val executionData = coverageExecutionData
 		val mainClasses = mainClassesDirs
+		val footer = PlatformGates.footer(listOf(PlatformGates.COVERAGE_NO_DATA))
 		inputs.files(mainClasses)
 		doLast {
 			val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
 			if (gateActive && hasMainClasses && executionData.isEmpty()) {
 				throw GradleException(
-					"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
-						"Add tests to this module or set coverageMinimum=0.",
+					PlatformGates.line(
+						PlatformGates.COVERAGE_NO_DATA,
+						"coverageMinimum=$minimum needs JaCoCo execution data, but neither test nor integrationTest produced any. " +
+							"Add tests to this module or set coverageMinimum=0.",
+					) + "\n" + footer,
 				)
 			}
 		}
@@ -231,7 +243,6 @@ tasks.named("check") {
 // Zakres: każdy deklarowalny kubełek — nazwy bazowe niżej i ich warianty z prefiksem source setu (test*,
 // testFixtures*, własne source sety). Konfiguracje narzędzi (checkstyle, pitest, spotbugs*, jacocoAgent,
 // cyclonedx*) zostają poza zakresem z konstrukcji.
-// Wykrywanie w afterEvaluate (deps konsumenta już zadeklarowane), asercja w tasku — CC-safe.
 val governedBuckets =
 	setOf(
 		"api",
@@ -249,98 +260,75 @@ val governedBucketSuffixes =
 fun isGovernedBucket(name: String): Boolean =
 	name in governedBuckets || governedBucketSuffixes.any { name.length > it.length && name.endsWith(it) }
 
+// Kanon osadzony w pluginie (E1-6), nie katalog `libs` konsumenta: `version(...)` po `from(...)` w settings
+// nie przestawi już kanonu po cichu. Zależności zbiera provider wyliczany po konfiguracji projektu (F-14), więc
+// widzi też te, które dopisał późniejszy afterEvaluate skryptu albo innego pluginu.
+val platformCanon =
+	(
+		object {}.javaClass.classLoader.getResourceAsStream("platform-canon.tsv")
+			?: error("Brak zasobu platform-canon.tsv w pluginie seniordev.java-conventions")
+	).bufferedReader()
+		.use { DependencyGovernance.parseCanon(it.readText()) }
+val platformDeprecationEntries = PlatformDeprecations.load()
+val declaredDependencies =
+	provider {
+		configurations
+			.filter { isGovernedBucket(it.name) }
+			.flatMap { conf ->
+				conf.dependencies.withType(ExternalModuleDependency::class.java).mapNotNull { d ->
+					d.version?.takeIf { it.isNotBlank() }?.let { DeclaredDependency("${d.group}:${d.name}", it, conf.name) }
+				} +
+					conf.dependencyConstraints.mapNotNull { c ->
+						c.version?.takeIf { it.isNotBlank() }?.let { DeclaredDependency("${c.group}:${c.name}", it, "${conf.name} constraint") }
+					}
+			}
+	}
+val consumerLibs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 val platformDependencyCheck =
-	tasks.register("platformDependencyCheck") {
-		description = "Checks that every explicit dependency version comes from platform-catalog."
+	tasks.register<PlatformDependencyCheck>("platformDependencyCheck") {
+		description = "Checks that every explicit dependency version comes from the Platform canon embedded in the plugin."
 		group = "verification"
+		val canonEntries = platformCanon
+		projectPath.set(project.path)
+		declared.set(declaredDependencies.map { list -> list.map { it.encode() } })
+		canon.set(canonEntries.mapValues { (_, entry) -> "${entry.version}\t${entry.accessor}" })
+		catalogPresent.set(consumerLibs != null)
+		consumerCatalog.set(
+			provider {
+				consumerLibs?.libraryAliases?.associate { alias ->
+					val library = consumerLibs.findLibrary(alias).get().get()
+					"${library.module.group}:${library.module.name}" to library.versionConstraint.requiredVersion
+				} ?: emptyMap()
+			},
+		)
+		// Pytanie o BOM-y rozwiązuje je, więc pada tylko dla zależności spoza kanonu. Rozszerzenie szukane dopiero
+		// tu: spring-modulith-conventions aplikuje dependency-management po tym pluginie.
+		val projectExtensions = project.extensions
+		bomManaged.set(
+			declaredDependencies.map { list ->
+				val keys = DependencyGovernance.uncataloged(list, canonEntries)
+				val management = projectExtensions.findByType<DependencyManagementExtension>()
+				if (keys.isEmpty() || management == null) emptyMap() else management.managedVersions.filterKeys { it in keys }
+			},
+		)
+		val entries = platformDeprecationEntries
+		declaredModules.set(
+			provider {
+				configurations
+					.filter { isGovernedBucket(it.name) }
+					.flatMap { conf -> conf.dependencies.withType(ExternalModuleDependency::class.java).map { "${it.group}:${it.name}" } }
+					.toSet()
+			},
+		)
+		deprecations.set(entries.map(PlatformDeprecations::encode))
+		propertiesSet.set(
+			provider { entries.filter { it.kind == "property" && providers.gradleProperty(it.id).isPresent }.map { it.id }.toSet() },
+		)
+		pluginsApplied.set(provider { entries.filter { it.kind == "plugin" && pluginManager.hasPlugin(it.id) }.map { it.id }.toSet() })
+		failOnDeprecation.set(providers.gradleProperty("platform.deprecations").map { it == "fail" }.orElse(false))
+		exempt.set(DependencyGovernance.GRADLE_INJECTED)
+		report.set(layout.buildDirectory.file("reports/platform/dependency-check.md"))
 	}
-afterEvaluate {
-	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
-	val violations = mutableListOf<String>()
-	// Bez wpisu w katalogu: komunikat zależy od tego, czy BOM-y Platform zarządzają artefaktem. Rozstrzyga akcja
-	// taska, bo managedVersions rozwiązuje BOM-y — w konfiguracji kosztowałoby to każdy build konsumenta.
-	val uncataloged = mutableListOf<Triple<String, String, String>>()
-	if (libs != null) {
-		val canonVersions = mutableMapOf<String, String>()
-		val accessors = mutableMapOf<String, String>()
-		libs.libraryAliases.forEach { alias ->
-			val dep = libs.findLibrary(alias).get().get()
-			val key = "${dep.module.group}:${dep.module.name}"
-			accessors.putIfAbsent(key, "libs." + alias.replace('-', '.').replace('_', '.'))
-			val v = dep.versionConstraint.requiredVersion
-			if (v.isNotBlank()) canonVersions[key] = v
-		}
-
-		fun violation(
-			key: String,
-			version: String?,
-			bucket: String,
-		): String? {
-			if (version.isNullOrBlank()) return null
-			val canonVersion = canonVersions[key]
-			val accessor = accessors[key]
-			return when {
-				canonVersion == version -> {
-					null
-				}
-
-				canonVersion != null -> {
-					"$key:$version ($bucket) — Platform canon is $canonVersion: declare it as $accessor"
-				}
-
-				accessor != null -> {
-					"$key:$version ($bucket) — managed by the Platform BOMs: remove the explicit version and declare it as $accessor"
-				}
-
-				else -> {
-					uncataloged += Triple(key, version, bucket)
-					null
-				}
-			}
-		}
-		configurations.matching { isGovernedBucket(it.name) }.forEach { conf ->
-			conf.dependencies.withType(ExternalModuleDependency::class.java).forEach { d ->
-				violation("${d.group}:${d.name}", d.version, conf.name)?.let { violations += it }
-			}
-			conf.dependencyConstraints.forEach { c ->
-				violation("${c.group}:${c.name}", c.version, "${conf.name} constraint")?.let { violations += it }
-			}
-		}
-	}
-	val catalogMissing = libs == null
-	val dependencyManagement = extensions.findByType<DependencyManagementExtension>()
-	val managedVersions =
-		if (uncataloged.isEmpty() || dependencyManagement == null) {
-			provider { emptyMap<String, String>() }
-		} else {
-			val keys = uncataloged.map { it.first }.toSet()
-			provider { dependencyManagement.managedVersions.filterKeys { it in keys } }
-		}
-	platformDependencyCheck.configure {
-		doLast {
-			val managed = managedVersions.get()
-			uncataloged.forEach { (key, version, bucket) ->
-				violations +=
-					managed[key]?.let { bomVersion ->
-						"$key:$version ($bucket) — the Platform BOMs manage it at $bomVersion: remove the explicit version. To run " +
-							"another version on purpose, override the BOM property instead, which platformBomOverrideCheck reports"
-					} ?: (
-						"$key:$version ($bucket) — not in the Platform catalog and no Platform BOM manages it: add it to " +
-							"gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin"
-					)
-			}
-			if (catalogMissing) {
-				logger.warn("platformDependencyCheck: skipped — no 'libs' version catalog, so this is not a Platform consumer build")
-			} else if (violations.isNotEmpty()) {
-				throw GradleException(
-					"Dependency versions outside the Platform canon (platformDependencyCheck):\n  " + violations.joinToString("\n  "),
-				)
-			} else {
-				logger.lifecycle("platformDependencyCheck: OK — every explicit version matches platform-catalog")
-			}
-		}
-	}
-}
 tasks.named("check") {
 	dependsOn(platformDependencyCheck)
 }

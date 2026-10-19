@@ -17,6 +17,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `platformDependencyCheck` compares declared versions with the canon embedded in the plugin. A `version(...)`
+  override after `from(...)` in the `libs` catalog now fails (`PLAT-DEP-004`), and so does a project that
+  applies `seniordev.java-conventions` without a catalog named `libs` (`PLAT-DEP-005`); none of the consumers
+  does either today (manual).
 - `seniordev.java-conventions` adds `platformPinCheck` to `check`: a build whose settings plugin and
   catalog are pinned to different releases now fails, naming both versions and the fix. Read both pins
   from `platformVersion` or run `scripts/platform-bump.sh` (manual). It also registers `lint` and
@@ -96,6 +100,16 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
+  `docs/gates.md` at the release that produced it; `backend-ci.yml` names dependency verification and the
+  coverage threshold (`PLAT-VER-001`, `PLAT-COV-003`), and `scripts/gate-failures.py` counts consumer failures
+  per code locally. `templates/tests/gate-codes.test.sh` keeps the codes and the sections equal.
+- A deprecation channel: `platform-deprecations.tsv` in the plugin (first entries: `spring-boot-starter-web`
+  and `spring-boot-starter-aop`, replaced by their Spring Boot 4 names) and a `deprecated` map in
+  `versions.json` warn with `PLAT-DEPR-001` and keep working; `-Pplatform.deprecations=fail` fails the Gradle
+  side. `deploy.yml` warns about the `gh_token` BuildKit secret id and `sonar.yml` about itself.
+- `platformDependencyCheck` writes `build/reports/platform/dependency-check.md` and, in GitHub Actions, the job
+  summary.
 - `scripts/new-consumer.sh --frontend next` renders a strict Next.js frontend (canon versions, the Platform
   configs, `.npmrc`, `Dockerfile.frontend` and a `frontend-ci.yml` caller); a TestKit case builds `lint test`
   on both generated backends. `scripts/render-example.sh` and the `example` job of `release.yml` regenerate a
@@ -320,6 +334,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `platformDependencyCheck` is a typed task without `afterEvaluate`, so a dependency a later `afterEvaluate`
+  adds is governed too.
 - `platform-test-fixtures` and `platform-security-starter` import `platform-bom` instead of the separate
   BOMs, so the classpaths they reach get its floors: Jackson 3.1.8 instead of 3.1.5 and ArchUnit 1.5.0 on
   the runtime classpath. A consumer that locks dependencies regenerates its lockfile and verification
@@ -327,9 +343,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `platformDependencyCheck` tells a library the Platform BOMs manage (with the managed version and the
   BOM-property escape hatch) apart from one no BOM manages; the BOMs are resolved only in the task action
   and only when such a line exists.
-- Platform's TestKit suite runs every consumer build with `--configuration-cache` and
-  `--warning-mode=fail`, passes the toolchain with `-D` instead of the deprecated `-P`, and asserts that a
-  second java-library run reuses the configuration cache.
+- Platform's TestKit suite runs every consumer build with `--configuration-cache`, `--warning-mode=all` and
+  `-Pplatform.deprecations=fail`, fails when a Gradle deprecation comes from the Platform conventions (the
+  PIT plugin still calls the deprecated `Configuration.setVisible`, so `--warning-mode=fail` waits for its
+  fix), passes the toolchain with `-D` instead of the deprecated `-P`, and asserts that a second java-library
+  run reuses the configuration cache. `platformBomOverrideCheck` no longer calls the deprecated
+  `Project.getProperties`.
 - `PlatformPostgresContainer` is deprecated in favour of `PlatformSharedPostgresContainer`: as a
   `@ServiceConnection` bean it starts one container per cached context signature. It keeps working
   unchanged.

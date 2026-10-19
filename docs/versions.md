@@ -126,8 +126,12 @@ When it is red, the maintainer:
 
 ## What platformDependencyCheck does not see
 
-`platformDependencyCheck` compares the versions a build *declares* with the catalog. A consumer can
-still move a version through channels the check cannot see:
+`platformDependencyCheck` compares the versions a build *declares* with the canon embedded in the plugin
+(`platform-canon.tsv`, generated from `gradle/catalog/libs.versions.toml` when build-logic is built), not with
+the consumer's `libs` catalog, which `version(...)` after `from(...)` in `settings.gradle.kts` could override:
+such an override is a failure of its own ([PLAT-DEP-004](gates.md#plat-dep-004)), and so is a build without a
+`libs` catalog ([PLAT-DEP-005](gates.md#plat-dep-005)). A consumer can still move a version through channels
+the check cannot see:
 
 | Channel | Example | What reports it |
 |---|---|---|

@@ -185,12 +185,17 @@ jobs:
               for block in re.findall(r"\* What went wrong:\n(.*?)(?:\n\* Try:|\Z)", text, re.S):
                   wrong.append(block.strip())
 
-          for path, line, title, message in annotations[:LIMIT]:
+          # Kody bramek (N-SHOW-8) dla porażek Gradle'a, które nie drukują własnego kodu; na początek listy, poza limitem.
+          GATES = [("Dependency verification failed", "PLAT-VER-001"), ("Rule violated for bundle", "PLAT-COV-003")]
+          coded = [("", "", code, f"[{code}] {block.splitlines()[0]}") for block in wrong for needle, code in GATES if needle in block]
+          annotations = coded + annotations
+
+          for path, line, title, message in annotations[:LIMIT + len(coded)]:
               location = f"file={path}," if path else ""
               location += f"line={line}," if path and line else ""
               print(f"::error {location}title={escape(title)}::{escape(message)}")
-          if len(annotations) > LIMIT:
-              print(f"::error title=More failures::{len(annotations) - LIMIT} more; see the job summary and the test reports artifact")
+          if len(annotations) > LIMIT + len(coded):
+              print(f"::error title=More failures::{len(annotations) - LIMIT - len(coded)} more; see the job summary and the test reports artifact")
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:

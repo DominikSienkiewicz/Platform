@@ -14,6 +14,7 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `GITHUB_ACTOR`, `GITHUB_TOKEN` | environment | unset | fallback credentials for GitHub Packages, used on CI | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
 | `coverageMinimum` | `gradle.properties` or `-P` | `0.00` | JaCoCo coverage threshold on `check`, a decimal between 0 and 1 | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
+| `platform.deprecations` | `-P` or `gradle.properties` | `warn` | `fail` makes `platformDependencyCheck` fail while a deprecated dependency, property or plugin is in use ([gates](gates.md#plat-depr-001)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts); see [consuming.md](consuming.md#agent-resource-profile) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 
 These names are frozen. A new Platform property, task or bin follows the naming rule in
@@ -46,16 +47,17 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | `checkstyleMain`, `checkstyleTest` | yes | `@SuppressWarnings("checkstyle:<checkname>")` on a declaration, with the check name in lower case | Platform rules, `maxWarnings = 0` |
 | `jacocoTestReport`, `jacocoTestCoverageVerification` | yes | `coverageMinimum` | 0.00, coverage of `test` and `integrationTest` together |
 | `platformCoverageDataCheck` | yes | `coverageMinimum` | fails when the threshold is above 0 and no test produced JaCoCo data |
-| `platformDependencyCheck` | yes | none | every explicit dependency version must match the catalog; a library outside the catalog is told apart by whether a Platform BOM manages it |
+| `platformDependencyCheck` | yes | `platform.deprecations` | every explicit dependency version must match the canon embedded in the plugin, the consumer's `libs` catalog must not override it and must exist; a library outside the canon is told apart by whether a Platform BOM manages it. It sees dependencies added in a late `afterEvaluate` too, writes `build/reports/platform/dependency-check.md` (and the job summary in GitHub Actions) and lists deprecated items |
 | `platformPinCheck` | yes | none | the settings plugin and `platform-catalog` are the same release; a mismatch also warns at configuration time |
 | `lint` | no | a project's own `lint` task wins | `spotlessCheck`, every Checkstyle task, `platformDependencyCheck` and `platformPinCheck`, without tests |
 | `format` | no | a project's own `format` task wins | `spotlessApply` |
 | `platformRuntimeImageCheck` | yes | none | the final `FROM` of `Dockerfile` (project or root) must run Java 27 or newer; skipped when there is no Dockerfile or the image is not a JVM image |
 | test tasks | — | `AI_AGENT` | JUnit Platform |
 
-Their failure messages and fixes are in [consuming.md](consuming.md#troubleshooting). The tasks are
-compatible with the configuration cache, which Platform's TestKit suite runs with
-`--warning-mode=fail` (Decision 10); consumers opt in with `org.gradle.configuration-cache=true`.
+Every failure carries a code such as `[PLAT-DEP-001]` and a link to its section of [gates.md](gates.md) in the
+docs of that release; the fixes are also in [consuming.md](consuming.md#troubleshooting). The tasks are
+compatible with the configuration cache, which Platform's TestKit suite runs with every Gradle deprecation
+the conventions cause as a failure (Decision 10); consumers opt in with `org.gradle.configuration-cache=true`.
 
 ## seniordev.quality-conventions
 

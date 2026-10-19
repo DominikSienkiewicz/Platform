@@ -32,7 +32,10 @@ abstract class PlatformPinCheck : DefaultTask() {
 			}
 
 			catalog != plugin -> {
-				throw GradleException(mismatch(plugin, catalog))
+				throw GradleException(
+					PlatformGates.line(PlatformGates.PIN_DIVERGE, mismatch(plugin, catalog)) + "\n" +
+						PlatformGates.footer(listOf(PlatformGates.PIN_DIVERGE)),
+				)
 			}
 
 			else -> {

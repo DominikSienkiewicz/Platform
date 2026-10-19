@@ -23,6 +23,7 @@ class PlatformConsumerFunctionalTest {
 
 		assertSucceeded(result, ":lint", ":test", ":pitest", *CONSUMER_GATES)
 		assertAnalyzersReadTheBytecode(result)
+		assertNoPlatformDeprecation(result.output)
 
 		// E1-15: drugi przebieg tych samych tasków musi wziąć konfigurację z cache, nie liczyć jej od nowa.
 		val again = consumer.runner("lint", "test").build()
@@ -55,6 +56,7 @@ class PlatformConsumerFunctionalTest {
 
 		assertSucceeded(result, ":lint", ":test", ":integrationTest", ":bootJar", ":smokeStartBootJar", *CONSUMER_GATES)
 		assertAnalyzersReadTheBytecode(result)
+		assertNoPlatformDeprecation(result.output)
 		assertTrue(consumer.file("build/jacoco/integrationTest.exec").isFile, "integrationTest must record JaCoCo execution data")
 		assertTrue(
 			coveredInstructions(consumer.file("build/reports/jacoco/test/jacocoTestReport.xml"), "example/app/Application") > 0,

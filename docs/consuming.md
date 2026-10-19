@@ -541,6 +541,9 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD082 | (`platformDoctor`) `coverageMinimum` is a decimal between 0 and 1; unset warns, because the gate then accepts any coverage |
 | PD083 | (`--gradle`) `./gradlew platformDoctor` ran at all; an older pin has no such task |
 
+Gate failures carry a code, such as `[PLAT-DEP-001]`, and a link to its section of [gates.md](gates.md) at
+the release that produced it.
+
 | Symptom | Cause | Fix |
 |---|---|---|
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |

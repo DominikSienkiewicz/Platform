@@ -47,6 +47,13 @@ opublikuj, podbij pin w repo konsumenta.
    `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly` i ich warianty `test*`/`testFixtures*`/
    własnych source setów), także dla artefaktów `pl.seniordeveloper`. Bez wersji = zarządzane BOM-ami
    platformy (OK). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
+   Kanonem jest plik `platform-canon.tsv` osadzony w pluginie (generowany z katalogu, E1-6), nie katalog `libs`
+   konsumenta: nadpisanie `version(...)` w settings i brak katalogu `libs` też failują. Task jest typowany
+   (`PlatformDependencyCheck`, bez `afterEvaluate`) i pisze `build/reports/platform/dependency-check.md`.
+   **Kody bramek** `PLAT-…` (np. `[PLAT-DEP-001]`) z linkiem do `docs/gates.md` na tagu wydania — każdy kod ma
+   sekcję, pilnuje `templates/tests/gate-codes.test.sh`; ID doctora `PD0xx` zostają osobnym kontraktem.
+   **Deprecacje** (N-REL-9): `platform-deprecations.tsv` w pluginie i mapa `deprecated` w `versions.json` —
+   ostrzeżenie `PLAT-DEPR-001`, `-Pplatform.deprecations=fail` failuje (tak biegnie TestKit Platform).
    Nowa biblioteka = najpierw wpis tu + `./release.sh`. Po każdej zmianie tego, co moduły Platform pobierają
    (bump katalogu, nowa biblioteka, plugin): `scripts/write-verification-metadata.sh` — build-logic, test-fixtures
    i security-starter mają `gradle/verification-metadata.xml`, weryfikowane strict (docs/versions.md).

@@ -1,0 +1,5 @@
+# Kanał deprecacji Platform (N-REL-9): rodzaj<TAB>id<TAB>od wydania<TAB>usunięcie<TAB>zamiennik.
+# Rodzaje: dependency (group:name), property (właściwość Gradle), plugin (id). Deprecacja w MINOR N, usunięcie
+# najwcześniej w N+1, oba w CHANGELOG. Komunikat czyta konsument, więc zamiennik po angielsku.
+dependency	org.springframework.boot:spring-boot-starter-web	1.6.0	a later MINOR	org.springframework.boot:spring-boot-starter-webmvc (libs.boot.starter.webmvc), the Spring Boot 4 name of the starter
+dependency	org.springframework.boot:spring-boot-starter-aop	1.6.0	a later MINOR	org.springframework.boot:spring-boot-starter-aspectj, the Spring Boot 4 name of the starter

@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
 plugins {
 	`kotlin-dsl`
 	`maven-publish`
@@ -87,6 +89,33 @@ val generatePlatformVersions =
 		}
 	}
 kotlin.sourceSets.named("main") { kotlin.srcDir(generatePlatformVersions) }
+
+// Kanon osadzony w pluginie (E1-6): platformDependencyCheck porównuje wersje z TYM plikiem, a nie z katalogiem
+// `libs` konsumenta, który `version(...)` po `from(...)` w settings potrafi nadpisać. Jedno źródło nadal to
+// gradle/catalog (zasada 1); aliasy `version.ref = "platform"` dostają platformVersion tego wydania.
+val platformCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val generatePlatformCanon =
+	tasks.register("generatePlatformCanon") {
+		val catalog = platformCatalog
+		val platformVersion = providers.gradleProperty("platformVersion").get()
+		val placeholder = libs.versions.platform.get()
+		val rows =
+			catalog.libraryAliases
+				.map { alias ->
+					val library = catalog.findLibrary(alias).get().get()
+					val version = library.versionConstraint.requiredVersion.let { if (it == placeholder) platformVersion else it }
+					"${library.module.group}:${library.module.name}\t$version\tlibs.${alias.replace('-', '.').replace('_', '.')}"
+				}.sorted()
+		inputs.property("rows", rows)
+		val output = layout.buildDirectory.dir("generated/platform-canon/resources")
+		outputs.dir(output)
+		doLast {
+			val file = output.get().file("platform-canon.tsv").asFile
+			file.parentFile.mkdirs()
+			file.writeText(rows.joinToString("\n", postfix = "\n"))
+		}
+	}
+sourceSets.named("main") { resources.srcDir(generatePlatformCanon) }
 
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
 // Regeneracja po bumpie którejkolwiek wersji wyżej: ./gradlew dependencies --write-locks

@@ -45,10 +45,11 @@ abstract class RuntimeImageCheck : DefaultTask() {
 
 			javaMajor < toolchain -> {
 				throw GradleException(
-					"${dockerfile.path} runs ${image.reference} (Java $javaMajor) in its final stage, but " +
+					"[${PlatformGates.IMAGE_OLDER_JAVA}] ${dockerfile.path} runs ${image.reference} (Java $javaMajor) in its final stage, but " +
 						"seniordev.java-conventions compiles Java $toolchain bytecode, which needs a Java $toolchain runtime. " +
 						"Change the final FROM to the image in templates/Dockerfile.backend of DominikSienkiewicz/Platform " +
-						"(see docs/versions.md, section \"Runtime image for the JDK $toolchain toolchain\").",
+						"(see docs/versions.md, section \"Runtime image for the JDK $toolchain toolchain\").\n" +
+						PlatformGates.footer(listOf(PlatformGates.IMAGE_OLDER_JAVA)),
 				)
 			}
 
