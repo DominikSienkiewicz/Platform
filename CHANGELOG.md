@@ -55,7 +55,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   BookOfStyling's `extra["jackson-bom.version"]` and SkillSprintPlus's `eachDependency` on jackson-databind;
   `platformBomOverrideCheck` now lists every `*.version` property a consumer still sets (manual).
 - `seniordev.java-conventions` adds the JUnit BOM, Jupiter and the launcher of the canon to the tests. Delete the
-  same three lines from a backend's `build.gradle.kts`, as `templates/jvm/java-library` did; set
+  same three lines from a backend's `build.gradle.kts` once it is pinned to this release; set
   `platform.junit.baseline=false` to keep your own (manual).
 - `check` runs `platformQuarantineCheck`: a test tagged `quarantine` without
   `// quarantine: <issue-url> until YYYY-MM-DD` above the tag fails ([PLAT-QUA-001](docs/gates.md#plat-qua-001)),

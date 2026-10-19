@@ -32,6 +32,20 @@ class PlatformConsumerFunctionalTest {
 		assertTrue(reused.output.contains("Reusing configuration cache."), "the conventions must be configuration-cache compatible")
 	}
 
+	/**
+	 * backend-ci-smoke w ci.yml i scripts/new-consumer.sh budują starter na opublikowanym pinie platformVersion, a
+	 * konwencje z tego pinu nie dokładają jeszcze baseline JUnit. Bez baseline starter musi skompilować i uruchomić
+	 * testy sam; usuń ten test razem z liniami JUnit startera dopiero, gdy jego pin niesie baseline.
+	 */
+	@Test
+	fun `java-library starter runs its tests on conventions without the JUnit baseline`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+
+		val result = consumer.runner("test", properties = mapOf("platform.junit.baseline" to "false")).build()
+
+		assertSucceeded(result, ":compileTestJava", ":test")
+	}
+
 	@Test
 	fun `lint fails on a formatting violation without running the tests`() {
 		val consumer = ConsumerFixture(directory, "java-library")
