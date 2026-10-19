@@ -55,3 +55,36 @@ Run tests only when asked; `lint` and `format` are the default gate. A failure c
 - [Test an unreleased Platform change](runbooks/test-unreleased-change.md)
 - [Promote an incubating artifact](runbooks/promote-incubating-artifact.md)
 - [Cut a Platform release](runbooks/cut-release.md) (Platform maintainers)
+
+## Claude Code skills
+
+Platform ships a Claude Code plugin, `platform`, in the marketplace `seniordev-platform` at the root of this
+repository (`.claude-plugin/marketplace.json`, `plugins/platform/`). Its skills hold no procedure: each tells the
+agent to read the pinned Platform version (`platformVersion` in `backend/gradle.properties` or `gradle.properties`,
+or the version in the `platform-agents` marker of `AGENTS.md`) and to open the runbook, or the section of the
+failure's code in [gates.md](gates.md), at that tag. The runbooks stay the single source, and the guidance matches
+the pin the same way the managed block's link to this sheet does.
+
+| Skill | Use it when | Opens |
+|---|---|---|
+| `/platform:bump-consumer` | bumping the Platform pin | [bump a consumer](runbooks/bump-consumer.md) |
+| `/platform:fix-gate-failure` | a build or CI run fails with a `[PLAT-…]` code | the section of the code in [gates.md](gates.md) |
+| `/platform:add-library` | adding a JVM library or a frontend dependency | [add a JVM library](runbooks/add-jvm-library.md) or [add a frontend dependency](runbooks/add-frontend-dependency.md) |
+| `/platform:test-unreleased-change` | previewing an unreleased Platform change on a consumer | [test an unreleased change](runbooks/test-unreleased-change.md) |
+
+Install it from a shell in the consumer repository. `#<ref>` pins the marketplace to a branch or tag: use the tag the
+repository pins, or `#v1` for the latest 1.x release (the skills read the pin themselves, so both work). The
+marketplace file exists from the first release that lists it in the [changelog](../CHANGELOG.md).
+
+```bash
+claude plugin marketplace add DominikSienkiewicz/Platform#v<version> --scope project
+claude plugin install platform@seniordev-platform --scope project
+```
+
+`--scope project` records the marketplace in `.claude/settings.json`, which you commit; each collaborator then runs
+the second command once. `platform-bump` does not touch that file, so an exact tag stays where it is until you move
+it, while `#v1` follows the releases. A skill runs as `/platform:<skill>`, or Claude loads it from the situation its description
+names: "bump platform", a red gate with a `PLAT-` code, a new dependency, a preview of an unreleased change. If the
+page does not exist at the pinned tag, the pin predates it and the skill reads the same file on `main`.
+`scripts/check-agent-docs.py` checks the commands, paths and tag links the skills name, like those of the other
+agent documents.

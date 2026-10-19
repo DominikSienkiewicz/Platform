@@ -492,6 +492,15 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   image changes, in the weekly run and in the release gate, and ends with a notice while the latest release does
   not publish every pinned `@dominiksienkiewicz/*` package at its own version. `new-consumer.sh --frontend next`
   now also renders the `public/` directory the image copies.
+- Claude Code skills (N-SHOW-1): a marketplace `seniordev-platform` at the repository root
+  (`.claude-plugin/marketplace.json`) and one plugin, `platform` (`plugins/platform/`), with four thin skills:
+  `bump-consumer`, `fix-gate-failure`, `add-library` and `test-unreleased-change`. Each reads the Platform version
+  the repository pins and opens the runbook, or the `docs/gates.md` section of the `[PLAT-…]` code, at that tag, and
+  holds no procedure of its own. A repository adds the marketplace at a release tag
+  (`claude plugin marketplace add DominikSienkiewicz/Platform#v<version>`); the install and the skills are in
+  [docs/consumer-agents.md](docs/consumer-agents.md#claude-code-skills). `scripts/check-agent-docs.py` now also checks
+  the commands, paths and tag links the skills name, and `templates/tests/platform-plugin.test.sh` the manifests and
+  that each skill points at its own runbook only.
 
 ### Changed
 
