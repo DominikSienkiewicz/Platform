@@ -11,6 +11,7 @@ backend-ci.yml input working-directory type=string default=backend
 backend-ci.yml input java-version type=string default="25"
 backend-ci.yml input toolchain-java-version type=string default="27"
 backend-ci.yml input gradle-task type=string default="build"
+backend-ci.yml input lint-task type=string default=""
 backend-ci.yml secret gpr_token required=false
 backend-ci.yml permissions contents: read
 backend-ci.yml permissions packages: read

@@ -17,6 +17,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `seniordev.java-conventions` adds `platformPinCheck` to `check`: a build whose settings plugin and
+  catalog are pinned to different releases now fails, naming both versions and the fix. Read both pins
+  from `platformVersion` or run `scripts/platform-bump.sh` (manual). It also registers `lint` and
+  `format` in every project that has no task of that name; Touchstone can drop its root aggregator.
+- `backend-ci.yml` has a new optional input `lint-task` (default empty, so nothing runs); pass
+  `lint-task: lint` for a fast first step.
 - `templates/Dockerfile.backend` declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
   `backend/Dockerfile`, then delete the backend's `healthcheck:` in the compose files, which replaces the
   image's: BookOfStyling only checks that the port is open, and SkillSprintPlus runs `curl`, which
@@ -90,6 +96,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platformPinCheck`, `lint` and `format` in `seniordev.java-conventions`, and the `lint-task` input of
+  `backend-ci.yml`.
 - `seniordev.settings-conventions` registers `platformDoctor` on the root project, compatible with the
   configuration cache: PD080 compares the settings plugin, the catalog's `platform` version and
   `platformVersion`, PD081 resolves the root project's Java toolchain and PD082 checks `coverageMinimum`.
@@ -290,6 +298,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- `platformDependencyCheck` tells a library the Platform BOMs manage (with the managed version and the
+  BOM-property escape hatch) apart from one no BOM manages; the BOMs are resolved only in the task action
+  and only when such a line exists.
+- Platform's TestKit suite runs every consumer build with `--configuration-cache` and
+  `--warning-mode=fail`, passes the toolchain with `-D` instead of the deprecated `-P`, and asserts that a
+  second java-library run reuses the configuration cache.
 - `PlatformPostgresContainer` is deprecated in favour of `PlatformSharedPostgresContainer`: as a
   `@ServiceConnection` bean it starts one container per cached context signature. It keeps working
   unchanged.

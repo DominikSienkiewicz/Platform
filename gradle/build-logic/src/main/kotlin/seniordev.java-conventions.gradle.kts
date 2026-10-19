@@ -1,3 +1,4 @@
+import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
@@ -5,6 +6,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.PlatformPinCheck
 import pl.seniordeveloper.gradle.PlatformVersions
 import pl.seniordeveloper.gradle.RuntimeImageCheck
 import java.io.File
@@ -20,6 +22,7 @@ import java.math.BigDecimal
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
  *   - JaCoCo + statyczny próg pokrycia `coverageMinimum` (ułamek 0..1, domyślnie 0.00; repo samo go podnosi);
  *     pokrycie sumowane z `test` I `integrationTest`, raport i bramka wiszą na `check`
+ *   - `platformPinCheck` (settings plugin i katalog z jednego wydania) oraz taski `lint` i `format`
  *
  * Źródło 1:1: najlepsze części z BookOfStyling (googleJavaFormat + checkstyle) ujednolicone
  * dla Attestate (brak narzędzi) i SkillSprintPlus (sam importOrder).
@@ -254,6 +257,9 @@ val platformDependencyCheck =
 afterEvaluate {
 	val libs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 	val violations = mutableListOf<String>()
+	// Bez wpisu w katalogu: komunikat zależy od tego, czy BOM-y Platform zarządzają artefaktem. Rozstrzyga akcja
+	// taska, bo managedVersions rozwiązuje BOM-y — w konfiguracji kosztowałoby to każdy build konsumenta.
+	val uncataloged = mutableListOf<Triple<String, String, String>>()
 	if (libs != null) {
 		val canonVersions = mutableMapOf<String, String>()
 		val accessors = mutableMapOf<String, String>()
@@ -287,9 +293,8 @@ afterEvaluate {
 				}
 
 				else -> {
-					"$key:$version ($bucket) — not in the Platform catalog. If the Platform BOMs (Spring Boot / Modulith / " +
-						"Spring AI) manage it, remove the explicit version; otherwise add it to gradle/catalog/libs.versions.toml " +
-						"in DominikSienkiewicz/Platform, release, and bump the Platform pin"
+					uncataloged += Triple(key, version, bucket)
+					null
 				}
 			}
 		}
@@ -303,8 +308,27 @@ afterEvaluate {
 		}
 	}
 	val catalogMissing = libs == null
+	val dependencyManagement = extensions.findByType<DependencyManagementExtension>()
+	val managedVersions =
+		if (uncataloged.isEmpty() || dependencyManagement == null) {
+			provider { emptyMap<String, String>() }
+		} else {
+			val keys = uncataloged.map { it.first }.toSet()
+			provider { dependencyManagement.managedVersions.filterKeys { it in keys } }
+		}
 	platformDependencyCheck.configure {
 		doLast {
+			val managed = managedVersions.get()
+			uncataloged.forEach { (key, version, bucket) ->
+				violations +=
+					managed[key]?.let { bomVersion ->
+						"$key:$version ($bucket) — the Platform BOMs manage it at $bomVersion: remove the explicit version. To run " +
+							"another version on purpose, override the BOM property instead, which platformBomOverrideCheck reports"
+					} ?: (
+						"$key:$version ($bucket) — not in the Platform catalog and no Platform BOM manages it: add it to " +
+							"gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin"
+					)
+			}
 			if (catalogMissing) {
 				logger.warn("platformDependencyCheck: skipped — no 'libs' version catalog, so this is not a Platform consumer build")
 			} else if (violations.isNotEmpty()) {
@@ -319,4 +343,53 @@ afterEvaluate {
 }
 tasks.named("check") {
 	dependsOn(platformDependencyCheck)
+}
+
+// === Piny Platform: settings plugin (= wersja tych convention pluginów) kontra platform-catalog =============
+// Rozjazd daje mylące porażki pozostałych bramek, więc przyczyna pada od razu: ostrzeżenie w konfiguracji
+// i task platformPinCheck w `check` i `lint` (sama porażka zostaje w tasku, żeby nie blokować `help` ani `tasks`).
+val catalogPlatformVersion =
+	extensions
+		.findByType<VersionCatalogsExtension>()
+		?.find("libs")
+		?.orElse(null)
+		?.findVersion("platform")
+		?.orElse(null)
+		?.requiredVersion
+if (catalogPlatformVersion != null && catalogPlatformVersion != PlatformVersions.PLATFORM) {
+	logger.warn(PlatformPinCheck.mismatch(PlatformVersions.PLATFORM, catalogPlatformVersion))
+}
+val platformPinCheck =
+	tasks.register<PlatformPinCheck>("platformPinCheck") {
+		description = "Fails when the settings plugin and platform-catalog are pinned to different Platform releases."
+		group = "verification"
+		pluginVersion.set(PlatformVersions.PLATFORM)
+		catalogVersion.set(catalogPlatformVersion)
+	}
+tasks.named("check") {
+	dependsOn(platformPinCheck)
+}
+
+// === lint i format: formatter i lintery bez testów — domyślna bramka agentów i szybki pierwszy krok CI =========
+// Rejestracja po skrypcie projektu: projekt, który ma własny `lint` albo `format`, zostaje przy swoim.
+afterEvaluate {
+	if ("lint" in tasks.names) {
+		logger.warn("seniordev.java-conventions: $path defines its own lint task, so the Platform lint is not registered there")
+	} else {
+		tasks.register("lint") {
+			description =
+				"Runs the formatter check and the linters without tests: spotlessCheck, Checkstyle, platformDependencyCheck, platformPinCheck."
+			group = "verification"
+			dependsOn("spotlessCheck", tasks.withType<Checkstyle>(), platformDependencyCheck, platformPinCheck)
+		}
+	}
+	if ("format" in tasks.names) {
+		logger.warn("seniordev.java-conventions: $path defines its own format task, so the Platform format is not registered there")
+	} else {
+		tasks.register("format") {
+			description = "Formats the sources with Spotless (google-java-format)."
+			group = "formatting"
+			dependsOn("spotlessApply")
+		}
+	}
 }

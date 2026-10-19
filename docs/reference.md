@@ -46,11 +46,16 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | `checkstyleMain`, `checkstyleTest` | yes | `@SuppressWarnings("checkstyle:<checkname>")` on a declaration, with the check name in lower case | Platform rules, `maxWarnings = 0` |
 | `jacocoTestReport`, `jacocoTestCoverageVerification` | yes | `coverageMinimum` | 0.00, coverage of `test` and `integrationTest` together |
 | `platformCoverageDataCheck` | yes | `coverageMinimum` | fails when the threshold is above 0 and no test produced JaCoCo data |
-| `platformDependencyCheck` | yes | none | every explicit dependency version must match the catalog |
+| `platformDependencyCheck` | yes | none | every explicit dependency version must match the catalog; a library outside the catalog is told apart by whether a Platform BOM manages it |
+| `platformPinCheck` | yes | none | the settings plugin and `platform-catalog` are the same release; a mismatch also warns at configuration time |
+| `lint` | no | a project's own `lint` task wins | `spotlessCheck`, every Checkstyle task, `platformDependencyCheck` and `platformPinCheck`, without tests |
+| `format` | no | a project's own `format` task wins | `spotlessApply` |
 | `platformRuntimeImageCheck` | yes | none | the final `FROM` of `Dockerfile` (project or root) must run Java 27 or newer; skipped when there is no Dockerfile or the image is not a JVM image |
 | test tasks | — | `AI_AGENT` | JUnit Platform |
 
-Their failure messages and fixes are in [consuming.md](consuming.md#troubleshooting).
+Their failure messages and fixes are in [consuming.md](consuming.md#troubleshooting). The tasks are
+compatible with the configuration cache, which Platform's TestKit suite runs with
+`--warning-mode=fail` (Decision 10); consumers opt in with `org.gradle.configuration-cache=true`.
 
 ## seniordev.quality-conventions
 

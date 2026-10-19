@@ -80,8 +80,9 @@ Frontend:
 
 ## Verify
 
-- Backend: `./gradlew platformDependencyCheck` resolves the settings plugin and the catalog and runs
-  the dependency governance; `./gradlew check` runs every gate.
+- Backend: `./gradlew lint` resolves the settings plugin and the catalog and runs the formatter check
+  and the linters without tests (`./gradlew format` fixes the formatting); `./gradlew check` runs every
+  gate. In CI, `lint-task: lint` on `backend-ci.yml` runs the same first.
 - Frontend: `(cd frontend && npx platform-versions-check)`.
 
 ## Backend
@@ -524,7 +525,8 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `UnsupportedClassVersionError` … `class file version 69.0` while the plugins load | Gradle runs on a JDK older than 25 | Run Gradle on JDK 25 or newer (`sdk env`, or `JAVA_HOME`) |
 | `No matching toolchains found for requested specification` with `languageVersion=27` | No JDK 27 is installed or registered | Install a JDK 27 and register it with `org.gradle.java.installations.paths`; on glibc Linux avoid Foojay's Alpine build ([versions](versions.md)) |
-| `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version differs from the catalog, or the library is not in it | Follow the action on each line: use the `libs.…` alias, drop a BOM-managed version, or add the library to the catalog first |
+| `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version differs from the catalog, or the library is not in it | Follow the action on each line: use the `libs.…` alias; for "the Platform BOMs manage it at …", drop the version (or override the BOM property, which `platformBomOverrideCheck` reports); for "no Platform BOM manages it", add the library to the catalog first |
+| `The Platform pins diverge: seniordev.settings-conventions is …, platform-catalog is …` | `settings.gradle.kts` pins the settings plugin and the catalog to different releases | Run `scripts/platform-bump.sh <version>`, or read both pins from `platformVersion` as the [settings snippet](#backend) shows |
 | `platformRuntimeImageCheck` … `Change the final FROM to the image in templates/Dockerfile.backend` | The Dockerfile runs an older Java than the toolchain | Use the final `FROM` of `templates/Dockerfile.backend` |
 | `coverageMinimum=… needs JaCoCo execution data` | A coverage threshold is set, but no test task ran | Add tests to the module, or set `coverageMinimum=0` for it |
 | `platform-versions-check: versions that differ from the Platform canon` | A frontend dependency differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |

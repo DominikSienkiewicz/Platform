@@ -91,7 +91,12 @@ class PlatformDependencyCheckFunctionalTest {
 			output,
 			"org.springframework.boot:spring-boot-starter-webmvc:4.0.0 (implementation) — managed by the Platform BOMs: remove the explicit version and declare it as libs.boot.starter.webmvc",
 		)
-		assertViolation(output, "org.springframework.boot:spring-boot-starter-mail:4.0.0 (implementation) — $NOT_IN_CATALOG")
+		assertViolation(
+			output,
+			"org.springframework.boot:spring-boot-starter-mail:4.0.0 (implementation) — the Platform BOMs manage it at " +
+				"${canon("springBoot")}: remove the explicit version. To run another version on purpose, override the BOM " +
+				"property instead, which platformBomOverrideCheck reports",
+		)
 	}
 
 	private fun failedCheck(consumer: ConsumerFixture): String {
@@ -112,8 +117,7 @@ class PlatformDependencyCheckFunctionalTest {
 
 	private companion object {
 		const val NOT_IN_CATALOG =
-			"not in the Platform catalog. If the Platform BOMs (Spring Boot / Modulith / Spring AI) manage it, " +
-				"remove the explicit version; otherwise add it to gradle/catalog/libs.versions.toml in " +
+			"not in the Platform catalog and no Platform BOM manages it: add it to gradle/catalog/libs.versions.toml in " +
 				"DominikSienkiewicz/Platform, release, and bump the Platform pin"
 	}
 }
