@@ -1,12 +1,12 @@
 package pl.seniordeveloper.gradle
 
-import java.nio.file.Path
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 /**
  * Konsument może podstawić wersję do BOM-ów Platform przez właściwość `*.version`, której platformDependencyCheck

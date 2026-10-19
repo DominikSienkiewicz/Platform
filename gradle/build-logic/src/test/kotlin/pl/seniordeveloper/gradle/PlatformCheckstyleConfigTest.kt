@@ -1,9 +1,9 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.io.File
 
 /**
  * Guard zgodności platform-checkstyle z google-java-format (Spotless).
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.io.TempDir
  * i odwrotnie, bez żadnego formatowania spełniającego oba narzędzia.
  */
 class PlatformCheckstyleConfigTest {
-
 	@TempDir
 	lateinit var tempDir: File
 

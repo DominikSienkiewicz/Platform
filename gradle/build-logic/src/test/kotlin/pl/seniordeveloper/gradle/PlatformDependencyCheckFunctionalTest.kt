@@ -1,11 +1,11 @@
 package pl.seniordeveloper.gradle
 
-import java.nio.file.Path
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Path
 
 /**
  * Negatywne przypadki platformDependencyCheck — bramki governance wpiętej w `check` u wszystkich konsumentów.
@@ -33,7 +33,12 @@ class PlatformDependencyCheckFunctionalTest {
 
 		assertViolation(output, "org.jsoup:jsoup:1.0.0 (implementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
 		assertViolation(output, "org.jsoup:jsoup:1.0.1 (testImplementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
-		assertViolation(output, "org.springframework.boot:spring-boot-dependencies:4.0.0 (implementation) — Platform canon is ${canon("springBoot")}: declare it as libs.spring.boot.bom")
+		assertViolation(
+			output,
+			"org.springframework.boot:spring-boot-dependencies:4.0.0 (implementation) — Platform canon is ${canon(
+				"springBoot",
+			)}: declare it as libs.spring.boot.bom",
+		)
 		assertViolation(output, "com.example:unknown:1.0 (implementation) — $NOT_IN_CATALOG")
 	}
 
@@ -53,11 +58,16 @@ class PlatformDependencyCheckFunctionalTest {
 
 		val output = failedCheck(consumer)
 
-		assertViolation(output, "org.jsoup:jsoup:1.0.0 (implementation constraint) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
+		assertViolation(
+			output,
+			"org.jsoup:jsoup:1.0.0 (implementation constraint) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup",
+		)
 		assertViolation(output, "org.jsoup:jsoup:1.0.0 (extraImplementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
 		assertViolation(
 			output,
-			"pl.seniordeveloper:platform-test-fixtures:1.4.3 (testImplementation) — Platform canon is ${System.getProperty("platform.version")}: declare it as libs.platform.test.fixtures",
+			"pl.seniordeveloper:platform-test-fixtures:1.4.3 (testImplementation) — Platform canon is ${System.getProperty(
+				"platform.version",
+			)}: declare it as libs.platform.test.fixtures",
 		)
 	}
 
@@ -91,7 +101,10 @@ class PlatformDependencyCheckFunctionalTest {
 		return result.output
 	}
 
-	private fun assertViolation(output: String, violation: String) {
+	private fun assertViolation(
+		output: String,
+		violation: String,
+	) {
 		assertTrue(output.contains(violation), "platformDependencyCheck must report:\n  $violation")
 	}
 

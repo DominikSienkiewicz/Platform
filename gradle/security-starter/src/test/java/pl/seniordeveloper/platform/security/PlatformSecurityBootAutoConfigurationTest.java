@@ -18,10 +18,11 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Starter razem z auto-konfiguracjami bezpieczeństwa Boota, które w prawdziwej aplikacji są zawsze na
- * classpath. Bez jawnego porządku sorter Boota ustawia {@code org.springframework.*} przed {@code
- * pl.seniordeveloper.*}, domyślny chain Boota rejestruje się pierwszy, a {@code @ConditionalOnMissingBean}
- * chainu Platform się wycofuje — aplikacja dostaje domyślne security Boota zamiast skonfigurowanego trybu.
+ * Starter razem z auto-konfiguracjami bezpieczeństwa Boota, które w prawdziwej aplikacji są zawsze
+ * na classpath. Bez jawnego porządku sorter Boota ustawia {@code org.springframework.*} przed
+ * {@code pl.seniordeveloper.*}, domyślny chain Boota rejestruje się pierwszy, a
+ * {@code @ConditionalOnMissingBean} chainu Platform się wycofuje — aplikacja dostaje domyślne
+ * security Boota zamiast skonfigurowanego trybu.
  */
 class PlatformSecurityBootAutoConfigurationTest {
 
@@ -71,8 +72,8 @@ class PlatformSecurityBootAutoConfigurationTest {
             });
   }
 
-  private static MockHttpServletResponse perform(AssertableWebApplicationContext context, String path)
-      throws Exception {
+  private static MockHttpServletResponse perform(
+      AssertableWebApplicationContext context, String path) throws Exception {
     var request = new MockHttpServletRequest(context.getServletContext(), "GET", path);
     request.setServletPath(path);
     var response = new MockHttpServletResponse();

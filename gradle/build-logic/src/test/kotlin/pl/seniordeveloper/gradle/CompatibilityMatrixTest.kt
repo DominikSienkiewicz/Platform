@@ -1,15 +1,14 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.File
 
 /**
  * Górny wiersz docs/compatibility.md opisuje main: bump javy, BOM-u, Gradle albo kanonu frontendu bez
  * aktualizacji tabeli wywala ten test. Starsze wiersze to historia i nic ich nie sprawdza.
  */
 class CompatibilityMatrixTest {
-
 	private val topRow: Map<String, String> = topRow(File(System.getProperty("platform.compatibilityDoc")).readText())
 
 	@Test
@@ -60,5 +59,11 @@ class CompatibilityMatrixTest {
 		return header.zip(row).toMap()
 	}
 
-	private fun cells(line: String): List<String> = line.trim().removePrefix("|").removeSuffix("|").split("|").map { it.trim() }
+	private fun cells(line: String): List<String> =
+		line
+			.trim()
+			.removePrefix("|")
+			.removeSuffix("|")
+			.split("|")
+			.map { it.trim() }
 }

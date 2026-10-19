@@ -1,6 +1,7 @@
 plugins {
 	`kotlin-dsl`
 	`maven-publish`
+	alias(libs.plugins.spotless)
 }
 
 group = "pl.seniordeveloper.gradle"
@@ -19,6 +20,20 @@ java {
 repositories {
 	gradlePluginPortal()
 	mavenCentral()
+}
+
+// Źródła convention pluginów formatuje ktlint, jak konsumentów google-java-format: kod o największym zasięgu
+// nie może mieć słabszej higieny niż ten, który sprawdza. Taby i reszta stylu z .editorconfig roota repo.
+val repositoryEditorConfig = layout.projectDirectory.file("../../.editorconfig")
+spotless {
+	kotlin {
+		target("src/**/*.kt")
+		ktlint(libs.versions.ktlint.get()).setEditorConfigPath(repositoryEditorConfig)
+	}
+	kotlinGradle {
+		target("*.gradle.kts", "src/**/*.gradle.kts")
+		ktlint(libs.versions.ktlint.get()).setEditorConfigPath(repositoryEditorConfig)
+	}
 }
 
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
@@ -160,14 +175,16 @@ publishing.repositories.maven {
 	url = uri(functionalTestRepository)
 }
 
-val publishFunctionalTestCatalog = tasks.register<GradleBuild>("publishFunctionalTestCatalog") {
-	dir = file("../catalog")
-	tasks = listOf("publishAllPublicationsToFunctionalTestRepository")
-	startParameter.projectProperties = mapOf(
-		"platformVersion" to project.version.toString(),
-		"functionalTestRepository" to functionalTestRepository.get().asFile.absolutePath,
-	)
-}
+val publishFunctionalTestCatalog =
+	tasks.register<GradleBuild>("publishFunctionalTestCatalog") {
+		dir = file("../catalog")
+		tasks = listOf("publishAllPublicationsToFunctionalTestRepository")
+		startParameter.projectProperties =
+			mapOf(
+				"platformVersion" to project.version.toString(),
+				"functionalTestRepository" to functionalTestRepository.get().asFile.absolutePath,
+			)
+	}
 
 tasks.named<Test>("test") {
 	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog)
@@ -176,7 +193,14 @@ tasks.named<Test>("test") {
 	inputs.file(layout.projectDirectory.file("../catalog/libs.versions.toml"))
 	inputs.file(layout.projectDirectory.file("../catalog/build.gradle.kts"))
 	systemProperty("platform.templates", templates.asFile.absolutePath)
-	systemProperty("platform.testRepository", functionalTestRepository.get().asFile.toURI().toString())
+	systemProperty(
+		"platform.testRepository",
+		functionalTestRepository
+			.get()
+			.asFile
+			.toURI()
+			.toString(),
+	)
 	systemProperty("platform.version", project.version.toString())
 	systemProperty("platform.javaInstallations", providers.gradleProperty("org.gradle.java.installations.paths").getOrElse(""))
 }

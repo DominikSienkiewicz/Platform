@@ -39,6 +39,7 @@ bucket4j = "8.19.0"
 shedlock = "7.7.0"
 javers = "7.11.7"
 spotless = "8.9.0"
+ktlint = "1.8.0"                          # formater Kotlin w Spotless samego build-logic (D-14); konsumenci go nie dostają
 googleJavaFormat = "1.36.1"              # lustro: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs to spotbugs
 spotbugs = "4.10.3"                      # lustro: toolVersion w quality-conventions (SAM SpotBugs, nie plugin Gradle)

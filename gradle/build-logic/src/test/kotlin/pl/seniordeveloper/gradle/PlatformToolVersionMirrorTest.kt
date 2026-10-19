@@ -1,8 +1,8 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.File
 
 /**
  * Guard luster wersji wpisanych w źródłach convention pluginów.
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
  * Platform, a konsument dostaje wtedy wersję, której kanon nie opisuje.
  */
 class PlatformToolVersionMirrorTest {
-
 	private val javaConventions = File(System.getProperty("platform.javaConventions")).readText()
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
@@ -86,8 +85,10 @@ class PlatformToolVersionMirrorTest {
 
 	private fun canon(name: String): String = System.getProperty("platform.canon.$name")
 
-	private fun mirrors(source: String, pattern: String): List<String> =
-		Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
+	private fun mirrors(
+		source: String,
+		pattern: String,
+	): List<String> = Regex(pattern).findAll(source).map { it.groupValues[1] }.toList()
 
 	private companion object {
 		const val TOOLCHAIN_INPUT_DEFAULT = """\n {6}toolchain-java-version:(?:\n {8}[^\n]*)*?\n {8}default: "([^"]+)""""

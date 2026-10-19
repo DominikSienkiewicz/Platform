@@ -32,7 +32,9 @@ class FlywayMigrationRootsTest {
       var roots = AbstractFlywayMigrationTest.migrationRoots(loader);
 
       assertThat(roots).hasSize(2);
-      assertThat(roots.values()).containsExactly(java.util.List.of("V1__a.sql", "sub/V2__b.sql"), java.util.List.of("V3__c.sql"));
+      assertThat(roots.values())
+          .containsExactly(
+              java.util.List.of("V1__a.sql", "sub/V2__b.sql"), java.util.List.of("V3__c.sql"));
     }
   }
 

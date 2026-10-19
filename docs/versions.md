@@ -12,6 +12,24 @@ It reads the file rather than the published artifact because `platform-catalog` 
 yet exist at the time `build-logic` is compiled. The plugin marker artifacts on the
 `build-logic` classpath therefore take their versions straight from the canonical file.
 
+## Why a version catalog and not a java-platform BOM
+
+Platform publishes its versions as a version catalog (`pl.seniordeveloper:platform-catalog`) and no
+`java-platform` BOM. That is a choice, not an omission:
+
+- The Spring Boot, Spring Modulith and Spring AI BOMs already align the transitive versions of every
+  Spring consumer: `seniordev.spring-modulith-conventions` imports them through
+  `io.spring.dependency-management`, and Platform overrides them only as ADR-0008 allows.
+- `platformDependencyCheck` governs declared versions and fails on drift. An `enforcedPlatform` BOM
+  would instead override a drifted version silently, so the consumer would never learn that its build
+  file disagrees with the canon.
+- A second version mechanism next to `io.spring.dependency-management` makes precedence hard to read:
+  which of a BOM constraint, a dependency-management import and a catalog version wins depends on
+  plugin internals.
+- Revisit when a consumer without Spring needs transitive alignment. Generate that BOM from
+  `gradle/catalog/libs.versions.toml` then, so that the catalog stays the single source of every
+  version (hard rule 1).
+
 ## Mirrored literals
 
 A precompiled script plugin does not read a version catalog at compile time, so some
@@ -186,7 +204,9 @@ scripts/write-verification-metadata.sh
 It runs two passes per module with `--refresh-dependencies`, as `platform-bump` does for consumers:
 `build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
 bumps the catalog stays red on verification until you run the script and push its result to that branch.
-`gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows.
+`gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows. `test-fixtures` and
+`security-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
+root's file verifies everything, so their files also hold the checksums of the plugin classpath.
 
 ## Gradle wrapper
 

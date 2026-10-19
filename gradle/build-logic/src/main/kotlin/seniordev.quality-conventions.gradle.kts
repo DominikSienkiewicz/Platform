@@ -43,18 +43,26 @@ tasks.withType<CyclonedxDirectTask>().configureEach {
 
 // Współdzielony filtr wykluczeń SpotBugs żyje w resources tego pluginu (jedno źródło w Platform);
 // wypakowujemy do build/. Repo konsumenckie NIE trzymają własnych kopii config/spotbugs/.
-val spotbugsDir = layout.buildDirectory.dir("platform-config/spotbugs").get().asFile
-val spotbugsExclude = (object {}.javaClass.classLoader.getResourceAsStream("platform-spotbugs/spotbugs-exclude.xml")
-	?: error("Brak zasobu platform-spotbugs/spotbugs-exclude.xml w pluginie seniordev.quality-conventions"))
-	.bufferedReader().use { it.readText() }
-val extractSpotbugsConfig = tasks.register("extractSpotbugsConfig") {
-	description = "Wypakowuje współdzielony spotbugs-exclude.xml z pluginu do build/."
-	outputs.dir(spotbugsDir)
-	doLast {
-		spotbugsDir.mkdirs()
-		File(spotbugsDir, "spotbugs-exclude.xml").writeText(spotbugsExclude)
+val spotbugsExclude =
+	(
+		object {}.javaClass.classLoader.getResourceAsStream("platform-spotbugs/spotbugs-exclude.xml")
+			?: error("Brak zasobu platform-spotbugs/spotbugs-exclude.xml w pluginie seniordev.quality-conventions")
+	).bufferedReader()
+		.use { it.readText() }
+// Lokalne kopie w bloku register, jak w extractCheckstyleConfig (configuration cache; PlatformTaskActionCaptureTest).
+val extractSpotbugsConfig =
+	tasks.register("extractSpotbugsConfig") {
+		description = "Wypakowuje współdzielony spotbugs-exclude.xml z pluginu do build/."
+		val outputDir = layout.buildDirectory.dir("platform-config/spotbugs")
+		val text = spotbugsExclude
+		inputs.property("spotbugsExclude", text)
+		outputs.dir(outputDir)
+		doLast {
+			val dir = outputDir.get().asFile
+			dir.mkdirs()
+			File(dir, "spotbugs-exclude.xml").writeText(text)
+		}
 	}
-}
 
 spotbugs {
 	// Lustro gradle/catalog: version("spotbugs").
@@ -73,8 +81,10 @@ tasks.withType<SpotBugsTask>().configureEach {
 // Wspolna konfiguracja SonarCloud (sonarcloud.io) — koniec inline id("org.sonarqube") + blokow sonar{}
 // powielanych w repo (roznily sie tylko projectKey). Wersja pluginu = lustro gradle/catalog.
 // projectKey per-repo: property `sonarProjectKey` (fallback: DominikSienkiewicz_<rootProject.name>).
-val sonarProjectKey = providers.gradleProperty("sonarProjectKey")
-	.getOrElse("DominikSienkiewicz_${rootProject.name}")
+val sonarProjectKey =
+	providers
+		.gradleProperty("sonarProjectKey")
+		.getOrElse("DominikSienkiewicz_${rootProject.name}")
 sonar {
 	properties {
 		property("sonar.host.url", "https://sonarcloud.io")
@@ -82,7 +92,10 @@ sonar {
 		property("sonar.projectKey", sonarProjectKey)
 		property(
 			"sonar.coverage.jacoco.xmlReportPaths",
-			layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml").get().asFile.path,
+			layout.buildDirectory
+				.file("reports/jacoco/test/jacocoTestReport.xml")
+				.get()
+				.asFile.path,
 		)
 	}
 }

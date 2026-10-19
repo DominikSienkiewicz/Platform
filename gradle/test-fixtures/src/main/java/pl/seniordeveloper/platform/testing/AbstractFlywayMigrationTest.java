@@ -45,8 +45,10 @@ public abstract class AbstractFlywayMigrationTest {
 
   private static final String MIGRATIONS_DIR = "db/migration";
 
-  // Flyway: V<wersja>__<opis>.sql (versioned) lub R__<opis>.sql (repeatable). Separator = podwójny '_'.
-  // Package-private: FlywayNamePatternTest sprawdza wzorzec wprost, bez katalogu migracji na classpath.
+  // Flyway: V<wersja>__<opis>.sql (versioned) lub R__<opis>.sql (repeatable). Separator = podwójny
+  // '_'.
+  // Package-private: FlywayNamePatternTest sprawdza wzorzec wprost, bez katalogu migracji na
+  // classpath.
   static final Pattern FLYWAY_NAME = Pattern.compile("^(V\\d+(?:[._]\\d+)*__|R__).+\\.sql$");
 
   private static final Pattern VERSION = Pattern.compile("^V(\\d+(?:[._]\\d+)*)__");
@@ -58,7 +60,9 @@ public abstract class AbstractFlywayMigrationTest {
     var roots = migrationRoots(getClass().getClassLoader());
     assertFalse(
         roots.isEmpty(),
-        "Missing classpath:/" + MIGRATIONS_DIR + " — Flyway is on the classpath, so without migrations"
+        "Missing classpath:/"
+            + MIGRATIONS_DIR
+            + " — Flyway is on the classpath, so without migrations"
             + " the application start is not deterministic.");
     assertTrue(
         roots.values().stream().anyMatch(paths -> !paths.isEmpty()),
@@ -81,7 +85,10 @@ public abstract class AbstractFlywayMigrationTest {
                   var name = path.substring(path.lastIndexOf('/') + 1);
                   if (!FLYWAY_NAME.matcher(name).matches()) {
                     violations.add(
-                        path + " in " + root + " is not a Flyway name (V<version>__<description>.sql or R__<description>.sql)");
+                        path
+                            + " in "
+                            + root
+                            + " is not a Flyway name (V<version>__<description>.sql or R__<description>.sql)");
                     return;
                   }
                   Matcher version = VERSION.matcher(name);
@@ -117,7 +124,8 @@ public abstract class AbstractFlywayMigrationTest {
         roots.put(uri.toString(), sqlFiles(Path.of(uri)));
         continue;
       }
-      // Migracje spakowane w jar: własny system plików zamykamy, cudzy, już otwarty, zostawiamy właścicielowi.
+      // Migracje spakowane w jar: własny system plików zamykamy, cudzy, już otwarty, zostawiamy
+      // właścicielowi.
       FileSystem jar;
       boolean opened = true;
       try {

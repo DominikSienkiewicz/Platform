@@ -25,9 +25,9 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Kontrakty startera opisane w docs/consuming.md i docs/reference.md, których nic dotąd nie pinowało:
- * wybór źródła CORS przy kilku beanach, wildcard z credentials, httpBasic wyłączony i semantyka
- * {@code permitted-paths} (zastępuje domyślną listę, nie dokleja się do niej).
+ * Kontrakty startera opisane w docs/consuming.md i docs/reference.md, których nic dotąd nie
+ * pinowało: wybór źródła CORS przy kilku beanach, wildcard z credentials, httpBasic wyłączony i
+ * semantyka {@code permitted-paths} (zastępuje domyślną listę, nie dokleja się do niej).
  */
 class PlatformSecurityContractTest {
 

@@ -1,8 +1,5 @@
 package pl.seniordeveloper.gradle
 
-import java.io.File
-import java.nio.file.Path
-import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,6 +8,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import org.w3c.dom.Element
+import java.io.File
+import java.nio.file.Path
+import javax.xml.parsers.DocumentBuilderFactory
 
 class PlatformConsumerFunctionalTest {
 	@TempDir
@@ -64,7 +64,12 @@ class PlatformConsumerFunctionalTest {
 		val environment = System.getenv().toMutableMap()
 		environment.remove("AI_AGENT")
 		val human = consumer.runner("inspectBudget").withEnvironment(environment).build()
-		assertTrue(human.output.lineSequence().single { it.startsWith("BUDGET:") }.endsWith(":null"))
+		assertTrue(
+			human.output
+				.lineSequence()
+				.single { it.startsWith("BUDGET:") }
+				.endsWith(":null"),
+		)
 		environment["AI_AGENT"] = "1"
 		val agent = consumer.runner("inspectBudget").withEnvironment(environment).build()
 		assertTrue(agent.output.contains("BUDGET:1:2g:4"))
@@ -88,7 +93,10 @@ class PlatformConsumerFunctionalTest {
 		)
 	}
 
-	private fun assertSucceeded(result: BuildResult, vararg taskPaths: String) {
+	private fun assertSucceeded(
+		result: BuildResult,
+		vararg taskPaths: String,
+	) {
 		taskPaths.forEach { path ->
 			val outcome = result.task(path)?.outcome
 			assertTrue(outcome != null && outcome in EXECUTED, "$path must run in the consumer build, but its outcome was $outcome")
@@ -102,21 +110,29 @@ class PlatformConsumerFunctionalTest {
 		)
 	}
 
-	private fun coveredInstructions(report: File, className: String): Int {
+	private fun coveredInstructions(
+		report: File,
+		className: String,
+	): Int {
 		val factory = DocumentBuilderFactory.newInstance()
 		factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
 		val classes = factory.newDocumentBuilder().parse(report).getElementsByTagName("class")
 		val element = (0 until classes.length).map { classes.item(it) as Element }.single { it.getAttribute("name") == className }
-		return element.childElements("counter").single { it.getAttribute("type") == "INSTRUCTION" }.getAttribute("covered").toInt()
+		return element
+			.childElements("counter")
+			.single { it.getAttribute("type") == "INSTRUCTION" }
+			.getAttribute("covered")
+			.toInt()
 	}
 
 	private fun Element.childElements(tagName: String): List<Element> =
 		(0 until childNodes.length).map { childNodes.item(it) }.filterIsInstance<Element>().filter { it.tagName == tagName }
 
 	private fun sbom(consumer: ConsumerFixture): String {
-		val bom = consumer.file("build").walkTopDown().firstOrNull { file ->
-			file.isFile && ((file.name.startsWith("bom") && file.name.endsWith(".json")) || file.name.endsWith(".cdx.json"))
-		}
+		val bom =
+			consumer.file("build").walkTopDown().firstOrNull { file ->
+				file.isFile && ((file.name.startsWith("bom") && file.name.endsWith(".json")) || file.name.endsWith(".cdx.json"))
+			}
 		assertTrue(bom != null, "cyclonedxBom must write bom*.json or *.cdx.json under build/, the pattern security-scan.yml looks for")
 		return bom!!.readText()
 	}
@@ -125,11 +141,19 @@ class PlatformConsumerFunctionalTest {
 		val EXECUTED = setOf(TaskOutcome.SUCCESS, TaskOutcome.UP_TO_DATE, TaskOutcome.FROM_CACHE)
 
 		/** Bramki, które `build` konsumenta uruchamia w backend-ci.yml, plus SBOM ze security-scan.yml. */
-		val CONSUMER_GATES = arrayOf(
-			":platformDependencyCheck", ":spotlessCheck", ":checkstyleMain", ":checkstyleTest", ":spotbugsMain",
-			":jacocoTestReport", ":jacocoTestCoverageVerification", ":platformCoverageDataCheck", ":platformRuntimeImageCheck",
-			":cyclonedxBom",
-		)
+		val CONSUMER_GATES =
+			arrayOf(
+				":platformDependencyCheck",
+				":spotlessCheck",
+				":checkstyleMain",
+				":checkstyleTest",
+				":spotbugsMain",
+				":jacocoTestReport",
+				":jacocoTestCoverageVerification",
+				":platformCoverageDataCheck",
+				":platformRuntimeImageCheck",
+				":cyclonedxBom",
+			)
 
 		/**
 		 * Startuje spakowany bootJar z jego własnego classpathu. Testy widzą tylko testowy classpath, więc
