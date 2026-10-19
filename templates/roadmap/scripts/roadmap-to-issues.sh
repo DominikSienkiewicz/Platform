@@ -130,7 +130,7 @@ find_issue_by_id() {
 }
 
 # ---- issue body -----------------------------------------------------------------
-build_body() { # uses loop variables: id change type stream sr sb deps prd outcome unknowns blockers
+build_body() { # uses loop variables: id change type stream sr sb deps prd outcome unknowns blockers suggested risk notes ready
   local marker; marker="$(roadmap_marker "$id" "$change" "$stream" "$deps" "$sb")"
   echo "> **Roadmap projection** — source of truth: \`context/foundation/roadmap.md\` (change: \`$change\`)."
   echo "> Re-sync: \`./scripts/roadmap-to-issues.sh\`. Do not edit the marker at the bottom by hand."
@@ -163,6 +163,17 @@ build_body() { # uses loop variables: id change type stream sr sb deps prd outco
     emit_split " ¶ " "- " "$unknowns"
     echo ""
   fi
+  if [[ -n "$risk" ]]; then
+    echo "## Risk"
+    echo "$risk"
+    echo ""
+  fi
+  if [[ -n "$notes" ]] || [[ -n "$ready" ]]; then
+    echo "## Notes"
+    if [[ -n "$notes" ]]; then echo "$notes"; fi
+    if [[ -n "$ready" ]]; then echo "_Ready for /10x-plan: ${ready}_"; fi
+    echo ""
+  fi
   echo "## Roadmap context"
   echo "- **Stream:** ${stream:-—} · **Type:** $type · **Roadmap status:** $sr → board \`$sb\`"
   echo "- **Change ID:** \`$change\`"
@@ -173,11 +184,11 @@ build_body() { # uses loop variables: id change type stream sr sb deps prd outco
 # ---- preview one ID (read-only, no project/mutation) ----------------------------
 if [[ -n "$PREVIEW" ]]; then
   found=0
-  while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
+  while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers suggested risk notes ready; do
     [[ "$id" = "$PREVIEW" ]] || continue
     found=1
     echo "===== PREVIEW issue: $id ====="
-    echo "TITLE: $id: $(roadmap_title_en "$id" "$change")"
+    echo "TITLE: $id: $(roadmap_title_en "$id" "${suggested:-$change}")"
     echo "LABELS: type:$type, stream:$stream, status:$sb"
     echo "-------------------- BODY --------------------"
     build_body
@@ -192,10 +203,10 @@ fi
 # =================================================================================
 say "== PASS 1: upsert issues + ID→number map =="
 CREATED=0; UPDATED=0
-while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
+while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers suggested risk notes ready; do
   [[ "$id" = "id" ]] && continue
   in_only "$id" || continue
-  title="$id: $(roadmap_title_en "$id" "$change")"
+  title="$id: $(roadmap_title_en "$id" "${suggested:-$change}")"
   existing="$(find_issue_by_id "$id")"
   if [[ -n "$existing" ]]; then
     UPDATED=$((UPDATED+1)); num="$existing"
@@ -229,11 +240,11 @@ say ""
 # PASS 2 — full body (deps→#N), labels, assignee, board fields, native deps
 # =================================================================================
 say "== PASS 2: body + labels + board fields + dependencies =="
-while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers; do
+while IFS=$'\037' read -r id change type stream sr sb deps prd outcome unknowns blockers suggested risk notes ready; do
   [[ "$id" = "id" ]] && continue
   in_only "$id" || continue
   num="$(num_of "$id")"; item="$(item_of "$id")"
-  title="$id: $(roadmap_title_en "$id" "$change")"
+  title="$id: $(roadmap_title_en "$id" "${suggested:-$change}")"
 
   if [[ "$DRY_RUN" = 1 ]]; then
     depline=""
