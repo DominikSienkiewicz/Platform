@@ -37,8 +37,13 @@ permissions:
 
 jobs:
   unblock:
-    # Tylko issue z markerem roadmapy — reszta zamknięć ignorowana (kontekst eventu z callera).
-    if: contains(github.event.issue.body, 'roadmap-id:')
+    # Tylko issue z markerem roadmapy, zamknięte jako ukończone: „not planned” albo duplikat nie odblokowuje
+    # zależnych. Kontekst eventu z callera.
+    if: contains(github.event.issue.body, 'roadmap-id:') && github.event.issue.state_reason == 'completed'
+    # PR z „Closes #A, closes #B” odpala kilka runów naraz; kolejka zamiast równoległych komentarzy audytu.
+    concurrency:
+      group: roadmap-unblock-${{ github.repository }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
