@@ -89,6 +89,13 @@ SonarQube Cloud (Decision 28) is set up by hand once: create the projects
 `dominiksienkiewicz` organisation, turn off Automatic Analysis, and add a `SONAR_TOKEN` secret. Until the
 secret exists, the `sonar` job of `ci.yml` only leaves a notice.
 
+The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
+`scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon
+package, or a reusable workflow that loses an input or secret, gains a required input or a
+permission, or changes a default. Create the label once (`gh label create consumer-action`); until
+it exists the job only warns. The rule is the one `release.sh` applies: such a change ships in a
+MINOR release with a **Consumer action required** entry.
+
 It never deletes a branch: it lists remote branches already merged into `main` with the command that
 deletes them. `--consumers` also checks every repository in `scripts/consumers.txt` for what
 `platform-bump.yml` needs: GitHub Actions may create pull requests there, and a `PLATFORM_BUMP_TOKEN`

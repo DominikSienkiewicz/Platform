@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Every Platform pull request gets a consumer impact report (`consumer-impact.yml`, `scripts/canon-diff.py`):
+  the catalog, the frontend canon, the reusable workflow contract and the copied templates compared as
+  parsed values. A change that needs consumer action labels the pull request `consumer-action`.
 - `platform-workflows-check`, a bin of `@dominiksienkiewicz/versions`, holds every caller of a Platform
   reusable workflow to the release's caller contract: the permissions it grants (its own block, else
   the workflow's), its inputs, required inputs and secrets, and an exact ref. It exits 1 on an error;
