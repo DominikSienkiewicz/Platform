@@ -39,9 +39,13 @@ job_block() {
   ' "$release"
 }
 
+# The block goes in as a here-string, not a pipe: awk exits at the first `needs:`, and a job block
+# larger than the writer's buffer would then die of SIGPIPE, which pipefail turns into a silent exit.
 job_needs() {
   local job="$1"
-  job_block "$job" | awk '
+  local block
+  block=$(job_block "$job")
+  awk '
     /^    needs:/ {
       line = $0
       sub(/^    needs:[[:space:]]*/, "", line)
@@ -54,7 +58,7 @@ job_needs() {
     }
     block && /^      - / { item = $0; sub(/^      - /, "", item); print item; next }
     block { exit }
-  '
+  ' <<<"$block"
 }
 
 # Whether a non-comment line of a job, padded with one space on each side, matches the ERE.

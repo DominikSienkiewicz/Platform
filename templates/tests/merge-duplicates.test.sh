@@ -6,11 +6,16 @@ set -euo pipefail
 canon="$(cd "$(dirname "$0")/.." && pwd)/merge.sh"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
+# Runner CI nie ma globalnej tożsamości gita; bez globalnego configu lokalny przebieg widzi to samo.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 fail() { echo "FAIL: $*" >&2; echo "$out" >&2; exit 1; }
 
 repo="$work/repo"
 git init -q -b main "$repo"
-g() { git -C "$repo" -c user.name=t -c user.email=t@example.invalid "$@"; }
+# Tożsamość w configu repo, nie w `-c`: commit merge'a robi git wołany przez merge.sh.
+git -C "$repo" config user.name t
+git -C "$repo" config user.email t@example.invalid
+g() { git -C "$repo" "$@"; }
 g commit -q --allow-empty -m initial
 g switch -q -c feature
 echo hotfix > "$repo/hotfix.txt"; g add hotfix.txt; g commit -q -m "fix: hotfix shipped twice"

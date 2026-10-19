@@ -8,17 +8,22 @@ set -euo pipefail
 canon="$(cd "$(dirname "$0")/.." && pwd)/merge.sh"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
+# Runner CI nie ma globalnej tożsamości gita; bez globalnego configu lokalny przebieg widzi to samo.
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 out=""
 fail() { echo "FAIL: $*" >&2; echo "$out" >&2; exit 1; }
 
 new_repo() {
   local repo="$work/$1"
   git init -q -b main "$repo"
+  # Tożsamość w configu repo, nie w `-c`: commit merge'a robi git wołany przez merge.sh.
+  git -C "$repo" config user.name t
+  git -C "$repo" config user.email t@example.invalid
   printf '%s\n' "$2" > "$repo/.gitignore"
   git -C "$repo" add .gitignore
-  git -C "$repo" -c user.name=t -c user.email=t@example.invalid commit -q -m "chore: ignore local output"
+  git -C "$repo" commit -q -m "chore: ignore local output"
   git -C "$repo" worktree add -q -b feature "$work/$1-wt"
-  git -C "$work/$1-wt" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m "feat: work"
+  git -C "$work/$1-wt" commit -q --allow-empty -m "feat: work"
   printf '%s\n' "$repo"
 }
 merge() { (cd "$1" && GIT_MERGE_AUTOEDIT=no bash "$canon" feature "chore: merge feature" --offline 2>&1); }
