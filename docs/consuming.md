@@ -20,6 +20,20 @@ into the platform itself. Every task, property and default the plugins add is li
 
 ## Quickstart
 
+To start a new repository, render it from the canon instead of copying the pieces below by hand. From a
+Platform checkout:
+
+```bash
+scripts/new-consumer.sh --name order-service --package pl.example.orders --kind spring-app --out ../order-service
+```
+
+It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
+`platformVersion=` pin), a `ci.yml` caller of `backend-ci.yml` at the exact tag with `packages: read`
+and an explicit `gpr_token`, the scripts of `templates/` and the root files. `--kind java-library` gives
+a plain library, `--platform-version X.Y.Z` another release. It creates no git repository and no
+GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
+repository.
+
 Backend, for a new repository started from a template:
 
 1. Copy a starter and the pinned Gradle wrapper (`<platform>` is a clone of this repository):

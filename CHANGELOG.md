@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/new-consumer.sh` renders a new product repository from the canon in the `backend/` layout:
+  the `spring-app` or `java-library` starter with your package, group and name, the wrapper, the pin, a
+  `ci.yml` caller at the exact tag without `secrets: inherit`, and the canonical scripts and root files.
 - `platform-doctor`, a bin of `@dominiksienkiewicz/versions`, diagnoses a consumer repository without
   changing it: Java and Node versions, the wrapper, pin coherence, workflow references, the source and
   the HTTP status of the GitHub Packages credentials, `.npmrc`, the lockfile, `.secrets.local` and the
