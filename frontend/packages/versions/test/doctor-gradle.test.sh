@@ -28,7 +28,9 @@ esac
 STUB
 chmod +x "$repo/backend/gradlew"
 export GRADLEW_LOG="$tmp/gradlew.log"
-doctor() { (cd "$repo" && env PATH="$tmp/bin:$PATH" FAKE_GRADLE="$1" bash "$here/../bin/platform-doctor.sh" --offline "${@:2}" > "$tmp/out" 2>&1); }
+# GPR_TOKEN przypięty jak w doctor.test.sh: bez niego PD030 zależy od poświadczeń hosta (na CI ich nie ma)
+# i dokłada drugi FAIL do licznika, który ten test sprawdza.
+doctor() { (cd "$repo" && env PATH="$tmp/bin:$PATH" GPR_TOKEN=s3cr3t-value FAKE_GRADLE="$1" bash "$here/../bin/platform-doctor.sh" --offline "${@:2}" > "$tmp/out" 2>&1); }
 
 : > "$GRADLEW_LOG"
 doctor pass || true
