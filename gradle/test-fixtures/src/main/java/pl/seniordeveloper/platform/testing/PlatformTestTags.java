@@ -14,5 +14,12 @@ public final class PlatformTestTags {
   /** Testy modelu (np. reguły domeny na większych danych); poza {@code test} i {@code check}. */
   public static final String MODEL = "model";
 
+  /**
+   * Test w kwarantannie (N-REL-13): biegnie w {@code quarantineTest} poza {@code check}, a {@code
+   * platformQuarantineCheck} wymaga obok komentarza {@code // quarantine: <issue> until
+   * YYYY-MM-DD}.
+   */
+  public static final String QUARANTINE = "quarantine";
+
   private PlatformTestTags() {}
 }

@@ -97,6 +97,21 @@ override cannot redefine what is canonical.
 **Fix:** run `scripts/platform-bump.sh` again, or regenerate the metadata in two passes as
 [versions.md](versions.md#dependency-verification) describes.
 
+### PLAT-QUA-001
+
+**Cause:** a test tagged `quarantine` (`@Tag("quarantine")` or `PlatformTestTags.QUARANTINE`) has no
+`// quarantine: <issue-url> until YYYY-MM-DD` comment in the three lines above the tag
+(`platformQuarantineCheck`).
+**Example:** `@Tag("quarantine")` with only `// flaky on CI` above it.
+**Fix:** open an issue, then write `// quarantine: https://github.com/<owner>/<repo>/issues/<n> until 2026-11-30`
+right above the tag. A quarantined test runs only in `quarantineTest`, outside `check`.
+
+### PLAT-QUA-002
+
+**Cause:** a quarantine date has passed. It fails on CI (`CI=true`) and warns locally, so an old commit stays
+buildable on a laptop.
+**Fix:** fix the test and remove the tag, or move the date with a reason in the issue.
+
 ## Frontend
 
 ### PLAT-FE-001

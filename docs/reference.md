@@ -15,7 +15,15 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `coverageMinimum` | `gradle.properties` or `-P` | `0.00` | JaCoCo coverage threshold on `check`, a decimal between 0 and 1 | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
 | `platform.deprecations` | `-P` or `gradle.properties` | `warn` | `fail` makes `platformDependencyCheck` fail while a deprecated dependency, property or plugin is in use ([gates](gates.md#plat-depr-001)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
-| `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts); see [consuming.md](consuming.md#agent-resource-profile) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts) and logs one `Platform agent profile:` line per build; see [agent-profile.md](agent-profile.md) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platformAgentTestForks`, `platformAgentTestHeap`, `springContextCacheSize` | `-P` or `gradle.properties` | the `AI_AGENT` profile, else Gradle's | `maxParallelForks`, `maxHeapSize` and `spring.test.context.cache.maxSize` of every test task; an explicit value applies with or without `AI_AGENT` ([agent-profile.md](agent-profile.md)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.junitBaseline` | `-P` or `gradle.properties` | `true` | `false` stops the conventions from adding the JUnit BOM, Jupiter and the launcher to the tests | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.testRetry`, `PLATFORM_TEST_RETRY` | `-P`, environment | unset (`backend-ci.yml` sets the variable to `detect`) | `detect` applies `org.gradle.test-retry` with one retry and `failOnPassedAfterRetry`: the build stays red, the report shows which tests are flaky; the property wins over the variable, so `-Pplatform.testRetry=off` turns it off | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `CI` | environment | unset | `true` makes `platformQuarantineCheck` fail on an expired quarantine ([gates](gates.md#plat-qua-002)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.quarantineToday` | `-P` | today | the date `platformQuarantineCheck` compares with; for Platform's own tests | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platformToolchainOverride` | `-P` | unset | replaces the Java toolchain of the canon with that version and warns; for the upstream canary and experiments, never for a release | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.stalenessNotice` | `-P` or `gradle.properties` | `true` | `false` silences the one-line notice for a Platform release older than the support window ([RELEASING.md](../RELEASING.md#support-policy)) | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
+| `platform.stalenessToday` | `-P` | today | the date the staleness notice compares with; for Platform's own tests | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
 
 These names are frozen. A new Platform property, task or bin follows the naming rule in
 [ADR-0007](adr/0007-public-naming.md): `platform.<area>.<name>` for a Gradle property,
@@ -35,6 +43,10 @@ It also registers `platformDoctor` on the root project: the Gradle-side diagnosi
 in the bin's format (PD080 pins, PD081 toolchain, PD082 `coverageMinimum`; [consuming.md](consuming.md#troubleshooting))
 and fails when one fails.
 
+When its own release is older than 60 days, it logs one line naming the release, its age and
+`scripts/platform-bump.sh` ([support policy](../RELEASING.md#support-policy)). The date is that of the tagged
+commit, embedded as `platform-release.properties`; the notice never fails a build.
+
 ## seniordev.java-conventions
 
 Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts); Checkstyle rules in
@@ -42,22 +54,27 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 
 | Task or setting | On `check` | Knob | Default |
 |---|---|---|---|
-| Java toolchain | — | none | Java 27 |
+| Java toolchain | — | `platformToolchainOverride` | Java 27 |
 | `spotlessCheck` | yes | none | google-java-format 1.36.1, unused imports removed |
 | `checkstyleMain`, `checkstyleTest` | yes | `@SuppressWarnings("checkstyle:<checkname>")` on a declaration, with the check name in lower case | Platform rules, `maxWarnings = 0` |
 | `jacocoTestReport`, `jacocoTestCoverageVerification` | yes | `coverageMinimum` | 0.00, coverage of `test` and `integrationTest` together |
 | `platformCoverageDataCheck` | yes | `coverageMinimum` | fails when the threshold is above 0 and no test produced JaCoCo data |
 | `platformDependencyCheck` | yes | `platform.deprecations` | every explicit dependency version must match the canon embedded in the plugin, the consumer's `libs` catalog must not override it and must exist; a library outside the canon is told apart by whether a Platform BOM manages it. It sees dependencies added in a late `afterEvaluate` too, writes `build/reports/platform/dependency-check.md` (and the job summary in GitHub Actions) and lists deprecated items |
 | `platformPinCheck` | yes | none | the settings plugin and `platform-catalog` are the same release; a mismatch also warns at configuration time |
-| `lint` | no | a project's own `lint` task wins | `spotlessCheck`, every Checkstyle task, `platformDependencyCheck` and `platformPinCheck`, without tests |
+| `platformQuarantineCheck` | yes | `CI`, `platform.quarantineToday` | every test tagged `quarantine` needs `// quarantine: <issue-url> until YYYY-MM-DD` in the three lines above the tag ([PLAT-QUA-001](gates.md#plat-qua-001)); an expired date fails on CI and warns locally ([PLAT-QUA-002](gates.md#plat-qua-002)); writes `build/reports/platform/quarantine.txt` |
+| `quarantineTest` | no | `@Tag("quarantine")` | runs only the quarantined tests, with `ignoreFailures`, so they keep reporting; every other test task excludes the tag |
+| `lint` | no | a project's own `lint` task wins | `spotlessCheck`, every Checkstyle task, `platformDependencyCheck`, `platformPinCheck` and `platformQuarantineCheck`, without tests |
 | `format` | no | a project's own `format` task wins | `spotlessApply` |
 | `platformRuntimeImageCheck` | yes | none | the final `FROM` of `Dockerfile` (project or root) must run Java 27 or newer; skipped when there is no Dockerfile or the image is not a JVM image |
-| test tasks | — | `AI_AGENT` | JUnit Platform |
+| test tasks | — | `AI_AGENT`, `platformAgentTest*`, `springContextCacheSize`, `platform.junitBaseline`, `platform.testRetry` | JUnit Platform with the JUnit BOM, Jupiter and the launcher of the canon; each task passes its name in the system property `platform.test.task` |
 
 Every failure carries a code such as `[PLAT-DEP-001]` and a link to its section of [gates.md](gates.md) in the
 docs of that release; the fixes are also in [consuming.md](consuming.md#troubleshooting). The tasks are
 compatible with the configuration cache, which Platform's TestKit suite runs with every Gradle deprecation
 the conventions cause as a failure (Decision 10); consumers opt in with `org.gradle.configuration-cache=true`.
+Every check task declares an output, so an unchanged second build runs none of them again; only
+`platformQuarantineCheck` runs every time, because an expiry depends on the day.
+Warnings then show when their inputs change, and the reports under `build/reports/platform/` keep them.
 
 ## seniordev.quality-conventions
 
@@ -74,15 +91,17 @@ Source: [`seniordev.quality-conventions.gradle.kts`](../gradle/build-logic/src/m
 
 Source: [`seniordev.spring-modulith-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.spring-modulith-conventions.gradle.kts).
 
-Imports the Spring Boot, Spring Modulith and Spring AI BOMs and adds the shared test dependencies
-(Modulith test, Testcontainers, ArchUnit, the JUnit launcher). It does not apply the Spring Boot
+Imports `pl.seniordeveloper:platform-bom` of the same release, which carries the Spring Boot, Spring Modulith,
+Spring AI and JUnit BOMs with the Platform floors and overrides ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)), and adds
+the shared test dependencies (Modulith test, Testcontainers, ArchUnit, the JUnit launcher). It does not apply the Spring Boot
 plugin: the consumer adds `alias(libs.plugins.spring.boot)`.
 
 | Task | On `check` | Knob | Default |
 |---|---|---|---|
-| `test` | yes | `@Tag("integration")` moves a test out | runs every test without the `integration` tag |
+| `test` | yes | `@Tag("integration")` or `@Tag("model")` moves a test out | runs every test without the `integration` and `model` tags |
 | `platformBomOverrideCheck` | yes, warns only | none | lists every BOM version property (`*.version`) set outside the platform; see [versions.md](versions.md#what-platformdependencycheck-does-not-see) |
 | `integrationTest` | yes | `@Tag("integration")` | runs only tests tagged `integration`; tag every Testcontainers test, or it runs in the fast `test` and needs Docker there |
+| `modelTest` | no | `@Tag("model")` (`@ModelTest`) | runs only tests tagged `model`, on purpose; outside `check` and the coverage sum |
 
 ## Security starter (*incubating*)
 

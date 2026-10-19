@@ -86,3 +86,11 @@ providers.gradleProperty("platformBundleRepository").orNull?.let { repository ->
 	}
 }
 
+// Repozytorium testów TestKit w build-logic: spring-modulith-conventions importuje ten BOM, więc konsument
+// w TestKit musi go rozwiązać tak samo jak katalog.
+providers.gradleProperty("functionalTestRepository").orNull?.let { repository ->
+	publishing.repositories.maven {
+		name = "FunctionalTest"
+		url = uri(repository)
+	}
+}

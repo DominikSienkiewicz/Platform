@@ -22,7 +22,7 @@ parallel agents multiply that. With `AI_AGENT=1`, the conventions and presets ca
 cached contexts ([ADR-0010](adr/0010-agent-resource-profile.md)); [`agent-gradle.sh`](../templates/agent-gradle.sh)
 lets only a few test runs proceed at once across separate Gradle invocations; and
 [`agent-preflight.sh`](../templates/agent-preflight.sh) turns free memory and swap into go, reduce or stop
-before agents are dispatched.
+before agents are dispatched. Every limit has a knob, listed in [agent-profile.md](agent-profile.md).
 
 ## Gates instead of instructions
 

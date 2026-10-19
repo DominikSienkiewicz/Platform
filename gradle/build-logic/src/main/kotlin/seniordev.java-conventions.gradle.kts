@@ -2,6 +2,7 @@ import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
@@ -12,6 +13,7 @@ import pl.seniordeveloper.gradle.PlatformDependencyCheck
 import pl.seniordeveloper.gradle.PlatformDeprecations
 import pl.seniordeveloper.gradle.PlatformGates
 import pl.seniordeveloper.gradle.PlatformPinCheck
+import pl.seniordeveloper.gradle.PlatformQuarantineCheck
 import pl.seniordeveloper.gradle.PlatformVersions
 import pl.seniordeveloper.gradle.RuntimeImageCheck
 import java.io.File
@@ -45,9 +47,16 @@ plugins {
 // repo na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform.
 
 // Wersja z gradle/catalog: java (PlatformVersions.JAVA). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
+// -PplatformToolchainOverride=<N> (N-REL-4) tylko dla kanarka i eksperymentów z następnym JDK: kanonem zostaje katalog.
+val toolchainOverride = providers.gradleProperty("platformToolchainOverride").map { it.trim().toInt() }.orNull
+if (toolchainOverride != null) {
+	logger.warn(
+		"seniordev.java-conventions: platformToolchainOverride=$toolchainOverride replaces the Java ${PlatformVersions.JAVA} toolchain of the Platform canon; use it for canaries only",
+	)
+}
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(PlatformVersions.JAVA)
+		languageVersion = JavaLanguageVersion.of(toolchainOverride ?: PlatformVersions.JAVA)
 	}
 }
 
@@ -62,6 +71,7 @@ val platformRuntimeImageCheck =
 		group = "verification"
 		dockerfiles.set(runtimeDockerfiles)
 		toolchainVersion.set(java.toolchain.languageVersion.map { it.asInt() })
+		result.set(layout.buildDirectory.file("platform/runtime-image-check.txt"))
 	}
 tasks.named("check") {
 	dependsOn(platformRuntimeImageCheck)
@@ -129,17 +139,95 @@ jacoco {
 	toolVersion = PlatformVersions.JACOCO
 }
 
+// Profil agenta (ADR-0010, N-SHOW-2): AI_AGENT=1/true zmienia DOMYŚLNE wartości, a jawnie ustawiona właściwość działa
+// w każdym trybie. springContextCacheSize to nazwa, której Azimuth już używa, więc jego konfiguracja działa bez zmian.
 val agentMode = providers.environmentVariable("AI_AGENT").map { it == "1" || it == "true" }.getOrElse(false)
-if (agentMode) {
-	val testBudget =
+val agentTestForks =
+	providers
+		.gradleProperty("platformAgentTestForks")
+		.orNull
+		?.trim()
+		?.toInt() ?: if (agentMode) 1 else null
+val agentTestHeap = providers.gradleProperty("platformAgentTestHeap").orNull?.trim() ?: if (agentMode) "2g" else null
+val agentContextCache = providers.gradleProperty("springContextCacheSize").orNull?.trim() ?: if (agentMode) "4" else null
+if (agentMode && !gradle.extra.has("platformAgentProfileAnnounced")) {
+	// Jedna linia na build, nie na projekt: transkrypt agenta pokazuje, jaki budżet obowiązywał.
+	gradle.extra["platformAgentProfileAnnounced"] = true
+	logger.lifecycle(
+		"Platform agent profile: testForks=$agentTestForks testHeap=$agentTestHeap springContextCache=$agentContextCache (AI_AGENT=1)",
+	)
+}
+val testBudget =
+	if (agentMode) {
 		gradle.sharedServices.registerIfAbsent("platformAgentTestBudget", AgentTestBudget::class) {
 			maxParallelUsages.set(1)
 		}
+	} else {
+		null
+	}
+tasks.withType<Test>().configureEach {
+	agentTestForks?.let { maxParallelForks = it }
+	agentTestHeap?.let { maxHeapSize = it }
+	agentContextCache?.let { systemProperty("spring.test.context.cache.maxSize", it) }
+	testBudget?.let { usesService(it) }
+}
+
+// === Taksonomia testów (N-CAP-8) i kwarantanna (N-REL-13) ===================================================
+// Baseline JUnit z kanonu: BOM, Jupiter i launcher bez trzech linii w każdym repo; -Pplatform.junitBaseline=false wyłącza.
+if (providers.gradleProperty("platform.junitBaseline").orNull?.trim() != "false") {
+	dependencies {
+		"testImplementation"(platform("org.junit:junit-bom:${PlatformVersions.JUNIT}"))
+		"testImplementation"("org.junit.jupiter:junit-jupiter")
+		"testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+	}
+}
+// Każdy Test task podaje nazwę strażnikowi kontenerów z test-fixtures (PlatformTestTaskGuard), a testy w kwarantannie
+// biegną tylko w quarantineTest, poza `check`.
+val quarantineTag = "quarantine"
+tasks.withType<Test>().configureEach {
+	systemProperty("platform.test.task", name)
+	if (name != "quarantineTest") {
+		useJUnitPlatform { excludeTags(quarantineTag) }
+	}
+}
+val quarantineTestSourceSet = the<SourceSetContainer>()["test"]
+val quarantineScannedSources = the<SourceSetContainer>().matching { it.name != SourceSet.MAIN_SOURCE_SET_NAME }
+tasks.register<Test>("quarantineTest") {
+	description = "Runs the tests tagged quarantine; they keep reporting, but never fail the build."
+	group = "verification"
+	testClassesDirs = quarantineTestSourceSet.output.classesDirs
+	classpath = quarantineTestSourceSet.runtimeClasspath
+	useJUnitPlatform { includeTags(quarantineTag) }
+	ignoreFailures = true
+}
+val platformQuarantineCheck =
+	tasks.register<PlatformQuarantineCheck>("platformQuarantineCheck") {
+		description = "Fails on a quarantined test without an issue and a date, and on an expired one on CI."
+		group = "verification"
+		sources.from(provider { quarantineScannedSources.flatMap { it.allSource.srcDirs } })
+		ci.set(providers.environmentVariable("CI").map { it == "true" }.orElse(false))
+		today.set(providers.gradleProperty("platform.quarantineToday"))
+		report.set(layout.buildDirectory.file("reports/platform/quarantine.txt"))
+	}
+tasks.named("check") {
+	dependsOn(platformQuarantineCheck)
+}
+// -Pplatform.testRetry=detect albo PLATFORM_TEST_RETRY=detect (backend-ci): jedno powtórzenie, a build zostaje czerwony,
+// gdy test przeszedł dopiero za drugim razem — raport rozróżnia niestabilne od zepsutych, nic nie jest ukryte.
+// Właściwość wygrywa ze zmienną, więc -Pplatform.testRetry=off w gradle-task wyłącza wykrywanie w backend-ci.
+val testRetryMode =
+	providers
+		.gradleProperty("platform.testRetry")
+		.orElse(providers.environmentVariable("PLATFORM_TEST_RETRY"))
+		.orNull
+		?.trim()
+if (testRetryMode == "detect") {
+	pluginManager.apply("org.gradle.test-retry")
 	tasks.withType<Test>().configureEach {
-		maxParallelForks = 1
-		maxHeapSize = "2g"
-		systemProperty("spring.test.context.cache.maxSize", "4")
-		usesService(testBudget)
+		extensions.configure<org.gradle.testretry.TestRetryTaskExtension>("retry") {
+			maxRetries.set(1)
+			failOnPassedAfterRetry.set(true)
+		}
 	}
 }
 
@@ -210,8 +298,14 @@ val platformCoverageDataCheck =
 		val executionData = coverageExecutionData
 		val mainClasses = mainClassesDirs
 		val footer = PlatformGates.footer(listOf(PlatformGates.COVERAGE_NO_DATA))
-		inputs.files(mainClasses)
+		val stamp = layout.buildDirectory.file("platform/coverage-data-check.txt")
+		inputs.files(mainClasses).withPropertyName("mainClasses").withPathSensitivity(PathSensitivity.RELATIVE)
+		inputs.files(executionData).withPropertyName("executionData").withPathSensitivity(PathSensitivity.RELATIVE)
+		inputs.property("coverageMinimum", minimum)
+		// Znacznik wyniku: bez wyjścia task wykonywałby się w każdym buildzie, także bez zmian (N-REL-15).
+		outputs.file(stamp)
 		doLast {
+			stamp.get().asFile.delete()
 			val hasMainClasses = mainClasses.asFileTree.any { it.name.endsWith(".class") }
 			if (gateActive && hasMainClasses && executionData.isEmpty()) {
 				throw GradleException(
@@ -222,6 +316,11 @@ val platformCoverageDataCheck =
 					) + "\n" + footer,
 				)
 			}
+			stamp
+				.get()
+				.asFile
+				.apply { parentFile.mkdirs() }
+				.writeText("coverageMinimum=$minimum\n")
 		}
 	}
 
@@ -353,6 +452,7 @@ val platformPinCheck =
 		group = "verification"
 		pluginVersion.set(PlatformVersions.PLATFORM)
 		catalogVersion.set(catalogPlatformVersion)
+		result.set(layout.buildDirectory.file("platform/pin-check.txt"))
 	}
 tasks.named("check") {
 	dependsOn(platformPinCheck)
@@ -368,7 +468,7 @@ afterEvaluate {
 			description =
 				"Runs the formatter check and the linters without tests: spotlessCheck, Checkstyle, platformDependencyCheck, platformPinCheck."
 			group = "verification"
-			dependsOn("spotlessCheck", tasks.withType<Checkstyle>(), platformDependencyCheck, platformPinCheck)
+			dependsOn("spotlessCheck", tasks.withType<Checkstyle>(), platformDependencyCheck, platformPinCheck, platformQuarantineCheck)
 		}
 	}
 	if ("format" in tasks.names) {

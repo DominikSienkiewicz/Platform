@@ -143,13 +143,16 @@ jobs:
             grep -qxF "$V" <<<"$names"
           }
           # <<< version-exists
+          # Data commita taga, nie czas buildu (N-REL-6): build-logic wpisuje ją do platform-release.properties, a jar
+          # zostaje odtwarzalny. Pozostałe moduły tej właściwości nie czytają.
+          release_date=$(git log -1 --format=%cs)
           for m in "${modules[@]}"; do
             if version_exists "${PKG[$m]}"; then
               echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
               continue
             fi
             echo "== publish gradle/$m ($V) =="
-            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" publish )
+            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" -PplatformReleaseDate="$release_date" publish )
             rc=$?
             if [ "$rc" -ne 0 ]; then
               echo "::error::publish $m ($V) nie powiódł się (kod $rc). Jeśli to 409: wersja jest częściowo opublikowana — usuń $V z GitHub Packages albo wydaj wyższą wersję (nie re-publikuj po partialu)."
@@ -199,6 +202,18 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Ustaw wersję na wszystkich paczkach
         run: pnpm -r exec npm pkg set version="$V"
+      # Okno wsparcia (N-REL-6): platform-versions-check liczy wiek kanonu od releasedAt. Data commita taga, nie czas
+      # buildu, więc tarball zostaje odtwarzalny; plik w repo daty nie ma.
+      - name: Stamp the release date into the frontend canon
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("node:fs");
+            const file = "packages/versions/versions.json";
+            const canon = JSON.parse(fs.readFileSync(file, "utf8"));
+            canon.releasedAt = process.argv[1];
+            fs.writeFileSync(file, JSON.stringify(canon, null, 2) + "\n");
+          ' "$(git log -1 --format=%cs)"
       # Idempotentnie, per-paczka (lustro logiki z joba gradle): wersja już opublikowana
       # (np. re-run po częściowym wydaniu) — pomijamy i publikujemy RESZTĘ. `pnpm -r publish`
       # wywala się na pierwszym konflikcie i zostawia partial release.

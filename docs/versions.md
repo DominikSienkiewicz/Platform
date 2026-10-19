@@ -23,11 +23,13 @@ Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-cata
   floors and compatibility overrides with their `because(...)` reasons (the table in
   [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)), and the Platform artifacts.
 
-`platform-test-fixtures` and `platform-security-starter` import `platform-bom`, so their consumers get
-the floors on the classpaths they reach. `seniordev.spring-modulith-conventions` still imports the
-Spring BOMs and sets the `ext` overrides itself until a TestKit run confirms how
-`io.spring.dependency-management` treats the nested imports. A build without the Spring conventions
-takes the same floors with:
+`platform-test-fixtures`, `platform-security-starter` and `seniordev.spring-modulith-conventions` import
+`platform-bom` of their own release, so the floors live in one place and reach every classpath those
+builds resolve. `PlatformBomImportFunctionalTest` holds the conventions to it with `dependencyInsight`:
+the BOM's Lombok, Jackson and Tomcat win, also over a consumer's `jackson-bom.version`, because the BOM
+imports the fixed Jackson BOMs before Boot ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)).
+Consumers delete their own override blocks when they adopt that release. A build without the Spring
+conventions takes the same floors with:
 
 ```kotlin
 dependencies {
@@ -53,8 +55,9 @@ sources contain no version literal.
 | `JAVA` | `JavaLanguageVersion.of(…)` in `seniordev.java-conventions` | `java` |
 | `GOOGLE_JAVA_FORMAT`, `CHECKSTYLE`, `JACOCO` | `seniordev.java-conventions` | `googleJavaFormat`, `checkstyle`, `jacoco` |
 | `SPOTBUGS`, `PITEST_TOOL`, `PITEST_JUNIT5` | `seniordev.quality-conventions` | `spotbugs`, `pitestTool`, `pitestJunit5` |
-| `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `JUNIT`, `ARCHUNIT` | the BOMs and ArchUnit of `seniordev.spring-modulith-conventions` | `springBoot`, `springModulith`, `springAi`, `junit`, `archunit` |
-| `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | the `ext[…]` overrides of `seniordev.spring-modulith-conventions` | `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
+| `PLATFORM` | the `platform-bom` import of `seniordev.spring-modulith-conventions` and the pin check | `platform` (the release) |
+| `JUNIT`, `ARCHUNIT` | the JUnit baseline of `seniordev.java-conventions`, the JUnit BOM and ArchUnit of `seniordev.spring-modulith-conventions` | `junit`, `archunit` |
+| `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | no convention since the conventions import `platform-bom`; `PlatformVersionsTest` still compares them with the catalog | `springBoot`, `springModulith`, `springAi`, `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
 
 Two mirrors live outside Kotlin and stay guarded by tests: the `toolchain-java-version` default of
 `backend-ci.yml`, `deploy.yml`, `platform-bump.yml` and `sonar.yml` (catalog `java`,
@@ -135,7 +138,7 @@ the check cannot see:
 
 | Channel | Example | What reports it |
 |---|---|---|
-| A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); Platform's own overrides are not reported |
+| A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); it cannot lower a floor `platform-bom` imports before Boot |
 | A resolution rule | `resolutionStrategy.eachDependency { useVersion("42.7.12") }` | `platform-bump`, which lists each one with its file and line |
 | A forced or strict version | `force("…")`, `strictly("…")` | `platform-bump`, the same way |
 

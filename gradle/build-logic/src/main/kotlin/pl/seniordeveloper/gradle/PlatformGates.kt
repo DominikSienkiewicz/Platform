@@ -15,6 +15,8 @@ object PlatformGates {
 	const val COVERAGE_NO_DATA = "PLAT-COV-001"
 	const val COVERAGE_INVALID = "PLAT-COV-002"
 	const val DEPRECATED = "PLAT-DEPR-001"
+	const val QUARANTINE_UNTRACKED = "PLAT-QUA-001"
+	const val QUARANTINE_EXPIRED = "PLAT-QUA-002"
 
 	fun link(
 		code: String,

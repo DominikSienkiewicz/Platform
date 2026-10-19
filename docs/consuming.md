@@ -297,27 +297,11 @@ JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
 ## Agent resource profile
 
-Only `AI_AGENT=1` or `AI_AGENT=true` opts in. Java test tasks use one fork, a 2 GiB
-maximum heap and at most four cached Spring contexts. A shared Gradle build service
-serializes test tasks across projects in the same build. Separate Gradle invocations are
-coordinated by `scripts/agent-gradle.sh` (below), and how many agents the machine holds right now
-is what [`templates/agent-preflight.sh`](../templates/agent-preflight.sh) answers: run it before
-dispatching agents. It exits 0 to go, 1 to reduce concurrency to the number it prints and 2 to
-stop, from free memory and swap on macOS or Linux; its defaults (4.3 GB per agent, a 6 GB reserve,
-at most 3) were measured on one host, so set `AGENT_COST_GB`, `AGENT_RESERVE_GB` and `AGENT_MAX`
-for yours.
-
-Copy [`templates/agent-gradle.sh`](../templates/agent-gradle.sh) to
-`scripts/agent-gradle.sh` and invoke `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`.
-It runs `./gradlew` from the repository root, or `backend/gradlew` from `backend/` when the
-root has no wrapper. The launcher adds `--max-workers=2 --no-parallel` before Gradle starts, and a
-run of `test`, `integrationTest`, `check` or `build` first takes one of `AI_AGENT_TEST_SLOTS`
-(default 3) machine-wide slots, so parallel agents never run more test suites at once; it waits
-with a message and gives up with exit code 75 after `AI_AGENT_SLOT_TIMEOUT` seconds (default 3600).
-Slots live under `$TMPDIR`, so agents in separate containers are not coordinated. Settings plugins
-cannot reliably resize services that Gradle already created. Without `AI_AGENT`, the
-launcher passes through the ordinary Gradle defaults. The Vitest preset likewise caps
-workers at two only in agent mode. See [HTTP client and frontend budget](http-client-and-agent-budget.md).
+`AI_AGENT=1` or `AI_AGENT=true` bounds test resources for coding agents: one fork, a 2 GiB heap and four
+cached Spring contexts per test task, one test task at a time in a build, and two Gradle and Vitest workers.
+Each value has a knob, and an explicit property applies in every mode. The contract table, the
+`scripts/agent-gradle.sh` launcher with its machine-wide test slots, and the preflight check before
+dispatching agents are in [agent-profile.md](agent-profile.md).
 
 ## Frontend
 

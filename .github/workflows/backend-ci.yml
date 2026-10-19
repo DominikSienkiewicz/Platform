@@ -24,7 +24,7 @@ on:
         type: string
         default: "27"
       gradle-task:
-        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing."
+        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.testRetry=off here turns that off."
         type: string
         default: "build"
       lint-task:
@@ -98,6 +98,8 @@ jobs:
           ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gradle-output.log"
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
+          # Wykrywanie niestabilnych testów (N-REL-13); -Pplatform.testRetry w gradle-task wygrywa ze zmienną.
+          PLATFORM_TEST_RETRY: detect
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
 
@@ -113,6 +115,54 @@ jobs:
             ${{ inputs.working-directory }}/**/build/reports/checkstyle/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Zdrowie testów (N-REL-13), także na zielonym buildzie: testy, które przeszły dopiero po powtórzeniu
+      # (PLATFORM_TEST_RETRY=detect), wynik quarantineTest, gdy wołający go uruchomił, i terminy kwarantanny
+      # z platformQuarantineCheck. Tylko python3 z runnera; blok testuje templates/tests/ci-test-health.test.sh.
+      - name: Summarise flaky and quarantined tests
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          # >>> test-health
+          import glob, os
+          import xml.etree.ElementTree as ET
+
+          flaky, quarantined, deadlines = [], [], []
+          for report in sorted(glob.glob("**/build/test-results/**/*.xml", recursive=True)):
+              task = report.split("/test-results/", 1)[1].split("/", 1)[0]
+              runs = {}
+              for case in ET.parse(report).getroot().iter("testcase"):
+                  failed = case.find("failure") is not None or case.find("error") is not None
+                  runs.setdefault(f"{case.get('classname')}.{case.get('name')}", []).append(failed)
+              for test, failures in runs.items():
+                  if task == "quarantineTest":
+                      quarantined.append((test, "failed" if failures[-1] else "passed"))
+                  elif len(failures) > 1 and failures[0] and not failures[-1]:
+                      flaky.append((test, task))
+          for report in sorted(glob.glob("**/build/reports/platform/quarantine.txt", recursive=True)):
+              module = report.split("/build/", 1)[0]
+              for line in open(report, encoding="utf-8"):
+                  if line.strip():
+                      source, issue, until = (line.split() + ["-", "-"])[:3]
+                      deadlines.append((module, source, issue, until))
+
+          for test, task in flaky:
+              print(f"::warning title=Flaky test::{test} failed, then passed on retry in {task}")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary and (flaky or quarantined or deadlines):
+              with open(summary, "a", encoding="utf-8") as out:
+                  out.write("## Test health\n\n")
+                  if flaky:
+                      out.write("Passed only on retry, so the build is red (`failOnPassedAfterRetry`):\n\n| Test | Task |\n|---|---|\n")
+                      out.writelines(f"| `{test}` | `{task}` |\n" for test, task in flaky)
+                  if quarantined:
+                      out.write("\n`quarantineTest`, which never fails the build:\n\n| Test | Result |\n|---|---|\n")
+                      out.writelines(f"| `{test}` | {result} |\n" for test, result in quarantined)
+                  if deadlines:
+                      out.write("\nIn quarantine:\n\n| Module | Source | Issue | Until |\n|---|---|---|---|\n")
+                      out.writelines(f"| `{module}` | `{source}` | {issue} | {until} |\n" for module, source, issue, until in deadlines)
+          # <<< test-health
+          PY
 
       # Diagramy i kanwy modułów z AbstractModulithDocumentationTest (test-fixtures), gdy konsument go używa.
       - name: Upload Spring Modulith documentation

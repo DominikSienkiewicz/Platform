@@ -2,10 +2,14 @@ package pl.seniordeveloper.gradle
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.work.DisableCachingByDefault
 import java.io.File
@@ -15,17 +19,29 @@ import java.io.File
  * uruchamiać Javy starszej niż toolchain, w którym java-conventions kompiluje bytecode. Bez niej rozjazd
  * wychodził dopiero na health-gate po deployu jako UnsupportedClassVersionError.
  */
-@DisableCachingByDefault(because = "Reads one small file and produces no output")
+@DisableCachingByDefault(because = "Reads one small file; restoring the stamp from a cache costs more than the check")
 abstract class RuntimeImageCheck : DefaultTask() {
 	/** Kandydaci w kolejności: Dockerfile projektu, potem Dockerfile roota buildu (multi-module). */
-	@get:Internal
+	@get:InputFiles
+	@get:PathSensitive(PathSensitivity.ABSOLUTE)
 	abstract val dockerfiles: ListProperty<File>
 
 	@get:Input
 	abstract val toolchainVersion: Property<Int>
 
+	/** Znacznik wyniku: bez wyjścia task wykonywałby się w każdym buildzie, także bez zmian (N-REL-15). */
+	@get:OutputFile
+	abstract val result: RegularFileProperty
+
 	@TaskAction
 	fun check() {
+		val stamp = result.get().asFile.apply { parentFile.mkdirs() }
+		stamp.delete()
+		inspect()
+		stamp.writeText("toolchain=${toolchainVersion.get()}\n")
+	}
+
+	private fun inspect() {
 		val dockerfile = dockerfiles.get().firstOrNull { it.isFile }
 		if (dockerfile == null) {
 			logger.lifecycle("platformRuntimeImageCheck: skipped — no Dockerfile in the project or root directory")

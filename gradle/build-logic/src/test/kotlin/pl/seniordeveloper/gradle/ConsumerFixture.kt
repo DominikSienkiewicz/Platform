@@ -40,6 +40,10 @@ internal class ConsumerFixture private constructor(
 			.withProjectDir(directory.toFile())
 			.forwardOutput()
 			.withArguments(*arguments(), *properties.map { (name, value) -> "-P$name=$value" }.toTypedArray(), *tasks)
+			.apply {
+				// upstream-canary (N-REL-4): ten sam zestaw na kandydacie wydania Gradle'a zamiast wrappera build-logic.
+				System.getProperty("platform.testGradleVersion")?.takeIf { it.isNotBlank() }?.let { withGradleVersion(it) }
+			}
 
 	private fun arguments(): Array<String> {
 		val arguments =

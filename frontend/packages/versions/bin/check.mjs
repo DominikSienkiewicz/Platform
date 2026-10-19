@@ -112,6 +112,23 @@ for (const d of deprecations) {
   if (process.env.GITHUB_ACTIONS === "true") console.log(`::warning title=Platform deprecation::${text}`);
 }
 
+// Okno wsparcia (N-REL-6, RELEASING.md „Support policy”): kanon starszy niż 60 dni od wydania daje jedną linię,
+// nigdy błąd, bo bramka zależna od czasu zrobiłaby stare commity nieodtwarzalnymi. releasedAt stempluje release.yml;
+// PLATFORM_STALENESS_TODAY tylko dla testów, PLATFORM_STALENESS_NOTICE=false wycisza.
+const SUPPORT_WINDOW_DAYS = 60;
+if (typeof canonFile.releasedAt === "string" && process.env.PLATFORM_STALENESS_NOTICE !== "false") {
+  const today = Date.parse(process.env.PLATFORM_STALENESS_TODAY ?? new Date().toISOString().slice(0, 10));
+  const age = Math.floor((today - Date.parse(canonFile.releasedAt)) / 86_400_000);
+  if (age > SUPPORT_WINDOW_DAYS) {
+    const text =
+      `Platform ${canonVersion ?? "canon"} was released ${age} days ago (${canonFile.releasedAt}); the support window is ` +
+      `${SUPPORT_WINDOW_DAYS} days or 3 releases (RELEASING.md, Support policy). Run scripts/platform-bump.sh, or silence ` +
+      "this notice with PLATFORM_STALENESS_NOTICE=false.";
+    console.log(text);
+    if (process.env.GITHUB_ACTIONS === "true") console.log(`::notice title=Platform support window::${text}`);
+  }
+}
+
 if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0) {
   console.log(
     `platform-versions-check: OK (${governed} governed dependencies, canon ${canonLabel} with ${Object.keys(canon).length} entries)`,

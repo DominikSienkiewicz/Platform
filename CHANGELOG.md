@@ -98,6 +98,20 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   deploy 30 for the build and 20 for the deploy. A caller whose job runs longer passes
   `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml).
 
+- `seniordev.spring-modulith-conventions` imports `platform-bom` of its own release instead of the three Spring
+  BOMs and its `ext` overrides ([ADR-0013](docs/adr/0013-catalog-for-aliases-bom-for-constraints.md)). The resolved
+  versions do not change. Delete your own override blocks in the bump PR: Azimuth's `eachDependency`,
+  BookOfStyling's `extra["jackson-bom.version"]` and SkillSprintPlus's `eachDependency` on jackson-databind;
+  `platformBomOverrideCheck` now lists every `*.version` property a consumer still sets (manual).
+- `seniordev.java-conventions` adds the JUnit BOM, Jupiter and the launcher of the canon to the tests. Delete the
+  same three lines from a backend's `build.gradle.kts`, as `templates/jvm/java-library` did; set
+  `platform.junitBaseline=false` to keep your own (manual).
+- `check` runs `platformQuarantineCheck`: a test tagged `quarantine` without
+  `// quarantine: <issue-url> until YYYY-MM-DD` above the tag fails ([PLAT-QUA-001](docs/gates.md#plat-qua-001)),
+  an expired one fails on CI. No consumer tags a test `quarantine` today (manual).
+- `test` of the Spring conventions also leaves out tests tagged `model`, which run in the new `modelTest`,
+  outside `check`. No consumer tags a test `model` today (manual).
+
 ### Added
 
 - Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
@@ -332,6 +346,27 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   every push to `main` and weekly, with published results; Semgrep also on pull requests. A change
   to either workflow now runs in Platform before consumers get it.
 
+- Test taxonomy as code (N-CAP-8): every test task passes its name in `platform.test.task`, so the container guard
+  of the test fixtures knows the fast `test`; `modelTest` in the Spring conventions; a JUnit baseline with the
+  `platform.junitBaseline` opt-out.
+- Quarantine with a deadline (N-REL-13): `quarantineTest` (outside `check`, `ignoreFailures`), every other test
+  task excludes the tag, and `platformQuarantineCheck` requires an issue and a date (codes `PLAT-QUA-001`/`002`).
+  `-Pplatform.testRetry=detect` (or `PLATFORM_TEST_RETRY=detect`) applies `org.gradle.test-retry` 1.6.6 with one
+  retry and `failOnPassedAfterRetry`; `backend-ci.yml` sets the variable (`-Pplatform.testRetry=off` in
+  `gradle-task` turns it off) and writes a "Test health" job summary of flaky tests, the `quarantineTest`
+  result and every quarantine deadline.
+- Agent profile as a contract (N-SHOW-2): `platformAgentTestForks`, `platformAgentTestHeap` and
+  `springContextCacheSize` override the `AI_AGENT` defaults in every mode, one `Platform agent profile:` line per
+  build in agent mode, and `AI_AGENT_MAX_WORKERS` for `agent-gradle.sh` and the Vitest preset;
+  [docs/agent-profile.md](docs/agent-profile.md) holds the table.
+- Support window (N-REL-6): only the latest MINOR gets fixes, a pin stays at most 3 releases or 60 days
+  behind, a security release is adopted within 14 days ([RELEASING.md](RELEASING.md#support-policy)). The
+  settings plugin and `platform-versions-check` print one line for an older release, never a failure;
+  `release.yml` stamps the tag's commit date into the plugin and into `versions.json` (`releasedAt`).
+- `-PplatformToolchainOverride=<N>` replaces the canon toolchain with a warning, and `upstream-canary.yml` gains
+  a next-JDK leg that builds the starter on a Temurin early-access toolchain; its Gradle RC leg now runs the
+  whole TestKit suite through `-PplatformTestGradleVersion` (N-REL-4).
+
 ### Changed
 
 - `platformDependencyCheck` is a typed task without `afterEvaluate`, so a dependency a later `afterEvaluate`
@@ -436,6 +471,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   release version as before.
 - The JVM starters in `templates/jvm/` are pinned to the latest release.
 - `check` prints the effective coverage threshold and where it came from.
+
+- Every check task of the conventions declares an output (`platformPinCheck`, `platformRuntimeImageCheck`,
+  `platformCoverageDataCheck`, `platformBomOverrideCheck`), so an unchanged second build runs none of them
+  again; a TestKit case holds that (N-REL-15). Only `platformQuarantineCheck` runs every time.
+- `docs/http-client-and-agent-budget.md` is now `docs/api-client.md`; the agent half moved to
+  `docs/agent-profile.md`.
 
 ### Fixed
 

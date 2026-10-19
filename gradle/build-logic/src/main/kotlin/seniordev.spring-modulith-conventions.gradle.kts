@@ -6,9 +6,9 @@ import pl.seniordeveloper.gradle.PlatformVersions
  * seniordev.spring-modulith-conventions
  * -------------------------------------
  * Wspólny "kręgosłup" backendu Spring Modulith dla repo konsumentów (scripts/consumers.txt):
- *   - import BOM-ów (Spring Boot / Spring Modulith / Spring AI GA) przez dependency-management
+ *   - import pl.seniordeveloper:platform-bom (BOM-y Boot / Modulith / Spring AI / JUnit + podłogi CVE) przez dependency-management
  *   - wspólne zależności TESTOWE (modulith-test, Testcontainers, ArchUnit, junit-launcher)
- *   - TAKSONOMIA TESTÓW (z Attestate): szybki `test` (bez tagu integration) ‖ wolny `integrationTest`
+ *   - TAKSONOMIA TESTÓW (z Attestate): szybki `test` ‖ wolny `integrationTest` ‖ świadomy `modelTest` (poza check)
  *
  * Świadomie NIE dodaje zależności biznesowych (security, jOOQ, resilience4j, modele AI) — te są
  * per-repo i deklaruje je konsument przez współdzielony version catalog (`libs`).
@@ -25,40 +25,21 @@ plugins {
 
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
-// Wersje BOM-ów z gradle/catalog: generatePlatformVersions wpisuje je do PlatformVersions przy kompilacji
-// build-logic, więc bump to jeden wpis w libs.versions.toml (dawniej lustro, którego rozjazd był u konsumenta
-// cichy: platformDependencyCheck nie widzi importów mavenBom(...)).
-val springBootVersion = PlatformVersions.SPRING_BOOT
-val springModulithVersion = PlatformVersions.SPRING_MODULITH
-val springAiVersion = PlatformVersions.SPRING_AI
+// BOM-y i ograniczenia z jednego miejsca (N-CAP-12, ADR-0013): pl.seniordeveloper:platform-bom tego samego
+// wydania importuje BOM-y Boota, Modulith, Spring AI i JUnit oraz poprawione BOM-y Jacksona (przed Bootem, bo
+// w imporcie Maven wygrywa pierwszy), a jego constraints niosą podłogę Tomcata i nadpisania Lomboka i ArchUnit
+// z uzasadnieniem. Dawniej stały tu trzy importy i cztery `ext[...]`, osobno od BOM-u, który konsumenci spoza
+// Springa importowali sami. Wersja BOM-u = PlatformVersions.PLATFORM, czyli wydanie tych konwencji.
+val platformVersion = PlatformVersions.PLATFORM
 val archunitVersion = PlatformVersions.ARCHUNIT
 val junitVersion = PlatformVersions.JUNIT
 
-// Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13; no override needed for those two.
-
-// Nadpisanie KOMPATYBILNOŚCI (nie CVE) ponad BOM Boot 4.1.1: BOM-owy Lombok 1.18.46 pada na javac 27
-// (ClassNotFoundException com.sun.tools.javac.tree.EndPosTable w lombok.javac.Javac), a toolchain
-// w java-conventions to 27. 1.18.48 kompiluje na javac 27 (zweryfikowane w Azimuth).
-// USUŃ, gdy BOM Boota przypnie lombok.version >= 1.18.48 (propercja w spring-boot-dependencies).
-// Wersja z gradle/catalog: lombok (PlatformVersions.LOMBOK).
-ext["lombok.version"] = PlatformVersions.LOMBOK
-
-// Nadpisania CVE ponad BOM Boot 4.1.1 (nowszego Boota jeszcze nie ma). Wykrył je canon-cve-scan.yml:
-// tomcat-embed-core 11.0.24 — 3x Critical (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5,
-// poprawka 11.0.25); jackson 3.1.5 i 2.21.5 — High (np. GHSA-cxp5-3px4-pw24, poprawki 3.1.7 i 2.21.7).
-// Najnowsze łatki w tych samych liniach, które zarządza Boot. USUŃ każde, gdy BOM Boota dojdzie do poprawki.
-// Wersje z gradle/catalog: tomcat, jacksonBom, jackson2Bom (PlatformVersions).
-ext["tomcat.version"] = PlatformVersions.TOMCAT
-ext["jackson-bom.version"] = PlatformVersions.JACKSON_BOM
-ext["jackson-2-bom.version"] = PlatformVersions.JACKSON_2_BOM
-
-// Właściwości wersji BOM-ów ustawiane przez Platform (wyżej). Konsument, który ustawi dowolną właściwość `*.version`
-// (extra/ext albo gradle.properties), omija kanon: dependency-management podstawia ją do zaimportowanych BOM-ów,
-// a platformDependencyCheck widzi tylko zadeklarowane zależności. Decyzja 18: ostrzeżenie z listą, nie błąd.
+// Platform nie ustawia już żadnej właściwości wersji BOM-u (podłogi niesie platform-bom). Konsument, który ustawi
+// dowolną właściwość `*.version` (extra/ext albo gradle.properties), omija kanon: dependency-management podstawia ją
+// do zaimportowanych BOM-ów, a platformDependencyCheck widzi tylko zadeklarowane zależności. Decyzja 18: ostrzeżenie
+// z listą, nie błąd. Podłóg z platform-bom (np. Jackson) taka właściwość nie obniży: ich import stoi przed Bootem.
 // resolutionStrategy.eachDependency/force są statycznie niewidoczne — zgłasza je platform-bump (docs/versions.md).
-val platformBomProperties =
-	listOf("lombok.version", "tomcat.version", "jackson-bom.version", "jackson-2-bom.version")
-		.associateWith { ext[it].toString() }
+val platformBomProperties = emptyMap<String, String>()
 val platformBomOverrideCheck =
 	tasks.register("platformBomOverrideCheck") {
 		description = "Warns about BOM version properties set outside the platform."
@@ -74,8 +55,16 @@ val platformBomOverrideCheck =
 					.toSortedMap()
 			}
 		inputs.property("overrides", overrides)
+		// Raport zamiast ciągłego ponownego wykonania (N-REL-15): ostrzeżenia wracają, gdy zmienią się właściwości.
+		val report = layout.buildDirectory.file("reports/platform/bom-override-check.txt")
+		outputs.file(report)
 		doLast {
 			val found = overrides.get()
+			report
+				.get()
+				.asFile
+				.apply { parentFile.mkdirs() }
+				.writeText(found.entries.joinToString("") { "${it.key}=${it.value}\n" })
 			found.forEach { (key, value) ->
 				logger.warn(
 					"platformBomOverrideCheck: $key=$value overrides the Platform BOMs outside the platform. Move the override " +
@@ -91,9 +80,7 @@ tasks.named("check") {
 
 dependencyManagement {
 	imports {
-		mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
-		mavenBom("org.springframework.modulith:spring-modulith-bom:$springModulithVersion")
-		mavenBom("org.springframework.ai:spring-ai-bom:$springAiVersion")
+		mavenBom("pl.seniordeveloper:platform-bom:$platformVersion")
 	}
 	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.1 deklaruje ArchUnit 1.4.2
 	// jako zależność compile, a żaden BOM (Boot/Modulith) nie zarządza ArchUnit — nie ma propercji do
@@ -127,9 +114,9 @@ tasks.withType<Test>().configureEach {
 	useJUnitPlatform()
 }
 
-// Domyślny `test` = szybkie testy jednostkowe (pomija tag "integration").
+// Domyślny `test` = szybkie testy jednostkowe (pomija tagi "integration" i "model").
 tasks.named<Test>("test") {
-	useJUnitPlatform { excludeTags("integration") }
+	useJUnitPlatform { excludeTags("integration", "model") }
 }
 
 // Testy integracyjne (Testcontainers) — wolniejsze, osobny task, po `test`.
@@ -146,4 +133,15 @@ val integrationTest =
 // `check` (a więc i `build`) odpala oba zestawy.
 tasks.named("check") {
 	dependsOn(integrationTest)
+}
+
+// Testy modelu (@ModelTest, N-CAP-8): wolne przebiegi, np. z modelem w PlatformOllamaContainer (pobiera wagi),
+// uruchamiane świadomie, poza `check` i poza sumą pokrycia, więc nie wydłużają każdego PR-a.
+tasks.register<Test>("modelTest") {
+	description = "Runs the tests tagged model; outside check, run it on purpose."
+	group = "verification"
+	testClassesDirs = testSourceSet.output.classesDirs
+	classpath = testSourceSet.runtimeClasspath
+	useJUnitPlatform { includeTags("model") }
+	shouldRunAfter(tasks.named("test"))
 }

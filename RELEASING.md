@@ -271,6 +271,22 @@ that version of the affected package on GitHub Packages, or release a higher ver
 An npm package is published in a single request, so re-running the job after a partial failure is
 safe: it publishes only the packages that are still missing.
 
+## Support policy
+
+Platform has one release line, `main`; there are no backport branches. So:
+
+- Only the latest MINOR receives fixes. A fix to an older release is a new release on top of `main`.
+- A consumer pin may stay at most **3 releases or 60 days** behind the latest release, whichever comes
+  first.
+- A release whose CHANGELOG section names a security fix must be adopted within **14 days**.
+
+Consumers see the window without any network call. `seniordev.settings-conventions` logs one line per build
+when its release is older than 60 days, and `platform-versions-check` prints the same line for a frontend
+canon (from `releasedAt`, which `release.yml` stamps into the published `versions.json`). Both use the date
+of the tagged commit, so the artifacts stay reproducible. The notice never fails a build: a time-based gate
+would make old commits impossible to rebuild. Silence it with `-Pplatform.stalenessNotice=false` or
+`PLATFORM_STALENESS_NOTICE=false`.
+
 ## Consumers: adopting a new version
 
 In a consumer repository:
