@@ -5,6 +5,7 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import pl.seniordeveloper.gradle.AgentTestBudget
+import pl.seniordeveloper.gradle.PlatformVersions
 import pl.seniordeveloper.gradle.RuntimeImageCheck
 import java.io.File
 import java.math.BigDecimal
@@ -35,10 +36,10 @@ plugins {
 // (dependencyResolutionManagement: opcjonalne -PplatformRepository, mavenCentral, GitHub Packages). Deklaracja
 // repo na poziomie projektu przesłoniłaby je i zepsuła resolucję artefaktów Platform.
 
-// Lustro gradle/catalog: version("java"). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
+// Wersja z gradle/catalog: java (PlatformVersions.JAVA). Bytecode 27 wymaga runtime'u >= 27 (obraz Dockera konsumenta).
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(27)
+		languageVersion = JavaLanguageVersion.of(PlatformVersions.JAVA)
 	}
 }
 
@@ -62,8 +63,8 @@ spotless {
 	java {
 		// Wersja JAWNIE: domyślna Spotless zależy od JVM demona Gradle i na JDK 27 wybierała 1.28.0,
 		// która pada na javac 27 (NoSuchFieldError JCCompilationUnit.endPositions); 1.34.x z kolei
-		// odrzuca `var`. Lustro gradle/catalog: version("googleJavaFormat").
-		googleJavaFormat("1.36.1")
+		// odrzuca `var`. Wersja z gradle/catalog: googleJavaFormat.
+		googleJavaFormat(PlatformVersions.GOOGLE_JAVA_FORMAT)
 		removeUnusedImports()
 		trimTrailingWhitespace()
 		endWithNewline()
@@ -103,8 +104,8 @@ val extractCheckstyleConfig =
 	}
 
 checkstyle {
-	// Lustro gradle/catalog: version("checkstyle").
-	toolVersion = "13.10.0"
+	// Wersja z gradle/catalog: checkstyle.
+	toolVersion = PlatformVersions.CHECKSTYLE
 	maxWarnings = 0
 	configDirectory.set(layout.buildDirectory.dir("platform-config/checkstyle"))
 	config = resources.text.fromFile(File(checkstyleDir, "checkstyle.xml"))
@@ -116,8 +117,8 @@ tasks.withType<Checkstyle>().configureEach {
 
 jacoco {
 	// 0.8.15 = najnowsza stabilna; 0.8.14+ = class-file Java 25, 0.8.15 dodał EKSPERYMENTALNE wsparcie 26; class-file 27 również nieoficjalne (zweryfikowane w Azimuth).
-	// Lustro gradle/catalog: version("jacoco").
-	toolVersion = "0.8.15"
+	// Wersja z gradle/catalog: jacoco.
+	toolVersion = PlatformVersions.JACOCO
 }
 
 val agentMode = providers.environmentVariable("AI_AGENT").map { it == "1" || it == "true" }.getOrElse(false)

@@ -12,6 +12,7 @@
 
 import com.github.spotbugs.snom.SpotBugsTask
 import org.cyclonedx.gradle.CyclonedxDirectTask
+import pl.seniordeveloper.gradle.PlatformVersions
 import java.io.File
 
 plugins {
@@ -26,10 +27,10 @@ plugins {
 
 pitest {
 	// Wersje przypięte jawnie. PIT >= 1.30.0 czyta class-file 71 (toolchain 27); 1.25.3 niosło ASM 9.9.1
-	// i padało na „Unsupported class file major version 71". Lustra gradle/catalog: version("pitestJunit5")
+	// i padało na „Unsupported class file major version 71". Wersje z gradle/catalog (PlatformVersions): pitestJunit5
 	// dla junit5PluginVersion i version("pitestTool") dla pitestVersion.
-	junit5PluginVersion.set("1.2.3")
-	pitestVersion.set("1.30.0")
+	junit5PluginVersion.set(PlatformVersions.PITEST_JUNIT5)
+	pitestVersion.set(PlatformVersions.PITEST_TOOL)
 	timestampedReports.set(false)
 	outputFormats.set(listOf("HTML", "XML"))
 }
@@ -65,8 +66,8 @@ val extractSpotbugsConfig =
 	}
 
 spotbugs {
-	// Lustro gradle/catalog: version("spotbugs").
-	toolVersion.set("4.10.3")
+	// Wersja z gradle/catalog (PlatformVersions.SPOTBUGS).
+	toolVersion.set(PlatformVersions.SPOTBUGS)
 	// Report-only do spełnienia kryteriów wyjścia z docs/adr/0005-spotbugs-report-only.md.
 	// Konsument może przełączyć: spotbugs { ignoreFailures.set(false) }
 	ignoreFailures.set(true)
@@ -79,7 +80,7 @@ tasks.withType<SpotBugsTask>().configureEach {
 
 // ===== SonarCloud =====
 // Wspolna konfiguracja SonarCloud (sonarcloud.io) — koniec inline id("org.sonarqube") + blokow sonar{}
-// powielanych w repo (roznily sie tylko projectKey). Wersja pluginu = lustro gradle/catalog.
+// powielanych w repo (roznily sie tylko projectKey). Wersja pluginu z gradle/catalog (zależność build-logic).
 // projectKey per-repo: property `sonarProjectKey` (fallback: DominikSienkiewicz_<rootProject.name>).
 val sonarProjectKey =
 	providers

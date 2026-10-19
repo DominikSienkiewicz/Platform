@@ -30,34 +30,28 @@ Platform publishes its versions as a version catalog (`pl.seniordeveloper:platfo
   `gradle/catalog/libs.versions.toml` then, so that the catalog stays the single source of every
   version (hard rule 1).
 
-## Mirrored literals
+## Versions the convention plugins impose
 
-A precompiled script plugin does not read a version catalog at compile time, so some
-versions are literals in the **sources** of the convention plugins and entries in the
-catalog at the same time. Bumping one of them means editing both places, and a test in
-`build-logic` fails when the two drift. Drift of a BOM import would otherwise be silent for
-consumers: `platformDependencyCheck` does not see `mavenBom(...)` imports, so their runtime
-would stay on the old BOM, CVE fixes included.
+The convention plugins impose some versions on every consumer: the toolchain, the quality tools and
+the BOMs they import, and the overrides above the Boot BOM. A precompiled script plugin does not read
+a version catalog at compile time, so these used to be literals mirrored in the plugin sources. Now
+`build-logic`'s `generatePlatformVersions` task writes them from the catalog into
+`PlatformVersions.kt` in the main source set before the plugins compile, so a bump is one catalog entry.
+`PlatformVersionsTest` checks that every constant equals its catalog entry and that the convention
+sources contain no version literal.
 
-| Mirrored literal | Source | Catalog key | Guarded by |
-|---|---|---|---|
-| `googleJavaFormat("…")` | `seniordev.java-conventions` | `googleJavaFormat` | `PlatformToolVersionMirrorTest` |
-| `JavaLanguageVersion.of(…)` | `seniordev.java-conventions` | `java` | `PlatformToolVersionMirrorTest` |
-| checkstyle `toolVersion` | `seniordev.java-conventions` | `checkstyle` | `PlatformCatalogMirrorTest` |
-| jacoco `toolVersion` | `seniordev.java-conventions` | `jacoco` | `PlatformCatalogMirrorTest` |
-| spotbugs `toolVersion` | `seniordev.quality-conventions` | `spotbugs` | `PlatformCatalogMirrorTest` |
-| `pitestVersion` | `seniordev.quality-conventions` | `pitestTool` | `PlatformToolVersionMirrorTest` |
-| `junit5PluginVersion` | `seniordev.quality-conventions` | `pitestJunit5` | `PlatformCatalogMirrorTest` |
-| `springBootVersion` | `seniordev.spring-modulith-conventions` | `springBoot` | `PlatformCatalogMirrorTest` |
-| `springModulithVersion` | `seniordev.spring-modulith-conventions` | `springModulith` | `PlatformCatalogMirrorTest` |
-| `springAiVersion` | `seniordev.spring-modulith-conventions` | `springAi` | `PlatformCatalogMirrorTest` |
-| `junitVersion` | `seniordev.spring-modulith-conventions` | `junit` | `PlatformCatalogMirrorTest` |
-| `archunitVersion` | `seniordev.spring-modulith-conventions` | `archunit` | `PlatformToolVersionMirrorTest` |
-| `ext["lombok.version"]` | `seniordev.spring-modulith-conventions` | `lombok` | `PlatformToolVersionMirrorTest` |
-| `ext["tomcat.version"]` | `seniordev.spring-modulith-conventions` | `tomcat` | `PlatformCveOverrideMirrorTest` |
-| `ext["jackson-bom.version"]` | `seniordev.spring-modulith-conventions` | `jacksonBom` | `PlatformCveOverrideMirrorTest` |
-| `ext["jackson-2-bom.version"]` | `seniordev.spring-modulith-conventions` | `jackson2Bom` | `PlatformCveOverrideMirrorTest` |
-| `toolchain-java-version` default | `backend-ci.yml`, `deploy.yml`, `sonar.yml` | `java` | `PlatformToolVersionMirrorTest` |
+| Constant | Used by | Catalog key |
+|---|---|---|
+| `JAVA` | `JavaLanguageVersion.of(…)` in `seniordev.java-conventions` | `java` |
+| `GOOGLE_JAVA_FORMAT`, `CHECKSTYLE`, `JACOCO` | `seniordev.java-conventions` | `googleJavaFormat`, `checkstyle`, `jacoco` |
+| `SPOTBUGS`, `PITEST_TOOL`, `PITEST_JUNIT5` | `seniordev.quality-conventions` | `spotbugs`, `pitestTool`, `pitestJunit5` |
+| `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `JUNIT`, `ARCHUNIT` | the BOMs and ArchUnit of `seniordev.spring-modulith-conventions` | `springBoot`, `springModulith`, `springAi`, `junit`, `archunit` |
+| `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | the `ext[…]` overrides of `seniordev.spring-modulith-conventions` | `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
+
+Two mirrors live outside Kotlin and stay guarded by tests: the `toolchain-java-version` default of
+`backend-ci.yml`, `deploy.yml`, `platform-bump.yml` and `sonar.yml` (catalog `java`,
+`PlatformToolVersionMirrorTest`), and the Gradle wrappers and the minimum consumer Gradle
+(`PlatformGradleVersionMirrorTest`).
 
 `pitestTool` is the PIT engine and `pitest` the Gradle plugin; in the same way `spotbugs` is
 the SpotBugs engine and `spotbugsPlugin` the Gradle plugin. The formatter version is pinned
@@ -91,8 +85,8 @@ packages". Tests never saw it, because `archunit-junit5` pulls the catalog versi
 classpaths only. The convention therefore declares `com.tngtech.archunit:archunit` in
 `dependencyManagement.dependencies` at `archunitVersion` (catalog `archunit`), which applies to every
 configuration, transitive dependencies included. Drop it once `spring-modulith-core` itself depends on
-an ArchUnit that reads Java 27 class files (1.5.0 or later). `PlatformToolVersionMirrorTest` guards
-both the version mirror and the presence of this managed dependency.
+an ArchUnit that reads Java 27 class files (1.5.0 or later). The version comes from `PlatformVersions`,
+and `PlatformToolVersionMirrorTest` guards the presence of this managed dependency.
 
 Consumers
 that lock dependencies must regenerate `gradle.lockfile` and `gradle/verification-metadata.xml`

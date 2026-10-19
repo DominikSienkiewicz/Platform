@@ -75,6 +75,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/consumer-audit.sh --lag` reports, per consumer, how many releases and days its pin is behind
+  the newest tag, whether it pins a yanked release and how many `@v1` references it keeps. It reads the
+  local tags and `releases/yanked.txt` and stays a local report.
 - ADR-0011 (contract-first OpenAPI) and ADR-0012 (Platform's own modules in SonarQube Cloud). The ADR index
   is generated from the ADR headers (`scripts/adr-index.sh`), and CI checks it and every relative link and
   anchor of the Markdown files offline (`scripts/check-doc-links.py`).
@@ -247,6 +250,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The versions the convention plugins impose (toolchain, quality tools, BOMs and the overrides above the
+  Boot BOM) are generated from the catalog into `PlatformVersions` when `build-logic` compiles, instead
+  of literals mirrored in the plugin sources; a bump is one catalog entry. The versions consumers get
+  are unchanged.
 - The shared Renovate preset waits three days after a GitHub Actions or Docker release before it opens
   a pull request, and lets security fixes through at once, outside the Monday window, labelled
   `security`, with OSV alerts on.

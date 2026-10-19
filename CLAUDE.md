@@ -30,12 +30,14 @@ opublikuj, podbij pin w repo konsumenta.
 
 1. **Wersje bibliotek/pluginów → `gradle/catalog`.** `build-logic` dołącza ten sam
    `libs.versions.toml` przez swoje `settings.gradle.kts`, więc marker-artefakty pluginów biorą wersje
-   z kanonu — bump = JEDNO miejsce. Jedyny wyjątek: LUSTRA wersji w ŹRÓDŁACH convention pluginów
-   (toolVersion checkstyle/jacoco/spotbugs, `googleJavaFormat("…")`, toolchain, pitest, wersje BOM-ów
-   Spring/JUnit, lombok, archunit — pełna tabela w `docs/versions.md`, sekcja „Mirrored literals”) —
-   precompiled script plugin nie czyta katalogu w czasie kompilacji, więc tam wersja stoi w kodzie
-   i przy bumpie zmieniasz oba miejsca. Rozjazd wywala `PlatformToolVersionMirrorTest`
-   / `PlatformCatalogMirrorTest` w build-logic.
+   z kanonu — bump = JEDNO miejsce. Wersje narzucane przez ŹRÓDŁA convention pluginów (toolchain,
+   checkstyle/jacoco/spotbugs/pitest, `googleJavaFormat`, BOM-y Spring/JUnit, archunit, lombok i nadpisania
+   CVE) task `generatePlatformVersions` w build-logic generuje z katalogu do `PlatformVersions.kt`
+   (`internal object`, źródła main) — precompiled script plugin nie czyta katalogu, więc zamiast lustra
+   literałów czyta tę stałą (tabela: `docs/versions.md`, „Versions the convention plugins impose”).
+   Literał wersji w źródle convention pluginu wywala `PlatformVersionsTest`. Lustra spoza Kotlina zostają:
+   domyślny `toolchain-java-version` workflowów (`PlatformToolVersionMirrorTest`) i wrappery Gradle
+   (`PlatformGradleVersionMirrorTest`).
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
    build konsumenta, gdy zadeklarowana zależność albo constraint ma jawną wersję spoza katalogu lub inną
    niż katalog — w każdym deklarowalnym kubełku (`api`/`implementation`/`compileOnly(Api)`/`runtimeOnly`/
@@ -87,11 +89,11 @@ opublikuj, podbij pin w repo konsumenta.
    Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
    z javac 27. Nadpisania CVE `tomcat.version` 11.0.27, `jackson-bom.version` 3.1.8
    i `jackson-2-bom.version` 2.21.8 wróciły, bo Boot 4.1.1 (najnowszy) zarządza podatnymi 11.0.24,
-   3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; lustra w katalogu pilnuje
-   `PlatformCveOverrideMirrorTest`, zdejmij je, gdy BOM Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
+   3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; wersje stoją tylko w katalogu (`PlatformVersions`),
+   zdejmij je, gdy BOM Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
    zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
-   Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje. Lustra pilnuje
-   `PlatformToolVersionMirrorTest`. Polityka nadpisań (ostateczność, warunek usunięcia przy każdym):
+   Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje; zarządzanie ArchUnit na runtime
+   pilnuje `PlatformToolVersionMirrorTest`. Polityka nadpisań (ostateczność, warunek usunięcia przy każdym):
    `docs/adr/0008-overrides-are-a-last-resort.md`; tag `integration` to kontrakt (ADR-0009), `AI_AGENT` — ADR-0010.
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. `projectKey` per-repo przez property `sonarProjectKey` w `gradle.properties`
@@ -131,7 +133,7 @@ przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-secti
 ## Czego NIE robić
 
 - ❌ Nie dodawaj zależności domenowych do convention pluginów.
-- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (poza lustrami z tabeli w `docs/versions.md`).
+- ❌ Nie wprowadzaj wersji biblioteki poza `catalog` (convention pluginy biorą ją z `PlatformVersions`).
 - ❌ Nie commituj `public/r/` (output `shadcn build`) ani poświadczeń (`gpr.key`, tokeny).
 
 ## Język

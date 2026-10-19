@@ -36,8 +36,10 @@ languages.
   consumer, and nothing else sees them. `platformBomOverrideCheck` warns about a property a consumer
   sets, and `platform-bump` lists `useVersion`, `force`, `strictly` and `extra["….version"]`
   overrides after every bump (Decision 18).
-- **Each override is mirrored and tested.** The version stands in the catalog and in the convention
-  source, and `PlatformToolVersionMirrorTest` and `PlatformCveOverrideMirrorTest` fail when they drift.
+- **Each override has one source.** The version stands in the catalog, and the convention reads it
+  from the `PlatformVersions` that `build-logic` generates from the catalog; `PlatformVersionsTest` fails
+  on a literal in the convention source. (Until 1.6.0 the version was mirrored in the source and two
+  mirror tests compared the copies.)
 - **npm follows the same rule.** The default fix for a vulnerable transitive package is
   `npm update <package> --package-lock-only` and a committed lockfile. An entry in `overrides` is
   only for a parent that pins the exact vulnerable version, it is part of the canon, and it is
