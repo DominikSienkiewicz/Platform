@@ -65,9 +65,8 @@ class TestTaxonomyTest {
   }
 
   @Test
-  void aContainerInTheUnitTestTaskOnlyWarnsWithTheWarnOptOut() {
+  void aContainerInTheUnitTestTaskOnlyWarnsByDefault() {
     System.setProperty(PlatformTestTaskGuard.TASK_PROPERTY, "test");
-    System.setProperty(PlatformTestTaskGuard.MODE_PROPERTY, "warn");
     java.io.PrintStream original = System.err;
     java.io.ByteArrayOutputStream captured = new java.io.ByteArrayOutputStream();
     System.setErr(new java.io.PrintStream(captured, true, java.nio.charset.StandardCharsets.UTF_8));
@@ -81,7 +80,7 @@ class TestTaxonomyTest {
     assertThat(captured.toString(java.nio.charset.StandardCharsets.UTF_8))
         .contains(
             "WARNING: Testcontainers used in the unit 'test' task (PlatformPostgresContainer)")
-        .contains("platform.test.guard=warn keeps this a warning; without it the test fails.");
+        .contains("A later Platform release fails such a test.");
   }
 
   @Test

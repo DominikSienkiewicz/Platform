@@ -195,13 +195,10 @@ if (providers.gradleProperty("platform.junit.baseline").orNull?.trim() != "false
 	}
 }
 // Każdy Test task podaje nazwę strażnikowi kontenerów z test-fixtures (PlatformTestTaskGuard), a testy w kwarantannie
-// biegną tylko w quarantineTest, poza `check`. Strażnik domyślnie failuje; -Pplatform.test.guard=warn (albo wpis
-// w gradle.properties) trafia do JVM testów jako właściwość systemowa, bo -D Gradle'a do niej nie dociera.
+// biegną tylko w quarantineTest, poza `check`.
 val quarantineTag = "quarantine"
-val testGuardMode = providers.gradleProperty("platform.test.guard").orNull
 tasks.withType<Test>().configureEach {
 	systemProperty("platform.test.task", name)
-	testGuardMode?.let { systemProperty("platform.test.guard", it) }
 	if (name != "quarantineTest") {
 		useJUnitPlatform { excludeTags(quarantineTag) }
 	}

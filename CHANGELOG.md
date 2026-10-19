@@ -144,12 +144,6 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `--dry-run` first: it rewrites titles and bodies, now from the Backlog Handoff table (manual).
 - The security starter's `platform.security.csrf` is now `ON`, `OFF` or `SPA`; `true` and `false` still bind, and
   its 401 and 403 bodies are `application/problem+json`. No consumer has adopted the starter (none).
-- The container guard of `platform-test-fixtures` now fails by default: a platform container
-  (`PlatformSharedPostgresContainer`, `PlatformPostgresContainer`, `PlatformOllamaContainer`) configured under the
-  unit `test` task throws `IllegalStateException` before it starts, where 1.6.0 printed a warning. Tag such a test
-  class `@IntegrationTest` or `@PostgresIntegrationTest`. A repository that needs time sets the opt-out
-  `platform.test.guard=warn` in `gradle.properties` (or `-Pplatform.test.guard=warn`), which the Java conventions
-  now pass to every test JVM; a value other than `warn` or `fail` fails with a message that names it (manual).
 
 ### Added
 
