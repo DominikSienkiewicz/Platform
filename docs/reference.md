@@ -29,6 +29,11 @@ resolver and declares the dependency repositories: `platformRepository` when set
 Central and GitHub Packages with the credentials above. The consumer still declares
 `pluginManagement` repositories (to resolve this plugin), the catalog pin and `rootProject.name`.
 
+It also registers `platformDoctor` on the root project: the Gradle-side diagnosis that
+`platform-doctor --gradle` runs, compatible with the configuration cache. It prints one line per check
+in the bin's format (PD080 pins, PD081 toolchain, PD082 `coverageMinimum`; [consuming.md](consuming.md#troubleshooting))
+and fails when one fails.
+
 ## seniordev.java-conventions
 
 Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts); Checkstyle rules in

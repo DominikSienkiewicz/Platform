@@ -90,6 +90,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `seniordev.settings-conventions` registers `platformDoctor` on the root project, compatible with the
+  configuration cache: PD080 compares the settings plugin, the catalog's `platform` version and
+  `platformVersion`, PD081 resolves the root project's Java toolchain and PD082 checks `coverageMinimum`.
+  `platform-doctor --gradle` runs it through the wrapper and reports PD083 when the task does not run.
 - `templates/Dockerfile.backend`: a `HEALTHCHECK` on `/actuator/health/liveness` through bash's
   `/dev/tcp`, falling back to `/actuator/health` while the probes are off, and
   `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"`.

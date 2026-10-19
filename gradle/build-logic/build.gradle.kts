@@ -60,6 +60,8 @@ val generatePlatformVersions =
 				"TOMCAT" to libs.versions.tomcat,
 				"JACKSON_BOM" to libs.versions.jacksonBom,
 				"JACKSON_2_BOM" to libs.versions.jackson2Bom,
+				// Wersja samego wydania Platform: platformDoctor porównuje z nią pin katalogu konsumenta.
+				"PLATFORM" to providers.gradleProperty("platformVersion"),
 			).mapValues { (_, version) -> version.get() }
 		inputs.properties(constants)
 		val output = layout.buildDirectory.dir("generated/platform-versions/kotlin")
