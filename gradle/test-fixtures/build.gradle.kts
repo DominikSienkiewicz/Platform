@@ -99,7 +99,7 @@ tasks.test {
 	inputs.file(springAppModuleDiagram).withPropertyName("springAppModuleDiagram").withPathSensitivity(PathSensitivity.NONE)
 	systemProperty("platform.springApp.moduleDiagram", springAppModuleDiagram.asFile.absolutePath)
 	// Ten moduł nie dzieli testów na zadania: jego testy kontenerów świadomie biegną w `test`, więc strażnik
-	// PlatformTestTaskGuard (failuje na kontenerze w szybkim `test` konsumenta) dostaje inną nazwę zadania.
+	// PlatformTestTaskGuard (ostrzega przed kontenerem w szybkim `test` konsumenta) dostaje inną nazwę zadania.
 	systemProperty("platform.test.task", "platformModuleTest")
 }
 
