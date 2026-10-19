@@ -1,0 +1,46 @@
+name: Bug
+description: Something in a Platform artifact, workflow or template does not work as documented.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Platform version
+      description: The release the consumer pins (platformVersion, or the @vX.Y.Z of the workflow).
+      placeholder: 1.6.0
+    validations:
+      required: true
+  - type: dropdown
+    id: artifact
+    attributes:
+      label: Artifact
+      options:
+        - Convention plugins (seniordev.*-conventions)
+        - Version catalog or platform-bom
+        - Test fixtures
+        - A starter (security, observability, web)
+        - A frontend package (@dominiksienkiewicz/*)
+        - A reusable workflow
+        - platform-bump or another bin
+        - A template
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: gate
+    attributes:
+      label: Gate code
+      description: The code in the failure message, such as PLAT-DEP-001 (docs/gates.md), if there is one.
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: JDK running Gradle, Gradle version, Node version, operating system.
+      placeholder: JDK 25.0.3, Gradle 9.8.1, Node 24, macOS 15
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      description: The command, the full message and the documented behaviour it contradicts.
+    validations:
+      required: true

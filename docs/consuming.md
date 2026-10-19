@@ -124,54 +124,73 @@ repository: the `libs.…` aliases it uses, the versions the conventions impose,
 called workflows, with the Dockerfile flagged when the toolchain moves, in three sections: affects this
 repo, not used here, and consumer action required.
 
-`settings.gradle.kts` reads `platformVersion` once, for the settings plugin and the catalog:
+`settings.gradle.kts` reads `platformVersion` once, for the settings plugin and the catalog. This is the file of
+`templates/jvm/spring-app`; set `rootProject.name` to your project:
 
+<!-- include: templates/jvm/spring-app/settings.gradle.kts -->
 ```kotlin
 pluginManagement {
-    repositories {
-        providers.gradleProperty("platformRepository").orNull?.let { maven { url = uri(it) } }
-        gradlePluginPortal()
-        mavenCentral()
-        maven {
-            url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-                password = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
-            }
-        }
-    }
+	val platformRepository = providers.gradleProperty("platformRepository").orNull
+	val gprUser = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
+	val gprKey = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+	// Bez poświadczeń GitHub Packages odpowiada 401, które Gradle chowa pod „plugin not found” (N-DX-2): nazwij
+	// przyczynę, zanim pójdzie pierwsze żądanie. Lokalna Platform (-PplatformRepository) i --offline ich nie potrzebują.
+	if ((gprUser == null || gprKey == null) && platformRepository == null && !gradle.startParameter.isOffline) {
+		throw GradleException(
+			"No GitHub Packages credentials, so the Platform plugins cannot resolve. Set gpr.user and gpr.key in " +
+				"~/.gradle/gradle.properties, or GITHUB_ACTOR and GITHUB_TOKEN in the environment, with a classic token that " +
+				"has the read:packages scope (https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
+				"To build against a local Platform instead, pass -PplatformRepository.",
+		)
+	}
+	repositories {
+		platformRepository?.let { maven { url = uri(it) } }
+		gradlePluginPortal()
+		mavenCentral()
+		maven {
+			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			credentials {
+				username = gprUser
+				password = gprKey
+			}
+		}
+	}
 }
 
 plugins {
-    id("seniordev.settings-conventions") version providers.gradleProperty("platformVersion").get()
+	id("seniordev.settings-conventions") version providers.gradleProperty("platformVersion").get()
 }
 
 dependencyResolutionManagement {
-    versionCatalogs {
-        create("libs") {
-            from("pl.seniordeveloper:platform-catalog:${providers.gradleProperty("platformVersion").get()}")
-        }
-    }
+	versionCatalogs {
+		create("libs") {
+			from("pl.seniordeveloper:platform-catalog:${providers.gradleProperty("platformVersion").get()}")
+		}
+	}
 }
 
-rootProject.name = "my-service"
+rootProject.name = "spring-app"
 ```
 
 The project applies the Java / quality / Spring convention plugins without repeating a version:
 the settings plugin has already loaded their shared implementation. The Spring Boot
 plugin still comes from `alias(libs.plugins.spring.boot)`.
 
+<!-- include: templates/jvm/spring-app/build.gradle.kts -->
 ```kotlin
 plugins {
-    alias(libs.plugins.spring.boot)
-    id("seniordev.java-conventions")
-    id("seniordev.quality-conventions")
-    id("seniordev.spring-modulith-conventions")
+	alias(libs.plugins.spring.boot)
+	id("seniordev.java-conventions")
+	id("seniordev.quality-conventions")
+	id("seniordev.spring-modulith-conventions")
 }
 
+group = "example"
+version = "0.1.0-SNAPSHOT"
+
 dependencies {
-    implementation(libs.boot.starter.webmvc)
-    implementation(libs.modulith.starter.core)
+	implementation(libs.boot.starter.webmvc)
+	implementation(libs.modulith.starter.core)
 }
 ```
 

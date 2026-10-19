@@ -606,6 +606,16 @@ if [[ -n "$MIGRATIONS" ]] && [[ -f "$MIGRATIONS" ]]; then
 fi
 # platform-bump:migrations-end
 
+# --- Blok platform-agents w AGENTS.md (N-SHOW-1): reguły dla agentów z wydania docelowego, tylko między markerami;
+#     reszta pliku bez zmian, brak markerów = blok dopisany na końcu, brak pliku = nowy AGENTS.md. ---
+# platform-bump:agents
+agents_block="${TARGET_LOGIC:+$TARGET_LOGIC/agents/platform-block.md}"
+if [[ -n "$agents_block" ]] && [[ -f "$agents_block" ]] && [[ -f "$TARGET_LOGIC/bin/sync-agents-block.py" ]]; then
+  snapshot_file AGENTS.md
+  echo "==> AGENTS.md, platform-agents block of $TARGET: $(python3 "$TARGET_LOGIC/bin/sync-agents-block.py" "$agents_block" "$TARGET" AGENTS.md)"
+fi
+# platform-bump:agents-end
+
 # --- Callerzy reusable workflowów Platform kontra kontrakt wydania docelowego (workflow-contract.txt z tarballa):
 #     brak uprawnienia, nieznane wejście albo sekret = startup_failure bez logu. Tylko raport, kod wyjścia bez zmian,
 #     bo błąd cofnąłby cały bump; samodzielny platform-workflows-check kończy się wtedy kodem 1. ---

@@ -7,7 +7,9 @@
 **Designed and maintained by [Dominik](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change. How that works: [engineering with agents](docs/engineering-with-agents.md).
 
 **Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
-solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them.
+solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
+it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
 
 A shared build platform for a multi-repository JVM and frontend organisation. Build
 configuration, quality gates, dependency versions and frontend presets live here once,
@@ -34,7 +36,7 @@ own schedule and rolls back by pinning an older version.
 
 | Path | Artifact | Published to | Adopted by |
 |---|---|---|---|
-| `gradle/build-logic/` | four convention plugins (`seniordev.*-conventions`, including settings) | GitHub Packages (Maven) | all five |
+| `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all five |
 | `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | all five; the bundles none |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
@@ -51,7 +53,7 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
-| `infra/` | `docker-compose` template (pgvector, optionally Ollama) | copied / submodule | not audited |
+| `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
 | `.github/workflows/` | eleven reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all five; `platform-bump.yml` and `api-contract.yml` none |
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
@@ -197,8 +199,12 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
+- **The documentation as a site** → built from `docs/` with Zensical in strict mode (`docs-site.yml`); it goes
+  live on GitHub Pages once the maintainer enables Pages.
 - **A reviewer's tour, incident notes and how agents build it** → [docs/tour.md](docs/tour.md),
   [docs/notes/](docs/notes/), [docs/engineering-with-agents.md](docs/engineering-with-agents.md).
+- **Guidance for coding agents** → [AGENTS.md](AGENTS.md) for this repository, the
+  [rule sheet](docs/consumer-agents.md) and the [runbooks](docs/runbooks/README.md) for consumer repositories.
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
@@ -219,6 +225,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 - **What the security scans gate and how to accept a finding** →
   [docs/security-scanning.md](docs/security-scanning.md).
+- **Contributing** → [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).
 
 ### Documentation language

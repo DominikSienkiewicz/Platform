@@ -181,6 +181,25 @@ plugin: the consumer adds `alias(libs.plugins.spring.boot)`.
 | `integrationTest` | yes | `@Tag("integration")` | runs only tests tagged `integration`; tag every Testcontainers test, or it runs in the fast `test` and needs Docker there |
 | `modelTest` | no | `@Tag("model")` (`@ModelTest`) | runs only tests tagged `model`, on purpose; outside `check` and the coverage sum |
 
+## npm packages
+
+Generated from each `package.json` by `scripts/docs-gen.sh`.
+
+<!-- docs-gen:npm-packages -->
+| Package | Directory | Published | Bins | Description |
+|---|---|---|---|---|
+| `@dominiksienkiewicz/api-client` | `frontend/packages/api-client/` | no (private) | — | Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body. |
+| `@dominiksienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
+| `@dominiksienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
+| `@dominiksienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
+| `@dominiksienkiewicz/query` | `frontend/packages/query/` | no (private) | — | Shared QueryClient (staleTime 60 s, refetchOnWindowFocus off) and a QueryProvider with React Query Devtools. |
+| `@dominiksienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
+| `@dominiksienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
+| `@dominiksienkiewicz/ui` | `frontend/packages/ui-registry/` | yes | — | shadcn registry (utils, button). |
+| `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
+| `@dominiksienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
+<!-- /docs-gen -->
+
 ## Security starter (*incubating*)
 
 `pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS in a servlet web

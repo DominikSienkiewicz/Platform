@@ -86,3 +86,9 @@ Classified under this rule, 1.5.29 (toolchain 27, runtime image ≥ 27) and 1.5.
 - Every consumer references reusable workflows by `@vX.Y.Z`: retire `move-v1` and drop item 6's
   transition clause.
 - Platform changes its registry or artifact coordinates: that is the first MAJOR.
+
+## Update — merge messages and the draft release (2026-10-19)
+
+`scripts/merge.sh` refuses a merge message that is not a Conventional Commit, the rule `release.sh` already applies
+to its message, because the merge commits on `main` are what `scripts/release-notes.sh` drafts the next section from.
+`release-draft.yml` keeps a draft GitHub Release **Next** with those notes after every push to `main` (N-REL-7).

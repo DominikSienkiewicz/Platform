@@ -4,12 +4,13 @@
 
 | Version | Supported |
 |---|---|
-| Newest `1.x` release | Yes |
+| Newest MINOR of the `1.x` line | Yes |
 | Any older release | No |
 
 Published versions are immutable, so a fix is never patched into an existing version. It ships as
-a new release, and consumers pick it up by bumping their platform pin. The reusable workflows that
-consumers call via `@v1` always point at the newest `1.x` release.
+a new release, and consumers pick it up by bumping their platform pin; a release that fixes a
+vulnerability must be adopted within 14 days ([support policy](RELEASING.md#support-policy)). Consumers
+call the reusable workflows at an exact `@vX.Y.Z`, which `platform-bump` moves to the fixed release.
 
 ## Reporting a vulnerability
 

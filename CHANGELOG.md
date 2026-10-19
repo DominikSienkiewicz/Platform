@@ -136,6 +136,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   `java -jar /app/app.jar`. Re-copy it to `backend/Dockerfile`; a compose `command:` or `entrypoint:` that named
   `/app/app.jar` must go (manual).
 
+- `platform-bump` writes the `platform-agents` block into the repository's `AGENTS.md` (created when missing),
+  between its markers; delete the copied Platform rules from `AGENTS.md` and `CLAUDE.md` after the bump (manual).
+
 ### Added
 
 - Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
@@ -427,6 +430,21 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `infra/docker-compose.yml` has an `observability` profile: otel-collector, Tempo, Prometheus and Grafana for an
   application on the host (N-CAP-4).
 
+- Agent guidance (N-SHOW-1): a root `AGENTS.md` beside `CLAUDE.md`, the managed block
+  `templates/agents/platform-block.md` that `platform-bump` syncs into consumers, the rule sheet
+  `docs/consumer-agents.md`, runbooks under `docs/runbooks/`, and `templates/tests/agent-docs.test.sh`, which fails
+  when they name a command, task, bin or path that does not exist.
+- A devcontainer with JDK 25 and 27, Node 24 and pnpm, guarded against the canon by
+  `templates/tests/devcontainer.test.sh` and built by `devcontainer.yml`, which runs the build-logic suite in it
+  (N-SHOW-11).
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (the Contributor Covenant by reference) and issue forms for bugs, library
+  requests and adoptions (N-SHOW-13).
+- ADRs 0014-0033 for every settled decision, with a decision map in `docs/adr/README.md` (N-SHOW-14).
+- `scripts/docs-gen.sh` regenerates the template snippets, the workflow input tables and the npm package table of
+  the docs; CI fails on a stale region (N-SHOW-15).
+- A documentation site built with Zensical in strict mode by `docs-site.yml`, pinned with hashes, deployed to
+  GitHub Pages once the maintainer enables it (N-SHOW-16).
+
 ### Changed
 
 - `platformDependencyCheck` is a typed task without `afterEvaluate`, so a dependency a later `afterEvaluate`
@@ -537,6 +555,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   again; a TestKit case holds that (N-REL-15). Only `platformQuarantineCheck` runs every time.
 - `docs/http-client-and-agent-budget.md` is now `docs/api-client.md`; the agent half moved to
   `docs/agent-profile.md`.
+
+- `SECURITY.md` names the support policy and the exact workflow pins instead of `@v1`.
 
 ### Fixed
 

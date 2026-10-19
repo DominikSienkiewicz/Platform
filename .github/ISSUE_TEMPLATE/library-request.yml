@@ -1,0 +1,42 @@
+name: Library request
+description: A consumer needs a library or package the Platform canon does not have yet.
+labels: [library-request]
+body:
+  - type: dropdown
+    id: canon
+    attributes:
+      label: Canon
+      options:
+        - JVM (gradle/catalog/libs.versions.toml)
+        - Frontend (frontend/packages/versions/versions.json)
+    validations:
+      required: true
+  - type: input
+    id: coordinates
+    attributes:
+      label: Coordinates
+      description: group:name for the JVM, the package name for the frontend.
+      placeholder: org.jsoup:jsoup
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The exact version, released at least two weeks ago.
+    validations:
+      required: true
+  - type: input
+    id: consumers
+    attributes:
+      label: Consumers
+      description: The repositories that will use it.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What it is for, and why a library already in the canon or a Platform BOM does not cover it.
+    validations:
+      required: true

@@ -63,6 +63,20 @@ jobs:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs backend-ci.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `30` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `working-directory` | string | `backend` | Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout). |
+| `java-version` | string | `25` | JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer. |
+| `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
+| `gradle-task` | string | `build` | Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.testRetry=off here turns that off. |
+| `verify-provenance` | boolean | `false` | Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars. |
+| `lint-task` | string | empty | Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step. |
+<!-- /docs-gen -->
+
 ## frontend-ci.yml
 
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
@@ -91,6 +105,18 @@ jobs:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs frontend-ci.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `20` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `working-directory` | string | `frontend` | Directory of the frontend package.json, relative to the repository root. |
+| `node-version` | string | `24` | Node.js version for install, lint, test and build. |
+| `strict` | boolean | `false` | Require the Platform guard and the lint, typecheck, test, build and format:check scripts, run format:check, and check the OpenAPI types when package.json configures platform.openapi. |
+| `run-e2e` | boolean | `false` | Run the Playwright end-to-end tests (`npm run test:e2e`) after the build. |
+<!-- /docs-gen -->
+
 ## api-contract.yml
 
 Fails a pull request that breaks the committed OpenAPI spec for existing clients: oasdiff compares the
@@ -118,6 +144,20 @@ jobs:
       spec-path: contract/openapi.yaml
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs api-contract.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `spec-path` | string | required | Path of the committed OpenAPI spec (YAML or JSON), relative to the repository root. |
+| `base-spec-path` | string | empty | Compare against this file of the checked-out revision instead of spec-path at the pull request's base; Platform's self-test uses it. |
+| `fail-on` | string | `ERR` | Lowest oasdiff level that counts as breaking: ERR, WARN or INFO. |
+| `allow-label` | string | `api-breaking` | Pull request label that lets a breaking change through; say why in the pull request description. |
+| `fail-on-breaking` | boolean | `true` | Fail the job on a breaking change; false only reports it in the breaking output. |
+| `oasdiff-image` | string | `tufin/oasdiff:v1.33.0@sha256:6263a96dd2ef0726c54e21fea9b8e1607eac4841add0079324b424c1f52b819c` | oasdiff container image, pinned by digest. |
+| `timeout-minutes` | number | `10` | Minutes before the job is cancelled; GitHub's default is 360. |
+<!-- /docs-gen -->
+
 ## security-scan.yml
 
 Scans dependencies for CVEs: the backend through its CycloneDX SBOM, the frontend through
@@ -143,6 +183,21 @@ jobs:
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs security-scan.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `15` | Minutes before each job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `working-directory` | string | `backend` | Directory of the Gradle build, relative to the repository root. |
+| `java-version` | string | `25` | JDK that runs Gradle for the CycloneDX SBOM. |
+| `severity-cutoff` | string | `high` | Grype fail threshold for the SBOM and the frontend lockfile: negligible, low, medium, high or critical. |
+| `run-frontend` | boolean | `true` | Also scan frontend/package-lock.json. Use false for a backend without a frontend. |
+| `only-if-deps-changed` | boolean | `false` | On push and pull_request, scan only when a changed path matches deps-pattern. Schedules and manual runs always scan. |
+| `deps-pattern` | string | `^(backend/(build|settings)\.gradle\.kts|backend/(settings-)?gradle\.lockfile|backend/gradle/verification-metadata\.xml|backend/gradle/libs\.versions\.toml|frontend/package(-lock)?\.json|\.github/workflows/[^/]+\.ya?ml)$` | Extended regular expression matched against every changed path when only-if-deps-changed is on. |
+| `only-fixed` | boolean | `false` | Fail only on vulnerabilities that have a fix. Accept a finding without a fix through .grype.yaml instead; see docs/security-scanning.md. |
+<!-- /docs-gen -->
+
 ## container-scan.yml
 
 Re-scans published images, usually on a schedule. Grype is the gate; Snyk is advisory.
@@ -164,6 +219,17 @@ jobs:
       snyk_token: ${{ secrets.SNYK_TOKEN }}
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs container-scan.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `15` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `images` | string | required | JSON array of full image references to scan, e.g. '["ghcr.io/owner/app:latest"]'. |
+| `severity-cutoff` | string | `high` | Grype fail threshold: negligible, low, medium, high or critical. |
+| `only-fixed` | boolean | `true` | Fail only on vulnerabilities that have a fix. Base images carry unfixable HIGH OS CVEs, which would otherwise keep the gate red. |
+<!-- /docs-gen -->
+
 ## semgrep.yml
 
 Static analysis of the source code. ERROR findings fail the run; accepting one is described in
@@ -181,6 +247,16 @@ jobs:
   semgrep:
     uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z
 ```
+
+Inputs:
+
+<!-- docs-gen:inputs semgrep.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `10` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `config` | string | `p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions` | Semgrep rulesets, separated by spaces; each gets its own --config. |
+| `semgrep-version` | string | `1.168.0` | Pinned Semgrep CLI version, installed with pipx. |
+<!-- /docs-gen -->
 
 ## scorecard.yml
 
@@ -202,6 +278,14 @@ jobs:
       id-token: write
     uses: DominikSienkiewicz/Platform/.github/workflows/scorecard.yml@vX.Y.Z
 ```
+
+Inputs:
+
+<!-- docs-gen:inputs scorecard.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `10` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+<!-- /docs-gen -->
 
 ## sonar.yml
 
@@ -229,6 +313,16 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       gpr_token: ${{ secrets.GPR_TOKEN }}
 ```
+
+Inputs:
+
+<!-- docs-gen:inputs sonar.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `java-version` | string | `25` | JDK that runs Gradle for the backend scan. |
+| `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
+| `node-version` | string | `24` | Node.js version for the frontend tests and coverage. |
+<!-- /docs-gen -->
 
 ## platform-bump.yml
 
@@ -276,6 +370,18 @@ jobs:
       bump_token: ${{ secrets.PLATFORM_BUMP_TOKEN }}
 ```
 
+Inputs:
+
+<!-- docs-gen:inputs platform-bump.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `30` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+| `version` | string | empty | Platform version to bump to; empty takes the newest release of the current MAJOR. |
+| `java-version` | string | `25` | JDK that runs Gradle for the lockfile regeneration. Platform's build-logic is compiled for Java 25. |
+| `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
+| `node-version` | string | `24` | Node.js version that runs the platform-bump bin and npm. |
+<!-- /docs-gen -->
+
 ## roadmap-unblock.yml
 
 Moves dependent roadmap items to ready when their prerequisite issues are closed. The caller's
@@ -300,6 +406,14 @@ jobs:
     secrets:
       ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
 ```
+
+Inputs:
+
+<!-- docs-gen:inputs roadmap-unblock.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `timeout-minutes` | number | `5` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
+<!-- /docs-gen -->
 
 ## deploy.yml
 
@@ -353,3 +467,28 @@ jobs:
       NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 ```
+
+Inputs:
+
+<!-- docs-gen:inputs deploy.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `build-timeout-minutes` | number | `30` | Minutes before the build-push job is cancelled; GitHub's default is 360. |
+| `deploy-timeout-minutes` | number | `20` | Minutes before the deploy job (upload, migrations, health gate) is cancelled; GitHub's default is 360. |
+| `app-name` | string | required | Image name prefix, e.g. skillsprintplus or bookofstyling. |
+| `compose-dir` | string | `.` | Directory with the compose file and the Caddyfile on the host (e.g. '.' or 'infra'). |
+| `has-worker` | boolean | `false` | Also build the <app>-eval-worker image. |
+| `migrate-image-suffix` | string | `migrate` | Suffix of the migration image (e.g. 'migrate' or 'db-migrate'). |
+| `migrate-tag-source` | string | `backend` | Tag of the migration image: 'backend' (the backend version) or 'changelog' (the changelog number). |
+| `java-version` | string | `25` | JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer. |
+| `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
+| `has-migrate` | boolean | `true` | Build and run a separate migration image. Use false for applications that migrate on start (Flyway). |
+| `scan-images` | boolean | `false` | Scan the pushed images before deploying (Grype gate, optional Snyk). Opt-in. |
+| `scan-severity` | string | `high` | Grype fail threshold for scan-images. |
+| `compose-file` | string | `docker-compose.prod.yml` | Compose file name in compose-dir. |
+| `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
+| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
+| `rollback-to-backend` | string | empty | Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
+| `rollback-to-frontend` | string | empty | Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
+<!-- /docs-gen -->
+

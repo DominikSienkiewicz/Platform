@@ -1,0 +1,70 @@
+name: Docs site
+
+# Strona dokumentacji (N-SHOW-16): Zensical w trybie strict na każdym PR-ze, który zmienia docs, i na main; zepsuty
+# link albo kotwica wewnątrz docs/ zatrzymuje build, a linki poza docs/ prowadzą do GitHuba na tym samym ref
+# (scripts/docs-site.py). Deploy na GitHub Pages tylko z main i dopiero, gdy właściciel włączy Pages (źródło:
+# GitHub Actions) i ustawi zmienną repozytorium PAGES_ENABLED=true.
+on:
+  pull_request:
+    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", ".github/workflows/docs-site.yml"]
+  push:
+    branches: [main]
+    paths: ["docs/**", "zensical.toml", "scripts/docs-site.py", ".github/workflows/docs-site.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the site (strict)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install Zensical (pinned with hashes)
+        run: python -m pip install --require-hashes -r docs/requirements-site.txt
+      - name: Strict build fails on a broken anchor (self-test)
+        run: |
+          set -euo pipefail
+          python scripts/docs-site.py main "$RUNNER_TEMP/broken"
+          printf '\n[broken](consuming.md#no-such-anchor)\n' >> "$RUNNER_TEMP/broken/docs/index.md"
+          if (cd "$RUNNER_TEMP/broken" && zensical build --strict); then
+            echo "::error::zensical build --strict accepted a broken anchor"
+            exit 1
+          fi
+      - name: Build the site
+        env:
+          REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/docs-site.py "$REF" "$RUNNER_TEMP/site-src"
+          (cd "$RUNNER_TEMP/site-src" && zensical build --strict)
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site-src/site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PAGES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

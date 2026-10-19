@@ -1,0 +1,31 @@
+name: Adoption of an incubating artifact
+description: A consumer adopts an incubating artifact, which then loses the label (Decision 7).
+labels: [adoption]
+body:
+  - type: input
+    id: artifact
+    attributes:
+      label: Artifact
+      description: The incubating starter, private npm package, catalog bundle or registry item.
+      placeholder: pl.seniordeveloper:platform-security-starter
+    validations:
+      required: true
+  - type: input
+    id: consumer
+    attributes:
+      label: Consumer
+      description: The first repository that adopts it.
+    validations:
+      required: true
+  - type: textarea
+    id: proof
+    attributes:
+      label: Proof
+      description: The consumer branch or pull request that builds on it with -PplatformRepository (docs/runbooks/promote-incubating-artifact.md).
+    validations:
+      required: true
+  - type: textarea
+    id: gaps
+    attributes:
+      label: Gaps
+      description: What the consumer still configures itself, and what the artifact should take over.
