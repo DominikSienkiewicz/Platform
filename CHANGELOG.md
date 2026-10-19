@@ -132,6 +132,11 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   frontend-ci 20, security-scan and container-scan 15, semgrep and scorecard 10, roadmap-unblock 5,
   deploy 30 for the build and 20 for the deploy. A caller whose job runs longer passes
   `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml) (manual).
+- `semgrep.yml` also fails on findings of severity `CRITICAL` and `HIGH`, the newer Semgrep scale that rules such
+  as `package_managers` use; `ERROR` still fails, and `MEDIUM`, `WARNING`, `LOW` and `INFO` stay log-only. Its
+  summary counts every severity instead of only `ERROR`, `WARNING` and `INFO`, which hid `MEDIUM` findings.
+  Azimuth's last scan listed no `CRITICAL` or `HIGH` finding; a repository whose scan lists one fixes it or
+  records an exception as `docs/security-scanning.md` describes (manual).
 - `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
   lint. No caller uses `strict` today; one that does adds the script, for example with
   `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows (none).

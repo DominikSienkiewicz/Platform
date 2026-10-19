@@ -11,7 +11,7 @@ cannot fix yet. The caller side of each workflow is in [reusable-workflows.md](r
 | Grype on `frontend/package-lock.json` | `security-scan.yml` | the same | `.grype.yaml` |
 | Grype on the pushed images | `deploy.yml` with `scan-images: true` | severity at or above `scan-severity`, fixable findings only | `.grype.yaml` |
 | Grype on published images | `container-scan.yml` | severity at or above `severity-cutoff`, fixable findings only by default | `only-fixed` and `severity-cutoff`; the job does not check the repository out, so `.grype.yaml` does not apply |
-| Semgrep | `semgrep.yml` | findings of severity `ERROR` | `# nosemgrep: <rule-id>` |
+| Semgrep | `semgrep.yml` | findings of severity `CRITICAL`, `HIGH` or `ERROR`; `MEDIUM`, `WARNING`, `LOW` and `INFO` are listed and counted only | `# nosemgrep: <rule-id>` |
 | Snyk | `container-scan.yml`, `deploy.yml` | never: advisory only | — |
 | CodeQL (Platform only, not reusable) | `codeql.yml` | never: alerts go to Code scanning | dismiss the alert in Code scanning with a reason |
 

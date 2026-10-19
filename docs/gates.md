@@ -141,7 +141,9 @@ the scripts `lint`, `typecheck`, `test`, `build` and `format:check`, or `@domini
 
 ### PLAT-SAST-001
 
-**Cause:** Semgrep found findings of severity ERROR (`semgrep.yml`).
+**Cause:** Semgrep found findings of severity CRITICAL, HIGH or ERROR (`semgrep.yml`). Semgrep rules use two
+scales, and Semgrep treats ERROR as HIGH, WARNING as MEDIUM and INFO as LOW; findings of the lower levels are
+listed in the log and do not fail the run.
 **Fix:** fix them, or record an exception as [security-scanning.md](security-scanning.md) describes.
 
 ### PLAT-SCA-001
