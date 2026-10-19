@@ -46,9 +46,11 @@ run above || fail 'a version above its floor must pass'
 
 if run boot-jackson old-libs; then :; else fail 'a catalog without the floors (an older tag) has nothing to enforce'; fi
 
-# Każda podłoga CVE z gradle/bom (`because("CVE`) ma swój klucz w skrypcie.
+# Każda podłoga CVE z gradle/bom (`because("CVE`) ma swój klucz w skrypcie. Klucz stoi w deklaracji nad
+# `because`; sam powód cytuje wersję Boota (`libs.versions.springBoot`), która podłogą nie jest.
 python3 "$root/scripts/check-canon-floors.py" --keys > "$work/keys.txt"
-grep -B1 'because("CVE' "$root/gradle/bom/build.gradle.kts" | grep -oE 'libs\.versions\.[A-Za-z0-9]+' | sed 's/^libs\.versions\.//' \
+grep -B1 'because("CVE' "$root/gradle/bom/build.gradle.kts" | grep -v 'because(' \
+  | grep -oE 'libs\.versions\.[A-Za-z0-9]+' | sed 's/^libs\.versions\.//' \
   | sort -u > "$work/bom-keys.txt"
 [[ -s "$work/bom-keys.txt" ]] || fail 'gradle/bom/build.gradle.kts must declare at least one CVE floor'
 missing=$(comm -23 "$work/bom-keys.txt" <(sort -u "$work/keys.txt"))
