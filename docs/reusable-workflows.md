@@ -32,7 +32,10 @@ types and defaults are described in the workflow files themselves (every input h
 
 ## backend-ci.yml
 
-Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`).
+Builds a Gradle backend on the JDK 27 toolchain and runs `gradle-task` (default `build`). The test,
+test-result and Checkstyle reports of every module go into the `backend-test-reports-<run id>` artifact
+(seven days). When the job fails, it annotates each failed test and Checkstyle violation at its file
+and line (ten at most), and the job summary lists all of them with Gradle's "What went wrong".
 
 - Permissions: `contents: read`, `packages: read`.
 - Secret `gpr_token` (optional): a classic PAT with `read:packages`. Without it the caller's
@@ -57,7 +60,8 @@ jobs:
 Installs with `npm ci`, runs the version guard, lint, typecheck, test and build, and optionally the
 Playwright tests, whose report and traces it uploads as the artifact `playwright-report-<run id>`. With
 `strict: true` the guard and the scripts `lint`, `typecheck`, `test`, `build` and `format:check` are
-required, and `format:check` runs before lint. A strict caller whose `package.json` configures
+required, and `format:check` runs before lint. When lint, typecheck, test or build fails, an
+annotation and the job summary name that script. A strict caller whose `package.json` configures
 `platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.

@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `backend-ci.yml` uploads the test and Checkstyle reports of every module, not only the root's, and a
+  failed job annotates each failed test and Checkstyle violation at its line and summarises them with
+  Gradle's "What went wrong". `frontend-ci.yml` names the script that failed. A multi-module consumer
+  can drop the block that moved its reports into the root build directory.
 - `scripts/preview-on-consumer.sh <consumer>` runs an unreleased Platform on a real consumer: a
   `-canary` version of the four modules in a temporary repository, the consumer's pins rewritten in a
   throwaway worktree, and Gradle on the fast lane (`docs/local-development.md`).

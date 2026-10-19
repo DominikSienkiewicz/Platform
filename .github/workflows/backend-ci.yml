@@ -73,22 +73,109 @@ jobs:
 
       # GITHUB_ACTOR + GITHUB_TOKEN włączają w settings.gradle.kts repo GitHub Packages.
       # Lokalnie konsument może dołożyć jawne -PplatformRepository (ADR-0003); tu działa GitHub Packages.
+      # Wyjście Gradle także do pliku: sekcję „What went wrong” (bramki Platform, kompilacja) powtarza digest niżej.
       - name: ./gradlew ${{ inputs.gradle-task }}
         run: |
           read -r -a gradle_tasks <<< "$GRADLE_TASK"
-          ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace
+          ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "$RUNNER_TEMP/gradle-output.log"
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
 
+      # Raporty WSZYSTKICH modułów (globy), nie tylko roota: konsument wielomodułowy nie musi ich przenosić.
       - name: Upload test reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-test-reports-${{ github.run_id }}
           path: |
-            ${{ inputs.working-directory }}/build/reports/tests/
-            ${{ inputs.working-directory }}/build/test-results/
+            ${{ inputs.working-directory }}/**/build/reports/tests/
+            ${{ inputs.working-directory }}/**/build/test-results/
+            ${{ inputs.working-directory }}/**/build/reports/checkstyle/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Zwięzły obraz porażki bez pobierania artefaktu (widać go w `gh run view`): nieudane testy i naruszenia
+      # Checkstyle ze wszystkich modułów jako adnotacje (z limitem poniżej progu GitHuba) i tabela w podsumowaniu
+      # joba, plus sekcja „What went wrong” Gradle. Tylko python3 z runnera; blok testuje templates/tests/ci-digest.test.sh.
+      - name: Summarise the failures
+        if: ${{ failure() }}
+        env:
+          GRADLE_OUTPUT: ${{ runner.temp }}/gradle-output.log
+        run: |
+          python3 - <<'PY'
+          # >>> ci-digest
+          import glob, os, re
+          import xml.etree.ElementTree as ET
+
+          LIMIT = 10
+          workspace = os.environ.get("GITHUB_WORKSPACE", os.getcwd())
+          rows, annotations = [], []
+
+          def relative(path):
+              return os.path.relpath(os.path.realpath(path), os.path.realpath(workspace))
+
+          def first_line(text):
+              return (text or "").strip().splitlines()[0] if (text or "").strip() else ""
+
+          def escape(text):
+              return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+          def source_of(classname, trace):
+              simple = classname.split(".")[-1].split("$")[0]
+              stem = classname.split("$")[0].replace(".", "/")
+              for path in glob.glob(f"**/src/*/*/{stem}.*", recursive=True):
+                  line = re.search(rf"\({re.escape(simple)}\.\w+:(\d+)\)", trace or "")
+                  return relative(path), line.group(1) if line else None
+              return None, None
+
+          for report in sorted(glob.glob("**/build/test-results/**/*.xml", recursive=True)):
+              for case in ET.parse(report).getroot().iter("testcase"):
+                  problem = case.find("failure") if case.find("failure") is not None else case.find("error")
+                  if problem is None:
+                      continue
+                  test = f"{case.get('classname')}.{case.get('name')}"
+                  message = first_line(problem.get("message")) or first_line(problem.text)
+                  path, line = source_of(case.get("classname", ""), problem.text)
+                  where = f"{path}:{line}" if path and line else path or relative(report)
+                  rows.append((test, message, where))
+                  annotations.append((path, line, f"Test failed: {test}", message))
+
+          for report in sorted(glob.glob("**/build/reports/checkstyle/*.xml", recursive=True)):
+              for file in ET.parse(report).getroot().iter("file"):
+                  for error in file.iter("error"):
+                      path, line = relative(file.get("name")), error.get("line")
+                      rule = (error.get("source") or "").split(".")[-1].removesuffix("Check")
+                      rows.append((f"Checkstyle {rule}", error.get("message", ""), f"{path}:{line}"))
+                      annotations.append((path, line, f"Checkstyle {rule}", error.get("message", "")))
+
+          gradle_output = os.environ.get("GRADLE_OUTPUT", "")
+          wrong = []
+          if os.path.isfile(gradle_output):
+              text = open(gradle_output, encoding="utf-8", errors="replace").read()
+              for block in re.findall(r"\* What went wrong:\n(.*?)(?:\n\* Try:|\Z)", text, re.S):
+                  wrong.append(block.strip())
+
+          for path, line, title, message in annotations[:LIMIT]:
+              location = f"file={path}," if path else ""
+              location += f"line={line}," if path and line else ""
+              print(f"::error {location}title={escape(title)}::{escape(message)}")
+          if len(annotations) > LIMIT:
+              print(f"::error title=More failures::{len(annotations) - LIMIT} more; see the job summary and the test reports artifact")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as out:
+                  out.write(f"## Backend CI failures\n\n")
+                  if rows:
+                      out.write("| Failure | Message | Where |\n|---|---|---|\n")
+                      for test, message, where in rows:
+                          cell = message.replace("|", "\\|")
+                          out.write(f"| `{test}` | {cell} | `{where}` |\n")
+                  for block in wrong:
+                      out.write(f"\n**What went wrong**\n\n```\n{block}\n```\n")
+                  if not rows and not wrong:
+                      out.write("No test or Checkstyle report and no Gradle failure description; read the step log.\n")
+          # <<< ci-digest
+          PY
