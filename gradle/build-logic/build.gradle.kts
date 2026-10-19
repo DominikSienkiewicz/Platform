@@ -169,6 +169,14 @@ publishing {
 	}
 }
 
+// Repozytorium Maven bez poświadczeń dołączane do GitHub Release (scripts/release-assets.sh, N-SHOW-9).
+providers.gradleProperty("platformBundleRepository").orNull?.let { repository ->
+	publishing.repositories.maven {
+		name = "Bundle"
+		url = uri(repository)
+	}
+}
+
 val functionalTestRepository = layout.buildDirectory.dir("functional-test-repository")
 publishing.repositories.maven {
 	name = "FunctionalTest"

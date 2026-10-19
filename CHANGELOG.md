@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- Every GitHub Release carries the release as attested files that need no credentials:
+  `platform-maven-repo-X.Y.Z.zip` with all four Maven modules, the npm tarballs and `SHA256SUMS`.
+  `release.yml` builds the `spring-app` starter from the zip alone, without a token, and the README
+  shows how (`-PplatformRepository=file://…`).
 - `platform-bump` verifies the attestation of the package it downloads before it uses it, for targets
   from 1.6.0 on, and stops with nothing changed when it does not verify (`--skip-provenance "<reason>"`
   overrides it; without `gh` it warns).

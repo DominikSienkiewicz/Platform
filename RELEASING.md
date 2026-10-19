@@ -196,6 +196,12 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    test-fixtures and security-starter; every public npm package installs at the version and ships the
    files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
    lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
+8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release
+   (`scripts/release-assets.sh`): `platform-maven-repo-X.Y.Z.zip`, a Maven repository of the four
+   modules published to a local directory, the npm tarballs packed from the registry, and
+   `SHA256SUMS`, all attested. **`verify-bundle`** then builds the `spring-app` starter from the zip
+   alone, with an empty Gradle home and no `GITHUB_TOKEN`
+   ([README](README.md#try-it-without-credentials)).
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.

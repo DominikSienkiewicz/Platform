@@ -50,7 +50,7 @@ own schedule and rolls back by pinning an older version.
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
-| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`), `verify-consumable.sh` (the release resolves as a consumer resolves it), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
+| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`), `verify-consumable.sh` (the release resolves as a consumer resolves it), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does: that
@@ -160,6 +160,32 @@ Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seni
 and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
 they keep Java 25 bytecode. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
+
+### Try it without credentials
+
+GitHub Packages refuses anonymous reads, so resolving Platform from it needs a token even though the
+repository is public. Every GitHub Release from 1.6.0 on therefore carries the release as files:
+`platform-maven-repo-X.Y.Z.zip` (a Maven repository with all four modules), the npm tarballs and
+`SHA256SUMS`, all attested. Build a starter from them without a token:
+
+```bash
+gh release download vX.Y.Z --repo DominikSienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
+```
+
+```bash
+sha256sum --check --ignore-missing SHA256SUMS && unzip -q platform-maven-repo-X.Y.Z.zip
+```
+
+```bash
+cp -R templates/jvm/java-library /tmp/try-platform && sed -i.bak 's/^platformVersion=.*/platformVersion=X.Y.Z/' /tmp/try-platform/gradle.properties
+```
+
+```bash
+(cd /tmp/try-platform && ./gradlew build -PplatformRepository="file://$PWD/platform-maven-repo")
+```
+
+`release.yml` proves this on every release: its `verify-bundle` job builds the `spring-app` starter from the
+zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
