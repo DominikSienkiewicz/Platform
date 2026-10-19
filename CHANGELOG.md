@@ -17,6 +17,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+- `templates/Dockerfile.backend` declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
+  `backend/Dockerfile`, then delete the backend's `healthcheck:` in the compose files, which replaces the
+  image's: BookOfStyling only checks that the port is open, and SkillSprintPlus runs `curl`, which
+  `sapmachine:27-jre` does not contain, so its backend never becomes healthy. Drop a compose-level
+  `JAVA_TOOL_OPTIONS` unless it means to replace both flags (manual,
+  [consuming.md](docs/consuming.md#runtime-image)).
 - `AbstractLiquibaseChangelogTest` gains a second test: every file in `db/changelog/changes/` is named
   `NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master, because
   `deploy.yml` tags the migrate image with the highest prefix there. Today's consumer changelogs pass; a
@@ -84,6 +90,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/Dockerfile.backend`: a `HEALTHCHECK` on `/actuator/health/liveness` through bash's
+  `/dev/tcp`, falling back to `/actuator/health` while the probes are off, and
+  `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"`.
+  `templates/tests/dockerfile-backend.test.sh` runs the probe against a stub HTTP server.
 - `PlatformSharedPostgresContainer` in `platform-test-fixtures`: one fsync-off PostgreSQL on tmpfs for the
   whole JVM, shared by every cached Spring context through a `DynamicPropertyRegistrar` and reusable
   locally with `testcontainers.reuse.enable=true`. It is not a bean, because Spring Boot stops a container

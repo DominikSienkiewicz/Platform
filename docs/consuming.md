@@ -259,6 +259,24 @@ build without a Dockerfile, a non-JVM image or an image taken from a build argum
 with a log line. A repository-local test that compares the class-file version with the
 Dockerfile is redundant once the consumer pins a Platform release that runs this gate.
 
+The template also declares how the container reports health and sizes its heap:
+
+- `HEALTHCHECK` sends `GET /actuator/health/liveness` through bash's `/dev/tcp`, because the image has
+  neither curl nor wget, and treats only HTTP 200 as healthy. When the liveness group does not exist
+  (404, `management.endpoint.health.probes.enabled` is off) it falls back to `/actuator/health`. The port
+  is `MANAGEMENT_SERVER_PORT`, then `SERVER_PORT`, then 8080; the endpoint must answer without
+  authentication, as the security starter's default `permitted-paths` allow. The application gets 60 s
+  to start; after that, six failed probes 10 s apart mark the container unhealthy.
+  [`deploy-remote.sh`](../scripts/deploy-remote.sh) waits for `healthy` only when a container has a
+  healthcheck, and a `healthcheck:` in the compose file replaces this one, so delete the compose-level
+  check of the backend service.
+- `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"` sizes the heap from the
+  container's memory limit and ends the process on `OutOfMemoryError`, so the restart policy starts a
+  fresh one. A compose `environment:` entry replaces the whole variable, not one flag.
+
+[`templates/tests/dockerfile-backend.test.sh`](../templates/tests/dockerfile-backend.test.sh) runs the
+probe from the Dockerfile against a stub HTTP server for each of these cases.
+
 ## Coverage threshold
 
 `check` runs `jacocoTestCoverageVerification` on the coverage of `test` and `integrationTest`

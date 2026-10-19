@@ -21,7 +21,7 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `gitignore/root.gitignore` | OS, IDE, env files, `.secrets.local`, logs | `<repo>/.gitignore` |
 | `gitignore/backend.gitignore` | Java and Gradle, IntelliJ (`out/`) and Buildship (`bin/`) output | `<repo>/backend/.gitignore` |
 | `gitignore/frontend.gitignore` | Next.js, Node, Playwright | `<repo>/frontend/.gitignore` |
-| `Dockerfile.backend` | runtime-only image (the `bootJar`) on `sapmachine:27-jre`; why, and when to move back to Temurin, is in [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` |
+| `Dockerfile.backend` | runtime-only image (the `bootJar`) on `sapmachine:27-jre`, with a liveness `HEALTHCHECK` that needs no curl and `JAVA_TOOL_OPTIONS` sized from the container limit ([consuming.md](../docs/consuming.md#runtime-image)); why SapMachine, and when to move back to Temurin, is in [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` |
 | `Dockerfile.frontend` | Next.js standalone image on `node:24-slim`: `npm ci --ignore-scripts` with the token as the BuildKit secret `github_token` only, a non-root runner and `server.js`; needs the standalone output of `frontend/next.config.ts` | `<repo>/frontend/Dockerfile` |
 | `frontend/next.config.ts` | `output: "standalone"`, which `Dockerfile.frontend` copies | `<repo>/frontend/next.config.ts` |
 | `platform-bump.sh` | **stub** that runs the `platform-bump` bin of `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); the bump logic lives in the npm package, so the stub cannot drift. Needs `@dominiksienkiewicz/versions` 1.3.8 or newer | `<repo>/scripts/platform-bump.sh` |
