@@ -249,6 +249,13 @@ tasks.named<Test>("test") {
 	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog)
 	val templates = layout.projectDirectory.dir("../../templates/jvm")
 	inputs.dir(templates)
+	// GeneratedConsumerFunctionalTest renderuje backend generatorem, który kopiuje też te pliki templates/.
+	inputs.file(layout.projectDirectory.file("../../scripts/new-consumer.sh"))
+	inputs.dir(layout.projectDirectory.dir("../../templates/gitignore"))
+	inputs.files(
+		listOf(".editorconfig", ".sdkmanrc", "platform-bump.sh", "merge.sh", "agent-gradle.sh", "worktree-new.sh", "worktree-status.sh")
+			.map { layout.projectDirectory.file("../../templates/$it") },
+	)
 	inputs.file(layout.projectDirectory.file("../catalog/libs.versions.toml"))
 	inputs.file(layout.projectDirectory.file("../catalog/build.gradle.kts"))
 	systemProperty("platform.templates", templates.asFile.absolutePath)

@@ -497,6 +497,58 @@ jobs:
           fi
           # <<< github-release-notes
 
+  # Publiczne repo przykładowe (N-DX-3): po każdym wydaniu platform-example powstaje od nowa z kanonu wydania
+  # (scripts/render-example.sh). Włącza je sekret PLATFORM_EXAMPLE_TOKEN — fine-grained PAT z contents: write
+  # tylko na <owner>/platform-example; bez niego job kończy się notką. Repo zakłada właściciel.
+  example:
+    needs: [version, github-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    env:
+      V: ${{ needs.version.outputs.version }}
+      EXAMPLE_TOKEN: ${{ secrets.PLATFORM_EXAMPLE_TOKEN }}
+      OWNER: ${{ github.repository_owner }}
+    steps:
+      - name: Skip without the example token
+        if: ${{ env.EXAMPLE_TOKEN == '' }}
+        run: echo "::notice::PLATFORM_EXAMPLE_TOKEN is not set, so platform-example is not regenerated."
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: ${{ env.EXAMPLE_TOKEN != '' }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        if: ${{ env.EXAMPLE_TOKEN != '' }}
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@dominiksienkiewicz"
+      - name: Render platform-example from the release
+        if: ${{ env.EXAMPLE_TOKEN != '' }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/render-example.sh "$V" "$RUNNER_TEMP/example"
+      - name: Replace the contents of platform-example
+        if: ${{ env.EXAMPLE_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          target="$RUNNER_TEMP/platform-example"
+          git clone --quiet --depth 1 "https://x-access-token:${EXAMPLE_TOKEN}@github.com/${OWNER}/platform-example.git" "$target"
+          find "$target" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R "$RUNNER_TEMP/example/." "$target/"
+          cd "$target"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::notice::platform-example already matches Platform v$V"
+            exit 0
+          fi
+          git commit --quiet -m "chore: regenerate from Platform v$V"
+          git push --quiet origin HEAD
+
   # Brak auto-prune: przy deliberate versioning + exact pin konsumenta przycięcie mogłoby skasować
   # wersję, którą ktoś pinuje. Storage Packages jest współdzielony z Actions, ale przy tej skali
   # (KB–MB) to nieistotne. Sprzątanie = świadome, ręczne: workflow "Cleanup old package versions".

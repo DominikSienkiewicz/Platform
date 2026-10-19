@@ -24,14 +24,21 @@ To start a new repository, render it from the canon instead of copying the piece
 Platform checkout:
 
 ```bash
-scripts/new-consumer.sh --name order-service --package pl.example.orders --kind spring-app --out ../order-service
+scripts/new-consumer.sh --name order-service --package pl.example.orders --kind spring-app --frontend next --out ../order-service
 ```
+
+Then provide the credentials: `GPR_TOKEN` as a repository secret for CI, and `gpr.user`/`gpr.key` and
+`GITHUB_TOKEN` locally ([Prerequisites](#prerequisites)); run `npm install` once in `frontend/` and commit
+the `package-lock.json` it writes. Once the public `DominikSienkiewicz/platform-example` repository exists,
+every release regenerates it from this command ([RELEASING.md](../RELEASING.md#what-releaseyml-does)).
 
 It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
 `platformVersion=` pin), a `ci.yml` caller of `backend-ci.yml` at the exact tag with `packages: read`
 and an explicit `gpr_token`, the scripts of `templates/` and the root files. `--kind java-library` gives
-a plain library, `--platform-version X.Y.Z` another release. It creates no git repository and no
-GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
+a plain library, `--platform-version X.Y.Z` another release. `--frontend next` adds `frontend/`: a
+Next.js app in the `src/` layout whose `package.json` pins every dependency at the canon and every
+`@dominiksienkiewicz/*` package at the release, with the strict scripts, `.npmrc`, the configs below, and a
+`frontend-ci.yml` caller with `strict: true`. It creates no git repository and no GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
 repository.
 
 Backend, for a new repository started from a template:

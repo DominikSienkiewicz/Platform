@@ -69,6 +69,9 @@ gpr.key=<classic PAT with read:packages>       # add write:packages only to publ
 export GITHUB_TOKEN=<classic PAT with read:packages>
 
 # C) Consumer repositories need a GPR_TOKEN secret (classic PAT with read:packages) for CI.
+
+# D) Optional: the public example repository. Create <owner>/platform-example, then give Platform the
+#    PLATFORM_EXAMPLE_TOKEN secret, a fine-grained PAT with contents: write on that repository only.
 ```
 
 ## Repository settings
@@ -210,8 +213,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
    leaves an existing Release alone.
 6. **`verify-published`**, after both publish jobs, fails unless every artifact carries the
-   version: the main build-logic artifact, the marker of every convention plugin, the catalog,
-   test-fixtures, security-starter and every npm package not marked `private`. The publish jobs
+   version: the main build-logic artifact, the marker of every convention plugin, the package of every
+   module in `gradle/maven-modules.txt` and every npm package not marked `private`. The publish jobs
    skip versions that already exist, so this is the one place that proves the release is complete.
 7. **`verify-consumable`**, after `verify-published`, resolves the release the way a consumer does,
    from GitHub Packages with an empty Gradle home and no `-PplatformRepository`
@@ -221,11 +224,15 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
    lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
 8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release
-   (`scripts/release-assets.sh`): `platform-maven-repo-X.Y.Z.zip`, a Maven repository of the four
-   modules published to a local directory, the npm tarballs packed from the registry, and
+   (`scripts/release-assets.sh`): `platform-maven-repo-X.Y.Z.zip`, a Maven repository of every module
+   in `gradle/maven-modules.txt` published to a local directory, the npm tarballs packed from the registry, and
    `SHA256SUMS`, all attested. **`verify-bundle`** then builds the `spring-app` starter from the zip
    alone, with an empty Gradle home and no `GITHUB_TOKEN`
    ([README](README.md#try-it-without-credentials)).
+9. **`example`**, after `github-release`, regenerates the public `platform-example` repository from the
+   release with `scripts/render-example.sh` (`--kind spring-app --frontend next`, plus the frontend
+   lockfile) and commits the difference. Without the `PLATFORM_EXAMPLE_TOKEN` secret it only leaves a
+   notice.
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.

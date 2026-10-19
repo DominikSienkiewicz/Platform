@@ -96,6 +96,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `scripts/new-consumer.sh --frontend next` renders a strict Next.js frontend (canon versions, the Platform
+  configs, `.npmrc`, `Dockerfile.frontend` and a `frontend-ci.yml` caller); a TestKit case builds `lint test`
+  on both generated backends. `scripts/render-example.sh` and the `example` job of `release.yml` regenerate a
+  public `platform-example` repository after each release once the `PLATFORM_EXAMPLE_TOKEN` secret exists.
 - `scripts/canary.sh` previews the unreleased Platform on every consumer of `scripts/consumers.txt`
   locally (backend fast lane and the frontend's `platform-versions-check` on the new canon) and records
   the result for `HEAD`; `release.sh` refuses a commit without a green record unless `--skip-canary
