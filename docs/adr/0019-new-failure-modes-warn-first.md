@@ -26,3 +26,10 @@ gate that fails at once turns a routine bump into an unplanned fix.
 ## Revisit when
 
 None: this is how Platform introduces gates.
+
+## Amended (2026-10-19)
+
+The container guard of the test fixtures enters its fail phase in the first MINOR after 1.6.0, which shipped
+the warning: a platform container under the unit `test` task throws by default. `platform.test.guard=warn`
+keeps the warning for a consumer that needs more time, and any other value fails instead of turning the guard
+off ([reference](../reference.md#test-fixtures)). The deprecation channel stays in its warning phase.
