@@ -32,7 +32,7 @@ jobs:
   # w całym koncie). Sekwencyjnie w jednym runnerze = jeden narzut zamiast trzech. `fail-fast: false`
   # zachowane przez `|| fail=1` + `exit $fail` — wszystkie moduły próbują się zbudować, raport zbiorczy.
   gradle:
-    name: Gradle — build-logic + catalog + test-fixtures + security-starter
+    name: Gradle — every module of gradle/maven-modules.txt
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -57,11 +57,11 @@ jobs:
         run: |
           set -uo pipefail
           fail=0
-          for m in build-logic catalog test-fixtures security-starter; do
+          while read -r m; do
             echo "::group::gradle/$m — build"
-            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon build ) || fail=1
+            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon build ) < /dev/null || fail=1
             echo "::endgroup::"
-          done
+          done < <(awk '!/^#/ && NF { print $1 }' gradle/maven-modules.txt)
           exit $fail
 
   # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).

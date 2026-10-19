@@ -1,0 +1,9 @@
+# Moduły Maven Platform w kolejności publikacji i pakiet, którego wersja w GitHub Packages oznacza dokończony
+# publish modułu (release.yml, version_exists). Czytają go ci.yml, release.yml, scripts/release-assets.sh,
+# scripts/preview-on-consumer.sh i scripts/write-verification-metadata.sh; templates/tests/maven-modules.test.sh
+# pilnuje, że to dokładnie moduły gradle/*/ z maven-publish. build-logic kluczuje się markerem settings-conventions.
+build-logic seniordev.settings-conventions.seniordev.settings-conventions.gradle.plugin
+catalog pl.seniordeveloper.platform-catalog
+bom pl.seniordeveloper.platform-bom
+test-fixtures pl.seniordeveloper.platform-test-fixtures
+security-starter pl.seniordeveloper.platform-security-starter

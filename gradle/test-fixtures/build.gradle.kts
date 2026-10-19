@@ -33,10 +33,8 @@ dependencyLocking {
 dependencies {
 	// Natywne platformy Gradle zamiast io.spring.dependency-management — dzięki temu publikowane
 	// Gradle Module Metadata jest POPRAWNE (zależności bez wersji są pokryte referencją do platformy,
-	// a BOM-y eksportują się tranzytywnie do konsumenta). Wersje = lustro gradle/catalog.
-	api(platform(libs.spring.boot.bom))
-	api(platform(libs.spring.modulith.bom))
-	api(platform(libs.junit.bom))
+	// a BOM-y eksportują się tranzytywnie do konsumenta). BOM-y i podłogi CVE: platform-bom (gradle/bom).
+	api(platform(libs.platform.bom))
 
 	api("org.springframework.boot:spring-boot-testcontainers")
 	api("org.springframework.boot:spring-boot-test")               // @TestConfiguration

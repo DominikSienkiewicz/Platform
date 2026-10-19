@@ -2,7 +2,7 @@ name: Release (version tag)
 
 # Świadome wydanie: push taga vX.Y.Z (albo ręczny workflow_dispatch) publikuje platformVersion
 # z gradle/build-logic/gradle.properties — bez auto-bumpu i bez auto-prune:
-#   - Maven: build-logic (+ markery pluginów), catalog, test-fixtures, security-starter,
+#   - Maven: moduły z gradle/maven-modules.txt (build-logic + markery pluginów, catalog, bom, test-fixtures, security-starter),
 #   - npm: każda paczka z frontend/packages/* bez "private": true.
 # Procedura i idempotencja per rejestr: RELEASING.md. Konsumenci trzymają DOKŁADNE piny.
 on:
@@ -104,7 +104,7 @@ jobs:
           distribution: temurin
           java-version: "25"
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
-      - name: Publish Maven (build-logic, catalog, test-fixtures, security-starter)
+      - name: Publish Maven (gradle/maven-modules.txt)
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -124,10 +124,13 @@ jobs:
           # pluginów. Sprawdzanie GŁÓWNEGO dawało fałszywe "done", gdy markery padły (partial → skip → markery nigdy
           # nie dojeżdżały; główny był na 1.5.1/1.5.2/1.5.3, marker nie). Kluczujemy build-logic po MARKERZE
           # settings-conventions (load-bearing dla konsumenta) — brak = republikuj / fail głośno, nie cichy skip.
-          declare -A PKG=( [build-logic]="seniordev.settings-conventions.seniordev.settings-conventions.gradle.plugin" \
-                           [catalog]="pl.seniordeveloper.platform-catalog" \
-                           [test-fixtures]="pl.seniordeveloper.platform-test-fixtures" \
-                           [security-starter]="pl.seniordeveloper.platform-security-starter" )
+          # Mapowanie i kolejność: gradle/maven-modules.txt (druga kolumna).
+          declare -A PKG=()
+          modules=()
+          while read -r module package; do
+            PKG[$module]=$package
+            modules+=("$module")
+          done < <(awk '!/^#/ && NF' gradle/maven-modules.txt)
           # Kod wyjścia zamiast parsowania wyjścia: 0 = wersja opublikowana. Brak pakietu (404) i każdy
           # błąd API = 1, czyli publikuj — jak wcześniej. Lista nazw najpierw do zmiennej: przy
           # `gh … | grep -q` z pipefail grep kończy po pierwszym trafieniu, gh dostaje SIGPIPE i
@@ -140,7 +143,7 @@ jobs:
             grep -qxF "$V" <<<"$names"
           }
           # <<< version-exists
-          for m in build-logic catalog test-fixtures security-starter; do
+          for m in "${modules[@]}"; do
             if version_exists "${PKG[$m]}"; then
               echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
               continue
@@ -250,8 +253,8 @@ jobs:
 
   # Bijekcja w drugą stronę: wydanie jest zielone dopiero, gdy KAŻDY publikowany artefakt ma $V w registry.
   # Joby publikujące pomijają wersje, które już istnieją (idempotencja), więc tylko tu widać, że komplet jest.
-  # Pakiety Maven: główny artefakt build-logic i marker każdego pluginu (z nazw plików źródeł), catalog,
-  # test-fixtures, security-starter; npm: każda paczka bez "private": true. Blok testuje
+  # Pakiety Maven: główny artefakt build-logic i marker każdego pluginu (z nazw plików źródeł), catalog
+  # i pakiet każdego modułu z gradle/maven-modules.txt; npm: każda paczka bez "private": true. Blok testuje
   # templates/tests/release-verify-published.test.sh.
   verify-published:
     needs: [version, gradle, npm]
@@ -284,8 +287,12 @@ jobs:
               || return 1
             grep -qxF "$V" <<<"$names"
           }
-          maven=(pl.seniordeveloper.gradle.build-logic pl.seniordeveloper.platform-catalog
-                 pl.seniordeveloper.platform-test-fixtures pl.seniordeveloper.platform-security-starter)
+          maven=(pl.seniordeveloper.gradle.build-logic pl.seniordeveloper.platform-catalog)
+          if [ -f gradle/maven-modules.txt ]; then
+            while read -r module package; do
+              [ "$module" = build-logic ] || maven+=("$package")
+            done < <(awk '!/^#/ && NF' gradle/maven-modules.txt)
+          fi
           for source in gradle/build-logic/src/main/kotlin/seniordev.*.gradle.kts; do
             id="${source##*/}"; id="${id%.gradle.kts}"; id="${id%.settings}"
             maven+=("$id.$id.gradle.plugin")

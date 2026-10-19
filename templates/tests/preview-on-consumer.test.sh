@@ -44,8 +44,9 @@ IFS=. read -r major minor patch <<<"$current"
 preview="$major.$minor.$((patch + 1))-canary.$sha"
 
 bash "$root/scripts/preview-on-consumer.sh" "$consumer" > "$tmp/out" 2>&1 || fail 'a passing consumer must exit 0'
-grep -qF "==> Platform $preview: publishing the four modules" "$tmp/out" || fail "the preview version must be $preview"
-for module in build-logic catalog test-fixtures security-starter; do
+modules=$(awk '!/^#/ && NF { print $1 }' "$root/gradle/maven-modules.txt")
+grep -qF "==> Platform $preview: publishing $(wc -w <<<"$modules" | tr -d ' ') Maven modules" "$tmp/out" || fail "the preview version must be $preview"
+for module in $modules; do
   grep -qE "/gradle/$module \| --no-daemon -PplatformVersion=$preview -PplatformBundleRepository=.* publishAllPublicationsToBundleRepository$" "$FAKE_LOG" \
     || { cat "$FAKE_LOG"; fail "gradle/$module must be published at the preview version"; }
 done

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # release-assets.sh <version> <out-dir> — pliki GitHub Release do użycia bez poświadczeń (N-SHOW-9): GitHub Packages
 # odrzuca anonimowe odczyty, więc bez PAT-a nie da się zbudować nawet startera. Do <out-dir> trafia:
-#   platform-maven-repo-<version>.zip — repozytorium Maven czterech modułów (publikacja do lokalnego katalogu,
+#   platform-maven-repo-<version>.zip — repozytorium Maven modułów z gradle/maven-modules.txt (publikacja do katalogu,
 #                                       -PplatformBundleRepository), użycie: -PplatformRepository=file://…;
 #   tarballe npm każdej publicznej paczki — `npm pack` z rejestru, czyli bajty, które atestował job npm;
 #   SHA256SUMS wszystkich plików.
@@ -17,7 +17,7 @@ mkdir -p "$out"
 out=$(cd "$out" && pwd)
 
 bundle="$work/platform-maven-repo"
-for module in build-logic catalog test-fixtures security-starter; do
+for module in $(awk '!/^#/ && NF { print $1 }' "$root/gradle/maven-modules.txt"); do
   echo "== bundle gradle/$module ($version) =="
   (cd "$root/gradle/$module" && "$gradlew" --no-daemon -PplatformVersion="$version" \
     -PplatformBundleRepository="$bundle" publishAllPublicationsToBundleRepository)

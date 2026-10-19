@@ -67,6 +67,7 @@ wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", ve
 openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref = "openrewrite" }
 
 # --- Artefakty platformy (pin = dynamiczny `platform`) ---
+platform-bom = { group = "pl.seniordeveloper", name = "platform-bom", version.ref = "platform" }
 platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
 platform-security-starter = { group = "pl.seniordeveloper", name = "platform-security-starter", version.ref = "platform" }
 

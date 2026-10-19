@@ -44,8 +44,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "==> Platform $preview: publishing the four modules to $staging"
-for module in build-logic catalog test-fixtures security-starter; do
+modules=$(awk '!/^#/ && NF { print $1 }' "$root/gradle/maven-modules.txt")
+echo "==> Platform $preview: publishing $(wc -w <<<"$modules" | tr -d ' ') Maven modules to $staging"
+for module in $modules; do
   (cd "$root/gradle/$module" && "$gradlew" --no-daemon -PplatformVersion="$preview" \
     -PplatformBundleRepository="$staging" publishAllPublicationsToBundleRepository)
 done
