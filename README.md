@@ -227,7 +227,10 @@ is not installed; the reusable CI workflows install it with `setup-java` instead
 Consumers run Gradle 9.6.1 or newer: TestKit builds a consumer on that minimum and on the 9.8.1 of
 Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
 Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages, which declare the
-Node range in `engines`. Earlier releases are in the [compatibility matrix](docs/compatibility.md).
+Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases
+are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a
+starter on the current Gradle release candidate and watches for an `eclipse-temurin` image of the
+toolchain; each finding opens or updates one issue.
 
 ## License
 

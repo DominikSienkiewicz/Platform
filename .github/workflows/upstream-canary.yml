@@ -1,0 +1,144 @@
+name: Upstream canary
+
+# Co tydzień (i ręcznie): czy nadchodzące wersje narzędzi zepsują konsumentów, zanim dojdą do nich po GA (N-REL-4).
+# Doradczy: nigdy na push ani PR, nigdy nie blokuje main. Każda noga prowadzi jedno issue (scripts/upsert-issue.sh).
+#   gradle-rc:     starter java-library na bieżącym Gradle RC z lokalnie opublikowaną Platform; bez RC noga się pomija.
+#   runtime-image: czy jest już eclipse-temurin:<java>-jre i czy przechodzi bramkę Grype z container-scan.yml —
+#                  warunek powrotu z sapmachine (docs/versions.md, "Runtime image for the JDK 27 toolchain").
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      gradle-version:
+        description: "Gradle version to try instead of the current release candidate."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  gradle-rc:
+    name: Gradle release candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Find the release candidate
+        id: rc
+        env:
+          REQUESTED: ${{ inputs.gradle-version }}
+        run: |
+          version="$REQUESTED"
+          if [ -z "$version" ]; then
+            version=$(curl -fsSL --proto '=https' https://services.gradle.org/versions/release-candidate | jq -r '.version // empty')
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          [ -n "$version" ] || echo "::notice::There is no Gradle release candidate right now."
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        if: ${{ steps.rc.outputs.version != '' }}
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: "27"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        if: ${{ steps.rc.outputs.version != '' }}
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build the java-library starter on the candidate
+        id: build
+        if: ${{ steps.rc.outputs.version != '' }}
+        env:
+          GRADLE_RC: ${{ steps.rc.outputs.version }}
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.gradle"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "$HOME/.gradle/gradle.properties"
+          repo="$RUNNER_TEMP/platform-repo"
+          for module in build-logic catalog; do
+            (cd "gradle/$module" && ./gradlew --no-daemon -PplatformBundleRepository="$repo" publishAllPublicationsToBundleRepository)
+          done
+          app="$RUNNER_TEMP/java-library"
+          cp -R templates/jvm/java-library "$app"
+          cd "$app"
+          ./gradlew --no-daemon wrapper --gradle-version "$GRADLE_RC" -PplatformRepository="file://$repo"
+          ./gradlew --no-daemon build --warning-mode=fail -PplatformRepository="file://$repo"
+      - name: Report the failure
+        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          GRADLE_RC: ${{ steps.rc.outputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "The \`java-library\` starter does not build on Gradle $GRADLE_RC with the Platform of this commit."
+            echo ""
+            echo "Run: $RUN_URL"
+          } > "$RUNNER_TEMP/issue.md"
+          bash scripts/upsert-issue.sh "Upstream canary: Gradle release candidate" "$RUNNER_TEMP/issue.md"
+
+  runtime-image:
+    name: Temurin runtime image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Look for the Temurin image of the toolchain
+        id: image
+        run: |
+          java=$(sed -n -E 's/^java *= *"([0-9]+)".*/\1/p' gradle/catalog/libs.versions.toml)
+          image="eclipse-temurin:$java-jre"
+          current=$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' templates/Dockerfile.backend | tail -1)
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          if [ "$current" = "$image" ]; then
+            echo "::notice::templates/Dockerfile.backend already runs $image."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          elif docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$image does not exist yet; the template stays on $current."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Grype scan with the container-scan gate
+        id: scan
+        if: ${{ steps.image.outputs.present == 'true' }}
+        continue-on-error: true
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ steps.image.outputs.image }}
+          fail-build: true
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
+      - name: Report the result
+        if: ${{ steps.image.outputs.present == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          IMAGE: ${{ steps.image.outputs.image }}
+          SCAN: ${{ steps.scan.outcome }}
+        run: |
+          if [ "$SCAN" != success ]; then
+            echo "::notice::$IMAGE exists but fails the container-scan gate (high, only-fixed); the template stays on SapMachine."
+            exit 0
+          fi
+          {
+            echo "\`$IMAGE\` exists and passes the \`container-scan.yml\` gate (high, only-fixed)."
+            echo ""
+            echo "Move the final \`FROM\` of \`templates/Dockerfile.backend\` back to it, as \`docs/versions.md\` (\"Runtime image for the JDK 27 toolchain\") describes."
+          } > "$RUNNER_TEMP/issue.md"
+          bash scripts/upsert-issue.sh "Upstream canary: $IMAGE is available" "$RUNNER_TEMP/issue.md"

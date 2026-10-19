@@ -226,10 +226,16 @@ jobs:
           done
           exit $fail
 
+  # Dwie nogi: Node 24 (wersja Platform) i 22.13.0 — dolna granica engines.node paczek, którą konsumenci mogą
+  # uruchamiać; bez tej nogi deklarowana granica nigdy nie była wykonywana (N-REL-4).
   frontend:
-    name: Frontend — install + lint + typecheck + test + registry build
+    name: Frontend (Node ${{ matrix.node }}) — install + lint + typecheck + test + registry build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.13.0", "24"]
     defaults:
       run:
         working-directory: frontend
@@ -241,7 +247,7 @@ jobs:
           version: 11.18.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: "24"
+          node-version: ${{ matrix.node }}
       # --ignore-scripts: żadna paczka w monorepo ani w jej drzewie zależności nie wymaga
       # skryptu lifecycle (binaria napi/sharp przychodzą jako optionalDependencies).
       - run: pnpm install --frozen-lockfile --ignore-scripts
@@ -251,3 +257,7 @@ jobs:
       # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
       - name: Build registry (shadcn)
         run: pnpm --filter @dominiksienkiewicz/ui build
+      - name: Record the Node version
+        env:
+          NODE_LEG: ${{ matrix.node }}
+        run: echo "Frontend workspace passed on Node $(node --version) (leg $NODE_LEG)." >> "$GITHUB_STEP_SUMMARY"
