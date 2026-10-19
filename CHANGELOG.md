@@ -582,6 +582,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 
 ### Fixed
 
+- `scorecard.yml` pins `ossf/scorecard-action` v2.4.3 by its commit, `4eaacf0`, instead of the SHA of its
+  annotated tag, `99c09fe`. The runner resolved the tag, but publishing the result failed with "imposter
+  commit … does not belong to ossf/scorecard-action". Platform's own `ci.yml` and `release.yml` pinned
+  `pnpm/action-setup` v6.0.9 the same way and now pin its commit, `0ebf471`. `ci.yml` gains an
+  `action-pins` job: `scripts/check-action-pins.sh` fails when a pinned SHA is not the commit its
+  `# vX.Y.Z` comment points at.
 - `merge.sh` treats `.kotlin/`, the cache the Kotlin Gradle plugin leaves in every module that compiles Kotlin
   (`gradle/build-logic`, a consumer's `buildSrc`), as regenerable build output. A worktree whose only leftover is
   that cache merges, and the cache goes with the worktree; before, the merge stopped with "has local or ignored
