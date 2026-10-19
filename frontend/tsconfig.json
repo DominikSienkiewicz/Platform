@@ -17,6 +17,9 @@
       ],
       "@dominiksienkiewicz/query": [
         "./packages/query/index.d.ts"
+      ],
+      "@dominiksienkiewicz/vitest-config": [
+        "./packages/vitest-config/index.d.ts"
       ]
     }
   },
@@ -31,6 +34,8 @@
     "packages/api-client/type-tests/xsrf-consumer.ts",
     "packages/query/index.d.ts",
     "packages/query/type-tests/consumer.ts",
+    "packages/vitest-config/index.d.ts",
+    "packages/vitest-config/type-tests/consumer.ts",
     "packages/vitest-config/index.js",
     "packages/vitest-config/setup.js",
     "packages/versions/bin/check.mjs",

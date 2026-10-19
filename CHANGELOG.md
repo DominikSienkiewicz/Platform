@@ -719,6 +719,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   postcss-selector-parser, source-map-js and baseline-browser-mapping. All of them are dev tooling (shadcn's MCP
   server, jsdom, ESLint, Next); no manifest changed. braces 3.0.3 has no fixed release and is accepted in
   `frontend/osv-scanner.toml` until 2027-01-19.
+- `@dominiksienkiewicz/vitest-config` ships `index.d.ts` (a `types` field and a `types` export condition), typing
+  `baseConfig` with Vitest's own `ViteUserConfig`. Without declarations a consumer's `vitest.config.ts` failed
+  `tsc --noEmit` and `next build` with TS7016 under the canon's strict options, because `tsc` does not read
+  `.js` files in `node_modules`. `test/consumer-types.test.mjs` unpacks the published tarball into a consumer
+  fixture and type-checks the `vitest.config.ts` that `new-consumer.sh --frontend next` renders. No consumer
+  action: the fix arrives with the bump.
 
 ## [1.5.31] - 2026-10-14
 
