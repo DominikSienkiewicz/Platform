@@ -14,6 +14,7 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `GITHUB_ACTOR`, `GITHUB_TOKEN` | environment | unset | fallback credentials for GitHub Packages, used on CI | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
 | `coverageMinimum` | `gradle.properties` or `-P` | `0.00` | JaCoCo coverage threshold on `check`, a decimal between 0 and 1 | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
+| `platform.javac.werror` | `-P` or `gradle.properties` | `false` | `true` adds `-Werror`: every javac warning fails the compilation, Error Prone's included; a ratchet for a repository that has cleared its warnings | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.deprecations` | `-P` or `gradle.properties` | `warn` | `fail` makes `platformDependencyCheck` fail while a deprecated dependency, property or plugin is in use ([gates](gates.md#plat-depr-001)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `AI_AGENT` | environment | unset | `1` or `true` bounds test resources for coding agents (one fork, 2 GiB heap, four cached Spring contexts) and logs one `Platform agent profile:` line per build; see [agent-profile.md](agent-profile.md) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platformAgentTestForks`, `platformAgentTestHeap`, `springContextCacheSize` | `-P` or `gradle.properties` | the `AI_AGENT` profile, else Gradle's | `maxParallelForks`, `maxHeapSize` and `spring.test.context.cache.maxSize` of every test task; an explicit value applies with or without `AI_AGENT` ([agent-profile.md](agent-profile.md)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
@@ -55,6 +56,7 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | Task or setting | On `check` | Knob | Default |
 |---|---|---|---|
 | Java toolchain | — | `platformToolchainOverride` | Java 27 |
+| javac warnings | — | `platform.javac.werror` | `-Xlint:all` without `processing` and `serial`, as warnings |
 | `spotlessCheck` | yes | none | google-java-format 1.36.1, unused imports removed |
 | `checkstyleMain`, `checkstyleTest` | yes | `@SuppressWarnings("checkstyle:<checkname>")` on a declaration, with the check name in lower case | Platform rules, `maxWarnings = 0` |
 | `jacocoTestReport`, `jacocoTestCoverageVerification` | yes | `coverageMinimum` | 0.00, coverage of `test` and `integrationTest` together |
@@ -76,16 +78,92 @@ Every check task declares an output, so an unchanged second build runs none of t
 `platformQuarantineCheck` runs every time, because an expiry depends on the day.
 Warnings then show when their inputs change, and the reports under `build/reports/platform/` keep them.
 
+## The platform block
+
+`seniordev.java-conventions` and `seniordev.quality-conventions` register one typed extension, `platform`, so the
+IDE completes the knobs and a typo fails the build. Every field is optional; an unset field falls back to the
+Gradle property in the last column, so `gradle.properties` and `-P` keep working. A field is read when its task is
+configured, and setting it afterwards fails instead of being ignored.
+
+```kotlin
+platform {
+    coverage { minimum.set("0.80".toBigDecimal()) }
+    sonar { projectKey.set("DominikSienkiewicz_Orders") }
+    mutation { targetPackages.add("pl.example.orders") }
+    staticAnalysis { failOnBugs.set(true) }
+}
+```
+
+| Field | Effect | Unset |
+|---|---|---|
+| `coverage.minimum` | threshold of `jacocoTestCoverageVerification`, a decimal between 0 and 1 ([PLAT-COV-002](gates.md#plat-cov-002) otherwise) | `coverageMinimum`, then 0.00 |
+| `sonar.projectKey` | the SonarQube Cloud project key of the analysis | `sonarProjectKey`, then `DominikSienkiewicz_<rootProject.name>` |
+| `mutation.targetPackages` | the packages PIT mutates, each with its subpackages | PIT's default, `<group>.*` |
+| `staticAnalysis.failOnBugs` | `true` makes SpotBugs findings fail the build | `false`, report-only ([ADR-0005](adr/0005-spotbugs-report-only.md)) |
+
 ## seniordev.quality-conventions
 
 Source: [`seniordev.quality-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts).
 
 | Task or setting | On `check` | Knob | Default |
 |---|---|---|---|
-| `pitest` | no | `pitest { targetClasses.set(listOf("com.example.*")) }` | the plugin's default, the project's `group` followed by `.*`; PIT 1.30.0, JUnit 5 plugin 1.2.3 |
-| `spotbugsMain`, `spotbugsTest` | yes, report-only | `spotbugs { ignoreFailures.set(false) }` to make findings fail | findings are reported, not failed ([ADR-0005](adr/0005-spotbugs-report-only.md)) |
+| `pitest` | no | `platform { mutation { targetPackages } }`, or `pitest { targetClasses.set(listOf("com.example.*")) }` | the plugin's default, the project's `group` followed by `.*`; PIT 1.30.0, JUnit 5 plugin 1.2.3 |
+| `spotbugsMain`, `spotbugsTest` | yes, report-only | `platform { staticAnalysis { failOnBugs.set(true) } }`, or `spotbugs { ignoreFailures.set(false) }` | findings are reported, not failed ([ADR-0005](adr/0005-spotbugs-report-only.md)) |
 | `cyclonedxBom` | no | none | an SBOM of `runtimeClasspath` only, the input of `security-scan.yml` |
-| `sonar` | no | `sonarProjectKey` | organisation `dominiksienkiewicz`, coverage from `jacocoTestReport` |
+| `sonar` | no | `platform { sonar { projectKey } }`, `sonarProjectKey` | organisation `dominiksienkiewicz`, coverage from `jacocoTestReport`; only in the root project |
+
+SonarQube Cloud analyses a build once, from its root. In a single-module build the root applies this plugin, so
+it also applies `org.sonarqube`. In a multi-module build a module that applies this plugin adds its own JaCoCo
+report to the analysis of the root, which applies `seniordev.sonar-conventions`; without that, no module has a
+`sonar` task.
+
+## seniordev.sonar-conventions
+
+Source: [`seniordev.sonar-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.sonar-conventions.gradle.kts).
+
+For the root project of a multi-module build, next to modules that apply `seniordev.quality-conventions`:
+
+```kotlin
+plugins {
+    base
+    id("seniordev.sonar-conventions")
+}
+```
+
+It applies `org.sonarqube` with the organisation and project key of `seniordev.quality-conventions`, and its one
+`sonar` task waits for `jacocoTestReport` of every module. Applied anywhere but the root, it fails and says so.
+
+## seniordev.nullness-conventions (opt-in)
+
+Source: [`seniordev.nullness-conventions.gradle.kts`](../gradle/build-logic/src/main/kotlin/seniordev.nullness-conventions.gradle.kts).
+
+Error Prone 2.50.0 with NullAway 0.14.2 in JSpecify mode on `compileJava`. NullAway checks only packages marked
+`@NullMarked` (`OnlyNullMarked`), so a repository adopts it one package at a time; it is off for test sources, and
+generated code is excluded. Error Prone's other checks keep their default severity, as warnings;
+`platform.javac.werror=true` makes them errors with the rest. It is a separate plugin because Error Prone hooks
+into javac internals and can lag a new JDK: a toolchain bump must not wait for it in repositories that do not use
+it. `PlatformNullnessFunctionalTest` runs it on the canon toolchain.
+
+```kotlin
+plugins {
+    id("seniordev.java-conventions")
+    id("seniordev.nullness-conventions")
+}
+dependencies {
+    implementation(libs.jspecify) // a Spring 7 application has it already
+}
+```
+
+```java
+// src/main/java/pl/example/orders/package-info.java
+@NullMarked
+package pl.example.orders;
+
+import org.jspecify.annotations.NullMarked;
+```
+
+With Lombok, set `lombok.addLombokGeneratedAnnotation = true` in `lombok.config`, so NullAway skips the
+generated members.
 
 ## seniordev.spring-modulith-conventions
 

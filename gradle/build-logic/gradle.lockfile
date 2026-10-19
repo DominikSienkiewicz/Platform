@@ -52,6 +52,7 @@ io.github.hakky54:sude:2.0.2=precompiledScriptPluginAccessorsGenerationClasspath
 io.github.java-diff-utils:java-diff-utils:4.12=kotlinInternalAbiValidation
 io.spring.gradle:dependency-management-plugin:1.1.7=compileClasspath,precompiledScriptPluginAccessorsGenerationClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 javax.inject:javax.inject:1=precompiledScriptPluginAccessorsGenerationClasspath,runtimeClasspath,testRuntimeClasspath
+net.ltgt.gradle:gradle-errorprone-plugin:5.1.1=compileClasspath,precompiledScriptPluginAccessorsGenerationClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 net.sf.saxon:Saxon-HE:12.9=testCompileClasspath,testRuntimeClasspath
 org.antlr:antlr4-runtime:4.13.2=testCompileClasspath,testRuntimeClasspath
 org.apache.commons:commons-collections4:4.5.0=compileClasspath,precompiledScriptPluginAccessorsGenerationClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath

@@ -15,10 +15,10 @@ platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem 
 gradle = "9.8.1"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
 java = "27"                              # → PlatformVersions: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
 springBoot = "4.1.1"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
-lombok = "1.18.48"                       # → PlatformVersions: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
-tomcat = "11.0.27"                       # → PlatformVersions: ext["tomcat.version"] w spring-modulith-conventions — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
-jacksonBom = "3.1.8"                     # → PlatformVersions: ext["jackson-bom.version"] — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
-jackson2Bom = "2.21.8"                   # → PlatformVersions: ext["jackson-2-bom.version"] — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
+lombok = "1.18.48"                       # → platform-bom: constraint z because, importowany przez spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
+tomcat = "11.0.27"                       # → platform-bom: podłoga CVE (constraint z because) — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
+jacksonBom = "3.1.8"                     # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
+jackson2Bom = "2.21.8"                   # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
 springDependencyManagement = "1.1.7"
 springModulith = "2.1.1"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
 springAi = "2.0.1"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u)
@@ -47,6 +47,12 @@ jsoup = "1.23.2"
 wiremock = "3.13.2"
 sonarqube = "7.3.1.8318"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions
 openrewrite = "8.88.3"                   # Attestate (ADR-0005)
+# seniordev.nullness-conventions (N-CAP-11, opt-in): Error Prone + NullAway w trybie JSpecify. Error Prone wpina się
+# w wewnętrzne API javac, więc bump toolchainu sprawdza TestKit PlatformNullnessFunctionalTest.
+errorprone = "2.50.0"                    # → PlatformVersions: error_prone_core w nullness-conventions
+nullaway = "0.14.2"                      # → PlatformVersions: nullaway w nullness-conventions
+errorpronePlugin = "5.1.1"               # plugin Gradle net.ltgt.errorprone na classpath build-logic
+jspecify = "1.0.0"                       # adnotacje @NullMarked/@Nullable dla modułów spoza Springa (Spring 7 ma je tranzytywnie)
 
 [libraries]
 # --- BOM-y ---
@@ -66,6 +72,9 @@ mapstruct = { group = "org.mapstruct", name = "mapstruct", version.ref = "mapstr
 mapstruct-processor = { group = "org.mapstruct", name = "mapstruct-processor", version.ref = "mapstruct" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", version.ref = "wiremock" }
+jspecify = { group = "org.jspecify", name = "jspecify", version.ref = "jspecify" }
+errorprone-core = { group = "com.google.errorprone", name = "error_prone_core", version.ref = "errorprone" }
+nullaway = { group = "com.uber.nullaway", name = "nullaway", version.ref = "nullaway" }
 openrewrite-bom = { group = "org.openrewrite", name = "rewrite-bom", version.ref = "openrewrite" }
 
 # --- Artefakty platformy (pin = dynamiczny `platform`) ---
@@ -107,8 +116,11 @@ pitest = { id = "info.solidsoft.pitest", version.ref = "pitest" }
 test-retry = { id = "org.gradle.test-retry", version.ref = "testRetry" }
 cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
+errorprone = { id = "net.ltgt.errorprone", version.ref = "errorpronePlugin" }
 # Convention pluginy publikowane z gradle/build-logic (id = nazwa pliku *.gradle.kts). Pin = dynamiczny `platform`.
 conventions-java = { id = "seniordev.java-conventions", version.ref = "platform" }
 conventions-quality = { id = "seniordev.quality-conventions", version.ref = "platform" }
 conventions-spring-modulith = { id = "seniordev.spring-modulith-conventions", version.ref = "platform" }
 conventions-settings = { id = "seniordev.settings-conventions", version.ref = "platform" }
+conventions-sonar = { id = "seniordev.sonar-conventions", version.ref = "platform" }
+conventions-nullness = { id = "seniordev.nullness-conventions", version.ref = "platform" }

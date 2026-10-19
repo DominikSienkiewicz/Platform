@@ -120,7 +120,7 @@ jobs:
           # (Gradle Module Metadata). Efekt = artefakt bez wariantu version-catalog/plugin-marker,
           # czyli "No matching variant" u konsumenta (to zabiło platform-catalog:1.3.4).
           # Mapowanie modeł -> nazwa pakietu Maven używana przez version_exists = sygnał "publish DOKOŃCZONY".
-          # build-logic publikuje 5 artefaktów: główny (pl.seniordeveloper.gradle.build-logic) PIERWSZY + 4 markery
+          # build-logic publikuje 7 artefaktów: główny (pl.seniordeveloper.gradle.build-logic) PIERWSZY + 6 markerów
           # pluginów. Sprawdzanie GŁÓWNEGO dawało fałszywe "done", gdy markery padły (partial → skip → markery nigdy
           # nie dojeżdżały; główny był na 1.5.1/1.5.2/1.5.3, marker nie). Kluczujemy build-logic po MARKERZE
           # settings-conventions (load-bearing dla konsumenta) — brak = republikuj / fail głośno, nie cichy skip.

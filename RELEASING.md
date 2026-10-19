@@ -37,7 +37,7 @@ Every artifact below is published at the same `platformVersion`.
 
 | Source | Artifact | Registry |
 |---|---|---|
-| `gradle/build-logic/` | `pl.seniordeveloper.gradle:build-logic` plus plugin markers for `seniordev.java-conventions`, `seniordev.quality-conventions`, `seniordev.spring-modulith-conventions` and `seniordev.settings-conventions` | GitHub Packages (Maven) |
+| `gradle/build-logic/` | `pl.seniordeveloper.gradle:build-logic` plus plugin markers for `seniordev.java-conventions`, `seniordev.quality-conventions`, `seniordev.spring-modulith-conventions`, `seniordev.sonar-conventions`, `seniordev.nullness-conventions` and `seniordev.settings-conventions` | GitHub Packages (Maven) |
 | `gradle/catalog/` | `pl.seniordeveloper:platform-catalog` | GitHub Packages (Maven) |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) |

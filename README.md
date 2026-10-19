@@ -114,8 +114,10 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 |---|---|
 | `seniordev.settings-conventions` | applied in `settings.gradle.kts`: the Foojay toolchain resolver and the dependency repositories (an optional `platformRepository`, Maven Central, GitHub Packages) |
 | `seniordev.java-conventions` | toolchain 27, Spotless (Google Java Format), Checkstyle (`maxWarnings=0`), JaCoCo with coverage summed across `test` **and** `integrationTest`, a configurable coverage threshold (`coverageMinimum`, default 0.00), and the dependency version and runtime image gates |
-| `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only, see [ADR-0005](docs/adr/0005-spotbugs-report-only.md)), CycloneDX (SBOM), SonarQube Cloud |
-| `seniordev.spring-modulith-conventions` | Boot / Modulith / Spring AI BOMs (GA) with JDK 27 compatibility overrides (Lombok, runtime ArchUnit), shared test dependencies (Modulith-test, Testcontainers, ArchUnit), enforced `junit-bom`, and a unit ‖ integration test taxonomy |
+| `seniordev.quality-conventions` | PIT (mutation testing), SpotBugs (report-only, see [ADR-0005](docs/adr/0005-spotbugs-report-only.md)), CycloneDX (SBOM), SonarQube Cloud from the root of a single-module build |
+| `seniordev.sonar-conventions` | the root of a multi-module build: one SonarQube Cloud analysis that collects the JaCoCo report of every module |
+| `seniordev.nullness-conventions` | opt-in: Error Prone with NullAway in JSpecify mode, failing `compileJava` on a null dereference in packages marked `@NullMarked` |
+| `seniordev.spring-modulith-conventions` | `platform-bom` (Boot / Modulith / Spring AI / JUnit BOMs with the CVE floors and the JDK 27 overrides), shared test dependencies (Modulith-test, Testcontainers, ArchUnit), and a unit ‖ integration ‖ model test taxonomy |
 
 Every task, property and default they add is listed in [docs/reference.md](docs/reference.md).
 
@@ -228,8 +230,9 @@ workflow comments, which are written for the maintainer.
 
 ## Requirements
 
-JDK 25 or newer to run Gradle: `build-logic`, `test-fixtures` and `security-starter` compile
-to Java 25 bytecode. Consumers compile on toolchain 27, which Foojay provisions locally when it
+JDK 25 for the Gradle daemon: `build-logic`, `test-fixtures` and `security-starter` compile
+to Java 25 bytecode. The JVM starters carry daemon JVM criteria, so their wrapper starts from any JDK and
+Gradle selects or downloads Java 25. Consumers compile on toolchain 27, which Foojay provisions locally when it
 is not installed; the reusable CI workflows install it with `setup-java` instead
 ([`docs/versions.md`](docs/versions.md)). The backend runtime image is `sapmachine:27-jre`.
 Consumers run Gradle 9.6.1 or newer: TestKit builds a consumer on that minimum and on the 9.8.1 of

@@ -57,6 +57,7 @@ sources contain no version literal.
 | `SPOTBUGS`, `PITEST_TOOL`, `PITEST_JUNIT5` | `seniordev.quality-conventions` | `spotbugs`, `pitestTool`, `pitestJunit5` |
 | `PLATFORM` | the `platform-bom` import of `seniordev.spring-modulith-conventions` and the pin check | `platform` (the release) |
 | `JUNIT`, `ARCHUNIT` | the JUnit baseline of `seniordev.java-conventions`, the JUnit BOM and ArchUnit of `seniordev.spring-modulith-conventions` | `junit`, `archunit` |
+| `ERROR_PRONE`, `NULLAWAY` | the `errorprone` dependencies of `seniordev.nullness-conventions` | `errorprone`, `nullaway` |
 | `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | no convention since the conventions import `platform-bom`; `PlatformVersionsTest` still compares them with the catalog | `springBoot`, `springModulith`, `springAi`, `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
 
 Two mirrors live outside Kotlin and stay guarded by tests: the `toolchain-java-version` default of

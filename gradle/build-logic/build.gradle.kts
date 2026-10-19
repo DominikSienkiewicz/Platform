@@ -62,6 +62,8 @@ val generatePlatformVersions =
 				"TOMCAT" to libs.versions.tomcat,
 				"JACKSON_BOM" to libs.versions.jacksonBom,
 				"JACKSON_2_BOM" to libs.versions.jackson2Bom,
+				"ERROR_PRONE" to libs.versions.errorprone,
+				"NULLAWAY" to libs.versions.nullaway,
 				// Wersja samego wydania Platform: platformDoctor porównuje z nią pin katalogu konsumenta.
 				"PLATFORM" to providers.gradleProperty("platformVersion"),
 			).mapValues { (_, version) -> version.get() }
@@ -164,6 +166,8 @@ dependencies {
 	implementation("org.gradle:test-retry-gradle-plugin:${libs.versions.testRetry.get()}")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")
+	// Error Prone + NullAway (N-CAP-11), aplikowany tylko przez opt-in seniordev.nullness-conventions.
+	implementation("net.ltgt.gradle:gradle-errorprone-plugin:${libs.versions.errorpronePlugin.get()}")
 	// Settings plugin (toolchain auto-provisioning) — aplikowany przez seniordev.settings-conventions.
 	implementation("org.gradle.toolchains:foojay-resolver:${libs.versions.foojayResolver.get()}")
 
@@ -191,6 +195,9 @@ tasks.withType<Test>().configureEach {
 	val springModulithConventions =
 		layout.projectDirectory.file("src/main/kotlin/seniordev.spring-modulith-conventions.gradle.kts")
 	val qualityConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.quality-conventions.gradle.kts")
+	val nullnessConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.nullness-conventions.gradle.kts")
+	inputs.file(nullnessConventions)
+	systemProperty("platform.nullnessConventions", nullnessConventions.asFile.absolutePath)
 	inputs.file(javaConventions)
 	inputs.file(springModulithConventions)
 	inputs.file(qualityConventions)
@@ -227,6 +234,8 @@ tasks.withType<Test>().configureEach {
 		"springAi" to libs.versions.springAi,
 		"junit" to libs.versions.junit,
 		"jsoup" to libs.versions.jsoup,
+		"errorprone" to libs.versions.errorprone,
+		"nullaway" to libs.versions.nullaway,
 	).forEach { (name, version) ->
 		inputs.property("canon.$name", version)
 		systemProperty("platform.canon.$name", version.get())

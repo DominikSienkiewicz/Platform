@@ -6,12 +6,19 @@
  *   - SpotBugs — analiza statyczna (report-only do kryteriów wyjścia z docs/adr/0005-spotbugs-report-only.md)
  *   - CycloneDX — SBOM (./gradlew cyclonedxBom) jako artefakt release
  *
- * targetClasses dla PIT ustawia KONSUMENT (zależy od groupId modułu), np.:
- *   pitest { targetClasses.set(listOf("pl.seniordeveloper.attestate.*")) }
+ * targetClasses dla PIT: `platform { mutation { targetPackages.add("pl.seniordeveloper.attestate") } }` (N-DX-15),
+ * albo jak dotąd pitest { targetClasses.set(listOf("pl.seniordeveloper.attestate.*")) }; bez obu PIT bierze `<group>.*`.
+ *
+ * SonarQube (F-13): plugin org.sonarqube żyje w KORZENIU hierarchii — tu tylko wtedy, gdy ten projekt jest rootem
+ * (konsument jednomodułowy). Wielomodułowy root aplikuje seniordev.sonar-conventions, a moduły dopisują do analizy
+ * własny raport JaCoCo przez rozszerzenie `sonar`, które root nadaje wszystkim projektom.
  */
 
 import com.github.spotbugs.snom.SpotBugsTask
 import org.cyclonedx.gradle.CyclonedxDirectTask
+import org.sonarqube.gradle.SonarExtension
+import pl.seniordeveloper.gradle.PlatformExtension
+import pl.seniordeveloper.gradle.PlatformSonar
 import pl.seniordeveloper.gradle.PlatformVersions
 import java.io.File
 
@@ -20,8 +27,9 @@ plugins {
 	id("info.solidsoft.pitest")
 	id("com.github.spotbugs")
 	id("org.cyclonedx.bom")
-	id("org.sonarqube")
 }
+
+val platformSettings = PlatformExtension.of(project)
 
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
@@ -33,6 +41,10 @@ pitest {
 	pitestVersion.set(PlatformVersions.PITEST_TOOL)
 	timestampedReports.set(false)
 	outputFormats.set(listOf("HTML", "XML"))
+	// N-DX-15: pusta lista zostawia targetClasses bez wartości, a wtedy plugin PIT bierze swoje `<group>.*`.
+	targetClasses.set(
+		platformSettings.mutation.targetPackages.map { packages -> packages.map { "$it.*" }.toSet().takeIf { it.isNotEmpty() } },
+	)
 }
 
 // SBOM = powierzchnia PRODUKCYJNA (to, co shippujemy). Domyślnie plugin bierze WSZYSTKIE
@@ -68,9 +80,13 @@ val extractSpotbugsConfig =
 spotbugs {
 	// Wersja z gradle/catalog (PlatformVersions.SPOTBUGS).
 	toolVersion.set(PlatformVersions.SPOTBUGS)
-	// Report-only do spełnienia kryteriów wyjścia z docs/adr/0005-spotbugs-report-only.md.
-	// Konsument może przełączyć: spotbugs { ignoreFailures.set(false) }
-	ignoreFailures.set(true)
+	// Report-only do spełnienia kryteriów wyjścia z docs/adr/0005-spotbugs-report-only.md. Konsument przełącza przez
+	// `platform { staticAnalysis { failOnBugs.set(true) } }` (N-DX-15) albo jak dotąd spotbugs { ignoreFailures.set(false) }.
+	ignoreFailures.set(
+		platformSettings.staticAnalysis.failOnBugs
+			.map { !it }
+			.orElse(true),
+	)
 	excludeFilter.set(layout.buildDirectory.file("platform-config/spotbugs/spotbugs-exclude.xml"))
 }
 
@@ -79,31 +95,18 @@ tasks.withType<SpotBugsTask>().configureEach {
 }
 
 // ===== SonarCloud =====
-// Wspolna konfiguracja SonarCloud (sonarcloud.io) — koniec inline id("org.sonarqube") + blokow sonar{}
-// powielanych w repo (roznily sie tylko projectKey). Wersja pluginu z gradle/catalog (zależność build-logic).
-// projectKey per-repo: property `sonarProjectKey` (fallback: DominikSienkiewicz_<rootProject.name>).
-val sonarProjectKey =
-	providers
-		.gradleProperty("sonarProjectKey")
-		.getOrElse("DominikSienkiewicz_${rootProject.name}")
-sonar {
-	properties {
-		property("sonar.host.url", "https://sonarcloud.io")
-		property("sonar.organization", "dominiksienkiewicz")
-		property("sonar.projectKey", sonarProjectKey)
-		property(
-			"sonar.coverage.jacoco.xmlReportPaths",
-			layout.buildDirectory
-				.file("reports/jacoco/test/jacocoTestReport.xml")
-				.get()
-				.asFile.path,
-		)
-	}
+// Wspólna konfiguracja SonarCloud (sonarcloud.io) — repo nie deklarują inline id("org.sonarqube") ani bloku sonar{}
+// (zasada 8). Wersja pluginu z gradle/catalog (zależność build-logic). Ustawienia całej analizy (host, organizacja,
+// projectKey) i zależność `sonar` → raporty JaCoCo: PlatformSonar.
+if (project.path == ":") {
+	pluginManager.apply("org.sonarqube")
+	PlatformSonar.configureAnalysis(project, platformSettings)
 }
 
-// `sonar` musi czytac SWIEZY raport pokrycia (JaCoCo z java-conventions).
-plugins.withId("jacoco") {
-	tasks.named("sonar") {
-		dependsOn(tasks.named("jacocoTestReport"))
-	}
+// Raport pokrycia tego modułu idzie do analizy u roota: w jednomodułowym buildzie to ten sam projekt, w wielomodułowym
+// rozszerzenie `sonar` istnieje, gdy root zaaplikował seniordev.sonar-conventions. Bez niego moduł nie ma analizy
+// (dawniej miał osobny `:<moduł>:sonar` z tym samym projectKey, czyli siedem częściowych analiz — F-13).
+val moduleCoverageReport = layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml")
+extensions.findByType<SonarExtension>()?.properties {
+	property("sonar.coverage.jacoco.xmlReportPaths", moduleCoverageReport.get().asFile.path)
 }

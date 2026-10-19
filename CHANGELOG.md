@@ -112,6 +112,16 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `test` of the Spring conventions also leaves out tests tagged `model`, which run in the new `modelTest`,
   outside `check`. No consumer tags a test `model` today (manual).
 
+- `seniordev.quality-conventions` applies `org.sonarqube` only in the root project (F-13). A multi-module build adds
+  `id("seniordev.sonar-conventions")` to its root `build.gradle.kts`, which runs one analysis over the JaCoCo report
+  of every module; until then no module has a `sonar` task. Touchstone is the only multi-module consumer and runs no
+  Sonar step today; single-module consumers change nothing (manual).
+- `seniordev.java-conventions` compiles with `-Xlint:all,-processing,-serial`, so builds print javac warnings they
+  hid before; none fails unless `platform.javac.werror=true` is set (none).
+- The JVM starters carry `gradle/gradle-daemon-jvm.properties` and stop a build without GitHub Packages credentials
+  before the first request. Copy both into an existing backend when convenient: the criteria file, and the
+  `pluginManagement` block of `templates/jvm/spring-app/settings.gradle.kts` (manual, optional).
+
 ### Added
 
 - Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
@@ -366,6 +376,17 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `-PplatformToolchainOverride=<N>` replaces the canon toolchain with a warning, and `upstream-canary.yml` gains
   a next-JDK leg that builds the starter on a Temurin early-access toolchain; its Gradle RC leg now runs the
   whole TestKit suite through `-PplatformTestGradleVersion` (N-REL-4).
+
+- `platform { }`, a typed extension for `coverage.minimum`, `sonar.projectKey`, `mutation.targetPackages` and
+  `staticAnalysis.failOnBugs` (N-DX-15). An unset field falls back to the existing property, so nothing changes for a
+  build that sets none; the coverage gate prints `source: platform.coverage.minimum` when the block sets it.
+- `seniordev.sonar-conventions` for the root of a multi-module build (F-13).
+- `seniordev.nullness-conventions`, opt-in: Error Prone 2.50.0 and NullAway 0.14.2 in JSpecify mode fail
+  `compileJava` on a null dereference in packages marked `@NullMarked`; TestKit runs it on the canon toolchain
+  (N-CAP-11). The catalog gains `jspecify`, `errorprone-core`, `nullaway` and the `errorprone` plugin.
+- `platform.javac.werror=true` turns javac warnings, Error Prone's included, into errors (N-CAP-11).
+- Daemon JVM criteria in `templates/jvm/*`: the wrapper starts from any JDK and Gradle selects or downloads Java 25
+  for the daemon; the starters' `pluginManagement` names the credential fix instead of a nested 401 (N-DX-2).
 
 ### Changed
 

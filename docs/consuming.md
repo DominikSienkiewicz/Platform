@@ -6,15 +6,20 @@ into the platform itself. Every task, property and default the plugins add is li
 
 ## Prerequisites
 
-- **JDK 25 or newer to run Gradle.** Platform's plugins are compiled for Java 25. Copy
-  [`templates/.sdkmanrc`](../templates/.sdkmanrc) to the repository root and run `sdk env install`,
-  or point `JAVA_HOME` at a JDK 25.
+- **JDK 25 for the Gradle daemon.** Platform's plugins are compiled for Java 25. A backend copied from
+  `templates/jvm/*` carries `gradle/gradle-daemon-jvm.properties`, so the wrapper starts from any JDK and Gradle
+  selects or downloads a Java 25 for the daemon itself. Without that file, copy
+  [`templates/.sdkmanrc`](../templates/.sdkmanrc) to the repository root and run `sdk env install`, or point
+  `JAVA_HOME` at a JDK 25. Regenerate the file with `./gradlew updateDaemonJvm --jvm-version=25`; on Linux,
+  check that the x86-64 URL names a glibc Temurin build, not an Alpine one.
 - **JDK 27 as the toolchain.** `seniordev.java-conventions` compiles for Java 27. Locally Foojay can
   provision it; otherwise register an installed JDK with `org.gradle.java.installations.paths`.
 - **A classic personal access token with `read:packages`.** GitHub Packages requires
   authentication even for public packages, for both Maven and npm.
   - Gradle: in `~/.gradle/gradle.properties`, `gpr.user=<your GitHub login>` and
-    `gpr.key=<the token>`.
+    `gpr.key=<the token>`. The `pluginManagement` block of the templates stops a build without them, or
+    without `-PplatformRepository`, with "No GitHub Packages credentials" and both options, before Gradle
+    reports the 401 as a missing plugin; `--offline` skips that check.
   - npm: `export GITHUB_TOKEN=<the token>` in your shell profile.
   - CI: a repository secret `GPR_TOKEN` with the same token.
 
@@ -290,8 +295,10 @@ probe from the Dockerfile against a stub HTTP server for each of these cases.
 `check` runs `jacocoTestCoverageVerification` on the coverage of `test` and `integrationTest`
 together. Set the threshold in the consumer's `gradle.properties`, for example
 `coverageMinimum=0.80`. It is a decimal between 0 and 1 and defaults to 0.00; any other value
-fails the build. The threshold is static: raise it yourself as coverage grows. `check` prints
-the effective value (`Coverage gate: minimum=0.80 (source: coverageMinimum)`). When the
+fails the build. The threshold is static: raise it yourself as coverage grows. The typed
+`platform { coverage { minimum.set("0.80".toBigDecimal()) } }` sets the same threshold and wins over the
+property ([reference](reference.md#the-platform-block)). `check` prints the effective value and where it
+came from (`Coverage gate: minimum=0.80 (source: coverageMinimum)`). When the
 threshold is above 0, `platformCoverageDataCheck` fails `check` if neither test task produced
 JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
@@ -530,6 +537,7 @@ the release that produced it.
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set, and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `UnsupportedClassVersionError` … `class file version 69.0` while the plugins load | Gradle runs on a JDK older than 25 | Run Gradle on JDK 25 or newer (`sdk env`, or `JAVA_HOME`) |
 | `No matching toolchains found for requested specification` with `languageVersion=27` | No JDK 27 is installed or registered | Install a JDK 27 and register it with `org.gradle.java.installations.paths`; on glibc Linux avoid Foojay's Alpine build ([versions](versions.md)) |

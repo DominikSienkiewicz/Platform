@@ -11,6 +11,7 @@ import pl.seniordeveloper.gradle.DeclaredDependency
 import pl.seniordeveloper.gradle.DependencyGovernance
 import pl.seniordeveloper.gradle.PlatformDependencyCheck
 import pl.seniordeveloper.gradle.PlatformDeprecations
+import pl.seniordeveloper.gradle.PlatformExtension
 import pl.seniordeveloper.gradle.PlatformGates
 import pl.seniordeveloper.gradle.PlatformPinCheck
 import pl.seniordeveloper.gradle.PlatformQuarantineCheck
@@ -58,6 +59,15 @@ java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(toolchainOverride ?: PlatformVersions.JAVA)
 	}
+}
+
+// Ostrzeżenia javac (N-CAP-11): -Xlint:all poza processing (szum procesorów adnotacji) i serial (Serializable bez
+// serialVersionUID w encjach i DTO). -Pplatform.javac.werror=true zamienia ostrzeżenia w błędy, gdy repo jest gotowe —
+// zapadka, nie domyślna; z seniordev.nullness-conventions obejmuje też ostrzeżenia Error Prone.
+val javacWerror = providers.gradleProperty("platform.javac.werror").map { it.trim() == "true" }.getOrElse(false)
+tasks.withType<JavaCompile>().configureEach {
+	options.compilerArgs.addAll(listOf("-Xlint:all", "-Xlint:-processing", "-Xlint:-serial"))
+	if (javacWerror) options.compilerArgs.add("-Werror")
 }
 
 // Obraz runtime konsumenta żyje w ręcznie kopiowanym Dockerfile, a toolchain tutaj — nic ich nie wiązało
@@ -131,6 +141,9 @@ checkstyle {
 
 tasks.withType<Checkstyle>().configureEach {
 	dependsOn(extractCheckstyleConfig)
+	// Najpierw formatowanie: naruszenie, które naprawia `format`, ma wyjść przed Checkstyle'em, którego część reguł
+	// zgłasza ten sam problem — kolejność niezależnych tasków w `lint` zależała dotąd od czasu kompilacji.
+	mustRunAfter("spotlessCheck")
 }
 
 jacoco {
@@ -258,28 +271,51 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 // Próg pokrycia: STATYCZNY ułamek `coverageMinimum` z gradle.properties konsumenta albo -P, domyślnie 0.00.
 // To nie jest ratchet — każde repo startuje tam, gdzie ma kod, i samo podnosi próg w stronę 0.80.
 // Walidacja od razu w konfiguracji: "80" dawało próg 80, a "0,8" NumberFormatException bez wskazówki.
+// N-DX-15: `platform { coverage { minimum } }` wygrywa z właściwością; obie są czytane leniwie, przy konfiguracji taska,
+// a finalizeValueOnRead zamienia późne ustawienie (po odczycie) w błąd zamiast cichego zignorowania.
+val platformSettings = PlatformExtension.of(project)
+platformSettings.coverage.minimum.finalizeValueOnRead()
 val coverageMinimumProperty = providers.gradleProperty("coverageMinimum")
-val coverageMinimum: BigDecimal =
+
+fun invalidCoverageMinimum(
+	source: String,
+	raw: String,
+): Nothing =
+	throw GradleException(
+		PlatformGates.line(PlatformGates.COVERAGE_INVALID, "$source must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'") +
+			"\n" + PlatformGates.footer(listOf(PlatformGates.COVERAGE_INVALID)),
+	)
+
+val coverageMinimumSource: Provider<String> =
+	platformSettings.coverage.minimum
+		.map { "platform.coverage.minimum" }
+		.orElse(coverageMinimumProperty.map { "coverageMinimum" })
+		.orElse("default")
+// Właściwość waliduje się od razu, jak dotąd (błędna wartość failuje każdy build, także `help`); pole bloku `platform`
+// dopiero przy odczycie, bo skrypt konsumenta ustawia je po zaaplikowaniu konwencji.
+val coverageMinimumFromProperty: BigDecimal? =
 	coverageMinimumProperty.orNull?.let { raw ->
 		raw.trim().toBigDecimalOrNull()?.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
-			?: throw GradleException(
-				PlatformGates.line(PlatformGates.COVERAGE_INVALID, "coverageMinimum must be a decimal between 0 and 1 (e.g. 0.80); got '$raw'") +
-					"\n" + PlatformGates.footer(listOf(PlatformGates.COVERAGE_INVALID)),
-			)
-	} ?: BigDecimal("0.00")
-val coverageGate =
-	"Coverage gate: minimum=${coverageMinimum.toPlainString()} " +
-		"(source: ${if (coverageMinimumProperty.isPresent) "coverageMinimum" else "default"})"
+			?: invalidCoverageMinimum("coverageMinimum", raw)
+	}
+val coverageMinimum: Provider<BigDecimal> =
+	platformSettings.coverage.minimum
+		.map { value ->
+			value.takeIf { it >= BigDecimal.ZERO && it <= BigDecimal.ONE }
+				?: invalidCoverageMinimum("platform.coverage.minimum", value.toPlainString())
+		}.orElse(providers.provider { coverageMinimumFromProperty })
+		.orElse(BigDecimal("0.00"))
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
 	dependsOn(coverageProducers)
 	executionData.setFrom(coverageExecutionData)
-	val gate = coverageGate
+	val minimum = coverageMinimum.get()
+	val gate = "Coverage gate: minimum=${minimum.toPlainString()} (source: ${coverageMinimumSource.get()})"
 	doFirst { logger.lifecycle(gate) }
 	violationRules {
 		rule {
 			limit {
-				minimum = coverageMinimum
+				this.minimum = minimum
 			}
 		}
 	}
@@ -293,8 +329,8 @@ val platformCoverageDataCheck =
 		description = "Fails when coverageMinimum is above 0 but no test task produced JaCoCo execution data."
 		group = "verification"
 		dependsOn(coverageProducers)
-		val gateActive = coverageMinimum.signum() > 0
-		val minimum = coverageMinimum.toPlainString()
+		val gateActive = coverageMinimum.get().signum() > 0
+		val minimum = coverageMinimum.get().toPlainString()
 		val executionData = coverageExecutionData
 		val mainClasses = mainClassesDirs
 		val footer = PlatformGates.footer(listOf(PlatformGates.COVERAGE_NO_DATA))
