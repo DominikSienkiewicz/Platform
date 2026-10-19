@@ -4,7 +4,7 @@
   "extends": ["github>DominikSienkiewicz/Platform"],
   "packageRules": [
     {
-      "description": "The backend canon: Renovate proposes catalog versions in Platform only. Mirrored literals in the convention plugins move by hand in the same pull request (docs/versions.md).",
+      "description": "The backend canon: Renovate proposes catalog versions in Platform only. The convention plugins read these versions from the generated PlatformVersions, so the catalog entry is the only edit (docs/versions.md).",
       "matchManagers": ["gradle"],
       "matchFileNames": ["gradle/catalog/libs.versions.toml"],
       "enabled": true,

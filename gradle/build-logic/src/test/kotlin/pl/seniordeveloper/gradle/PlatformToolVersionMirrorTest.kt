@@ -5,46 +5,14 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 /**
- * Guard luster wersji wpisanych w źródłach convention pluginów.
- *
- * Precompiled script plugin nie czyta katalogu w czasie kompilacji, więc te wersje stoją
- * w źródłach convention pluginów i w gradle/catalog jednocześnie. Rozjazd nie psuje buildu
- * Platform, a konsument dostaje wtedy wersję, której kanon nie opisuje.
+ * Lustra spoza źródeł Kotlina: domyślny toolchain w reusable workflowach i struktura zarządzania ArchUnit
+ * w spring-modulith-conventions. Same wersje convention pluginów pochodzą z wygenerowanego
+ * PlatformVersions (PlatformVersionsTest), więc nie mają już lustra.
  */
 class PlatformToolVersionMirrorTest {
-	private val javaConventions = File(System.getProperty("platform.javaConventions")).readText()
 	private val springModulithConventions =
 		File(System.getProperty("platform.springModulithConventions")).readText()
-	private val qualityConventions = File(System.getProperty("platform.qualityConventions")).readText()
 	private val workflows = File(System.getProperty("platform.workflows"))
-
-	@Test
-	fun `googleJavaFormat w java-conventions jest zgodny z kanonem katalogu`() {
-		val mirrored = mirrors(javaConventions, """googleJavaFormat\("([^"]+)"\)""")
-
-		assertEquals(listOf(canon("googleJavaFormat")), mirrored, "googleJavaFormat(...) w java-conventions musi równać się kanonowi")
-	}
-
-	@Test
-	fun `toolchain w java-conventions jest zgodny z kanonem katalogu`() {
-		val mirrored = mirrors(javaConventions, """JavaLanguageVersion\.of\((\d+)\)""")
-
-		assertEquals(listOf(canon("java")), mirrored, "JavaLanguageVersion.of(...) w java-conventions musi równać się kanonowi")
-	}
-
-	@Test
-	fun `nadpisanie lombok_version w spring-modulith-conventions jest zgodne z kanonem katalogu`() {
-		val mirrored = mirrors(springModulithConventions, """ext\["lombok\.version"]\s*=\s*"([^"]+)"""")
-
-		assertEquals(listOf(canon("lombok")), mirrored, "ext[\"lombok.version\"] w spring-modulith-conventions musi równać się kanonowi")
-	}
-
-	@Test
-	fun `archunitVersion w spring-modulith-conventions jest zgodny z kanonem katalogu`() {
-		val mirrored = mirrors(springModulithConventions, """val archunitVersion\s*=\s*"([^"]+)"""")
-
-		assertEquals(listOf(canon("archunit")), mirrored, "archunitVersion w spring-modulith-conventions musi równać się kanonowi")
-	}
 
 	@Test
 	fun `spring-modulith-conventions zarzadza ArchUnit na wszystkich konfiguracjach, nie tylko testowych`() {
@@ -56,13 +24,6 @@ class PlatformToolVersionMirrorTest {
 			"spring-modulith-core ciągnie ArchUnit 1.4.2 na runtimeClasspath (nie czyta class-file 71 z JDK 27); " +
 				"dependencyManagement musi przypiąć com.tngtech.archunit:archunit do archunitVersion",
 		)
-	}
-
-	@Test
-	fun `pitestVersion w quality-conventions jest zgodny z kanonem katalogu`() {
-		val mirrored = mirrors(qualityConventions, """pitestVersion\.set\("([^"]+)"\)""")
-
-		assertEquals(listOf(canon("pitestTool")), mirrored, "pitestVersion.set(...) w quality-conventions musi równać się kanonowi")
 	}
 
 	@Test

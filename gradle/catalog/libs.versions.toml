@@ -3,52 +3,42 @@
 # `platform` jest PLACEHOLDEREM — nadpisywanym injectem (platformVersion z gradle.properties/-P) w build.gradle.kts,
 # bo statyczny TOML nie wyrazi dynamicznej wersji. Wpisy z version.ref="platform" biorą wstrzykniętą wartość.
 # Placeholder NIE jest prawdziwym wydaniem: wcześniejsze "1.4.3" po cichu rozwiązywało stare test-fixtures.
-# build-logic dołącza TEN plik przez swoje settings.gradle.kts, więc marker-artefakty pluginów biorą wersje stąd.
-# Lustro zostaje w ŹRÓDŁACH convention-pluginów — precompiled script plugin nie czyta katalogu w czasie
-# kompilacji (reguła #1 CLAUDE.md). PEŁNA lista luster do ruszenia RAZEM z wpisem tutaj:
-#   java-conventions:            toolVersion checkstyle, toolVersion jacoco, googleJavaFormat(...),
-#                                toolchain languageVersion (java)
-#   quality-conventions:         toolVersion spotbugs (SAM SpotBugs, nie plugin Gradle), pitestVersion (pitestTool),
-#                                junit5PluginVersion (pitestJunit5)
-#   spring-modulith-conventions: springBootVersion, springModulithVersion, springAiVersion,
-#                                archunitVersion, junitVersion, ext["lombok.version"] (lombok),
-#                                ext["tomcat.version"] (tomcat), ext["jackson-bom.version"] (jacksonBom),
-#                                ext["jackson-2-bom.version"] (jackson2Bom)
-#   reusable workflows:          domyślny toolchain-java-version (java)
-# Rozjazd luster NIE psuje buildu Platform (te wersje trafiają na classpath konsumenta), a rozjazd importów
-# BOM jest u konsumenta CICHY — platformDependencyCheck nie widzi mavenBom(...). Każde lustro pilnują
-# PlatformToolVersionMirrorTest i PlatformCatalogMirrorTest w build-logic (tabela: docs/versions.md).
+# build-logic dołącza TEN plik przez swoje settings.gradle.kts, więc marker-artefakty pluginów biorą wersje
+# stąd, a wersje narzucane przez źródła convention pluginów (toolchain, narzędzia jakości, BOM-y, nadpisania
+# BOM-u) task :generatePlatformVersions wpisuje do PlatformVersions.kt — bump to jeden wpis tutaj, bez lustra
+# w źródłach (L-2; tabela: docs/versions.md, "Versions the convention plugins impose"). Lustra spoza Kotlina
+# zostają: toolchain-java-version workflowów (java) i wrappery Gradle (gradle).
 # Po bumpie katalogu regeneruj też gradle.lockfile (--write-locks).
 
 [versions]
 platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts; celowo nierozwiązywalny, żeby zepsuty inject failował głośno
 gradle = "9.8.1"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
-java = "27"                              # lustro: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
-springBoot = "4.1.1"                     # lustro: springBootVersion w spring-modulith-conventions (import BOM-u)
-lombok = "1.18.48"                       # lustro: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
-tomcat = "11.0.27"                       # lustro: ext["tomcat.version"] w spring-modulith-conventions — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
-jacksonBom = "3.1.8"                     # lustro: ext["jackson-bom.version"] — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
-jackson2Bom = "2.21.8"                   # lustro: ext["jackson-2-bom.version"] — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
+java = "27"                              # → PlatformVersions: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
+springBoot = "4.1.1"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
+lombok = "1.18.48"                       # → PlatformVersions: ext["lombok.version"] w spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
+tomcat = "11.0.27"                       # → PlatformVersions: ext["tomcat.version"] w spring-modulith-conventions — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
+jacksonBom = "3.1.8"                     # → PlatformVersions: ext["jackson-bom.version"] — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
+jackson2Bom = "2.21.8"                   # → PlatformVersions: ext["jackson-2-bom.version"] — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
 springDependencyManagement = "1.1.7"
-springModulith = "2.1.1"                 # lustro: springModulithVersion w spring-modulith-conventions (import BOM-u)
-springAi = "2.0.1"                       # lustro: springAiVersion w spring-modulith-conventions (import BOM-u)
-junit = "6.1.3"                          # lustro: junitVersion w spring-modulith-conventions (enforcedPlatform junit-bom)
-archunit = "1.5.0"                       # lustro: archunitVersion w spring-modulith-conventions — też zarządzana na runtime (spring-modulith-core 2.1.1 ciągnie 1.4.2, które nie czyta class-file 71)
+springModulith = "2.1.1"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
+springAi = "2.0.1"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u)
+junit = "6.1.3"                          # → PlatformVersions: junitVersion w spring-modulith-conventions (enforcedPlatform junit-bom)
+archunit = "1.5.0"                       # → PlatformVersions: archunitVersion w spring-modulith-conventions — też zarządzana na runtime (spring-modulith-core 2.1.1 ciągnie 1.4.2, które nie czyta class-file 71)
 resilience4j = "2.4.0"
 bucket4j = "8.19.0"
 shedlock = "7.7.0"
 javers = "7.11.7"
 spotless = "8.9.0"
 ktlint = "1.8.0"                          # formater Kotlin w Spotless samego build-logic (D-14); konsumenci go nie dostają
-googleJavaFormat = "1.36.1"              # lustro: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
+googleJavaFormat = "1.36.1"              # → PlatformVersions: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs to spotbugs
-spotbugs = "4.10.3"                      # lustro: toolVersion w quality-conventions (SAM SpotBugs, nie plugin Gradle)
-checkstyle = "13.10.0"                   # lustro: toolVersion w java-conventions (guard configów czyta stąd)
+spotbugs = "4.10.3"                      # → PlatformVersions: toolVersion w quality-conventions (SAM SpotBugs, nie plugin Gradle)
+checkstyle = "13.10.0"                   # → PlatformVersions: toolVersion w java-conventions (guard configów czyta stąd)
 pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; SAM PIT to pitestTool
-pitestTool = "1.30.0"                    # lustro: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
-pitestJunit5 = "1.2.3"                   # lustro: junit5PluginVersion w quality-conventions
+pitestTool = "1.30.0"                    # → PlatformVersions: pitestVersion w quality-conventions. Class-file 71 (JDK 27) wymaga >= 1.30.0 (1.25.3: ASM 9.9.1)
+pitestJunit5 = "1.2.3"                   # → PlatformVersions: junit5PluginVersion w quality-conventions
 cyclonedx = "3.3.0"
-jacoco = "0.8.15"                        # lustro: toolVersion w java-conventions
+jacoco = "0.8.15"                        # → PlatformVersions: toolVersion w java-conventions
 foojayResolver = "1.0.0"
 mapstruct = "1.6.3"
 jsoup = "1.23.2"

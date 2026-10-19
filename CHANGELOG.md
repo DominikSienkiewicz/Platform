@@ -247,6 +247,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Changed
 
+- The versions the convention plugins impose (toolchain, quality tools, BOMs and the overrides above the
+  Boot BOM) are generated from the catalog into `PlatformVersions` when `build-logic` compiles, instead
+  of literals mirrored in the plugin sources; a bump is one catalog entry. The versions consumers get
+  are unchanged.
 - The shared Renovate preset waits three days after a GitHub Actions or Docker release before it opens
   a pull request, and lets security fixes through at once, outside the Monday window, labelled
   `security`, with OSV alerts on.

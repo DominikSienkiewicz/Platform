@@ -36,6 +36,56 @@ spotless {
 	}
 }
 
+// Wersje, które convention pluginy narzucają konsumentom (toolchain, narzędzia jakości, BOM-y, nadpisania CVE),
+// generowane z kanonu (gradle/catalog/libs.versions.toml) do PlatformVersions.kt w źródłach main — precompiled
+// script plugin nie czyta katalogu, a lustro literałów trzeba było zmieniać w dwóch miejscach (L-2, zasada 1).
+// Lambda doLast łapie tylko lokalne wartości, nie obiekt skryptu (configuration cache).
+val generatePlatformVersions =
+	tasks.register("generatePlatformVersions") {
+		val constants =
+			linkedMapOf(
+				"JAVA" to libs.versions.java,
+				"GOOGLE_JAVA_FORMAT" to libs.versions.googleJavaFormat,
+				"CHECKSTYLE" to libs.versions.checkstyle,
+				"JACOCO" to libs.versions.jacoco,
+				"SPOTBUGS" to libs.versions.spotbugs,
+				"PITEST_TOOL" to libs.versions.pitestTool,
+				"PITEST_JUNIT5" to libs.versions.pitestJunit5,
+				"SPRING_BOOT" to libs.versions.springBoot,
+				"SPRING_MODULITH" to libs.versions.springModulith,
+				"SPRING_AI" to libs.versions.springAi,
+				"JUNIT" to libs.versions.junit,
+				"ARCHUNIT" to libs.versions.archunit,
+				"LOMBOK" to libs.versions.lombok,
+				"TOMCAT" to libs.versions.tomcat,
+				"JACKSON_BOM" to libs.versions.jacksonBom,
+				"JACKSON_2_BOM" to libs.versions.jackson2Bom,
+			).mapValues { (_, version) -> version.get() }
+		inputs.properties(constants)
+		val output = layout.buildDirectory.dir("generated/platform-versions/kotlin")
+		outputs.dir(output)
+		doLast {
+			val file = output.get().file("pl/seniordeveloper/gradle/PlatformVersions.kt").asFile
+			file.parentFile.mkdirs()
+			val lines =
+				constants.map { (name, version) ->
+					if (name == "JAVA") "\tconst val $name = $version" else "\tconst val $name = \"$version\""
+				}
+			file.writeText(
+				listOf(
+					"// Wygenerowane z gradle/catalog/libs.versions.toml przez :generatePlatformVersions. Nie edytuj.",
+					"package pl.seniordeveloper.gradle",
+					"",
+					"internal object PlatformVersions {",
+					*lines.toTypedArray(),
+					"}",
+					"",
+				).joinToString("\n"),
+			)
+		}
+	}
+kotlin.sourceSets.named("main") { kotlin.srcDir(generatePlatformVersions) }
+
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
 // Regeneracja po bumpie którejkolwiek wersji wyżej: ./gradlew dependencies --write-locks
 dependencyLocking {
@@ -56,12 +106,11 @@ dependencies {
 	implementation("org.gradle.toolchains:foojay-resolver:${libs.versions.foojayResolver.get()}")
 
 	// Testy configów platformy (guard checkstyle ↔ google-java-format).
-	// Checkstyle = lustro toolVersion w seniordev.java-conventions (te same reguły co u konsumenta);
-	// precompiled script plugin nie czyta katalogu w czasie kompilacji, więc lustro zostaje TAM,
-	// a tu bierzemy tę samą wartość z kanonu.
+	// Checkstyle i google-java-format w tych samych wersjach, które convention pluginy dają konsumentowi
+	// (oba z kanonu: tu z libs, tam z PlatformVersions).
 	testImplementation(gradleTestKit())
 	testImplementation("com.puppycrawl.tools:checkstyle:${libs.versions.checkstyle.get()}")
-	// google-java-format z kanonu (lustro googleJavaFormat(...) w java-conventions): PlatformFormatterCheckstyleTest
+	// google-java-format z kanonu: PlatformFormatterCheckstyleTest
 	// formatuje korpus tym samym formaterem, którego używa Spotless konsumenta, i sprawdza wynik Checkstyle.
 	testImplementation("com.google.googlejavaformat:google-java-format:${libs.versions.googleJavaFormat.get()}")
 	testImplementation(platform("org.junit:junit-bom:${libs.versions.junit.get()}"))
@@ -96,7 +145,7 @@ tasks.withType<Test>().configureEach {
 	val frontendManifest = layout.projectDirectory.file("../../frontend/package.json")
 	val frontendCanon = layout.projectDirectory.file("../../frontend/packages/versions/versions.json")
 	inputs.files(compatibilityDoc, dockerfileTemplate, frontendManifest, frontendCanon)
-	// Kanon każdego lustra z tabeli w docs/versions.md (PlatformToolVersionMirrorTest + PlatformCatalogMirrorTest).
+	// Kanon dla PlatformVersionsTest (wygenerowane stałe = katalog) i luster spoza Kotlina (workflowy, wrappery).
 	mapOf(
 		"googleJavaFormat" to libs.versions.googleJavaFormat,
 		"java" to libs.versions.java,
