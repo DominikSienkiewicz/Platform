@@ -2,7 +2,8 @@
 # Copy to scripts/agent-gradle.sh in a consumer. Explicitly opt in with AI_AGENT=1 or true.
 # Runs ./gradlew from the repository root, or backend/gradlew from backend/ when the root has none.
 #
-# With AI_AGENT on, Gradle runs with --max-workers=2 --no-parallel, and a run of test, integrationTest,
+# With AI_AGENT on, Gradle runs with --max-workers=${AI_AGENT_MAX_WORKERS:-2} --no-parallel (the Vitest preset reads
+# the same variable), and a run of test, integrationTest,
 # check or build first takes one of AI_AGENT_TEST_SLOTS (default 3) machine-wide slots, so parallel agents
 # cannot start more JVM test suites at once than the machine holds. A slot is a directory under
 # ${TMPDIR:-/tmp}/platform-agent-slots/ holding its owner's PID; a slot whose owner died is reclaimed.
@@ -16,6 +17,8 @@ case "${AI_AGENT:-}" in
   1|true) ;;
   *) exec ./gradlew "$@" ;;
 esac
+workers=${AI_AGENT_MAX_WORKERS:-2}
+[[ "$workers" =~ ^[1-9][0-9]*$ ]] || { echo "AI_AGENT_MAX_WORKERS must be a positive integer, got '$workers'." >&2; exit 2; }
 
 needs_slot=0
 for task in "$@"; do
@@ -23,7 +26,7 @@ for task in "$@"; do
     test | *:test | integrationTest | *:integrationTest | check | *:check | build | *:build) needs_slot=1 ;;
   esac
 done
-[[ "$needs_slot" -eq 1 ]] || exec ./gradlew "$@" --max-workers=2 --no-parallel
+[[ "$needs_slot" -eq 1 ]] || exec ./gradlew "$@" --max-workers="$workers" --no-parallel
 
 slots=${AI_AGENT_TEST_SLOTS:-3}
 timeout=${AI_AGENT_SLOT_TIMEOUT:-3600}
@@ -64,5 +67,5 @@ trap 'rm -rf "$slot"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 status=0
-./gradlew "$@" --max-workers=2 --no-parallel || status=$?
+./gradlew "$@" --max-workers="$workers" --no-parallel || status=$?
 exit "$status"

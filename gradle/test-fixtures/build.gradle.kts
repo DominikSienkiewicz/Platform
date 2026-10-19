@@ -87,6 +87,9 @@ val platformTemplates = layout.projectDirectory.dir("../../templates")
 tasks.test {
 	inputs.dir(platformTemplates.dir("db")).withPropertyName("dbTemplates").withPathSensitivity(PathSensitivity.RELATIVE)
 	systemProperty("platform.templates.dir", platformTemplates.asFile.absolutePath)
+	// Ten moduł nie dzieli testów na zadania: jego testy kontenerów świadomie biegną w `test`, więc strażnik
+	// PlatformTestTaskGuard (ostrzega przed kontenerem w szybkim `test` konsumenta) dostaje inną nazwę zadania.
+	systemProperty("platform.test.task", "platformModuleTest")
 }
 
 val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")

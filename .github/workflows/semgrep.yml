@@ -77,6 +77,6 @@ jobs:
           echo "Semgrep: ${err} ERROR (blokujące), ${warn} WARNING, ${info} INFO (log-only)"
 
           if [ "${err:-0}" -gt 0 ]; then
-            echo "::error::Semgrep: ${err} znalezisk severity ERROR — bramka SAST failuje build."
+            echo "::error title=PLAT-SAST-001::[PLAT-SAST-001] Semgrep found ${err} ERROR findings; fix them or record an exception as docs/security-scanning.md describes."
             exit 1
           fi

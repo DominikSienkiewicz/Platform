@@ -115,6 +115,11 @@ jobs:
           only-fixed: ${{ inputs.only-fixed }}
           output-format: table
 
+      # Kod bramki (N-SHOW-8): scan-action drukuje własny raport, a adnotacja nazywa bramkę i kotwicę docs.
+      - name: Name the failed SCA gate
+        if: ${{ failure() && steps.published.outputs.present == 'true' }}
+        run: echo "::error title=PLAT-SCA-001::[PLAT-SCA-001] Grype found vulnerabilities at or above the severity cutoff; see the table above and docs/gates.md#plat-sca-001."
+
       # --- Snyk: druga opinia (nieblokująca) + monitor -> dashboard. Skip, gdy brak tokena/obrazu. ---
       - name: Snyk container test (advisory)
         if: ${{ steps.published.outputs.present == 'true' && env.SNYK_TOKEN != '' }}

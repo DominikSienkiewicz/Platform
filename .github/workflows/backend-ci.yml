@@ -24,9 +24,13 @@ on:
         type: string
         default: "27"
       gradle-task:
-        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing."
+        description: "Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.test.retry=off here turns that off."
         type: string
         default: "build"
+      verify-provenance:
+        description: "Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars."
+        type: boolean
+        default: false
       lint-task:
         description: "Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step."
         type: string
@@ -98,8 +102,40 @@ jobs:
           ./gradlew "${gradle_tasks[@]}" --no-daemon --stacktrace 2>&1 | tee "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gradle-output.log"
         env:
           GRADLE_TASK: ${{ inputs.gradle-task }}
+          # Wykrywanie niestabilnych testów (N-REL-13); -Pplatform.test.retry w gradle-task wygrywa ze zmienną.
+          PLATFORM_TEST_RETRY: detect
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+
+      # Proweniencja (N-REL-16): jary Platform z cache Gradle'a muszą mieć atestację release.yml Platform, czyli
+      # pochodzić z jego wydania, nie z podmienionego rejestru. Blok testuje templates/tests/backend-ci-provenance.test.sh.
+      - name: Verify the provenance of the Platform artifacts
+        if: ${{ inputs.verify-provenance }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # >>> verify-provenance
+          set -euo pipefail
+          cache="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
+          jars=()
+          while IFS= read -r jar; do jars+=("$jar"); done < <(find "$cache" -path '*/pl.seniordeveloper*' -name '*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' 2>/dev/null | sort)
+          if [ "${#jars[@]}" -eq 0 ]; then
+            echo "::error title=PLAT-PROV-001::[PLAT-PROV-001] No Platform jar in the Gradle cache, so there is nothing to verify; did the build resolve Platform?"
+            exit 1
+          fi
+          failed=0
+          for jar in "${jars[@]}"; do
+            if gh attestation verify "$jar" --repo DominikSienkiewicz/Platform \
+              --signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml > /dev/null 2>&1; then
+              echo "verified $(basename "$jar")"
+            else
+              echo "::error title=PLAT-PROV-001::[PLAT-PROV-001] $(basename "$jar") carries no attestation from Platform's release.yml"
+              failed=1
+            fi
+          done
+          exit "$failed"
+          # <<< verify-provenance
 
       # Raporty WSZYSTKICH modułów (globy), nie tylko roota: konsument wielomodułowy nie musi ich przenosić.
       - name: Upload test reports
@@ -113,6 +149,54 @@ jobs:
             ${{ inputs.working-directory }}/**/build/reports/checkstyle/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Zdrowie testów (N-REL-13), także na zielonym buildzie: testy, które przeszły dopiero po powtórzeniu
+      # (PLATFORM_TEST_RETRY=detect), wynik quarantineTest, gdy wołający go uruchomił, i terminy kwarantanny
+      # z platformQuarantineCheck. Tylko python3 z runnera; blok testuje templates/tests/ci-test-health.test.sh.
+      - name: Summarise flaky and quarantined tests
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          # >>> test-health
+          import glob, os
+          import xml.etree.ElementTree as ET
+
+          flaky, quarantined, deadlines = [], [], []
+          for report in sorted(glob.glob("**/build/test-results/**/*.xml", recursive=True)):
+              task = report.split("/test-results/", 1)[1].split("/", 1)[0]
+              runs = {}
+              for case in ET.parse(report).getroot().iter("testcase"):
+                  failed = case.find("failure") is not None or case.find("error") is not None
+                  runs.setdefault(f"{case.get('classname')}.{case.get('name')}", []).append(failed)
+              for test, failures in runs.items():
+                  if task == "quarantineTest":
+                      quarantined.append((test, "failed" if failures[-1] else "passed"))
+                  elif len(failures) > 1 and failures[0] and not failures[-1]:
+                      flaky.append((test, task))
+          for report in sorted(glob.glob("**/build/reports/platform/quarantine.txt", recursive=True)):
+              module = report.split("/build/", 1)[0]
+              for line in open(report, encoding="utf-8"):
+                  if line.strip():
+                      source, issue, until = (line.split() + ["-", "-"])[:3]
+                      deadlines.append((module, source, issue, until))
+
+          for test, task in flaky:
+              print(f"::warning title=Flaky test::{test} failed, then passed on retry in {task}")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary and (flaky or quarantined or deadlines):
+              with open(summary, "a", encoding="utf-8") as out:
+                  out.write("## Test health\n\n")
+                  if flaky:
+                      out.write("Passed only on retry, so the build is red (`failOnPassedAfterRetry`):\n\n| Test | Task |\n|---|---|\n")
+                      out.writelines(f"| `{test}` | `{task}` |\n" for test, task in flaky)
+                  if quarantined:
+                      out.write("\n`quarantineTest`, which never fails the build:\n\n| Test | Result |\n|---|---|\n")
+                      out.writelines(f"| `{test}` | {result} |\n" for test, result in quarantined)
+                  if deadlines:
+                      out.write("\nIn quarantine:\n\n| Module | Source | Issue | Until |\n|---|---|---|---|\n")
+                      out.writelines(f"| `{module}` | `{source}` | {issue} | {until} |\n" for module, source, issue, until in deadlines)
+          # <<< test-health
+          PY
 
       # Diagramy i kanwy modułów z AbstractModulithDocumentationTest (test-fixtures), gdy konsument go używa.
       - name: Upload Spring Modulith documentation
@@ -185,12 +269,17 @@ jobs:
               for block in re.findall(r"\* What went wrong:\n(.*?)(?:\n\* Try:|\Z)", text, re.S):
                   wrong.append(block.strip())
 
-          for path, line, title, message in annotations[:LIMIT]:
+          # Kody bramek (N-SHOW-8) dla porażek Gradle'a, które nie drukują własnego kodu; na początek listy, poza limitem.
+          GATES = [("Dependency verification failed", "PLAT-VER-001"), ("Rule violated for bundle", "PLAT-COV-003")]
+          coded = [("", "", code, f"[{code}] {block.splitlines()[0]}") for block in wrong for needle, code in GATES if needle in block]
+          annotations = coded + annotations
+
+          for path, line, title, message in annotations[:LIMIT + len(coded)]:
               location = f"file={path}," if path else ""
               location += f"line={line}," if path and line else ""
               print(f"::error {location}title={escape(title)}::{escape(message)}")
-          if len(annotations) > LIMIT:
-              print(f"::error title=More failures::{len(annotations) - LIMIT} more; see the job summary and the test reports artifact")
+          if len(annotations) > LIMIT + len(coded):
+              print(f"::error title=More failures::{len(annotations) - LIMIT - len(coded)} more; see the job summary and the test reports artifact")
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:

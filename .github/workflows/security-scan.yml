@@ -178,6 +178,11 @@ jobs:
           only-fixed: ${{ inputs.only-fixed }}
           output-format: table
 
+      # Kod bramki (N-SHOW-8): scan-action drukuje własny raport, a adnotacja nazywa bramkę i kotwicę docs.
+      - name: Name the failed SCA gate
+        if: ${{ failure() }}
+        run: echo "::error title=PLAT-SCA-001::[PLAT-SCA-001] Grype found vulnerabilities at or above the severity cutoff; see the table above and docs/gates.md#plat-sca-001."
+
   frontend-deps:
     name: Frontend — Grype (package-lock)
     needs: changes
@@ -197,3 +202,8 @@ jobs:
           severity-cutoff: ${{ inputs.severity-cutoff }}
           only-fixed: ${{ inputs.only-fixed }}
           output-format: table
+
+      # Kod bramki (N-SHOW-8): scan-action drukuje własny raport, a adnotacja nazywa bramkę i kotwicę docs.
+      - name: Name the failed SCA gate
+        if: ${{ failure() }}
+        run: echo "::error title=PLAT-SCA-001::[PLAT-SCA-001] Grype found vulnerabilities at or above the severity cutoff; see the table above and docs/gates.md#plat-sca-001."

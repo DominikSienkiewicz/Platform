@@ -64,6 +64,59 @@ jobs:
           done < <(awk '!/^#/ && NF { print $1 }' gradle/maven-modules.txt)
           exit $fail
 
+  # Obraz z templates/Dockerfile.backend naprawdę się buduje i zdrowieje (N-CAP-5): jar startera spring-app
+  # z Platform tego commita (lokalne repo Maven), z actuatorem dołożonym do kopii, bo sam starter go nie ma.
+  runtime-image:
+    name: Runtime image — templates/Dockerfile.backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        id: toolchain
+        with:
+          distribution: temurin
+          java-version: "27"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build the spring-app starter on this commit
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain.outputs.path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.gradle"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "$HOME/.gradle/gradle.properties"
+          repo="$RUNNER_TEMP/platform-repo"
+          # Z gradle/maven-modules.txt tylko to, co rozwiązuje starter spring-app: konwencje, katalog i platform-bom.
+          awk '!/^#/ && NF && $1 ~ /^(build-logic|catalog|bom)$/ { print $1 }' gradle/maven-modules.txt | while IFS= read -r module; do
+            (cd "gradle/$module" && ./gradlew --no-daemon -PplatformBundleRepository="$repo" publishAllPublicationsToBundleRepository)
+          done
+          app="$RUNNER_TEMP/spring-app"
+          cp -R templates/jvm/spring-app "$app"
+          cp -R templates/jvm/java-library/gradlew templates/jvm/java-library/gradle/wrapper "$app/"
+          mkdir -p "$app/gradle" && mv "$app/wrapper" "$app/gradle/wrapper"
+          sed -i 's|implementation(libs.boot.starter.webmvc)|&\n\timplementation("org.springframework.boot:spring-boot-starter-actuator")|' "$app/build.gradle.kts"
+          (cd "$app" && ./gradlew --no-daemon bootJar -PplatformRepository="file://$repo")
+          cp templates/Dockerfile.backend "$app/Dockerfile"
+      - name: Build the layered image and wait for healthy
+        run: |
+          set -euo pipefail
+          docker build -t platform-runtime-image:ci "$RUNNER_TEMP/spring-app"
+          docker run -d --name platform-runtime-image platform-runtime-image:ci > /dev/null
+          for _ in $(seq 1 30); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' platform-runtime-image)
+            [ "$status" = healthy ] && break
+            [ "$status" = unhealthy ] && break
+            sleep 5
+          done
+          docker logs platform-runtime-image 2>&1 | tail -20
+          [ "$status" = healthy ] || { echo "::error::the image of templates/Dockerfile.backend did not become healthy ($status)"; exit 1; }
+          echo "templates/Dockerfile.backend: layered image healthy"
+
   # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).
   # Bez sekretu SONAR_TOKEN (fork, brak projektu w SonarCloud) krok kończy się notką i nic nie robi.
   sonar:

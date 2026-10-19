@@ -1,13 +1,26 @@
 pluginManagement {
+	val platformRepository = providers.gradleProperty("platformRepository").orNull
+	val gprUser = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
+	val gprKey = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+	// Bez poświadczeń GitHub Packages odpowiada 401, które Gradle chowa pod „plugin not found” (N-DX-2): nazwij
+	// przyczynę, zanim pójdzie pierwsze żądanie. Lokalna Platform (-PplatformRepository) i --offline ich nie potrzebują.
+	if ((gprUser == null || gprKey == null) && platformRepository == null && !gradle.startParameter.isOffline) {
+		throw GradleException(
+			"No GitHub Packages credentials, so the Platform plugins cannot resolve. Set gpr.user and gpr.key in " +
+				"~/.gradle/gradle.properties, or GITHUB_ACTOR and GITHUB_TOKEN in the environment, with a classic token that " +
+				"has the read:packages scope (https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
+				"To build against a local Platform instead, pass -PplatformRepository.",
+		)
+	}
 	repositories {
-		providers.gradleProperty("platformRepository").orNull?.let { maven { url = uri(it) } }
+		platformRepository?.let { maven { url = uri(it) } }
 		gradlePluginPortal()
 		mavenCentral()
 		maven {
 			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
 			credentials {
-				username = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
-				password = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull
+				username = gprUser
+				password = gprKey
 			}
 		}
 	}

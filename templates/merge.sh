@@ -19,14 +19,14 @@
 # merge helper is running, or the source is protected (main/master/develop/release/**).
 #
 # "Unsafe to touch" excludes regenerable build output (build/, node_modules/, .gradle/,
-# … — see REGENERABLE_IGNORED_RE). Those are ignored paths that a rebuild recreates, so
+# .kotlin/, … — see REGENERABLE_IGNORED_RE). Those are ignored paths that a rebuild recreates, so
 # they are removed with the worktree and reported, never treated as work to preserve.
 # Every other ignored file — .env.local, credentials, anything irreplaceable — still
 # blocks until you pass --discard-worktree-changes.
 #
 # Arguments:
 #   <branch>          local feature branch to merge and delete (required)
-#   <message>         merge commit message (required and not blank)
+#   <message>         merge commit message, a Conventional Commit such as "feat: add X" (required)
 #
 # Options:
 #   --into <target>                 local target branch (default: main)
@@ -78,7 +78,7 @@ LOCK_DIR=""
 # `backend/build/`, `frontend/node_modules/` and `gradle/x/build/libs/a.jar` all qualify.
 # Keep this list conservative: anything absent from it keeps blocking, which is the safe
 # direction to be wrong in.
-REGENERABLE_IGNORED_RE='^!! (.*/)?((build|dist|target|bin|node_modules|coverage|test-results|playwright-report|__pycache__|\.gradle|\.next|\.turbo|\.venv|\.pytest_cache)(/.*)?|tsconfig\.tsbuildinfo)$'
+REGENERABLE_IGNORED_RE='^!! (.*/)?((build|dist|target|bin|node_modules|coverage|test-results|playwright-report|__pycache__|\.gradle|\.kotlin|\.next|\.turbo|\.venv|\.pytest_cache)(/.*)?|tsconfig\.tsbuildinfo)$'
 
 # Status lines that must block the merge: everything except regenerable build output.
 # Tracked modifications and untracked non-ignored files are never filtered.
@@ -198,6 +198,12 @@ done
 [ -n "$BRANCH" ] || usage_error "feature branch is required"
 if [ "$MSG_SET" -ne 1 ] || [[ ! "$MESSAGE" =~ [^[:space:]] ]]; then
   usage_error "merge message is required and must not be blank"
+fi
+# The merge commit is what release notes and the bump type are drawn from (scripts/release-notes.sh), so it follows
+# the same Conventional Commit rule as release.sh.
+CONVENTIONAL='^(feat|fix|docs|chore|refactor|test|build|ci|perf|revert)(\([a-z0-9-]+\))?!?: .+'
+if [[ ! "$MESSAGE" =~ $CONVENTIONAL ]]; then
+  usage_error "merge message must be a Conventional Commit, <type>[(scope)][!]: <description> with a type of feat, fix, docs, chore, refactor, test, build, ci, perf or revert (got \"$MESSAGE\")"
 fi
 if [ "$LEGACY_FORCE" -eq 1 ]; then
   echo "warning: --force is deprecated; use --discard-worktree-changes" >&2

@@ -17,19 +17,65 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Consumer action required
 
+Each entry ends with the migration `platform-bump` runs, `manual`, or `none` when no consumer is affected
+today. Gradle builds come first, then test fixtures, the templates a repository copies, the reusable workflows,
+the frontend, and last the experimental roadmap toolkit and the incubating security starter.
+
+- `platformDependencyCheck` now also governs dependency constraints, every declarable bucket (`compileOnlyApi`,
+  `developmentOnly`, `testAndDevelopmentOnly`, `testFixtures*` and custom source sets) and `pl.seniordeveloper`
+  artifacts, and it compares them with the canon embedded in the plugin instead of the consumer's `libs`
+  catalog. Remove explicit versions from those declarations, or declare the dependency through
+  `libs.<alias>`. A `version(...)` override after `from(...)` in the `libs` catalog now fails
+  (`PLAT-DEP-004`), and so does a project that applies `seniordev.java-conventions` without a catalog named
+  `libs` (`PLAT-DEP-005`); no consumer does either today (manual).
+- `platformDependencyCheck` warns ([PLAT-DEPR-001](docs/gates.md#plat-depr-001)) on
+  `spring-boot-starter-oauth2-resource-server` and `spring-boot-starter-oauth2-client`, which Spring Boot 4 deprecates
+  in favor of `spring-boot-starter-security-oauth2-resource-server` and `spring-boot-starter-security-oauth2-client`.
+  BookOfStyling and SkillSprintPlus rename them before the MINOR that removes the old names (manual).
 - `seniordev.java-conventions` adds `platformPinCheck` to `check`: a build whose settings plugin and
   catalog are pinned to different releases now fails, naming both versions and the fix. Read both pins
   from `platformVersion` or run `scripts/platform-bump.sh` (manual). It also registers `lint` and
-  `format` in every project that has no task of that name; Touchstone can drop its root aggregator.
-- `backend-ci.yml` has a new optional input `lint-task` (default empty, so nothing runs); pass
+  `format` in every project that has no task of that name, so Touchstone can drop its root aggregator, and
+  `backend-ci.yml` gains an optional `lint-task` input (default empty, so nothing runs); pass
   `lint-task: lint` for a fast first step.
-- `templates/Dockerfile.backend` declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
-  `backend/Dockerfile`, then delete the backend's `healthcheck:` in the compose files, which replaces the
-  image's: BookOfStyling only checks that the port is open, and SkillSprintPlus runs `curl`, which
-  `sapmachine:27-jre` does not contain, so its backend never becomes healthy. Drop a compose-level
-  `JAVA_TOOL_OPTIONS` unless it means to replace both flags (manual,
-  [consuming.md](docs/consuming.md#runtime-image)).
-- `AbstractLiquibaseChangelogTest` gains a second test: every file in `db/changelog/changes/` is named
+- `coverageMinimum` must be a decimal between 0 and 1: a value such as `80` or `0,8` now fails the build
+  instead of setting a threshold of 80 or crashing with a parse error. `check` also fails when
+  `coverageMinimum` is above 0 and no test task produced JaCoCo data, for example in a module without tests
+  or with every test task excluded; before, the gate was skipped and `check` stayed green. Add tests or set
+  `coverageMinimum=0` for such a module (manual).
+- `check` now fails when the final `FROM` of the project's Dockerfile runs an older Java than
+  the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
+  post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
+  (`sapmachine:27-jre`) before taking this release; `platform-bump` does it for a final
+  `eclipse-temurin:<N>-jre` or `-jdk` stage (migration `1.6.0-runtime-image-27`) and names any other
+  image for a manual fix.
+- `seniordev.spring-modulith-conventions` imports `platform-bom` of its own release instead of the three Spring
+  BOMs and its `ext` overrides ([ADR-0013](docs/adr/0013-catalog-for-aliases-bom-for-constraints.md)). The resolved
+  versions do not change. Delete your own override blocks in the bump PR: Azimuth's `eachDependency`,
+  BookOfStyling's `extra["jackson-bom.version"]` and SkillSprintPlus's `eachDependency` on jackson-databind;
+  `platformBomOverrideCheck` now lists every `*.version` property a consumer still sets (manual).
+- `seniordev.java-conventions` adds the JUnit BOM, Jupiter and the launcher of the canon to the tests. Delete the
+  same three lines from a backend's `build.gradle.kts`, as `templates/jvm/java-library` did; set
+  `platform.junit.baseline=false` to keep your own (manual).
+- `check` runs `platformQuarantineCheck`: a test tagged `quarantine` without
+  `// quarantine: <issue-url> until YYYY-MM-DD` above the tag fails ([PLAT-QUA-001](docs/gates.md#plat-qua-001)),
+  and an expired one fails on CI. `test` of the Spring conventions also leaves out tests tagged `model`, which
+  run in the new `modelTest`, outside `check`. No consumer tags a test `quarantine` or `model` today (none).
+- `seniordev.quality-conventions` applies `org.sonarqube` only in the root project (F-13). A multi-module build adds
+  `id("seniordev.sonar-conventions")` to its root `build.gradle.kts`, which runs one analysis over the JaCoCo report
+  of every module; until then no module has a `sonar` task. Touchstone is the only multi-module consumer and runs no
+  Sonar step today; single-module consumers change nothing (manual).
+- `seniordev.java-conventions` compiles with `-Xlint:all,-processing,-serial`, so builds print javac warnings they
+  hid before; none fails unless `platform.javac.werror=true` is set (none).
+- The catalog drops `libs.jimfs`, `libs.java.diff.utils`, `libs.openai.java.client.okhttp` and
+  `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
+  resolve the alias; add the library to the Platform catalog first, as for any new library (none).
+- The JVM starters carry `gradle/gradle-daemon-jvm.properties` and stop a build without GitHub Packages credentials
+  before the first request. Copy both into an existing backend when convenient: the criteria file, and the
+  `pluginManagement` block of `templates/jvm/spring-app/settings.gradle.kts` (manual, optional).
+- `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead of looking
+  for the word `databaseChangeLog`, so a typo in an include path or invalid YAML fails the fast test instead of
+  the Testcontainers context test. It also gains a second test: every file in `db/changelog/changes/` is named
   `NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master, because
   `deploy.yml` tags the migrate image with the highest prefix there. Today's consumer changelogs pass; a
   failure names the file and the fix (manual).
@@ -38,64 +84,79 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   `templates/db/liquibase/modulith-event-publication.yaml` as the next `changes/NNNN-…` file and include it
   in the master; `AbstractSchemaValidationIT` then proves the schema (manual,
   [consuming.md](docs/consuming.md#database-migrations)).
-- The roadmap toolkit (BookOfStyling, SkillSprintPlus) is marked *experimental*: only its marker contract
-  is stable. Re-copy `templates/roadmap/scripts/**` and the new issue form
-  `templates/roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml`; `roadmap-unblock.yml` now runs only for
-  issues closed as completed, one run at a time. Run the marker self-heal with `--preview <ID>` and
-  `--dry-run` first: it rewrites titles and bodies, now from the Backlog Handoff table.
-- `deploy.yml` reads `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` as secrets of the
-  `production` environment, whose deployment branch policy admits only `release`; its preflight no
-  longer checks them. Sync `templates/setup-gh-deploy.sh` into `scripts/`, run it once (it creates the
-  environment, the policy and the secrets), then delete the repository-level `SSH_*` secrets it lists,
-  and drop `SSH_*` from the caller's `secrets:` block. A job of your own that uses the SSH key needs
-  `environment: production`. A private repository needs GitHub Pro, Team or Enterprise for
-  environment secrets. `--with-release` now requires a pull request without an approval.
-- `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
-  lint. No caller uses `strict` today; one that does adds the script, for example with
-  `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows.
-- The catalog drops `libs.jimfs`, `libs.java.diff.utils`, `libs.openai.java.client.okhttp` and
-  `libs.anthropic.java.client.okhttp`, which no consumer declared. A build that uses one fails to
-  resolve the alias; add the library to the Platform catalog first, as for any new library.
-- `AbstractLiquibaseChangelogTest` parses the master changelog and its includes with Liquibase instead
-  of looking for the word `databaseChangeLog`. A typo in an include path or invalid YAML now fails the
-  fast test instead of the Testcontainers context test; fix the file the failure names.
+- `templates/Dockerfile.backend` builds in layers, starts `JarLauncher` from `/app` instead of
+  `java -jar /app/app.jar`, and declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
+  `backend/Dockerfile`, then in the compose files: drop a `command:` or `entrypoint:` that names
+  `/app/app.jar`; delete the backend's `healthcheck:`, which replaces the image's (BookOfStyling only checks
+  that the port is open, and SkillSprintPlus runs `curl`, which `sapmachine:27-jre` does not contain, so its
+  backend never becomes healthy); and drop a `JAVA_TOOL_OPTIONS` unless it means to replace both flags
+  (manual, [consuming.md](docs/consuming.md#runtime-image)).
+- `templates/.editorconfig` indents Java with two spaces, as google-java-format in `seniordev.java-conventions`
+  formats it, and keeps tabs for Kotlin and `*.kts`. Re-copy it, so editors stop fighting `spotlessApply`;
+  `platform-templates-check` reports a stale copy (manual).
+- The pg18 image keeps its data in `/var/lib/postgresql/18/docker`, so `infra/docker-compose.yml` now mounts
+  `postgres-data` at `/var/lib/postgresql`. With the old `/var/lib/postgresql/data` mount, pg18 refuses to
+  start. Change the mount in your copy: Attestate_io still has the old one (manual).
+- `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does, and treats the
+  `.kotlin/` cache as regenerable output. Re-copy it from `templates/merge.sh` when `platform-templates-check`
+  reports it, and write messages such as `feat: add X` (manual).
+- `platform-bump` writes managed blocks between their markers, each file created when missing: the
+  `platform-agents` rules into the root `AGENTS.md`, and the stack, rules and commands of the pinned release into
+  `backend/AGENTS.md` (`platform-agents-backend`; the root `AGENTS.md` when Gradle sits at the root) and
+  `frontend/AGENTS.md` (`platform-agents-frontend`). Where one of those directories has no `CLAUDE.md`, it writes
+  one that imports `@AGENTS.md`; an existing `CLAUDE.md` is never changed, only flagged when it lacks the import.
+  After the bump, delete what those files copied from Platform, such as the "Stack (version-pinned)" and
+  convention-plugin sections of BookOfStyling and SkillSprintPlus, whose versions are already stale, and keep only
+  project rules outside the markers (manual).
 - `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
   `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
-  of your first bump: a caller on `@v1` moves to an exact tag and stops floating.
-- `platformDependencyCheck` now also governs dependency constraints, every declarable bucket
-  (`compileOnlyApi`, `developmentOnly`, `testAndDevelopmentOnly`, `testFixtures*` and custom
-  source sets) and `pl.seniordeveloper` artifacts. Remove explicit versions from those
-  declarations, or declare the dependency through `libs.<alias>`.
-- `check` now fails when `coverageMinimum` is above 0 and no test task produced JaCoCo data,
-  for example in a module without tests or with every test task excluded. Before, the gate was
-  skipped and `check` stayed green. Add tests or set `coverageMinimum=0` for such a module.
-- `check` now fails when the final `FROM` of the project's Dockerfile runs an older Java than
-  the toolchain (27), which before surfaced only as `UnsupportedClassVersionError` at the
-  post-deploy health gate. Move the final stage to the image in `templates/Dockerfile.backend`
-  (`sapmachine:27-jre`) before taking this release; `platform-bump` does it for a final
-  `eclipse-temurin:<N>-jre` or `-jdk` stage (migration `1.6.0-runtime-image-27`) and names any other
-  image for a manual fix.
+  of your first bump: a caller on `@v1` moves to an exact tag and stops floating (manual review).
+- `deploy.yml` reads `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` as secrets of the
+  `production` environment, whose deployment branch policy admits only `release`; its preflight no
+  longer checks them. Sync `templates/setup-gh-deploy.sh` into `scripts/` and make sure git ignores
+  `.secrets.local` (the rule is in `templates/gitignore/root.gitignore`): the script now refuses to run
+  while the file holding the PATs could be committed. Run it once (it creates the environment, the policy
+  and the secrets), then delete the repository-level `SSH_*` secrets it lists, and drop `SSH_*` from the
+  caller's `secrets:` block. A job of your own that uses the SSH key needs `environment: production`. A
+  private repository needs GitHub Pro, Team or Enterprise for environment secrets. `--with-release` now
+  requires a pull request without an approval (manual).
 - Callers of `frontend-ci.yml` must grant `packages: read`. The workflow now requests it, so the
   automatic `GITHUB_TOKEN` fallback can read `@dominiksienkiewicz/*`, and a caller that grants only
   `contents: read` fails with `startup_failure`. Pass `gpr_token` explicitly as shown in
   `docs/reusable-workflows.md`. `platform-bump` adds `packages: read` to the callers of `backend-ci.yml`
   and `frontend-ci.yml` (migration `1.6.0-caller-packages-read`) and names a `permissions:` it cannot
   edit for a manual fix.
-- `coverageMinimum` must be a decimal between 0 and 1. A value such as `80` or `0,8` now fails
-  the build instead of setting a threshold of 80 or crashing with a parse error.
-
-- `platform-versions-check` now requires every `@dominiksienkiewicz/*` pin to be exact and equal to
-  the installed `@dominiksienkiewicz/versions` release, and it governs `optionalDependencies`. A
-  caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
-  fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits.
-
 - Every job of the reusable workflows has a time limit instead of GitHub's 360 minutes: backend-ci 30,
   frontend-ci 20, security-scan and container-scan 15, semgrep and scorecard 10, roadmap-unblock 5,
   deploy 30 for the build and 20 for the deploy. A caller whose job runs longer passes
-  `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml).
+  `with: { timeout-minutes: N }` (`build-timeout-minutes` and `deploy-timeout-minutes` in deploy.yml) (manual).
+- `frontend-ci.yml` with `strict: true` requires a nonempty `format:check` script and runs it before
+  lint. No caller uses `strict` today; one that does adds the script, for example with
+  `@dominiksienkiewicz/prettier-config` as `docs/consuming.md` shows (none).
+- `platform-versions-check` now requires every `@dominiksienkiewicz/*` pin to be exact and equal to
+  the installed `@dominiksienkiewicz/versions` release, and it governs `optionalDependencies`. A
+  caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
+  fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits (manual).
+- The roadmap toolkit (BookOfStyling, SkillSprintPlus) is marked *experimental*: only its marker contract
+  is stable. Re-copy `templates/roadmap/scripts/**` and the new issue form
+  `templates/roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml`; `roadmap-unblock.yml` now runs only for
+  issues closed as completed, one run at a time. Run the marker self-heal with `--preview <ID>` and
+  `--dry-run` first: it rewrites titles and bodies, now from the Backlog Handoff table (manual).
+- The security starter's `platform.security.csrf` is now `ON`, `OFF` or `SPA`; `true` and `false` still bind, and
+  its 401 and 403 bodies are `application/problem+json`. No consumer has adopted the starter (none).
 
 ### Added
 
+- Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
+  `docs/gates.md` at the release that produced it; `backend-ci.yml` names dependency verification and the
+  coverage threshold (`PLAT-VER-001`, `PLAT-COV-003`), and `scripts/gate-failures.py` counts consumer failures
+  per code locally. `templates/tests/gate-codes.test.sh` keeps the codes and the sections equal.
+- A deprecation channel: `platform-deprecations.tsv` in the plugin (first entries: `spring-boot-starter-web`
+  and `spring-boot-starter-aop`, replaced by their Spring Boot 4 names) and a `deprecated` map in
+  `versions.json` warn with `PLAT-DEPR-001` and keep working; `-Pplatform.deprecations.mode=fail` fails the Gradle
+  side. `deploy.yml` warns about the `gh_token` BuildKit secret id and `sonar.yml` about itself.
+- `platformDependencyCheck` writes `build/reports/platform/dependency-check.md` and, in GitHub Actions, the job
+  summary.
 - `scripts/new-consumer.sh --frontend next` renders a strict Next.js frontend (canon versions, the Platform
   configs, `.npmrc`, `Dockerfile.frontend` and a `frontend-ci.yml` caller); a TestKit case builds `lint test`
   on both generated backends. `scripts/render-example.sh` and the `example` job of `release.yml` regenerate a
@@ -318,8 +379,98 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   every push to `main` and weekly, with published results; Semgrep also on pull requests. A change
   to either workflow now runs in Platform before consumers get it.
 
+- Test taxonomy as code (N-CAP-8): every test task passes its name in `platform.test.task`, so the container guard
+  of the test fixtures knows the fast `test`; `modelTest` in the Spring conventions; a JUnit baseline with the
+  `platform.junit.baseline` opt-out.
+- Quarantine with a deadline (N-REL-13): `quarantineTest` (outside `check`, `ignoreFailures`), every other test
+  task excludes the tag, and `platformQuarantineCheck` requires an issue and a date (codes `PLAT-QUA-001`/`002`).
+  `-Pplatform.test.retry=detect` (or `PLATFORM_TEST_RETRY=detect`) applies `org.gradle.test-retry` 1.6.6 with one
+  retry and `failOnPassedAfterRetry`; `backend-ci.yml` sets the variable (`-Pplatform.test.retry=off` in
+  `gradle-task` turns it off) and writes a "Test health" job summary of flaky tests, the `quarantineTest`
+  result and every quarantine deadline.
+- Agent profile as a contract (N-SHOW-2): `platform.agent.testForks`, `platform.agent.testHeap` and
+  `springContextCacheSize` override the `AI_AGENT` defaults in every mode, one `Platform agent profile:` line per
+  build in agent mode, and `AI_AGENT_MAX_WORKERS` for `agent-gradle.sh` and the Vitest preset;
+  [docs/agent-profile.md](docs/agent-profile.md) holds the table.
+- Support window (N-REL-6): only the latest MINOR gets fixes, a pin stays at most 3 releases or 60 days
+  behind, a security release is adopted within 14 days ([RELEASING.md](RELEASING.md#support-policy)). The
+  settings plugin and `platform-versions-check` print one line for an older release, never a failure;
+  `release.yml` stamps the tag's commit date into the plugin and into `versions.json` (`releasedAt`).
+- `-Pplatform.toolchain.override=<N>` replaces the canon toolchain with a warning, and `upstream-canary.yml` gains
+  a next-JDK leg that builds the starter on a Temurin early-access toolchain; its Gradle RC leg now runs the
+  whole TestKit suite through `-PplatformTestGradleVersion` (N-REL-4).
+
+- `platform { }`, a typed extension for `coverage.minimum`, `sonar.projectKey`, `mutation.targetPackages` and
+  `staticAnalysis.failOnBugs` (N-DX-15). An unset field falls back to the existing property, so nothing changes for a
+  build that sets none; the coverage gate prints `source: platform.coverage.minimum` when the block sets it.
+- `seniordev.sonar-conventions` for the root of a multi-module build (F-13).
+- `seniordev.nullness-conventions`, opt-in: Error Prone 2.50.0 and NullAway 0.14.2 in JSpecify mode fail
+  `compileJava` on a null dereference in packages marked `@NullMarked`; TestKit runs it on the canon toolchain
+  (N-CAP-11). The catalog gains `jspecify`, `errorprone-core`, `nullaway` and the `errorprone` plugin.
+- `platform.javac.werror=true` turns javac warnings, Error Prone's included, into errors (N-CAP-11).
+- Daemon JVM criteria in `templates/jvm/*`: the wrapper starts from any JDK and Gradle selects or downloads Java 25
+  for the daemon; the starters' `pluginManagement` names the credential fix instead of a nested 401 (N-DX-2).
+
+- Security starter (N-CAP-13): `platform.security.mode=jwt` makes the application an OAuth2 resource server on
+  Spring Boot's `spring.security.oauth2.resourceserver.jwt.*`, stateless, with `platform.security.jwt.authorities-claim`;
+  without the resource-server dependency or a `JwtDecoder` it fails at startup and names the fix. 401 and 403 are
+  `application/problem+json` with the mode's `WWW-Authenticate` challenge, and `platform.security.csrf=spa` uses
+  Spring Security's `csrf.spa()`. The api-client's `xsrf` option echoes the `XSRF-TOKEN` cookie in `X-XSRF-TOKEN`.
+
+- `platform-bump --report[=<file>]` prints the impact of the crossed releases on the repository on the engine of
+  `scripts/canon-diff.py` (now `bin/canon_diff.py` in the versions package, with a TOML reader for Python 3.9),
+  and `platform-bump.yml` puts it into the pull request body (N-REL-8).
+- The bump always runs the logic of its target: a copy of `platform-bump` that is not the target release hands
+  over to the target's bin from the release assets, checked against `SHA256SUMS` and the attestation, and the
+  stub bumps a repository without a frontend the same way; `--print-target` prints the target only (N-DX-4).
+- `release-draft.yml` keeps a draft GitHub Release **Next** with the notes since the last tag (N-REL-7).
+- `scripts/ring-rollout.sh` bumps Touchstone first and the other consumers after its pull request is green
+  (N-REL-1).
+- `deploy.yml` takes `rollback-to-backend` and `rollback-to-frontend`: a dispatch redeploys tags already in GHCR
+  without building (N-REL-12).
+- `backend-ci.yml` takes `verify-provenance` ([PLAT-PROV-001](docs/gates.md#plat-prov-001)), and
+  `reproducibility.yml` rebuilds the latest tag every week and compares every jar with GitHub Packages
+  (N-REL-16).
+- `templates/Dockerfile.backend` copies one image layer per Boot layer and trains an optional JDK AOT cache with
+  `--build-arg AOT_CACHE=true`; `ci.yml` builds it from the `spring-app` starter and waits for `healthy` (N-CAP-5).
+- `infra/docker-compose.yml` has an `observability` profile: otel-collector, Tempo, Prometheus and Grafana for an
+  application on the host (N-CAP-4).
+
+- Agent guidance (N-SHOW-1): a root `AGENTS.md` beside `CLAUDE.md`, the managed block
+  `templates/agents/platform-block.md` that `platform-bump` syncs into consumers, the rule sheet
+  `docs/consumer-agents.md`, runbooks under `docs/runbooks/`, and `templates/tests/agent-docs.test.sh`, which fails
+  when they name a command, task, bin or path that does not exist.
+- Per-directory agent blocks: `templates/agents/backend-block.md` and `frontend-block.md`, filled with the stack of
+  the release `platform-bump` goes to: the catalog's Java, Gradle, Spring Boot, Spring Modulith, Spring AI and JUnit
+  from `agents/stack.json`, which `scripts/agents-stack.py` generates from the catalog, and Next.js, React,
+  TypeScript, Tailwind CSS, Vitest, ESLint and Prettier from `versions.json`. `sync-agents-block.py` takes the
+  marker name from the template, so blocks of different names share one file, and refuses a block with an
+  unfilled placeholder.
+- A devcontainer with JDK 25 and 27, Node 24 and pnpm, guarded against the canon by
+  `templates/tests/devcontainer.test.sh` and built by `devcontainer.yml`, which runs the build-logic suite in it
+  (N-SHOW-11).
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (the Contributor Covenant by reference) and issue forms for bugs, library
+  requests and adoptions (N-SHOW-13).
+- ADRs 0014-0033 for every settled decision, with a decision map in `docs/adr/README.md` (N-SHOW-14).
+- `scripts/docs-gen.sh` regenerates the template snippets, the workflow input tables and the npm package table of
+  the docs; CI fails on a stale region (N-SHOW-15).
+- A documentation site built with Zensical in strict mode by `docs-site.yml`, pinned with hashes, deployed to
+  GitHub Pages once the maintainer enables it (N-SHOW-16).
+
 ### Changed
 
+- The canonical root `.gitignore` ignores `.secrets.local`, the values file of `setup-gh-deploy.sh`
+  (`.secrets.local.example` stays tracked). The `.gitignore` files of the JVM starters are built from the root
+  and backend canon, and `templates/gitignore/backend.gitignore` ignores the Eclipse/Buildship `bin/` output;
+  `templates/tests/jvm-starter-gitignore.test.sh` keeps them consistent.
+- `templates/agent-gradle.sh` runs `backend/gradlew` from `backend/` when the repository root has no wrapper.
+- Every npm package declares the MIT licence in its `license` field, as the POMs of the Maven artifacts
+  already did, so a dependency scanner sees it.
+- `docs/consuming.md` states that frontend consumers use npm with a committed `package-lock.json`:
+  `frontend-ci` runs `npm ci` and `platform-bump` refreshes the lockfile with npm, so a consumer on pnpm or
+  Yarn fails CI, although Platform builds its own packages with pnpm.
+- `platformDependencyCheck` is a typed task without `afterEvaluate`, so a dependency a later `afterEvaluate`
+  adds is governed too.
 - `platform-test-fixtures` and `platform-security-starter` import `platform-bom` instead of the separate
   BOMs, so the classpaths they reach get its floors: Jackson 3.1.8 instead of 3.1.5 and ArchUnit 1.5.0 on
   the runtime classpath. A consumer that locks dependencies regenerates its lockfile and verification
@@ -327,9 +478,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `platformDependencyCheck` tells a library the Platform BOMs manage (with the managed version and the
   BOM-property escape hatch) apart from one no BOM manages; the BOMs are resolved only in the task action
   and only when such a line exists.
-- Platform's TestKit suite runs every consumer build with `--configuration-cache` and
-  `--warning-mode=fail`, passes the toolchain with `-D` instead of the deprecated `-P`, and asserts that a
-  second java-library run reuses the configuration cache.
+- Platform's TestKit suite runs every consumer build with `--configuration-cache`, `--warning-mode=all` and
+  `-Pplatform.deprecations.mode=fail`, fails when a Gradle deprecation comes from the Platform conventions (the
+  PIT plugin still calls the deprecated `Configuration.setVisible`, so `--warning-mode=fail` waits for its
+  fix), passes the toolchain with `-D` instead of the deprecated `-P`, and asserts that a second java-library
+  run reuses the configuration cache. `platformBomOverrideCheck` no longer calls the deprecated
+  `Project.getProperties`.
 - `PlatformPostgresContainer` is deprecated in favour of `PlatformSharedPostgresContainer`: as a
   `@ServiceConnection` bean it starts one container per cached context signature. It keeps working
   unchanged.
@@ -418,8 +572,20 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - The JVM starters in `templates/jvm/` are pinned to the latest release.
 - `check` prints the effective coverage threshold and where it came from.
 
+- Every check task of the conventions declares an output (`platformPinCheck`, `platformRuntimeImageCheck`,
+  `platformCoverageDataCheck`, `platformBomOverrideCheck`), so an unchanged second build runs none of them
+  again; a TestKit case holds that (N-REL-15). Only `platformQuarantineCheck` runs every time.
+- `docs/http-client-and-agent-budget.md` is now `docs/api-client.md`; the agent half moved to
+  `docs/agent-profile.md`.
+
+- `SECURITY.md` names the support policy and the exact workflow pins instead of `@v1`.
+
 ### Fixed
 
+- `merge.sh` treats `.kotlin/`, the cache the Kotlin Gradle plugin leaves in every module that compiles Kotlin
+  (`gradle/build-logic`, a consumer's `buildSrc`), as regenerable build output. A worktree whose only leftover is
+  that cache merges, and the cache goes with the worktree; before, the merge stopped with "has local or ignored
+  files". A look-alike such as an ignored `.kotlin-notes` file still blocks.
 - `extractCheckstyleConfig` and `extractSpotbugsConfig` no longer capture the plugin script object in
   their actions, which the configuration cache cannot serialize; a consumer that turns the cache on
   no longer fails `check` on them.

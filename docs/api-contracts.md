@@ -77,7 +77,7 @@ A path must fill in a template the spec declares for that method; a plain `strin
 so build it with a template literal. The result is the union of the operation's 2xx JSON bodies, and
 `null` for a response without content. `request()` stays untyped for a call the spec does not describe.
 `@dominiksienkiewicz/api-client` is private until its first adopter
-([http-client-and-agent-budget.md](http-client-and-agent-budget.md)).
+([api-client.md](api-client.md)).
 
 ## Errors: Problem Details
 

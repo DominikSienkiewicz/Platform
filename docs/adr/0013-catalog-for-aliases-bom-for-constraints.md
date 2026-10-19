@@ -37,8 +37,8 @@ treats nested imports and a consumer's own `extra["jackson-bom.version"]`, which
 
 - A consumer without Spring, or a module that does not apply the Spring conventions, gets the same CVE
   floors with `implementation(platform(libs.platform.bom))`.
-- The overrides exist twice until the conventions import the BOM: in `PlatformVersions` (for the
-  conventions) and in `platform-bom`. Both read the catalog, so they cannot drift, but both must be
+- Until the update below, the overrides existed twice: in `PlatformVersions` (for the
+  conventions) and in `platform-bom`. Both read the catalog, so they could not drift, but both had to be
   removed when Boot manages fixed versions.
 - One more published artifact, *incubating* until a consumer declares it (Decision 7).
 
@@ -47,3 +47,18 @@ treats nested imports and a consumer's own `extra["jackson-bom.version"]`, which
 A TestKit run shows `dependencyInsight` selecting the BOM's Lombok, Jackson and Tomcat through
 `mavenBom("pl.seniordeveloper:platform-bom")`, including a consumer that sets `jackson-bom.version`:
 then the conventions import the BOM, their `ext` overrides go, and consumers delete their own blocks.
+
+## Update — conventions import the BOM (2026-10-19)
+
+The revisit condition is met. `PlatformBomImportFunctionalTest` runs `dependencyInsight` on a consumer of the
+Spring conventions and selects the BOM's Lombok, Jackson and Tomcat through
+`mavenBom("pl.seniordeveloper:platform-bom:<release>")`; a consumer that sets `jackson-bom.version` to the
+vulnerable 3.1.5 still gets the fixed Jackson, because the BOM imports Jackson before Boot. So:
+
+- `seniordev.spring-modulith-conventions` imports `platform-bom` of its own release and sets no `ext`
+  version property; the overrides live once, in the BOM. The managed ArchUnit dependency stays in the
+  conventions, because `PlatformToolVersionMirrorTest` guards it on the runtime classpath.
+- `platformBomOverrideCheck` now lists every `*.version` property a consumer sets, since Platform sets none.
+- Consumers delete their own override blocks (Azimuth's `eachDependency`, BookOfStyling's
+  `extra["jackson-bom.version"]`, SkillSprintPlus's `eachDependency` on jackson-databind) in the bump PR to
+  the release that carries this change.

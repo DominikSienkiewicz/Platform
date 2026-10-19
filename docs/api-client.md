@@ -1,6 +1,6 @@
-# HTTP response handling and agent worker budget
+# API client
 
-## API client response contract
+## Response contract
 
 > **Incubating.** `@dominiksienkiewicz/api-client` is private and not published: no consumer has
 > adopted it, and 1.5.31 is its last release in GitHub Packages. The contract below holds for that
@@ -31,15 +31,12 @@ its `message`, then its `title`, then the HTTP status text, then `HTTP <status>`
 for any other response `problem` is `null`. Raw response text is retained for diagnostics and is not
 used as the error message.
 
-## Vitest worker budget
+## CSRF for a single-page application
 
-`@dominiksienkiewicz/vitest-config` sets `test.maxWorkers` to 2 when the agent
-harness sets `AI_AGENT=1` or `AI_AGENT=true`. The value is read when the configuration
-module loads. Other values, including an absent variable, leave Vitest's default
-worker count unchanged. `CI` alone does not enable the agent budget.
-
-Consumers use the shared `baseConfig` as before. A consumer's explicit
-`test.maxWorkers` override still takes precedence when merged after `baseConfig`.
+`createApiClient({ xsrf: true })` reads the `XSRF-TOKEN` cookie and sends it as `X-XSRF-TOKEN` on every request
+that is not `GET`, `HEAD`, `OPTIONS` or `TRACE`, which is what the security starter's
+`platform.security.csrf=spa` expects. `xsrf: { cookie, header }` takes other names. It works only in the browser,
+where `document.cookie` exists, and a header the call sets itself wins.
 
 ## Focused regression suites
 
@@ -51,5 +48,5 @@ pnpm --filter @dominiksienkiewicz/vitest-config test
 ```
 
 The Vitest configuration tests import the public configuration and therefore
-require its declared peer dependencies to be installed. They check both agent
-values, disabled values, and ordinary CI behavior without executing Vitest suites.
+require its declared peer dependencies to be installed. They check the agent worker
+budget ([agent-profile.md](agent-profile.md)) without executing Vitest suites.

@@ -1,0 +1,31 @@
+name: Devcontainer
+
+# Devcontainer z .devcontainer/ naprawdę się buduje i uruchamia zestaw build-logic (N-SHOW-11): przy zmianie jego
+# plików, co tydzień (Temurin i Node wychodzą przy każdym buildzie najnowsze w swojej linii) i ręcznie. Doradczy.
+on:
+  pull_request:
+    paths: [".devcontainer/**", ".github/workflows/devcontainer.yml"]
+  schedule:
+    - cron: "0 4 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  devcontainer:
+    name: Build the devcontainer and run the build-logic suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
+        with:
+          push: never
+          runCmd: |
+            set -euo pipefail
+            mkdir -p "$HOME/.gradle"
+            echo "org.gradle.java.installations.paths=/opt/jdk-27" >> "$HOME/.gradle/gradle.properties"
+            cd gradle/build-logic && ./gradlew --no-daemon test

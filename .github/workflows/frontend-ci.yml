@@ -91,7 +91,7 @@ jobs:
           if [ -e node_modules/.bin/platform-versions-check ]; then
             node node_modules/@dominiksienkiewicz/versions/bin/check.mjs
           elif [ "$STRICT" = "true" ]; then
-            echo "::error::Missing @dominiksienkiewicz/versions; strict CI cannot skip the version guard"
+            echo "::error title=PLAT-CI-001::[PLAT-CI-001] Missing @dominiksienkiewicz/versions; strict CI cannot skip the version guard"
             exit 1
           else
             echo "::notice::@dominiksienkiewicz/versions is not a dependency, so the version canon guard is skipped"
@@ -103,7 +103,7 @@ jobs:
         if: ${{ inputs.strict }}
         run: |
           if ! node -e 'const s = require("./package.json").scripts ?? {}; process.exit(typeof s["format:check"] === "string" && s["format:check"].trim() ? 0 : 1)'; then
-            echo "::error::Missing required scripts: format:check"
+            echo "::error title=PLAT-CI-001::[PLAT-CI-001] Missing required scripts: format:check"
             exit 1
           fi
           npm run format:check
@@ -118,7 +118,7 @@ jobs:
             exit 0
           fi
           if [ ! -e node_modules/@dominiksienkiewicz/openapi/bin/check.mjs ]; then
-            echo "::error::package.json configures platform.openapi, but @dominiksienkiewicz/openapi is not installed"
+            echo "::error title=PLAT-CI-001::[PLAT-CI-001] package.json configures platform.openapi, but @dominiksienkiewicz/openapi is not installed"
             exit 1
           fi
           node node_modules/@dominiksienkiewicz/openapi/bin/check.mjs

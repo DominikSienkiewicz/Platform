@@ -34,3 +34,9 @@ in the `dominiksienkiewicz` organisation, with Automatic Analysis off, are creat
 
 `build-logic` grows code that SonarQube Cloud would analyse better than ktlint, or the analysis moves to
 the reusable `sonar.yml` that no consumer calls today.
+
+## Update — multi-module consumers (2026-10-19)
+
+A multi-module consumer applies `seniordev.sonar-conventions` in its root project (Decision 24, F-13): one analysis
+under one project key, waiting for the JaCoCo report of every module. `seniordev.quality-conventions` applies the
+Sonar plugin only in the root project, so a module never runs a partial analysis of its own.

@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.VersionCatalogsExtension
+
 plugins {
 	`kotlin-dsl`
 	`maven-publish`
@@ -60,6 +62,8 @@ val generatePlatformVersions =
 				"TOMCAT" to libs.versions.tomcat,
 				"JACKSON_BOM" to libs.versions.jacksonBom,
 				"JACKSON_2_BOM" to libs.versions.jackson2Bom,
+				"ERROR_PRONE" to libs.versions.errorprone,
+				"NULLAWAY" to libs.versions.nullaway,
 				// Wersja samego wydania Platform: platformDoctor porównuje z nią pin katalogu konsumenta.
 				"PLATFORM" to providers.gradleProperty("platformVersion"),
 			).mapValues { (_, version) -> version.get() }
@@ -88,6 +92,62 @@ val generatePlatformVersions =
 	}
 kotlin.sourceSets.named("main") { kotlin.srcDir(generatePlatformVersions) }
 
+// Kanon osadzony w pluginie (E1-6): platformDependencyCheck porównuje wersje z TYM plikiem, a nie z katalogiem
+// `libs` konsumenta, który `version(...)` po `from(...)` w settings potrafi nadpisać. Jedno źródło nadal to
+// gradle/catalog (zasada 1); aliasy `version.ref = "platform"` dostają platformVersion tego wydania.
+val platformCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val generatePlatformCanon =
+	tasks.register("generatePlatformCanon") {
+		val catalog = platformCatalog
+		val platformVersion = providers.gradleProperty("platformVersion").get()
+		val placeholder = libs.versions.platform.get()
+		val rows =
+			catalog.libraryAliases
+				.map { alias ->
+					val library = catalog.findLibrary(alias).get().get()
+					val version = library.versionConstraint.requiredVersion.let { if (it == placeholder) platformVersion else it }
+					"${library.module.group}:${library.module.name}\t$version\tlibs.${alias.replace('-', '.').replace('_', '.')}"
+				}.sorted()
+		inputs.property("rows", rows)
+		val output = layout.buildDirectory.dir("generated/platform-canon/resources")
+		outputs.dir(output)
+		doLast {
+			val file = output.get().file("platform-canon.tsv").asFile
+			file.parentFile.mkdirs()
+			file.writeText(rows.joinToString("\n", postfix = "\n"))
+		}
+	}
+sourceSets.named("main") { resources.srcDir(generatePlatformCanon) }
+
+// Data wydania dla okna wsparcia (N-REL-6): release.yml podaje -PplatformReleaseDate (data commita taga, nie czas
+// buildu, więc jar zostaje odtwarzalny); lokalnie data commita HEAD. Pusta data = settings plugin milczy.
+val platformReleaseDate =
+	providers
+		.gradleProperty("platformReleaseDate")
+		.orElse(
+			providers
+				.exec {
+					commandLine("git", "log", "-1", "--format=%cs")
+					isIgnoreExitValue = true
+				}.standardOutput.asText
+				.map { it.trim() },
+		)
+val generatePlatformRelease =
+	tasks.register("generatePlatformRelease") {
+		val version = providers.gradleProperty("platformVersion").get()
+		val releasedAt = platformReleaseDate.getOrElse("")
+		inputs.property("version", version)
+		inputs.property("releasedAt", releasedAt)
+		val output = layout.buildDirectory.dir("generated/platform-release/resources")
+		outputs.dir(output)
+		doLast {
+			val file = output.get().file("platform-release.properties").asFile
+			file.parentFile.mkdirs()
+			file.writeText("version=$version\nreleasedAt=$releasedAt\n")
+		}
+	}
+sourceSets.named("main") { resources.srcDir(generatePlatformRelease) }
+
 // Dependency locking — powtarzalne rozwiązywanie zależności (gradle.lockfile).
 // Regeneracja po bumpie którejkolwiek wersji wyżej: ./gradlew dependencies --write-locks
 dependencyLocking {
@@ -102,8 +162,12 @@ dependencies {
 	implementation("com.diffplug.spotless:spotless-plugin-gradle:${libs.versions.spotless.get()}")
 	implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:${libs.versions.spotbugsPlugin.get()}")
 	implementation("info.solidsoft.gradle.pitest:gradle-pitest-plugin:${libs.versions.pitest.get()}")
+	// Wykrywanie niestabilnych testów (N-REL-13), stosowane tylko na żądanie -Pplatform.test.retry=detect.
+	implementation("org.gradle:test-retry-gradle-plugin:${libs.versions.testRetry.get()}")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")
+	// Error Prone + NullAway (N-CAP-11), aplikowany tylko przez opt-in seniordev.nullness-conventions.
+	implementation("net.ltgt.gradle:gradle-errorprone-plugin:${libs.versions.errorpronePlugin.get()}")
 	// Settings plugin (toolchain auto-provisioning) — aplikowany przez seniordev.settings-conventions.
 	implementation("org.gradle.toolchains:foojay-resolver:${libs.versions.foojayResolver.get()}")
 
@@ -131,6 +195,9 @@ tasks.withType<Test>().configureEach {
 	val springModulithConventions =
 		layout.projectDirectory.file("src/main/kotlin/seniordev.spring-modulith-conventions.gradle.kts")
 	val qualityConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.quality-conventions.gradle.kts")
+	val nullnessConventions = layout.projectDirectory.file("src/main/kotlin/seniordev.nullness-conventions.gradle.kts")
+	inputs.file(nullnessConventions)
+	systemProperty("platform.nullnessConventions", nullnessConventions.asFile.absolutePath)
 	inputs.file(javaConventions)
 	inputs.file(springModulithConventions)
 	inputs.file(qualityConventions)
@@ -167,6 +234,8 @@ tasks.withType<Test>().configureEach {
 		"springAi" to libs.versions.springAi,
 		"junit" to libs.versions.junit,
 		"jsoup" to libs.versions.jsoup,
+		"errorprone" to libs.versions.errorprone,
+		"nullaway" to libs.versions.nullaway,
 	).forEach { (name, version) ->
 		inputs.property("canon.$name", version)
 		systemProperty("platform.canon.$name", version.get())
@@ -246,8 +315,20 @@ val publishFunctionalTestCatalog =
 			)
 	}
 
+val publishFunctionalTestBom =
+	tasks.register<GradleBuild>("publishFunctionalTestBom") {
+		dir = file("../bom")
+		tasks = listOf("publishAllPublicationsToFunctionalTestRepository")
+		startParameter.projectProperties =
+			mapOf(
+				"platformVersion" to project.version.toString(),
+				"functionalTestRepository" to functionalTestRepository.get().asFile.absolutePath,
+			)
+	}
+
 tasks.named<Test>("test") {
-	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog)
+	dependsOn("publishAllPublicationsToFunctionalTestRepository", publishFunctionalTestCatalog, publishFunctionalTestBom)
+	inputs.file(layout.projectDirectory.file("../bom/build.gradle.kts"))
 	val templates = layout.projectDirectory.dir("../../templates/jvm")
 	inputs.dir(templates)
 	// GeneratedConsumerFunctionalTest renderuje backend generatorem, który kopiuje też te pliki templates/.
@@ -270,4 +351,8 @@ tasks.named<Test>("test") {
 	)
 	systemProperty("platform.version", project.version.toString())
 	systemProperty("platform.javaInstallations", providers.gradleProperty("org.gradle.java.installations.paths").getOrElse(""))
+	// -PplatformTestGradleVersion=<wersja> (N-REL-4, upstream-canary): konsumenci TestKit biegną na tym Gradle'u.
+	val testGradleVersion = providers.gradleProperty("platformTestGradleVersion").getOrElse("")
+	inputs.property("testGradleVersion", testGradleVersion)
+	systemProperty("platform.testGradleVersion", testGradleVersion)
 }

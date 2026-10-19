@@ -2,7 +2,10 @@ name: Upstream canary
 
 # Co tydzień (i ręcznie): czy nadchodzące wersje narzędzi zepsują konsumentów, zanim dojdą do nich po GA (N-REL-4).
 # Doradczy: nigdy na push ani PR, nigdy nie blokuje main. Każda noga prowadzi jedno issue (scripts/upsert-issue.sh).
-#   gradle-rc:     starter java-library na bieżącym Gradle RC z lokalnie opublikowaną Platform; bez RC noga się pomija.
+#   gradle-rc:     cały zestaw TestKit build-logic na bieżącym Gradle RC (-PplatformTestGradleVersion, GradleRunner
+#                  .withGradleVersion); bez RC noga się pomija.
+#   next-jdk:      starter java-library z toolchainem o jeden wyżej niż kanon (-Pplatform.toolchain.override) na buildzie EA
+#                  Temurin; bez buildu EA noga się pomija.
 #   runtime-image: czy jest już eclipse-temurin:<java>-jre i czy przechodzi bramkę Grype z container-scan.yml —
 #                  warunek powrotu z sapmachine (docs/versions.md, "Runtime image for the JDK 27 toolchain").
 on:
@@ -22,7 +25,7 @@ jobs:
   gradle-rc:
     name: Gradle release candidate
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     permissions:
       contents: read
       issues: write
@@ -52,7 +55,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "25"
-      - name: Build the java-library starter on the candidate
+      # Każdy konsument TestKit (starterzy, generator, bramki) biegnie na kandydacie; build-logic sam zostaje na wrapperze.
+      - name: Run the TestKit suite on the candidate
         id: build
         if: ${{ steps.rc.outputs.version != '' }}
         env:
@@ -62,15 +66,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
           echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "$HOME/.gradle/gradle.properties"
-          repo="$RUNNER_TEMP/platform-repo"
-          for module in build-logic catalog; do
-            (cd "gradle/$module" && ./gradlew --no-daemon -PplatformBundleRepository="$repo" publishAllPublicationsToBundleRepository)
-          done
-          app="$RUNNER_TEMP/java-library"
-          cp -R templates/jvm/java-library "$app"
-          cd "$app"
-          ./gradlew --no-daemon wrapper --gradle-version "$GRADLE_RC" -PplatformRepository="file://$repo"
-          ./gradlew --no-daemon build --warning-mode=fail -PplatformRepository="file://$repo"
+          cd gradle/build-logic
+          ./gradlew --no-daemon test -PplatformTestGradleVersion="$GRADLE_RC"
       - name: Report the failure
         if: ${{ failure() && steps.build.outcome == 'failure' }}
         env:
@@ -80,11 +77,78 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            echo "The \`java-library\` starter does not build on Gradle $GRADLE_RC with the Platform of this commit."
+            echo "The TestKit suite of \`gradle/build-logic\` fails on Gradle $GRADLE_RC with the Platform of this commit."
+            echo "Reproduce: \`cd gradle/build-logic && ./gradlew test -PplatformTestGradleVersion=$GRADLE_RC\`."
             echo ""
             echo "Run: $RUN_URL"
           } > "$RUNNER_TEMP/issue.md"
           bash scripts/upsert-issue.sh "Upstream canary: Gradle release candidate" "$RUNNER_TEMP/issue.md"
+
+  next-jdk:
+    name: Next JDK toolchain
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Name the next toolchain
+        id: next
+        run: |
+          java=$(sed -n -E 's/^java *= *"([0-9]+)".*/\1/p' gradle/catalog/libs.versions.toml)
+          echo "version=$((java + 1))" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        id: next-jdk
+        continue-on-error: true
+        with:
+          distribution: temurin
+          java-version: ${{ steps.next.outputs.version }}-ea
+      - name: Skip without an early-access build
+        if: ${{ steps.next-jdk.outcome != 'success' }}
+        env:
+          NEXT: ${{ steps.next.outputs.version }}
+        run: echo "::notice::There is no Temurin early-access build of Java $NEXT right now."
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        if: ${{ steps.next-jdk.outcome == 'success' }}
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build the java-library starter on the next toolchain
+        id: build
+        if: ${{ steps.next-jdk.outcome == 'success' }}
+        env:
+          NEXT: ${{ steps.next.outputs.version }}
+          NEXT_JDK: ${{ steps.next-jdk.outputs.path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.gradle"
+          echo "org.gradle.java.installations.paths=$NEXT_JDK" >> "$HOME/.gradle/gradle.properties"
+          repo="$RUNNER_TEMP/platform-repo"
+          for module in build-logic catalog; do
+            (cd "gradle/$module" && ./gradlew --no-daemon -PplatformBundleRepository="$repo" publishAllPublicationsToBundleRepository)
+          done
+          app="$RUNNER_TEMP/java-library"
+          cp -R templates/jvm/java-library "$app"
+          cd "$app"
+          ./gradlew --no-daemon build -PplatformRepository="file://$repo" -Pplatform.toolchain.override="$NEXT"
+      - name: Report the failure
+        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NEXT: ${{ steps.next.outputs.version }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "The \`java-library\` starter does not build with a Java $NEXT toolchain (Temurin early access) and the Platform of this commit."
+            echo "Formatter, Lombok and the analyzers are the usual first breakages; see docs/versions.md before a toolchain move."
+            echo ""
+            echo "Run: $RUN_URL"
+          } > "$RUNNER_TEMP/issue.md"
+          bash scripts/upsert-issue.sh "Upstream canary: next JDK toolchain" "$RUNNER_TEMP/issue.md"
 
   runtime-image:
     name: Temurin runtime image

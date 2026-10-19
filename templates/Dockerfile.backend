@@ -1,8 +1,28 @@
+# Warstwy jara Boota (N-CAP-5): zmiana kodu wymienia w rejestrze i na boksie tylko małą warstwę aplikacji,
+# a nie cały fat jar. Ten sam obraz JRE co etap końcowy, więc ekstrakcja nie potrzebuje osobnego JDK.
+FROM sapmachine:27-jre AS layers
+WORKDIR /build
+ARG JAR_FILE=build/libs/*.jar
+COPY ${JAR_FILE} app.jar
+RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
+
 FROM sapmachine:27-jre
 WORKDIR /app
 RUN groupadd --system spring && useradd --system --gid spring --uid 1001 spring
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} app.jar
+# Jedna warstwa obrazu na warstwę Boota, od najrzadziej do najczęściej zmienianej.
+COPY --from=layers /build/extracted/dependencies/ ./
+COPY --from=layers /build/extracted/spring-boot-loader/ ./
+COPY --from=layers /build/extracted/snapshot-dependencies/ ./
+COPY --from=layers /build/extracted/application/ ./
+# Opcjonalny cache AOT JDK (JEP 514): --build-arg AOT_CACHE=true trenuje go jednym startem kontekstu, który kończy się
+# po refreshu (spring.context.exit=onRefresh). Aplikacja, która przy starcie potrzebuje bazy albo sieci, nie przejdzie
+# treningu w buildzie — zostaw wtedy false. Bez cache plik argumentów javy jest pusty, więc JVM startuje jak dotąd
+# (wskazanie nieistniejącego cache drukowałoby błędy przy każdym starcie).
+ARG AOT_CACHE=false
+RUN if [ "$AOT_CACHE" = true ]; then \
+      java -XX:AOTCacheOutput=/app/app.aot -Dspring.context.exit=onRefresh org.springframework.boot.loader.launch.JarLauncher \
+      && echo "-XX:AOTCache=/app/app.aot" > /app/jvm.args; \
+    else : > /app/jvm.args; fi
 USER spring
 EXPOSE 8080
 # Sterta względem limitu pamięci kontenera, a OOM kończy proces, więc restart policy podnosi świeży. Compose
@@ -13,4 +33,4 @@ ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"
 # Bramka deploy-remote.sh czeka na healthy tylko wtedy, gdy kontener ma healthcheck.
 HEALTHCHECK --start-period=60s --interval=10s --timeout=3s --retries=6 \
   CMD ["bash", "-c", "status() { exec 3<>/dev/tcp/127.0.0.1/${MANAGEMENT_SERVER_PORT:-${SERVER_PORT:-8080}} && printf 'GET %s HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' $1 >&3 && read -r -t 2 _ code _ <&3 && echo ${code:0:3}; }; code=$(status /actuator/health/liveness 2>/dev/null); if [ x$code = x404 ]; then code=$(status /actuator/health 2>/dev/null); fi; [ x$code = x200 ]"]
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "@/app/jvm.args", "org.springframework.boot.loader.launch.JarLauncher"]

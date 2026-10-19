@@ -11,6 +11,7 @@ backend-ci.yml input working-directory type=string default=backend
 backend-ci.yml input java-version type=string default="25"
 backend-ci.yml input toolchain-java-version type=string default="27"
 backend-ci.yml input gradle-task type=string default="build"
+backend-ci.yml input verify-provenance type=boolean default=false
 backend-ci.yml input lint-task type=string default=""
 backend-ci.yml secret gpr_token required=false
 backend-ci.yml permissions contents: read
@@ -37,6 +38,8 @@ deploy.yml input scan-severity type=string default=high
 deploy.yml input compose-file type=string default="docker-compose.prod.yml"
 deploy.yml input base-env type=string default=""
 deploy.yml input platform-ref type=string default="v1"
+deploy.yml input rollback-to-backend type=string default=""
+deploy.yml input rollback-to-frontend type=string default=""
 deploy.yml secret GPR_USER required=false
 deploy.yml secret GPR_KEY required=false
 deploy.yml secret NPM_GH_TOKEN required=false
@@ -48,6 +51,7 @@ deploy.yml secret SNYK_TOKEN required=false
 deploy.yml permissions contents: read
 deploy.yml job preflight permissions {}
 deploy.yml job versions permissions contents: read
+deploy.yml job versions permissions packages: read
 deploy.yml job build-push permissions contents: read
 deploy.yml job build-push permissions packages: write
 deploy.yml job snyk-advisory permissions contents: read

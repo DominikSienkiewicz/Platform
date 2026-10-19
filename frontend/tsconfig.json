@@ -28,6 +28,7 @@
     "packages/api-client/index.d.ts",
     "packages/api-client/type-tests/consumer.ts",
     "packages/api-client/type-tests/typed-consumer.ts",
+    "packages/api-client/type-tests/xsrf-consumer.ts",
     "packages/query/index.d.ts",
     "packages/query/type-tests/consumer.ts",
     "packages/vitest-config/index.js",

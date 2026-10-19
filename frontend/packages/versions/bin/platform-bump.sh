@@ -14,6 +14,8 @@
 #   --allow-dirty            # pozwól na niezacommitowane zmiany w plikach, które bump przepisuje
 #   --allow-yanked           # pozwól na jawny cel z listy wycofanych (releases/yanked.txt)
 #   --skip-provenance "<powód>"  # bump bez weryfikacji atestacji pobranej paczki (powód trafia do logu)
+#   --report[=plik]          # raport wpływu (obecny pin, cel] na to repo (N-REL-8); bez pliku na stdout
+#   --print-target           # tylko wypisz wersję docelową wg reguł niżej, bez zapisu (stub, workflow)
 #
 # Transakcja: preflight (narzędzia, czyste drzewo, token) idzie przed pierwszym zapisem, a błąd po nim
 # przywraca każdy plik, który bump mógł zmienić — drzewo zostaje jak przed bumpem.
@@ -28,30 +30,44 @@
 # pinów — to celowe, powody niżej przy bloku. Pierwszy bump po dodaniu drugiego przebiegu poszerza
 # gradle.lockfile o konfiguracje spoza grafu `build` (pitest, cyclonedxBom) — jednorazowy, celowy diff.
 #
-# UWAGA (bootstrap): stub konsumenta odpala ZAINSTALOWANĄ wersję tego skryptu, a kanon bierze ze
-# ŚWIEŻO pobranego tarballa. Repo, które ma jeszcze wydanie bez obsługi `overrides`, po pierwszym
-# bumpie zaktualizuje tylko dependencies/devDependencies — guard w CI zgłosi wtedy dryf w overrides.
-# Lekarstwo: po `npm ci` (już z nową wersją paczki) uruchom platform-bump PONOWNIE. Kolejne bumpy
-# działają jednoprzebiegowo.
+# Logika wydania DOCELOWEGO (N-DX-4): kopia, która nie jest wydaniem celu, po ustaleniu celu pobiera paczkę
+# versions@TARGET z assetów GitHub Release (publiczne, bez PAT-a, SHA256SUMS i atestacja) i oddaje jej sterowanie,
+# więc jeden przebieg wykonuje logikę wydania, do którego idzie — także w repo bez frontendu. Wydanie bez assetów
+# (sprzed 1.6.0) zostaje przy logice tej kopii, z ostrzeżeniem.
 set -euo pipefail
+
+# Paczka, z której biegnie ten skrypt (przez symlink node_modules/.bin albo z cache assetów) — przed cd do repo.
+SELF_ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || printf '%s' "${BASH_SOURCE[0]}")")/.." && pwd)"
+SELF_VERSION=""
+if [[ -f "$SELF_ROOT/package.json" ]]; then
+  SELF_VERSION="$(sed -n -E 's/.*"version":[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' "$SELF_ROOT/package.json" | head -1)"
+fi
 
 # Operuj ZAWSZE na roocie repo konsumenta — bin bywa odpalany z node_modules/.bin lub przez stub.
 cd "$(git rev-parse --show-toplevel)"
 
-USAGE='Usage: platform-bump [--dry-run] [--allow-dirty] [--allow-yanked] [--skip-provenance "<reason>"] [X.Y.Z]'
+USAGE='Usage: platform-bump [--dry-run] [--allow-dirty] [--allow-yanked] [--skip-provenance "<reason>"] [--report[=<file>]] [--print-target] [X.Y.Z]'
 DRY_RUN=false
 ALLOW_DIRTY=false
 ALLOW_YANKED=false
 SKIP_PROVENANCE=""
+REPORT=""
+PRINT_TARGET=false
 TARGET=""
+# Argumenty bez wersji: z nimi bin wydania docelowego dostaje ten sam przebieg (handoff niżej).
+PASS_ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dry-run) DRY_RUN=true ;;
-    --allow-dirty) ALLOW_DIRTY=true ;;
-    --allow-yanked) ALLOW_YANKED=true ;;
+    --dry-run) DRY_RUN=true; PASS_ARGS+=("$1") ;;
+    --allow-dirty) ALLOW_DIRTY=true; PASS_ARGS+=("$1") ;;
+    --allow-yanked) ALLOW_YANKED=true; PASS_ARGS+=("$1") ;;
+    --report) REPORT="-"; PASS_ARGS+=("$1") ;;
+    --report=*) REPORT="${1#--report=}"; PASS_ARGS+=("$1") ;;
+    --print-target) PRINT_TARGET=true; PASS_ARGS+=("$1") ;;
     --skip-provenance)
       [[ -n "${2:-}" ]] || { echo "--skip-provenance needs a reason. $USAGE" >&2; exit 2; }
       SKIP_PROVENANCE="$2"
+      PASS_ARGS+=("$1" "$2")
       shift
       ;;
     -*) echo "Unknown option $1. $USAGE" >&2; exit 2 ;;
@@ -235,6 +251,40 @@ verify_provenance() {
 }
 # platform-bump:provenance-end
 
+# Paczka versions@<wersja> z assetów GitHub Release: SHA256SUMS tego wydania, atestacja jak wyżej, cache w
+# ~/.cache/platform-cli/<wersja>. Wypisuje katalog paczki; kod 1 = brak assetu (stare wydanie, sieć), kod 2 = suma
+# się nie zgadza, czyli bump musi stanąć. PLATFORM_RELEASES_URL podmienia źródło (testy).
+# platform-bump:cli
+fetch_platform_cli() {
+  local version=$1 base="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
+  local cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
+  local asset="dominiksienkiewicz-versions-$version.tgz" proto="=https" work expected actual
+  [[ "$base" == file://* ]] && proto="=file"
+  if [[ -f "$cache/package/bin/platform-bump.sh" ]]; then
+    printf '%s\n' "$cache/package"
+    return 0
+  fi
+  work="$(mktemp -d)"
+  if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null \
+    || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+    rm -rf "$work"
+    return 1
+  fi
+  expected="$(awk -v name="$asset" '$2 == name || $2 == "*" name { print $1 }' "$work/SHA256SUMS")"
+  actual="$( (sha256sum "$work/$asset" 2>/dev/null || shasum -a 256 "$work/$asset") | awk '{ print $1 }')"
+  if [[ -z "$expected" || "$expected" != "$actual" ]]; then
+    echo "The release asset $asset of Platform $version does not match its SHA256SUMS, so platform-bump stops." >&2
+    rm -rf "$work"
+    return 2
+  fi
+  verify_provenance "$work/$asset" >&2
+  mkdir -p "$cache"
+  tar -xzf "$work/$asset" -C "$cache"
+  rm -rf "$work"
+  printf '%s\n' "$cache/package"
+}
+# platform-bump:cli-end
+
 # Obecny pin (przed bumpem) — do granicy MAJOR i notatek wydań, przez które bump przechodzi.
 CURRENT=""
 if [[ -f backend/settings.gradle.kts ]]; then
@@ -309,6 +359,29 @@ if [[ -n "$YANKED_REASON" ]]; then
   fi
   echo "WARNING: Platform $TARGET is yanked ($YANKED_REASON); --allow-yanked takes it anyway."
 fi
+if [[ "$PRINT_TARGET" == true ]]; then
+  echo "$TARGET"
+  exit 0
+fi
+
+# Handoff (N-DX-4): ta kopia nie jest wydaniem celu, więc dalej biegnie bin z paczki versions@TARGET.
+# platform-bump:handoff
+if [[ -n "$SELF_VERSION" && "$SELF_VERSION" != "$TARGET" && "${PLATFORM_BUMP_HANDOFF:-}" != "$TARGET" ]]; then
+  handoff_status=0
+  handoff_root="$(fetch_platform_cli "$TARGET")" || handoff_status=$?
+  [[ "$handoff_status" -eq 2 ]] && exit 1
+  if [[ "$handoff_status" -eq 0 ]]; then
+    echo "==> Platform $TARGET runs its own bump logic (this copy is $SELF_VERSION)"
+    rm -rf "$SNAPSHOT"
+    rm -f "$VERSIONS_JSON" "$YANKED_FILE"
+    PLATFORM_BUMP_HANDOFF="$TARGET" exec bash "$handoff_root/bin/platform-bump.sh" ${PASS_ARGS[@]+"${PASS_ARGS[@]}"} "$TARGET"
+  fi
+  echo "WARNING: the release assets of Platform $TARGET could not be read, so this bump runs the logic of $SELF_VERSION."
+fi
+# Logika celu bez frontendu: ta kopia JEST wydaniem celu, więc migracje i kontrakt workflowów są tutaj.
+TARGET_ROOT=""
+[[ -n "$SELF_VERSION" && "$SELF_VERSION" == "$TARGET" ]] && TARGET_ROOT="$SELF_ROOT"
+# platform-bump:handoff-end
 echo "==> Podbijam piny Platform do: $TARGET"
 # W GitHub Actions (reusable platform-bump.yml) wersja docelowa idzie też do wyjść kroku.
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "target=$TARGET" >> "$GITHUB_OUTPUT"; fi
@@ -360,6 +433,48 @@ PY
 else
   echo "Release notes unavailable: no current Platform pin found, or the GitHub API did not answer."
 fi
+
+# Raport wpływu (N-REL-8): katalogi obu wydań z GitHub Packages, kanon i kontrakt workflowów z paczek versions
+# (cel: ta kopia albo asset, obecny pin: asset), przecięte z tym, czego repo używa. Przed pierwszym zapisem.
+# platform-bump:report
+if [[ -n "$REPORT" ]]; then
+  report_dir="$(mktemp -d)"
+  for side in old new; do
+    version="$CURRENT"; [[ "$side" == new ]] && version="$TARGET"
+    [[ -n "$version" ]] || continue
+    curl -fsSL --proto '=https' -u "${GITHUB_ACTOR:-platform-bump}:$TOKEN" \
+      "https://maven.pkg.github.com/$OWNER/Platform/pl/seniordeveloper/platform-catalog/$version/platform-catalog-$version.toml" \
+      -o "$report_dir/$side.toml" 2>/dev/null || rm -f "$report_dir/$side.toml"
+    root=""
+    if [[ "$side" == new && -n "$TARGET_ROOT" ]]; then
+      root="$TARGET_ROOT"
+    else
+      root="$(fetch_platform_cli "$version" 2>/dev/null)" || root=""
+    fi
+    if [[ -n "$root" ]]; then
+      cp "$root/versions.json" "$report_dir/$side.json" 2>/dev/null || true
+      cp "$root/workflow-contract.txt" "$report_dir/$side.txt" 2>/dev/null || true
+    fi
+  done
+  report_args=(--repo . --current "${CURRENT:-unknown}" --target "$TARGET")
+  for part in catalog:toml canon:json contract:txt; do
+    report_args+=("--${part%%:*}-old" "$report_dir/old.${part##*:}" "--${part%%:*}-new" "$report_dir/new.${part##*:}")
+  done
+  if [[ -f "$SELF_ROOT/bin/bump-report.py" ]]; then
+    python3 "$SELF_ROOT/bin/bump-report.py" "${report_args[@]}" > "$report_dir/report.md"
+    if [[ "$REPORT" == "-" ]]; then
+      echo ""
+      cat "$report_dir/report.md"
+    else
+      cp "$report_dir/report.md" "$REPORT"
+      echo "==> Impact report on this repository: $REPORT"
+    fi
+  else
+    echo "WARNING: this copy of platform-bump has no bump-report.py, so --report has nothing to print."
+  fi
+  rm -rf "$report_dir"
+fi
+# platform-bump:report-end
 
 # Od tego miejsca bump pisze: migawka każdego pliku-kandydata, który błąd albo --dry-run przywraca.
 snapshot
@@ -481,23 +596,63 @@ done
 #     z zainstalowanej kopii, więc bump zawsze wykonuje logikę wydania, do którego idzie. Bez tarballa (wydanie
 #     sprzed migracji, repo bez frontendu) nie ma czego uruchomić. ---
 # platform-bump:migrations
-MIGRATIONS="${TARGET_PACKAGE:+$TARGET_PACKAGE/package/migrations/run.sh}"
+TARGET_LOGIC="${TARGET_PACKAGE:+$TARGET_PACKAGE/package}"
+TARGET_LOGIC="${TARGET_LOGIC:-$TARGET_ROOT}"
+MIGRATIONS="${TARGET_LOGIC:+$TARGET_LOGIC/migrations/run.sh}"
 if [[ -n "$MIGRATIONS" ]] && [[ -f "$MIGRATIONS" ]]; then
   while IFS= read -r migrated; do snapshot_file "$migrated"; done < <(bash "$MIGRATIONS" files "$CURRENT" "$TARGET")
   echo "==> Upgrade migrations from ${CURRENT:-an unknown pin} to $TARGET:"
-  PLATFORM_CANON="$TARGET_PACKAGE/package/versions.json" bash "$MIGRATIONS" apply "$CURRENT" "$TARGET"
+  PLATFORM_CANON="$TARGET_LOGIC/versions.json" bash "$MIGRATIONS" apply "$CURRENT" "$TARGET"
 fi
 # platform-bump:migrations-end
+
+# --- Bloki platform-agents (N-SHOW-1): reguły dla agentów z wydania docelowego, tylko między markerami; reszta pliku
+#     bez zmian, brak markerów = blok dopisany na końcu, brak pliku = nowy plik. Główny blok trafia do AGENTS.md, blok
+#     backendu do backend/AGENTS.md (albo do AGENTS.md, gdy Gradle stoi w korzeniu), blok frontendu do
+#     frontend/AGENTS.md; stos biorą ze stack.json i versions.json wydania docelowego. Obok każdego z tych plików
+#     powstaje CLAUDE.md z `@AGENTS.md`, gdy go nie ma; istniejącego CLAUDE.md bump nie zmienia. ---
+# platform-bump:agents
+agents_dir="${TARGET_LOGIC:+$TARGET_LOGIC/agents}"
+sync_agents_block() {
+  local template="$agents_dir/$1" target=$2 outcome claude
+  shift 2
+  [[ -f "$template" ]] || return 0
+  snapshot_file "$target"
+  outcome=$(python3 "$TARGET_LOGIC/bin/sync-agents-block.py" "$template" "$TARGET" "$target" "$@") \
+    || outcome="not written (see the error above)"
+  echo "==> $target, $(sed -n -E '1s/^<!-- BEGIN ([a-z-]+) .*/\1/p' "$template") block of $TARGET: $outcome"
+  claude="$(dirname "$target")/CLAUDE.md"
+  claude="${claude#./}"
+  if [[ ! -e "$claude" ]]; then
+    snapshot_file "$claude"
+    printf '@AGENTS.md\n' > "$claude"
+    echo "==> $claude created: it imports @AGENTS.md, so Claude Code reads the same guidance"
+  elif ! grep -qE '^@(\./)?AGENTS\.md[[:space:]]*$' "$claude"; then
+    echo "==> $claude does not import @AGENTS.md; add that line so Claude Code reads the Platform block"
+  fi
+}
+if [[ -n "$agents_dir" ]] && [[ -f "$TARGET_LOGIC/bin/sync-agents-block.py" ]]; then
+  sync_agents_block platform-block.md AGENTS.md
+  if [[ -f backend/build.gradle.kts || -f backend/settings.gradle.kts ]]; then
+    sync_agents_block backend-block.md backend/AGENTS.md "$agents_dir/stack.json"
+  elif [[ -f settings.gradle.kts || -f build.gradle.kts ]]; then
+    sync_agents_block backend-block.md AGENTS.md "$agents_dir/stack.json"
+  fi
+  if [[ -f frontend/package.json ]]; then
+    sync_agents_block frontend-block.md frontend/AGENTS.md "$TARGET_LOGIC/versions.json"
+  fi
+fi
+# platform-bump:agents-end
 
 # --- Callerzy reusable workflowów Platform kontra kontrakt wydania docelowego (workflow-contract.txt z tarballa):
 #     brak uprawnienia, nieznane wejście albo sekret = startup_failure bez logu. Tylko raport, kod wyjścia bez zmian,
 #     bo błąd cofnąłby cały bump; samodzielny platform-workflows-check kończy się wtedy kodem 1. ---
 # platform-bump:workflows-check
-checker="${TARGET_PACKAGE:+$TARGET_PACKAGE/package/bin/workflows-check.py}"
+checker="${TARGET_LOGIC:+$TARGET_LOGIC/bin/workflows-check.py}"
 if [[ -n "$checker" ]] && [[ -f "$checker" ]] && compgen -G ".github/workflows/*.y*ml" >/dev/null; then
   echo ""
   echo "==> Callers of Platform's reusable workflows against the contract of v$TARGET:"
-  python3 "$checker" --ref "v$TARGET" --contract "$TARGET_PACKAGE/package/workflow-contract.txt" \
+  python3 "$checker" --ref "v$TARGET" --contract "$TARGET_LOGIC/workflow-contract.txt" \
     || echo "Fix the ERROR lines before you push: GitHub ends those runs in startup_failure."
 fi
 # platform-bump:workflows-check-end

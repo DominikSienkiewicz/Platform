@@ -1,0 +1,87 @@
+name: Reproducibility
+
+# Co tydzień (i ręcznie): przebudowa ostatniego wydania z jego taga i porównanie SHA-256 każdego jara z kopią
+# w GitHub Packages (N-REL-16, scripts/compare-rebuild.sh). Zgodne sumy znaczą, że opublikowane bajty wynikają
+# z kodu taga; różnica albo brak kopii otwiera jedno issue (scripts/upsert-issue.sh). Doradczy: nie blokuje main.
+# Data wydania (platform-release.properties) to data commita taga, jak w release.yml, więc i ona się zgadza.
+on:
+  schedule:
+    - cron: "0 6 * * 2"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to rebuild, such as v1.6.0; empty takes the latest release."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  rebuild:
+    name: Rebuild the latest release
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: read
+      issues: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Find the release
+        id: release
+        env:
+          REQUESTED: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag="${REQUESTED:-$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -1)}"
+          [ -n "$tag" ] || { echo "::error::No release tag to rebuild."; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+      - name: Check out the release
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: git checkout -q "$TAG"
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Rebuild every Maven module into a bundle
+        env:
+          V: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          release_date=$(git log -1 --format=%cs)
+          awk '!/^#/ && NF { print $1 }' gradle/maven-modules.txt | while IFS= read -r module; do
+            (cd "gradle/$module" && ./gradlew --no-daemon -PplatformVersion="$V" -PplatformReleaseDate="$release_date" \
+              -PplatformBundleRepository="$RUNNER_TEMP/rebuild" publishAllPublicationsToBundleRepository)
+          done
+      - name: Compare the digests with GitHub Packages
+        id: compare
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          bash scripts/compare-rebuild.sh "$RUNNER_TEMP/rebuild" | tee "$RUNNER_TEMP/compare.txt"
+      - name: Report a rebuild that differs
+        if: ${{ failure() && steps.compare.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.release.outputs.tag }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "Rebuilding \`$TAG\` from its tag does not reproduce every jar in GitHub Packages."
+            echo ""
+            echo '```text'
+            grep -v '^match ' "$RUNNER_TEMP/compare.txt" || true
+            echo '```'
+            echo ""
+            echo "Run: $RUN_URL"
+          } > "$RUNNER_TEMP/issue.md"
+          bash scripts/upsert-issue.sh "Reproducibility: $TAG does not rebuild to the published jars" "$RUNNER_TEMP/issue.md"

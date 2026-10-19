@@ -1,0 +1,12 @@
+{
+  "name": "Platform",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "hostRequirements": { "cpus": 4, "memory": "8gb" },
+  "customizations": {
+    "vscode": {
+      "extensions": ["vscjava.vscode-java-pack", "mathiasfrohlich.Kotlin", "dbaeumer.vscode-eslint", "timonwong.shellcheck"]
+    }
+  }
+}
