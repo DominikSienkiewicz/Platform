@@ -13,6 +13,7 @@ cannot fix yet. The caller side of each workflow is in [reusable-workflows.md](r
 | Grype on published images | `container-scan.yml` | severity at or above `severity-cutoff`, fixable findings only by default | `only-fixed` and `severity-cutoff`; the job does not check the repository out, so `.grype.yaml` does not apply |
 | Semgrep | `semgrep.yml` | findings of severity `ERROR` | `# nosemgrep: <rule-id>` |
 | Snyk | `container-scan.yml`, `deploy.yml` | never: advisory only | — |
+| CodeQL (Platform only, not reusable) | `codeql.yml` | never: alerts go to Code scanning | dismiss the alert in Code scanning with a reason |
 
 `only-fixed` differs on purpose. `container-scan.yml` defaults to `true`, because base images carry
 HIGH OS findings without a fix that would keep it red forever. `security-scan.yml` defaults to

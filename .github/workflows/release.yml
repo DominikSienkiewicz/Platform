@@ -389,9 +389,17 @@ jobs:
       - name: Build the credential-free assets
         run: bash scripts/release-assets.sh "$V" "$RUNNER_TEMP/assets"
       - name: Attest the provenance of the assets
+        id: attest-assets
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: ${{ runner.temp }}/assets/*
+      # Bundle Sigstore tej atestacji jako asset wydania: OpenSSF Scorecard (Signed-Releases) szuka podpisu wśród
+      # assetów (*.sigstore.json), a `gh attestation verify <plik> --bundle <ten plik>` działa bez API atestacji.
+      # Bundle nie wchodzi do SHA256SUMS: powstaje z sum assetów, więc to on je poświadcza.
+      - name: Keep the attestation bundle with the assets
+        env:
+          BUNDLE: ${{ steps.attest-assets.outputs.bundle-path }}
+        run: cp "$BUNDLE" "$RUNNER_TEMP/assets/platform-$V-assets.sigstore.json"
       - name: Attach the assets to the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

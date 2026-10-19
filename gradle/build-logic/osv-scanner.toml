@@ -1,0 +1,8 @@
+# Zaakceptowane znaleziska OSV dla gradle.lockfile tego modułu — czyta je osv-scanner, a przez niego check
+# Vulnerabilities w OpenSSF Scorecard. Procedura jak w docs/security-scanning.md („Accepting a finding"):
+# data końca i powód; po ignoreUntil wpis przestaje działać i znalezisko wraca.
+
+[[IgnoredVulns]]
+id = "GHSA-6fmv-xxpf-w3cw"
+ignoreUntil = 2027-01-19
+reason = "plexus-utils 3.3.0 is only on testCompileClasspath, through Checkstyle 13.10.0 that the configuration tests run; nothing calls the vulnerable extractFile, and nothing of it ships with the plugin."

@@ -1,7 +1,8 @@
 # Devcontainer Platform (N-SHOW-11): JDK 25 uruchamia Gradle'a, JDK 27 to toolchain kanonu, Node 24 i pnpm z corepack.
 # Wersje nie są nowym źródłem prawdy: templates/tests/devcontainer.test.sh porównuje je z katalogiem (java),
 # backend-ci.yml (java-version), frontend/.nvmrc i packageManager z frontend/package.json.
-FROM mcr.microsoft.com/devcontainers/base:2-ubuntu-24.04
+# Obraz bazowy po digeście (OpenSSF Scorecard, Pinned-Dependencies); nowy: docker buildx imagetools inspect <obraz:tag>.
+FROMmcr.microsoft.com/devcontainers/base:2-ubuntu-24.04@sha256:d94c97dd9cacf183d0a6fd12a8e87b526e9e928307674ae9c94139139c0c6eae
 
 ARG GRADLE_JDK=25
 ARG TOOLCHAIN_JDK=27
