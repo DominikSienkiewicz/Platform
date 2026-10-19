@@ -34,7 +34,8 @@ case "$url" in
   *) exit 22 ;;
 esac
 STUB
-# npm: pack daje tarball z versions.json (FAKE_PACK=ok; z migrations/, gdy FAKE_MIGRATIONS wskazuje katalog)
+# npm: pack daje tarball z versions.json (FAKE_PACK=ok; z migrations/, gdy FAKE_MIGRATIONS wskazuje katalog,
+# i z workflows-check.py oraz snapshotem kontraktu, gdy FAKE_PACKAGE wskazuje źródło paczki)
 # albo błąd E401; install tylko zapisuje wywołanie.
 cat > "$fixture_work/bin/npm" <<'STUB'
 #!/usr/bin/env bash
@@ -46,6 +47,11 @@ if [[ "$1" == pack ]]; then
   mkdir -p "$staging/package"
   printf '{ "versions": { "react": "19.2.8" } }\n' > "$staging/package/versions.json"
   [[ -z "${FAKE_MIGRATIONS:-}" ]] || cp -R "$FAKE_MIGRATIONS" "$staging/package/migrations"
+  if [[ -n "${FAKE_PACKAGE:-}" ]]; then
+    mkdir -p "$staging/package/bin"
+    cp "$FAKE_PACKAGE/bin/workflows-check.py" "$staging/package/bin/"
+    cp "$FAKE_PACKAGE/workflow-contract.txt" "$staging/package/"
+  fi
   tar -czf "$2/dominiksienkiewicz-versions-9.9.9.tgz" -C "$staging" package
   rm -rf "$staging"
 fi

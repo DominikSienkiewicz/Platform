@@ -23,7 +23,12 @@ types and defaults are described in the workflow files themselves (every input h
 - **Contract changes are announced.** A new permission, input, secret or changed default is a
   consumer action: it ships in a MINOR release with a **Consumer action required** entry in
   [CHANGELOG.md](../CHANGELOG.md). `templates/tests/workflow-contract.test.sh` fails Platform's CI
-  when the contract changes without updating its snapshot.
+  when the contract changes without updating its snapshot; copy the snapshot to
+  `frontend/packages/versions/workflow-contract.txt` too, which `platform-workflows-check` reads.
+- **Check your callers.** `npx platform-workflows-check` (from `frontend/`, with
+  `@dominiksienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
+  contract: permissions, inputs, required inputs and secrets. `platform-bump` runs it against the
+  release it moves to.
 
 ## backend-ci.yml
 

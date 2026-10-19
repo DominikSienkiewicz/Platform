@@ -265,6 +265,10 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   the downloaded package, so it always applies the target's logic: each migration whose `SINCE` lies
   after the current pin and up to the target, and the `every-*` ones on every bump. It prints which it
   applied, skipped or left for a manual fix;
+- checks every caller of a Platform reusable workflow against the target's caller contract with
+  `platform-workflows-check`: the permissions it grants, its inputs and its secrets. It reports
+  `ERROR` and `WARN` lines and does not fail the bump; run it on its own (exit 1 on an error) to
+  gate a pull request;
 - moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
   distribution's SHA-256;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,

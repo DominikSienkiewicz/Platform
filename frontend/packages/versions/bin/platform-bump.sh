@@ -454,6 +454,19 @@ if [[ -n "$MIGRATIONS" ]] && [[ -f "$MIGRATIONS" ]]; then
 fi
 # platform-bump:migrations-end
 
+# --- Callerzy reusable workflowów Platform kontra kontrakt wydania docelowego (workflow-contract.txt z tarballa):
+#     brak uprawnienia, nieznane wejście albo sekret = startup_failure bez logu. Tylko raport, kod wyjścia bez zmian,
+#     bo błąd cofnąłby cały bump; samodzielny platform-workflows-check kończy się wtedy kodem 1. ---
+# platform-bump:workflows-check
+checker="${TARGET_PACKAGE:+$TARGET_PACKAGE/package/bin/workflows-check.py}"
+if [[ -n "$checker" ]] && [[ -f "$checker" ]] && compgen -G ".github/workflows/*.y*ml" >/dev/null; then
+  echo ""
+  echo "==> Callers of Platform's reusable workflows against the contract of v$TARGET:"
+  python3 "$checker" --ref "v$TARGET" --contract "$TARGET_PACKAGE/package/workflow-contract.txt" \
+    || echo "Fix the ERROR lines before you push: GitHub ends those runs in startup_failure."
+fi
+# platform-bump:workflows-check-end
+
 # --- Dry run: pokaż zmienione linie względem migawki i zakończ; finish() przywraca pliki, Gradle nie rusza. ---
 # platform-bump:dry-run
 if [[ "$DRY_RUN" == true ]]; then

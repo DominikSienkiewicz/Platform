@@ -51,7 +51,7 @@ attestate() {
   printf 'FROM eclipse-temurin:26-jre\nCOPY app.jar app.jar\n' > "$1/backend/Dockerfile"
   printf 'permissions:\n  contents: read\njobs:\n  backend:\n    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1\n' > "$1/.github/workflows/backend.yml"
 }
-export FAKE_MIGRATIONS="$here/../migrations"
+export FAKE_MIGRATIONS="$here/../migrations" FAKE_PACKAGE="$here/.."
 dir=$(FIXTURE_EXTRA=attestate consumer attestate 1.5.26)
 bump "$dir" --dry-run 1.6.0
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail 'the dry run of the Attestate bump must succeed'; }
@@ -63,5 +63,8 @@ grep -qx 'FROM sapmachine:27-jre' "$dir/backend/Dockerfile" || fail 'the runtime
 grep -qx '  packages: read' "$dir/.github/workflows/backend.yml" || fail 'the backend-ci caller must get packages: read'
 grep -qF 'backend-ci.yml@v1.6.0' "$dir/.github/workflows/backend.yml" || fail 'the workflow ref must move to the exact target'
 grep -qF 'applied  1.6.0-caller-packages-read' "$dir.log" || { cat "$dir.log"; fail 'the bump must list the applied migrations'; }
+grep -qF "==> Callers of Platform's reusable workflows against the contract of v1.6.0:" "$dir.log" \
+  || { cat "$dir.log"; fail 'the bump must check the callers against the target contract'; }
+if grep -q '^ERROR ' "$dir.log"; then cat "$dir.log"; fail 'after the migrations the callers must meet the contract'; fi
 
 echo 'OK: upgrade migrations turn before/ into after/, are idempotent, honour SINCE and run from the target release'

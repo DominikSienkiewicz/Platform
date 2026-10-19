@@ -75,6 +75,10 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `platform-workflows-check`, a bin of `@dominiksienkiewicz/versions`, holds every caller of a Platform
+  reusable workflow to the release's caller contract: the permissions it grants (its own block, else
+  the workflow's), its inputs, required inputs and secrets, and an exact ref. It exits 1 on an error;
+  `platform-bump` runs it against the target release as a report.
 - Consumer action recorded in history: `release.sh` refuses a patch, or a section that says `None.`,
   when a commit since the previous tag carries a `Consumer-Action:` trailer, a `!` or a
   `BREAKING CHANGE:` footer. `scripts/release-notes.sh <range>` drafts the CHANGELOG section from
