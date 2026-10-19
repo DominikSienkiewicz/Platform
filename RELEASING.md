@@ -238,8 +238,9 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 9. **`example`**, after `github-release`, regenerates the public `platform-example` repository from the
    release with `scripts/render-example.sh` (`--kind spring-app --frontend next`, plus the frontend
    lockfile) and commits the difference. npm reads the canon packages with the workflow's `GITHUB_TOKEN`
-   (`packages: read`), the variable the rendered `frontend/.npmrc` expects; `PLATFORM_EXAMPLE_TOKEN` only
-   pushes to `platform-example`. Without that secret the job only leaves a notice.
+   (`packages: read`), the variable the rendered `frontend/.npmrc` expects. `PLATFORM_EXAMPLE_TOKEN` reaches
+   only the first step, which turns its presence into an output for the job's conditions, and the step that
+   clones and pushes `platform-example`; npm never sees it. Without that secret the job only leaves a notice.
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
 where it was and creates no GitHub Release.

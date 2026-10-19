@@ -661,7 +661,8 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `frontend/.npmrc` (from `templates/npmrc`) reads, taken from the workflow's own token with `packages: read`.
   The job only set `NODE_AUTH_TOKEN`, which feeds the file `actions/setup-node` writes, and npm takes the token
   from the project's `.npmrc` instead, so it would have sent the literal `${GITHUB_TOKEN}` and got a 401 on the
-  first real release. `PLATFORM_EXAMPLE_TOKEN` still only pushes to `platform-example`.
+  first real release. `PLATFORM_EXAMPLE_TOKEN` leaves the job's environment: a first step turns its presence
+  into an output for the job's conditions, and only the step that clones and pushes `platform-example` gets it.
   `templates/tests/release-example-npm-auth.test.sh` asks npm offline which file wins and checks the step's
   environment. No consumer is affected (none).
 - `backend-ci-smoke` in Platform's own `ci.yml` builds the `java-library` starter on the previous release when
