@@ -227,6 +227,10 @@ bumps the catalog stays red on verification until you run the script and push it
 `security-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
 root's file verifies everything, so their files also hold the checksums of the plugin classpath.
 
+A bump of `java`, `gradle`, `springBoot`, `springModulith`, `springAi` or `junit` also changes the stack the
+`platform-agents-backend` block names in consumers. Regenerate it with `python3 scripts/agents-stack.py`; the
+`versions` package test fails while `frontend/packages/versions/agents/stack.json` differs from the catalog.
+
 ## Gradle wrapper
 
 Every Gradle module carries the same wrapper. `gradle-wrapper.properties` pins the distribution

@@ -20,6 +20,10 @@ had only a Polish `CLAUDE.md`.
 ## Consequences
 
 - Consumers delete their copied sections at the next bump.
+- 2026-10-19: the same mechanism manages `platform-agents-backend` in `backend/AGENTS.md` and
+  `platform-agents-frontend` in `frontend/AGENTS.md`, with the stack of the pinned release, because the consumers'
+  hand-copied per-directory files named versions two releases old. A missing `CLAUDE.md` beside them becomes a
+  one-line `@AGENTS.md` import; per-stack starter files copied once were rejected, as they drift the same way.
 
 ## Revisit when
 

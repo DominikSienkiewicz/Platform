@@ -40,7 +40,10 @@ Run tests only when asked; `lint` and `format` are the default gate. A failure c
   Docker ([ADR-0009](adr/0009-integration-tag-is-a-contract.md)).
 - Do not edit the files consumers copy from `templates/` by hand; `platform-templates-check` reports drift and the
   fix is a fresh copy.
-- Do not edit inside the `platform-agents` markers of `AGENTS.md`: the next bump replaces it.
+- Do not edit inside the Platform markers: `platform-agents` in `AGENTS.md`, `platform-agents-backend` in
+  `backend/AGENTS.md` and `platform-agents-frontend` in `frontend/AGENTS.md`. They carry the rules and the stack
+  of the pinned release, and the next bump replaces them. Write project rules outside the markers; a `CLAUDE.md`
+  beside each file imports it with `@AGENTS.md`.
 - Keep concepts, plans and analyses in the ignored `docs/concepts/`; add no AI attribution to commits or pull
   requests.
 

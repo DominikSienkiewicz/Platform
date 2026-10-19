@@ -1,28 +1,54 @@
 #!/usr/bin/env python3
-"""sync-agents-block.py <block-template> <version> <AGENTS.md>: managed Platform block in a consumer's AGENTS.md.
+"""sync-agents-block.py <block-template> <version> <AGENTS.md> [values.json ...]: a managed Platform block in AGENTS.md.
 
-N-SHOW-1: the text between `<!-- BEGIN platform-agents` and `<!-- END platform-agents -->` is replaced by the block of
-the release platform-bump goes to (`{{VERSION}}` filled in); without markers the block is appended, and a missing
-AGENTS.md is created. Text outside the markers stays byte-identical, and a second run changes nothing.
-Prints `unchanged`, `replaced` or `added`.
+N-SHOW-1: the text between `<!-- BEGIN <name>` and `<!-- END <name> -->` is replaced by the block of the release
+platform-bump goes to; without markers the block is appended, and a missing AGENTS.md is created. The marker name
+(`platform-agents`, `platform-agents-backend`, `platform-agents-frontend`) comes from the template's first line, so
+blocks of different names live side by side. `{{VERSION}}` is the version argument; every other `{{key}}` comes from
+the values files (a flat JSON map, or versions.json, whose `versions` map is used). A placeholder no file fills ends
+the run with exit 2 and leaves AGENTS.md untouched. Text outside the markers stays byte-identical, and a second run
+changes nothing. Prints `unchanged`, `replaced` or `added`.
 """
 
+import json
 import os
 import re
 import sys
 
-BLOCK = re.compile(r"<!-- BEGIN platform-agents\b.*?<!-- END platform-agents -->", re.S)
+MARKER = re.compile(r"^<!-- BEGIN (platform-agents(?:-[a-z]+)?) ")
+PLACEHOLDER = re.compile(r"\{\{([A-Za-z0-9_.@/-]+)\}\}")
+
+
+def load_values(paths):
+    values = {}
+    for path in paths:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+        versions = data.get("versions")
+        values.update(versions if isinstance(versions, dict) else data)
+    return values
 
 
 def main():
     template_path, version, agents_path = sys.argv[1:4]
+    values = load_values(sys.argv[4:])
+    values["VERSION"] = version
     with open(template_path, encoding="utf-8") as handle:
-        block = handle.read().replace("{{VERSION}}", version).rstrip("\n")
+        template = handle.read()
+    marker = MARKER.match(template)
+    if not marker:
+        sys.exit(f"sync-agents-block: {template_path} does not start with a platform-agents BEGIN marker")
+    name = re.escape(marker.group(1))
+    missing = sorted({key for key in PLACEHOLDER.findall(template) if key not in values})
+    if missing:
+        print(f"sync-agents-block: no value for {', '.join(missing)} in {template_path}", file=sys.stderr)
+        sys.exit(2)
+    block = PLACEHOLDER.sub(lambda found: str(values[found.group(1)]), template).rstrip("\n")
     current = ""
     if os.path.exists(agents_path):
         with open(agents_path, encoding="utf-8") as handle:
             current = handle.read()
-    match = BLOCK.search(current)
+    match = re.search(rf"<!-- BEGIN {name}\s.*?<!-- END {name} -->", current, re.S)
     if match:
         updated = current[: match.start()] + block + current[match.end() :]
         outcome = "replaced"
@@ -34,6 +60,9 @@ def main():
     if updated == current:
         print("unchanged")
         return
+    directory = os.path.dirname(agents_path)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
     with open(agents_path, "w", encoding="utf-8") as handle:
         handle.write(updated)
     print(outcome)

@@ -100,8 +100,14 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does. Re-copy it
   from `templates/merge.sh` when `platform-templates-check` reports it, and write messages such as
   `feat: add X` (manual).
-- `platform-bump` writes the `platform-agents` block into the repository's `AGENTS.md` (created when missing),
-  between its markers; delete the copied Platform rules from `AGENTS.md` and `CLAUDE.md` after the bump (manual).
+- `platform-bump` writes managed blocks between their markers, each file created when missing: the
+  `platform-agents` rules into the root `AGENTS.md`, and the stack, rules and commands of the pinned release into
+  `backend/AGENTS.md` (`platform-agents-backend`; the root `AGENTS.md` when Gradle sits at the root) and
+  `frontend/AGENTS.md` (`platform-agents-frontend`). Where one of those directories has no `CLAUDE.md`, it writes
+  one that imports `@AGENTS.md`; an existing `CLAUDE.md` is never changed, only flagged when it lacks the import.
+  After the bump, delete what those files copied from Platform, such as the "Stack (version-pinned)" and
+  convention-plugin sections of BookOfStyling and SkillSprintPlus, whose versions are already stale, and keep only
+  project rules outside the markers (manual).
 - `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
   `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
   of your first bump: a caller on `@v1` moves to an exact tag and stops floating (manual review).
@@ -434,6 +440,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `templates/agents/platform-block.md` that `platform-bump` syncs into consumers, the rule sheet
   `docs/consumer-agents.md`, runbooks under `docs/runbooks/`, and `templates/tests/agent-docs.test.sh`, which fails
   when they name a command, task, bin or path that does not exist.
+- Per-directory agent blocks: `templates/agents/backend-block.md` and `frontend-block.md`, filled with the stack of
+  the release `platform-bump` goes to: the catalog's Java, Gradle, Spring Boot, Spring Modulith, Spring AI and JUnit
+  from `agents/stack.json`, which `scripts/agents-stack.py` generates from the catalog, and Next.js, React,
+  TypeScript, Tailwind CSS, Vitest, ESLint and Prettier from `versions.json`. `sync-agents-block.py` takes the
+  marker name from the template, so blocks of different names share one file, and refuses a block with an
+  unfilled placeholder.
 - A devcontainer with JDK 25 and 27, Node 24 and pnpm, guarded against the canon by
   `templates/tests/devcontainer.test.sh` and built by `devcontainer.yml`, which runs the build-logic suite in it
   (N-SHOW-11).

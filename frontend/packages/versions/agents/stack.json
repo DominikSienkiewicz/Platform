@@ -1,0 +1,8 @@
+{
+  "java": "27",
+  "gradle": "9.8.1",
+  "springBoot": "4.1.1",
+  "springModulith": "2.1.1",
+  "springAi": "2.0.1",
+  "junit": "6.1.3"
+}

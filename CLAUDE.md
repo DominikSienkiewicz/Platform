@@ -1,7 +1,10 @@
 # CLAUDE.md — Platform (root)
 
 Kontekst dla agentów AI (narzędziowo-neutralny odpowiednik po angielsku: `AGENTS.md`; jego blok `platform-agents`
-= kanon `templates/agents/platform-block.md`, który `platform-bump` wpisuje konsumentom). To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
+= kanon `templates/agents/platform-block.md`, który `platform-bump` wpisuje konsumentom; tak samo bloki
+`platform-agents-backend`/`-frontend` z `templates/agents/` do `backend/AGENTS.md` i `frontend/AGENTS.md` ze stosem
+wydania — backend z `frontend/packages/versions/agents/stack.json`, który `scripts/agents-stack.py` generuje z katalogu,
+więc po zmianie katalogu uruchom go ponownie). To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
 konsumowana przez osobne repo produktowe: Attestate (`Attestate_io`), Azimuth, BookOfStyling
 (`BookOfStyling_com`), SkillSprintPlus (`SkillSprintPlus_com`), Touchstone (wszystkie 5 konsumują
 convention pluginy + katalog; 4 z frontendem — bez Touchstone — także kanon frontendu). Lista = `scripts/consumers.txt`

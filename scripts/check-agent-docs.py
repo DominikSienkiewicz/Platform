@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """check-agent-docs.py [root]: every command, task, bin and path the agent guidance names exists (N-SHOW-1).
 
-Reads the code spans of templates/agents/platform-block.md, AGENTS.md, docs/consumer-agents.md and docs/runbooks/*.md:
+Reads the code spans of templates/agents/platform-block.md and the other templates/agents/*-block.md, AGENTS.md,
+docs/consumer-agents.md and docs/runbooks/*.md:
 - a path under a Platform root (scripts/, templates/, docs/, gradle/, frontend/packages/, .github/workflows/) or a
   root script (./release.sh) exists in the tree; a consumer path scripts/<x> may be the template templates/<x>;
 - `./gradlew <task>` names a task the build-logic sources register, or a task of Gradle or of an applied plugin;
-- a platform-<name> word is a bin of frontend/packages/versions/package.json.
+- a platform-<name> word is a bin of one of the frontend/packages/*/package.json.
 Paths with placeholders (<…>, {…}, *) and consumer paths (backend/, frontend/package.json) are not checked.
 """
 import glob
@@ -15,8 +16,15 @@ import re
 import sys
 
 root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), ".."))
-DOCS = ["templates/agents/platform-block.md", "AGENTS.md", "docs/consumer-agents.md"] + sorted(
-    os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "docs/runbooks/*.md"))
+DOCS = (
+    ["templates/agents/platform-block.md"]
+    + sorted(
+        os.path.relpath(path, root)
+        for path in glob.glob(os.path.join(root, "templates/agents/*-block.md"))
+        if not path.endswith("/platform-block.md")
+    )
+    + ["AGENTS.md", "docs/consumer-agents.md"]
+    + sorted(os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "docs/runbooks/*.md")))
 )
 PLATFORM_ROOTS = ("scripts/", "templates/", "docs/", "gradle/", "frontend/packages/", ".github/workflows/")
 ROOT_SCRIPTS = re.compile(r"^\./([A-Za-z0-9_-]+\.sh)$")
@@ -25,7 +33,7 @@ GRADLE = re.compile(r"\./gradlew\s+([:A-Za-z0-9_-]+)")
 BIN = re.compile(r"(?<![\w/.:-])(platform-[a-z]+(?:-[a-z]+)*)(?![\w.-]*\.[a-z]+)(?![\w/-])")
 STANDARD_TASKS = {"build", "check", "test", "assemble", "dependencies", "bootJar", "bootRun", "jar", "spotlessApply",
                   "spotlessCheck", "jacocoTestReport", "pitest", "sonar", "cyclonedxBom", "help", "tasks", "clean"}
-WORKFLOW_NAMES = {"platform-bump", "platform-agents"}
+WORKFLOW_NAMES = {"platform-bump", "platform-agents", "platform-agents-backend", "platform-agents-frontend"}
 # Ignorowany katalog lokalny i pliki, które żyją u konsumenta (w Platform leżą per moduł).
 NOT_IN_TREE = {"docs/concepts", "docs/concepts/", "gradle/verification-metadata.xml", "gradle/wrapper/gradle-wrapper.properties"}
 
@@ -38,8 +46,10 @@ def tasks():
 
 
 def bins():
-    manifest = os.path.join(root, "frontend/packages/versions/package.json")
-    return set(json.load(open(manifest, encoding="utf-8")).get("bin", {})) if os.path.isfile(manifest) else set()
+    names = set()
+    for manifest in glob.glob(os.path.join(root, "frontend/packages/*/package.json")):
+        names.update(json.load(open(manifest, encoding="utf-8")).get("bin", {}))
+    return names
 
 
 def path_exists(path):
@@ -68,7 +78,7 @@ def main():
                         problems.append(f"{doc}:{number}: `./gradlew {task}` names no registered task")
                 for word in BIN.findall(span):
                     if word not in known_bins and word not in WORKFLOW_NAMES and "/" not in span.split(word)[0][-1:]:
-                        problems.append(f"{doc}:{number}: `{word}` is not a bin of @dominiksienkiewicz/versions")
+                        problems.append(f"{doc}:{number}: `{word}` is not a bin of any @dominiksienkiewicz package")
                 for candidate in candidates:
                     match = ROOT_SCRIPTS.match(candidate.split()[0]) if candidate.split() else None
                     if match and not os.path.exists(os.path.join(root, match.group(1))):

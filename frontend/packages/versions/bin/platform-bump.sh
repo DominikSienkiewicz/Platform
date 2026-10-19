@@ -606,13 +606,41 @@ if [[ -n "$MIGRATIONS" ]] && [[ -f "$MIGRATIONS" ]]; then
 fi
 # platform-bump:migrations-end
 
-# --- Blok platform-agents w AGENTS.md (N-SHOW-1): reguły dla agentów z wydania docelowego, tylko między markerami;
-#     reszta pliku bez zmian, brak markerów = blok dopisany na końcu, brak pliku = nowy AGENTS.md. ---
+# --- Bloki platform-agents (N-SHOW-1): reguły dla agentów z wydania docelowego, tylko między markerami; reszta pliku
+#     bez zmian, brak markerów = blok dopisany na końcu, brak pliku = nowy plik. Główny blok trafia do AGENTS.md, blok
+#     backendu do backend/AGENTS.md (albo do AGENTS.md, gdy Gradle stoi w korzeniu), blok frontendu do
+#     frontend/AGENTS.md; stos biorą ze stack.json i versions.json wydania docelowego. Obok każdego z tych plików
+#     powstaje CLAUDE.md z `@AGENTS.md`, gdy go nie ma; istniejącego CLAUDE.md bump nie zmienia. ---
 # platform-bump:agents
-agents_block="${TARGET_LOGIC:+$TARGET_LOGIC/agents/platform-block.md}"
-if [[ -n "$agents_block" ]] && [[ -f "$agents_block" ]] && [[ -f "$TARGET_LOGIC/bin/sync-agents-block.py" ]]; then
-  snapshot_file AGENTS.md
-  echo "==> AGENTS.md, platform-agents block of $TARGET: $(python3 "$TARGET_LOGIC/bin/sync-agents-block.py" "$agents_block" "$TARGET" AGENTS.md)"
+agents_dir="${TARGET_LOGIC:+$TARGET_LOGIC/agents}"
+sync_agents_block() {
+  local template="$agents_dir/$1" target=$2 outcome claude
+  shift 2
+  [[ -f "$template" ]] || return 0
+  snapshot_file "$target"
+  outcome=$(python3 "$TARGET_LOGIC/bin/sync-agents-block.py" "$template" "$TARGET" "$target" "$@") \
+    || outcome="not written (see the error above)"
+  echo "==> $target, $(sed -n -E '1s/^<!-- BEGIN ([a-z-]+) .*/\1/p' "$template") block of $TARGET: $outcome"
+  claude="$(dirname "$target")/CLAUDE.md"
+  claude="${claude#./}"
+  if [[ ! -e "$claude" ]]; then
+    snapshot_file "$claude"
+    printf '@AGENTS.md\n' > "$claude"
+    echo "==> $claude created: it imports @AGENTS.md, so Claude Code reads the same guidance"
+  elif ! grep -qE '^@(\./)?AGENTS\.md[[:space:]]*$' "$claude"; then
+    echo "==> $claude does not import @AGENTS.md; add that line so Claude Code reads the Platform block"
+  fi
+}
+if [[ -n "$agents_dir" ]] && [[ -f "$TARGET_LOGIC/bin/sync-agents-block.py" ]]; then
+  sync_agents_block platform-block.md AGENTS.md
+  if [[ -f backend/build.gradle.kts || -f backend/settings.gradle.kts ]]; then
+    sync_agents_block backend-block.md backend/AGENTS.md "$agents_dir/stack.json"
+  elif [[ -f settings.gradle.kts || -f build.gradle.kts ]]; then
+    sync_agents_block backend-block.md AGENTS.md "$agents_dir/stack.json"
+  fi
+  if [[ -f frontend/package.json ]]; then
+    sync_agents_block frontend-block.md frontend/AGENTS.md "$TARGET_LOGIC/versions.json"
+  fi
 fi
 # platform-bump:agents-end
 

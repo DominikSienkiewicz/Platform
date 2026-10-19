@@ -50,6 +50,10 @@ consumer's `AGENTS.md`.
 `platform-bump` writes the block below into the `AGENTS.md` of every consumer, with `{{VERSION}}` filled in as the
 release it bumps to (`frontend/packages/versions/bin/sync-agents-block.py`). Its source is
 `templates/agents/platform-block.md`; this copy must stay identical, which `templates/tests/agent-docs.test.sh` checks.
+The same bump writes `templates/agents/backend-block.md` into `backend/AGENTS.md` and
+`templates/agents/frontend-block.md` into `frontend/AGENTS.md`, filled with the stack of that release: the backend
+from `frontend/packages/versions/agents/stack.json`, which `scripts/agents-stack.py` regenerates after a catalog
+change, and the frontend from `versions.json`.
 
 <!-- BEGIN platform-agents v{{VERSION}} (managed by platform-bump; edits inside these markers are replaced) -->
 ## Platform rules for agents (Platform {{VERSION}})
