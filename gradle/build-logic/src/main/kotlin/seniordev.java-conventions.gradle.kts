@@ -78,12 +78,18 @@ val checkstyleFiles = listOf("checkstyle.xml", "checkstyle-suppressions.xml").as
 		?: error("Brak zasobu platform-checkstyle/$name w pluginie seniordev.java-conventions")).bufferedReader()
 		.use { it.readText() }
 }
+// Lokalne kopie w bloku register: akcja doLast trzyma wtedy tylko je, a nie obiekt skryptu pluginu, którego
+// configuration cache nie serializuje. Pilnuje PlatformTaskActionCaptureTest.
 val extractCheckstyleConfig = tasks.register("extractCheckstyleConfig") {
 	description = "Wypakowuje współdzieloną konfigurację Checkstyle z pluginu do build/."
-	outputs.dir(checkstyleDir)
+	val outputDir = layout.buildDirectory.dir("platform-config/checkstyle")
+	val files = checkstyleFiles
+	inputs.property("files", files)
+	outputs.dir(outputDir)
 	doLast {
-		checkstyleDir.mkdirs()
-		checkstyleFiles.forEach { (name, text) -> File(checkstyleDir, name).writeText(text) }
+		val dir = outputDir.get().asFile
+		dir.mkdirs()
+		files.forEach { (name, text) -> File(dir, name).writeText(text) }
 	}
 }
 

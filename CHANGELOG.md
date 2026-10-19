@@ -219,6 +219,9 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Fixed
 
+- `extractCheckstyleConfig` and `extractSpotbugsConfig` no longer capture the plugin script object in
+  their actions, which the configuration cache cannot serialize; a consumer that turns the cache on
+  no longer fails `check` on them.
 - Roadmap toolkit: auto-unblock reads the older SkillSprintPlus marker layout, takes the status from the
   `status:*` label, ignores prerequisites closed as not planned, and fails instead of claiming changes it
   did not make. The generator stops before creating anything when the issue snapshot fails or is
