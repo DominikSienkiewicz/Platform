@@ -75,6 +75,11 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ### Added
 
+- `templates/agent-gradle.sh` coordinates separate Gradle invocations: with `AI_AGENT` on, a run of
+  `test`, `integrationTest`, `check` or `build` takes one of `AI_AGENT_TEST_SLOTS` (default 3)
+  machine-wide slots and waits for one, reclaiming slots of dead processes. `templates/agent-preflight.sh`
+  says whether the machine can take more agents (exit 0, 1 or 2) on macOS and Linux. Re-copy
+  `scripts/agent-gradle.sh` to get the slots.
 - `templates/worktree-new.sh <type> <description>` starts a feature branch in its own worktree under
   `.worktrees/`, named `<type>/<description>-YYYY-MM-DD` from the latest `origin/main`, and
   `templates/worktree-status.sh` shows every worktree with whether `merge.sh` can take it. Copy them to

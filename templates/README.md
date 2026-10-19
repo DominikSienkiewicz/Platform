@@ -13,7 +13,8 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | File | Purpose | Copy to |
 |---|---|---|
 | `jvm/java-library/`, `jvm/spring-app/` | minimal projects that consume the published plugins and catalog; built by Gradle TestKit. `java-library` carries the Gradle wrapper, and Platform's CI runs the reusable `backend-ci.yml` on it. Their `.gitignore` is the rules of `gitignore/root.gitignore` followed by `gitignore/backend.gitignore` | the root of a new repository; see [consuming.md](../docs/consuming.md) |
-| `agent-gradle.sh` | opt-in worker limits with `AI_AGENT=1/true`; runs `./gradlew` from the root, or `backend/gradlew` from `backend/` when the root has no wrapper | `<repo>/scripts/agent-gradle.sh` |
+| `agent-gradle.sh` | opt-in worker limits with `AI_AGENT=1/true`, and machine-wide slots (`AI_AGENT_TEST_SLOTS`, default 3) for runs of `test`, `integrationTest`, `check` or `build` across separate invocations; runs `./gradlew` from the root, or `backend/gradlew` from `backend/` when the root has no wrapper | `<repo>/scripts/agent-gradle.sh` |
+| `agent-preflight.sh` | how many agents the machine holds right now, from free memory and swap on macOS or Linux: exit 0 go, 1 reduce (prints the number), 2 stop; thresholds overridable through env | `<repo>/scripts/agent-preflight.sh` |
 | `.editorconfig` | consistent IDE style (Java: 2 spaces like google-java-format; Kotlin/`*.kts`: tabs) | the root of every repository |
 | `.sdkmanrc` | the local JDK that runs Gradle, through SDKMAN (`sdk env`) | the root of every repository |
 | `npmrc` | GitHub Packages registry and token lines for `@dominiksienkiewicz/*` | `<repo>/frontend/.npmrc` |
