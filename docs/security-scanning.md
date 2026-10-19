@@ -11,7 +11,7 @@ cannot fix yet. The caller side of each workflow is in [reusable-workflows.md](r
 | Grype on `frontend/package-lock.json` | `security-scan.yml` | the same | `.grype.yaml` |
 | Grype on the pushed images | `deploy.yml` with `scan-images: true` | severity at or above `scan-severity`, fixable findings only | `.grype.yaml` |
 | Grype on published images | `container-scan.yml` | severity at or above `severity-cutoff`, fixable findings only by default | `only-fixed` and `severity-cutoff`; the job does not check the repository out, so `.grype.yaml` does not apply |
-| Semgrep | `semgrep.yml` | findings of severity `ERROR` | `# nosemgrep: <rule-id>` |
+| Semgrep | `semgrep.yml` | findings of severity `CRITICAL`, `HIGH` or `ERROR`; `MEDIUM`, `WARNING`, `LOW` and `INFO` are listed and counted only | `# nosemgrep: <rule-id>` |
 | Snyk | `container-scan.yml`, `deploy.yml` | never: advisory only | — |
 | CodeQL (Platform only, not reusable) | `codeql.yml` | never: alerts go to Code scanning | dismiss the alert in Code scanning with a reason |
 
@@ -51,3 +51,16 @@ after that date, so the advisory counts again until it is fixed or renewed.
 Semgrep findings follow the same convention: the comment line above `# nosemgrep: <rule-id>` carries
 `expires`, `tracking` and `reason`. Name the rule ID: a bare `# nosemgrep` silences every rule on that
 line. Nothing checks these dates automatically yet, so they are reviewed with the change that adds them.
+
+## Platform's own frontend workspace
+
+[`frontend/pnpm-workspace.yaml`](../frontend/pnpm-workspace.yaml) sets `trustPolicy: no-downgrade`: pnpm
+refuses a package version with weaker trust evidence (trusted publisher, provenance) than a version of that
+package published before it, and `pnpm install --frozen-lockfile` fails with `TRUST_DOWNGRADE`. pnpm compares
+versions by publish date, so a backport of an older major published after the next major gained provenance
+trips it too. Check that the flagged version is such a backport and not a takeover, then add the exact
+`name@version` to `trustPolicyExclude` with the reason in a comment. `blockExoticSubdeps: true` keeps
+transitive dependencies on the registry. `minimumReleaseAge` stays at the pnpm 11 default of one day,
+non-strict, so Semgrep's `pnpm-minimum-release-age` finding, which asks for seven days, remains a log-only
+advisory, as does `npm-missing-minimum-release-age` on `frontend/.npmrc`, from which pnpm reads only
+registry and authentication settings.

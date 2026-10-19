@@ -11,7 +11,7 @@ name: Semgrep SAST (reusable)
 #
 # Repo PRYWATNE bez GitHub Advanced Security: zakładka „Code scanning" (upload SARIF) jest
 # ZABLOKOWANA — dlatego wynik idzie jako tekst + fail-build (dokładnie jak Grype w security-scan.yml),
-# NIE przez `github/codeql-action/upload-sarif`. Bramka: severity ERROR = fail, WARNING/INFO = log-only.
+# NIE przez `github/codeql-action/upload-sarif`. Bramka: severity CRITICAL/HIGH/ERROR = fail, reszta = log-only.
 on:
   workflow_call:
     inputs:
@@ -46,11 +46,12 @@ jobs:
           SEMGREP_VERSION: ${{ inputs.semgrep-version }}
         run: pipx install "semgrep==${SEMGREP_VERSION}"
 
-      # JEDEN przebieg skanera. Wcześniej kod był skanowany DWA razy (osobny krok ERROR, potem osobny
-      # WARNING/INFO) — te same reguły na tym samym drzewie, podwójny compute na każdym runie. Teraz
-      # skanujemy raz do JSON, a bramkę (ERROR = fail) i widok advisory (WARNING/INFO = log-only)
-      # liczymy z tego samego wyniku. Semantyka bramki bez zmian: ERROR blokuje, reszta nie.
-      - name: Semgrep — SAST (jeden skan, bramka ERROR)
+      # JEDEN przebieg skanera do JSON, a widok, podsumowanie i bramkę liczymy z tego samego wyniku.
+      # Semgrep ma dwie skale severity: dawną ERROR/WARNING/INFO i nową CRITICAL/HIGH/MEDIUM/LOW (m.in.
+      # reguły package_managers). Według Semgrepa ERROR = HIGH, WARNING = MEDIUM, INFO = LOW, więc blokują
+      # CRITICAL, HIGH i ERROR, a reszta, także severity spoza obu skal, jest log-only. Blok `run:` tego kroku
+      # uruchamia templates/tests/semgrep-gate.test.sh.
+      - name: Semgrep — SAST (jeden skan, bramka CRITICAL/HIGH/ERROR)
         env:
           SEMGREP_CONFIGS: ${{ inputs.config }}
         run: |
@@ -71,12 +72,19 @@ jobs:
           jq -r '.results[] | "\(.extra.severity)\t\(.path):\(.start.line)\t\(.check_id)"' \
             semgrep.json | sort || true
 
-          err=$(jq  '[.results[] | select(.extra.severity=="ERROR")]   | length' semgrep.json)
-          warn=$(jq '[.results[] | select(.extra.severity=="WARNING")] | length' semgrep.json)
-          info=$(jq '[.results[] | select(.extra.severity=="INFO")]    | length' semgrep.json)
-          echo "Semgrep: ${err} ERROR (blokujące), ${warn} WARNING, ${info} INFO (log-only)"
+          # Liczniki od najgroźniejszej severity; nieznane na końcu, żeby żadne znalezisko nie zniknęło z podsumowania.
+          summary=$(jq -r '
+            ["CRITICAL", "HIGH", "ERROR", "MEDIUM", "WARNING", "LOW", "INFO"] as $order
+            | [.results[].extra.severity] as $found
+            | ($order + (($found - $order) | unique))
+            | map(. as $level | [$found[] | select(. == $level)] | length | select(. > 0) | "\(.) \($level)")
+            | if length == 0 then "no findings" else join(", ") end' semgrep.json)
+          blocking=$(jq '[.results[] | select(.extra.severity | IN("CRITICAL", "HIGH", "ERROR"))] | length' semgrep.json)
+          echo "Semgrep: ${summary}; ${blocking} blocking (CRITICAL, HIGH, ERROR), the rest is log-only"
 
-          if [ "${err:-0}" -gt 0 ]; then
-            echo "::error title=PLAT-SAST-001::[PLAT-SAST-001] Semgrep found ${err} ERROR findings; fix them or record an exception as docs/security-scanning.md describes."
+          if [ "${blocking:-0}" -gt 0 ]; then
+            noun=findings
+            if [ "$blocking" -eq 1 ]; then noun=finding; fi
+            echo "::error title=PLAT-SAST-001::[PLAT-SAST-001] Semgrep found ${blocking} blocking ${noun} (CRITICAL, HIGH or ERROR); fix them or record an exception as docs/security-scanning.md describes."
             exit 1
           fi

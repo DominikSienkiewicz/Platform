@@ -232,8 +232,9 @@ Inputs:
 
 ## semgrep.yml
 
-Static analysis of the source code. ERROR findings fail the run; accepting one is described in
-[security-scanning.md](security-scanning.md). Platform runs the default rulesets on itself from
+Static analysis of the source code. CRITICAL, HIGH and ERROR findings fail the run, and the log counts every
+severity; accepting a finding is described in [security-scanning.md](security-scanning.md). Platform runs the
+default rulesets on itself from
 `self-scan.yml`, pull requests included.
 
 - Permissions: `contents: read`.

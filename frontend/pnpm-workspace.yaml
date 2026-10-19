@@ -4,3 +4,13 @@ allowBuilds:
   msw: false
   sharp: false
   unrs-resolver: true
+# Wersja ze słabszym poświadczeniem pochodzenia niż wcześniej wydane wersje paczki nie instaluje się
+# (ERR_PNPM_LOCKFILE_RESOLUTION_VERIFICATION, TRUST_DOWNGRADE); procedura: docs/security-scanning.md.
+trustPolicy: no-downgrade
+# Backporty starszej linii wydane po linii z provenance (semver 6.3.1 po 7.5.2, resolver 3.10.1 po 4.0.0):
+# pnpm porównuje wersje po dacie wydania, więc bierze je za downgrade.
+trustPolicyExclude:
+  - eslint-import-resolver-typescript@3.10.1
+  - semver@6.3.1
+# Domyślne od pnpm 11; jawnie, żeby zmiana domyślnej nie przeszła po cichu.
+blockExoticSubdeps: true
