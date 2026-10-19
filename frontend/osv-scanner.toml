@@ -1,0 +1,8 @@
+# Zaakceptowane znaleziska OSV dla frontend/pnpm-lock.yaml — czyta je osv-scanner, a przez niego check
+# Vulnerabilities w OpenSSF Scorecard. Procedura jak w docs/security-scanning.md („Accepting a finding"):
+# data końca i powód; po ignoreUntil wpis przestaje działać i znalezisko wraca.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+ignoreUntil = 2027-01-19
+reason = "braces 3.0.3 has no fixed release. It reaches the workspace only through shadcn > fast-glob > micromatch (dev tooling), and every pattern it expands is Platform's own, so the stack-exhaustion DoS needs no untrusted input."

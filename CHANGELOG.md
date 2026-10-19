@@ -456,6 +456,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   the docs; CI fails on a stale region (N-SHOW-15).
 - A documentation site built with Zensical in strict mode by `docs-site.yml`, pinned with hashes, deployed to
   GitHub Pages once the maintainer enables it (N-SHOW-16).
+- `fast-check` 4.10.2 in the frontend canon, and property tests of `createApiClient` in
+  `packages/api-client/test/properties.test.js`: headers in every `HeadersInit` form, the mapping of every 4xx
+  and 5xx to `ApiError`, and the SPA CSRF rule, each on random inputs. OpenSSF Scorecard's Fuzzing check
+  counts them.
+- `frontend/osv-scanner.toml` records the accepted advisories of the frontend lockfile for OpenSSF
+  Scorecard's Vulnerabilities check, with an end date and a reason (`docs/security-scanning.md`).
 
 ### Changed
 
@@ -579,6 +585,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `docs/agent-profile.md`.
 
 - `SECURITY.md` names the support policy and the exact workflow pins instead of `@v1`.
+- The frontend canon moves `vitest` and `@vitest/coverage-v8` from 4.1.10 to 4.1.11, which fixes
+  GHSA-82fw-gwwq-j7x9 (path traversal through a redirected mock in `@vitest/mocker`); `platform-bump`
+  applies it.
+- The release-migration fixtures of `runtime-image-27` store their images as `docker-image.fixture`;
+  `test/migrations.test.sh` restores the `Dockerfile` name in its copy. OpenSSF Scorecard counted them as
+  unpinned images of Platform's own build.
 
 ### Fixed
 
@@ -639,6 +651,11 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   security. Before, Boot's default chain registered first in a real application and the starter backed
   off, so `platform.security.mode=permit-all` answered 401 everywhere; a non-web application no longer
   fails to start with the starter on the classpath.
+- Platform's frontend lockfile takes the fixed releases of hono, undici, fast-uri, ip-address,
+  brace-expansion, proxy-addr, qs, body-parser, `@modelcontextprotocol/sdk`, `@hono/node-server`, browserslist,
+  postcss-selector-parser, source-map-js and baseline-browser-mapping. All of them are dev tooling (shadcn's MCP
+  server, jsdom, ESLint, Next); no manifest changed. braces 3.0.3 has no fixed release and is accepted in
+  `frontend/osv-scanner.toml` until 2027-01-19.
 
 ## [1.5.31] - 2026-10-14
 
