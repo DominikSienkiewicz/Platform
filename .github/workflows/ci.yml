@@ -176,6 +176,22 @@ jobs:
       - name: shellcheck -x --severity=warning
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -x --severity=warning
 
+  # Piny akcji kontra prawdziwy GitHub: SHA = commit taga z komentarza `# vX.Y.Z`, nie obiekt annotated taga,
+  # który Scorecard odrzuca przy publikacji jako „imposter commit”. Logikę na atrapie gh pilnuje
+  # scripts/check-action-pins.test.sh (job templates).
+  action-pins:
+    name: Action pins — commits of their tags
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: scripts/check-action-pins.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-action-pins.sh
+
   # Walidator configów Renovate w przypiętej wersji (jak semgrep-version w semgrep.yml): zepsuty preset
   # trafiłby do każdego konsumenta przez `extends`. Wersja >= 2 tygodnie od wydania.
   renovate-config:
@@ -295,7 +311,7 @@ jobs:
     # Bez GITHUB_TOKEN: lockfile ciągnie wyłącznie publiczne paczki npm, a job uruchamia kod zależności.
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-      - uses: pnpm/action-setup@008330803749db0355799c700092d9a85fd074e9 # v6.0.9
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         with:
           version: 11.18.0
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
