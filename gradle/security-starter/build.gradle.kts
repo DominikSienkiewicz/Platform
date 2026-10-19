@@ -38,6 +38,11 @@ dependencies {
 	api("org.springframework:spring-web")
 	// Auto-konfiguracja (@AutoConfiguration / @ConditionalOn*) — konsument ma je z Boota, więc compileOnly.
 	compileOnly("org.springframework.boot:spring-boot-autoconfigure")
+	// Tryb platform.security.mode=jwt (N-CAP-13): resource server deklaruje konsument (zasada 2), starter tylko
+	// kompiluje się na nim; PlatformJwtResourceServer ładuje te klasy dopiero, gdy są na classpath.
+	compileOnly("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
+	// Odpowiedzi problem+json piszą wprost do HttpServletResponse; aplikacja servletowa (warunek startera) ma to API.
+	compileOnly("jakarta.servlet:jakarta.servlet-api")
 	// Konfiguracja annotationProcessor nie dziedziczy BOM-a z api/implementation — trzeba jej podać platformę
 	// osobno, inaczej spring-boot-configuration-processor rozwiązuje się bez wersji (build fail).
 	annotationProcessor(platform(libs.platform.bom))
@@ -48,6 +53,7 @@ dependencies {
 	testImplementation("org.springframework:spring-webmvc")
 	// ManagementWebSecurityAutoConfiguration w PlatformSecurityBootAutoConfigurationTest; wersja z BOM-a Boota.
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator")
+	testImplementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

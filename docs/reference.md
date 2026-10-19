@@ -191,11 +191,20 @@ and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/senio
 
 | Property | Default | Effect |
 |---|---|---|
-| `platform.security.mode` | `AUTHENTICATED` | `AUTHENTICATED` requires authentication for everything not permitted; `PERMIT_ALL` permits every request |
-| `platform.security.stateless` | `false` | `true` disables the HTTP session |
-| `platform.security.csrf` | `true` | CSRF protection |
+| `platform.security.mode` | `AUTHENTICATED` | `AUTHENTICATED` requires authentication for everything not permitted; `PERMIT_ALL` permits every request; `JWT` makes the application an OAuth2 resource server that requires a bearer JWT, without a session |
+| `platform.security.stateless` | `false` | `true` disables the HTTP session; `JWT` is always stateless |
+| `platform.security.csrf` | `ON` | `ON` keeps the token in the session, `OFF` disables CSRF protection (only for an API without cookie authentication), `SPA` hands the token to a browser client in the `XSRF-TOKEN` cookie and accepts it back in `X-XSRF-TOKEN` (Spring Security's `csrf.spa()`); `true` and `false` still mean `ON` and `OFF` |
+| `platform.security.jwt.authorities-claim` | unset (`scope`, `scp`) | the JWT claim whose values become authorities, each with the `SCOPE_` prefix |
 | `platform.security.http-basic` | `true` | HTTP Basic authentication |
 | `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication; a value replaces the defaults, so repeat the health paths |
+
+A 401 or a 403 from the chain is `application/problem+json` in the shape of the web starter, `title`, `status`,
+`detail`, `instance`, `message` and `traceId` when tracing set one, with the challenge of the mode in
+`WWW-Authenticate`: `Basic realm="Realm"` with HTTP Basic, the RFC 6750 `Bearer` challenge with `JWT`, none
+otherwise. `JWT` needs `spring-boot-starter-security-oauth2-resource-server`, which the application declares,
+and a `JwtDecoder`, which Spring Boot builds from `spring.security.oauth2.resourceserver.jwt.issuer-uri` (or
+`jwk-set-uri`, or `public-key-location`); without either the application fails at startup and names the fix.
+Scope rules stay in the application, for example `@PreAuthorize("hasAuthority('SCOPE_orders.read')")`.
 | `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; `*` fails at startup while `allow-credentials` is `true`; see [consuming.md](consuming.md#security-starter-cors) |
 | `platform.cors.allowed-methods` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | allowed methods |
 | `platform.cors.allowed-headers` | `*` | allowed headers |

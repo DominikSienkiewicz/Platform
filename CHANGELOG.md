@@ -122,6 +122,13 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   before the first request. Copy both into an existing backend when convenient: the criteria file, and the
   `pluginManagement` block of `templates/jvm/spring-app/settings.gradle.kts` (manual, optional).
 
+- `platformDependencyCheck` warns ([PLAT-DEPR-001](docs/gates.md#plat-depr-001)) on
+  `spring-boot-starter-oauth2-resource-server` and `spring-boot-starter-oauth2-client`, which Spring Boot 4 deprecates
+  in favor of `spring-boot-starter-security-oauth2-resource-server` and `spring-boot-starter-security-oauth2-client`.
+  BookOfStyling and SkillSprintPlus rename them before the MINOR that removes the old names (manual).
+- The security starter's `platform.security.csrf` is now `ON`, `OFF` or `SPA`; `true` and `false` still bind, and
+  its 401 and 403 bodies are `application/problem+json`. No consumer has adopted the starter (none).
+
 ### Added
 
 - Gate codes: every Platform gate names its failure (`[PLAT-DEP-001]` …) and links its section of the new
@@ -387,6 +394,12 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `platform.javac.werror=true` turns javac warnings, Error Prone's included, into errors (N-CAP-11).
 - Daemon JVM criteria in `templates/jvm/*`: the wrapper starts from any JDK and Gradle selects or downloads Java 25
   for the daemon; the starters' `pluginManagement` names the credential fix instead of a nested 401 (N-DX-2).
+
+- Security starter (N-CAP-13): `platform.security.mode=jwt` makes the application an OAuth2 resource server on
+  Spring Boot's `spring.security.oauth2.resourceserver.jwt.*`, stateless, with `platform.security.jwt.authorities-claim`;
+  without the resource-server dependency or a `JwtDecoder` it fails at startup and names the fix. 401 and 403 are
+  `application/problem+json` with the mode's `WWW-Authenticate` challenge, and `platform.security.csrf=spa` uses
+  Spring Security's `csrf.spa()`. The api-client's `xsrf` option echoes the `XSRF-TOKEN` cookie in `X-XSRF-TOKEN`.
 
 ### Changed
 

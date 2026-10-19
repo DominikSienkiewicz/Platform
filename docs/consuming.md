@@ -480,6 +480,11 @@ starter was written from map like this:
 |---|---|---|
 | permit-all, stateless API with CORS (BookOfStyling) | `platform.security.mode=permit-all`, `platform.security.stateless=true`, `platform.security.csrf=false`, `platform.cors.allowed-origins=${app.cors.allowed-origins}` | delete `SecurityConfig` |
 | authenticated with HTTP Basic (SkillSprintPlus) | none: these are the defaults | delete `SecurityConfig` |
+| a JWT resource server, as the `TODO(identity module)` of both plans | `platform.security.mode=jwt`, `spring.security.oauth2.resourceserver.jwt.issuer-uri=…`, optionally `platform.security.jwt.authorities-claim=roles` | add `implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")`, delete `SecurityConfig`, keep the scope rules in `@PreAuthorize` |
+| a browser client with a cookie session | `platform.security.csrf=spa` | create the frontend client with `createApiClient({ xsrf: true })` ([api-client.md](api-client.md#csrf-for-a-single-page-application)) |
+
+Every 401 and 403 is `application/problem+json`, which the api-client turns into `ApiError.problem`
+([reference](reference.md#security-starter-incubating)).
 
 Both variants are covered by `PlatformSecurityAutoConfigurationTest`, and the starter's chain takes
 precedence over Spring Boot's default web security (`PlatformSecurityBootAutoConfigurationTest`). The

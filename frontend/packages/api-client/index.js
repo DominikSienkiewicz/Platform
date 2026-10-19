@@ -66,23 +66,57 @@ function mergeHeaders(defaults, overrides) {
   return headers;
 }
 
+// CSRF dla SPA (security starter, platform.security.csrf=spa): Spring Security kładzie token w ciasteczku
+// XSRF-TOKEN i oczekuje go z powrotem w nagłówku X-XSRF-TOKEN przy żądaniach zmieniających stan.
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+
+/**
+ * @param {import("./index").ApiClientOptions["xsrf"]} option
+ * @returns {{ cookie: string, header: string } | null}
+ */
+function resolveXsrf(option) {
+  if (!option) return null;
+  const names = option === true ? {} : option;
+  return { cookie: names.cookie ?? "XSRF-TOKEN", header: names.header ?? "X-XSRF-TOKEN" };
+}
+
+/**
+ * Wartość ciasteczka z `document.cookie`; poza przeglądarką (SSR, Node) zawsze null.
+ * @param {string} name
+ * @returns {string | null}
+ */
+function readCookie(name) {
+  const cookies = /** @type {{ cookie?: unknown } | undefined} */ (globalThis.document)?.cookie;
+  if (typeof cookies !== "string") return null;
+  for (const pair of cookies.split(";")) {
+    const separator = pair.indexOf("=");
+    if (separator > 0 && pair.slice(0, separator).trim() === name) {
+      return decodeURIComponent(pair.slice(separator + 1).trim());
+    }
+  }
+  return null;
+}
+
 /**
  * Tworzy klienta HTTP. `baseUrl` domyślnie z NEXT_PUBLIC_API_BASE_URL.
- * @param {{ baseUrl?: string, headers?: Record<string,string> }} [options]
+ * @param {import("./index").ApiClientOptions} [options]
  */
 export function createApiClient(options = {}) {
   const baseUrl = resolveBaseUrl(options.baseUrl);
   const defaultHeaders = options.headers ?? {};
+  const xsrf = resolveXsrf(options.xsrf);
 
   /**
    * @param {string} path
    * @param {RequestInit} [init]
    */
   async function request(path, init = {}) {
-    const res = await fetch(`${baseUrl}${path}`, {
-      ...init,
-      headers: mergeHeaders(defaultHeaders, init.headers),
-    });
+    const headers = mergeHeaders(defaultHeaders, init.headers);
+    if (xsrf && !SAFE_METHODS.has((init.method ?? "GET").toUpperCase()) && !headers.has(xsrf.header)) {
+      const token = readCookie(xsrf.cookie);
+      if (token) headers.set(xsrf.header, token);
+    }
+    const res = await fetch(`${baseUrl}${path}`, { ...init, headers });
 
     if (res.status === 204) return null;
 

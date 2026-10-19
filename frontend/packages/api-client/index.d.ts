@@ -24,6 +24,12 @@ export interface ApiClientOptions {
   /** Domyślnie z NEXT_PUBLIC_API_BASE_URL. */
   baseUrl?: string;
   headers?: Record<string, string>;
+  /**
+   * Echo the CSRF cookie in a header on every request that is not GET, HEAD, OPTIONS or TRACE, as the security
+   * starter's `platform.security.csrf=spa` expects. `true` uses Spring Security's names, `XSRF-TOKEN` and
+   * `X-XSRF-TOKEN`. Only in the browser; a header the call sets itself wins.
+   */
+  xsrf?: boolean | { cookie?: string; header?: string };
 }
 
 export interface ApiClient {

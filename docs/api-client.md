@@ -31,6 +31,13 @@ its `message`, then its `title`, then the HTTP status text, then `HTTP <status>`
 for any other response `problem` is `null`. Raw response text is retained for diagnostics and is not
 used as the error message.
 
+## CSRF for a single-page application
+
+`createApiClient({ xsrf: true })` reads the `XSRF-TOKEN` cookie and sends it as `X-XSRF-TOKEN` on every request
+that is not `GET`, `HEAD`, `OPTIONS` or `TRACE`, which is what the security starter's
+`platform.security.csrf=spa` expects. `xsrf: { cookie, header }` takes other names. It works only in the browser,
+where `document.cookie` exists, and a header the call sets itself wins.
+
 ## Focused regression suites
 
 Run the package tests from `frontend/` when test execution is requested:
