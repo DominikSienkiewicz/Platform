@@ -63,9 +63,9 @@ class PlatformArchRulesTest {
 
     var rules = HexagonalRules.of("..domain..", "..application..", "..adapter..");
 
-    assertThat(rules).hasSize(3);
     assertThat(rules)
-        .allSatisfy(rule -> assertThat(rule.evaluate(violating).hasViolation()).isTrue());
-    assertThat(rules).allSatisfy(rule -> assertThat(rule.evaluate(clean).hasViolation()).isFalse());
+        .hasSize(3)
+        .allSatisfy(rule -> assertThat(rule.evaluate(violating).hasViolation()).isTrue())
+        .allSatisfy(rule -> assertThat(rule.evaluate(clean).hasViolation()).isFalse());
   }
 }

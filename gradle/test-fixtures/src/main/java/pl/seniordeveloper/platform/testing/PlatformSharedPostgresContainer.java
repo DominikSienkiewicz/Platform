@@ -39,6 +39,11 @@ public class PlatformSharedPostgresContainer {
 
   private static final class Holder {
     static final PostgreSQLContainer CONTAINER = start(create());
+
+    private static PostgreSQLContainer start(PostgreSQLContainer container) {
+      container.start();
+      return container;
+    }
   }
 
   /**
@@ -50,9 +55,13 @@ public class PlatformSharedPostgresContainer {
     return Holder.CONTAINER;
   }
 
+  // Kontener żyje do końca JVM (sprząta go Ryuk), więc nie ma tu close(); zwracamy tę samą
+  // instancję, którą konfigurują metody with*.
   static PostgreSQLContainer create() {
-    return new PostgreSQLContainer(
-            DockerImageName.parse(PlatformImages.PGVECTOR).asCompatibleSubstituteFor("postgres"))
+    var container =
+        new PostgreSQLContainer(
+            DockerImageName.parse(PlatformImages.PGVECTOR).asCompatibleSubstituteFor("postgres"));
+    container
         .withCommand(
             "postgres",
             "-c",
@@ -65,10 +74,6 @@ public class PlatformSharedPostgresContainer {
         // montowania.
         .withTmpFs(Map.of("/var/lib/postgresql", "rw"))
         .withReuse(true);
-  }
-
-  private static PostgreSQLContainer start(PostgreSQLContainer container) {
-    container.start();
     return container;
   }
 

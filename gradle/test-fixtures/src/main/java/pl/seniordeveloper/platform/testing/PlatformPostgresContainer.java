@@ -18,7 +18,7 @@ import org.testcontainers.utility.DockerImageName;
  *     użyj {@link PlatformSharedPostgresContainer}, jednego na JVM. Ta klasa zostaje bez zmian,
  *     więc nic nie trzeba robić od razu.
  */
-@Deprecated
+@Deprecated(since = "1.6.0")
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformPostgresContainer {
 

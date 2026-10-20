@@ -56,8 +56,9 @@ class TestTaxonomyTest {
   void aContainerInTheUnitTestTaskFailsWithTheFixWhenTheGuardFails() {
     System.setProperty(PlatformTestTaskGuard.TASK_PROPERTY, "test");
     System.setProperty(PlatformTestTaskGuard.MODE_PROPERTY, "fail");
+    var configuration = new PlatformPostgresContainer();
 
-    assertThatThrownBy(() -> new PlatformPostgresContainer().pgvectorContainer())
+    assertThatThrownBy(configuration::pgvectorContainer)
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
             "Testcontainers used in the unit 'test' task (PlatformPostgresContainer): annotate the test class"

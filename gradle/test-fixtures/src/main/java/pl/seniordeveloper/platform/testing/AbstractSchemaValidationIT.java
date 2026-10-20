@@ -30,13 +30,12 @@ import org.springframework.core.env.Environment;
 @Import(PlatformSharedPostgresContainer.class)
 public abstract class AbstractSchemaValidationIT {
 
-  @Autowired private Environment environment;
-
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  // Environment przez parametr metody (SpringExtension), bez pola, którego podklasa nie potrzebuje.
   @Test
   @DisplayName(
       "The migrations create the schema every JPA entity expects, Spring Modulith's included")
-  protected void migrationsMatchTheEntities() {
+  protected void migrationsMatchTheEntities(@Autowired Environment environment) {
     assertEquals(
         "validate",
         environment.getProperty("spring.jpa.hibernate.ddl-auto"),

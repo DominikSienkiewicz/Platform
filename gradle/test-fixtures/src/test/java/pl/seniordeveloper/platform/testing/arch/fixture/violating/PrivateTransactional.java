@@ -8,5 +8,7 @@ public class PrivateTransactional {
   }
 
   @Transactional
-  private void work() {}
+  private void work() {
+    // Treść bez znaczenia: reguła sprawdza tylko widoczność metody z @Transactional.
+  }
 }

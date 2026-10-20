@@ -687,6 +687,16 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 
 ### Fixed
 
+- `AbstractFlywayMigrationTest` no longer overflows the stack on a migration whose version has many segments:
+  both name patterns match the repeated `[._]<digits>` segment possessively, which accepts the same names
+  (SonarQube java:S5998). The other SonarQube findings in `platform-test-fixtures` are fixed without changing
+  behavior: the inherited tests declare the exceptions they throw instead of `Exception`
+  (`AbstractFlywayMigrationTest.migrationsExistAndAreWellNamed()` throws `IOException` and `URISyntaxException`,
+  `AbstractLiquibaseChangelogTest.masterChangelogExists()` nothing, `changesFollowTheDeployNaming()`
+  `IOException`), `AbstractSchemaValidationIT.migrationsMatchTheEntities` takes the `Environment` as an
+  `@Autowired` parameter instead of a private field, and `PlatformPostgresContainer` is
+  `@Deprecated(since = "1.6.0")`. A subclass that overrides one of those test methods with the old signature
+  no longer compiles; no consumer does (none).
 - The `example` job of `release.yml` gives the npm step `GITHUB_TOKEN`, the variable that the rendered
   `frontend/.npmrc` (from `templates/npmrc`) reads, taken from the workflow's own token with `packages: read`.
   The job only set `NODE_AUTH_TOKEN`, which feeds the file `actions/setup-node` writes, and npm takes the token

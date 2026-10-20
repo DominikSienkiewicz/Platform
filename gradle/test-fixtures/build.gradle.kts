@@ -70,12 +70,14 @@ dependencies {
 	testImplementation("org.junit.jupiter:junit-jupiter-params")
 	// SharedPostgresContainerIT: dwa konteksty Boota z DataSource na wspólnym kontenerze.
 	testImplementation("org.springframework.boot:spring-boot-starter-jdbc")
-	testRuntimeOnly("org.postgresql:postgresql")
 	// AbstractSchemaValidationIT i szablony templates/db: aplikacja z Modulith JPA migrowana Liquibase albo Flyway.
 	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	testImplementation("org.springframework.modulith:spring-modulith-starter-jpa")
 	testImplementation("org.springframework.boot:spring-boot-starter-liquibase")
 	testImplementation("org.springframework.boot:spring-boot-starter-flyway")
+
+	// Sterownik PostgreSQL dla SharedPostgresContainerIT, dialekt Flyway dla AbstractSchemaValidationIT.
+	testRuntimeOnly("org.postgresql:postgresql")
 	testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
