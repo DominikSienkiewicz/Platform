@@ -358,6 +358,21 @@ came from (`Coverage gate: minimum=0.80 (source: coverageMinimum)`). When the
 threshold is above 0, `platformCoverageDataCheck` fails `check` if neither test task produced
 JaCoCo data, so a module without tests cannot pass the gate by being skipped.
 
+## Mutation threshold
+
+`pitest` is not part of `check`; run it on demand or in a CI job of its own. Without a threshold it reports the
+mutation score and passes, as before. `platform.mutation.threshold=0.60` in `gradle.properties`, or the typed
+`platform { mutation { threshold.set("0.60".toBigDecimal()) } }`, which wins over the property, makes `pitest`
+fail below that score. It is a decimal between 0 and 1, rounded up to a whole percent for PIT; any other value
+fails with [PLAT-MUT-001](gates.md#plat-mut-001) ([reference](reference.md#the-platform-block)).
+
+## Test-first workflow
+
+The [rule sheet for agents](consumer-agents.md#rules) asks for tests written before the code, red and green
+observed by running only the test being written, and a regression test first for every bug fix
+([runbooks](runbooks/tdd-feature.md)). `red-proof: true` on `backend-ci.yml` makes the pull request prove that
+each `fix:` commit's test fails on the parent's production code ([reusable workflows](reusable-workflows.md#red-proof)).
+
 ## Agent resource profile
 
 `AI_AGENT=1` or `AI_AGENT=true` bounds test resources for coding agents: one fork, a 2 GiB heap and four

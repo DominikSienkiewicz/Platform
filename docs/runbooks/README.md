@@ -10,6 +10,9 @@ named here no longer exists.
 | [Add a JVM library](add-jvm-library.md) | Platform, then consumer |
 | [Add a frontend dependency](add-frontend-dependency.md) | Platform, then consumer |
 | [Test an unreleased Platform change](test-unreleased-change.md) | Platform and consumer, locally |
+| [Build a feature test-first](tdd-feature.md) | consumer |
+| [Fix a bug test-first](tdd-bugfix.md) | consumer |
+| [Model a domain with DDD](ddd-modeling.md) | consumer |
 | [Promote an incubating artifact](promote-incubating-artifact.md) | consumer, then Platform |
 | [Cut a Platform release](cut-release.md) | Platform |
 | [Roll back a bad Platform release](rollback.md) | Platform, then consumer |

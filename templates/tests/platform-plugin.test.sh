@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Wtyczka Claude Code z korzenia repo (N-SHOW-1): marketplace `.claude-plugin/marketplace.json` wskazuje wtyczkę
-# `platform`, a ta ma dokładnie cztery cienkie skille, z których każdy odsyła do swojego runbooka (albo do docs/gates.md)
+# `platform`, a ta ma dokładnie siedem cienkich skilli, z których każdy odsyła do swojego runbooka (albo do docs/gates.md)
 # na tagu wydania przypiętego w repo konsumenta i nie niesie własnej procedury. Pole `version` jest pominięte w obu
 # manifestach, żeby wersję wtyczki wyznaczał commit (docs: "omit version"), a nie ręczny numer poza release.sh.
 # Na atrapie skill z nieistniejącą ścieżką musi oblać scripts/check-agent-docs.py.
@@ -27,6 +27,9 @@ TARGETS = {
     "fix-gate-failure": {"docs/gates.md"},
     "add-library": {"docs/runbooks/add-jvm-library.md", "docs/runbooks/add-frontend-dependency.md"},
     "test-unreleased-change": {"docs/runbooks/test-unreleased-change.md"},
+    "tdd-feature": {"docs/runbooks/tdd-feature.md"},
+    "tdd-bugfix": {"docs/runbooks/tdd-bugfix.md"},
+    "ddd-modeling": {"docs/runbooks/ddd-modeling.md"},
 }
 
 
@@ -74,7 +77,7 @@ if problems:
     print("\n".join(problems))
     sys.exit(1)
 PY
-OUT=$(python3 -I "$tmp/contract.py" "$root") || fail 'the marketplace, the plugin and its four skills must follow the contract'
+OUT=$(python3 -I "$tmp/contract.py" "$root") || fail 'the marketplace, the plugin and its seven skills must follow the contract'
 
 fixture="$tmp/platform"
 mkdir -p "$fixture/templates/agents" "$fixture/docs/runbooks" "$fixture/frontend/packages/versions" \
@@ -91,4 +94,4 @@ rm "$fixture/docs/runbooks/cut-release.md"
 if OUT=$(python3 -I "$root/scripts/check-agent-docs.py" "$fixture"); then fail 'a skill naming a missing runbook must fail the check'; fi
 grep -qF 'plugins/platform/skills/demo/SKILL.md:1: `docs/runbooks/cut-release.md` (named by a link at a release tag) does not exist' <<<"$OUT" \
   || fail 'the failure must name the skill file, the line and the missing path'
-echo 'OK: the marketplace lists the platform plugin, its four skills only point at runbooks at the pinned tag, and the checker covers them'
+echo 'OK: the marketplace lists the platform plugin, its seven skills only point at runbooks at the pinned tag, and the checker covers them'
