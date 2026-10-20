@@ -24,7 +24,8 @@ run 1.6.0
 checks=$(grep -n '^pr checks' "$tmp/calls" | head -1 | cut -d: -f1)
 second=$(grep -n '^workflow run' "$tmp/calls" | sed -n 2p | cut -d: -f1)
 [[ -n "$checks" && -n "$second" && $checks -lt $second ]] || fail 'ring 2 waits for the checks of ring 1'
-[[ $(grep -c '^workflow run' "$tmp/calls") -eq 5 ]] || fail 'every consumer is bumped once'
+consumers=$(grep -cEv '^[[:space:]]*(#|$)' "$here/consumers.txt")
+[[ $(grep -c '^workflow run' "$tmp/calls") -eq $consumers ]] || fail 'every consumer is bumped once'
 grep -q 'Touchstone' <(grep '^workflow run' "$tmp/calls" | sed 1d) && fail 'Touchstone is bumped only in ring 1'
 
 FAKE_CHECKS=fail run 1.6.0

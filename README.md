@@ -45,7 +45,7 @@ own schedule and rolls back by pinning an older version.
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | all five |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | the four frontends |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth, BookOfStyling, SkillSprintPlus |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth |
 | `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | the four frontends |
 | `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) | none |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | the four frontends |
@@ -69,7 +69,6 @@ starter is in [docs/consuming.md](docs/consuming.md#catalog-bundles-incubating).
 `api-client` and `query` are also private: no frontend adopted them, and `api-client` overlaps the
 clients the consumers generate from OpenAPI. Releases skip them, and they stay at 1.5.31 in the
 registry until a first consumer adopts one; that pull request removes `"private": true` too.
-Attestate's `providers.tsx` matches `query` one to one.
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
@@ -78,10 +77,7 @@ described in [RELEASING.md](RELEASING.md).
 
 | Repository | Layout |
 |---|---|
-| `DominikSienkiewicz/Attestate_io` | backend and frontend |
 | `DominikSienkiewicz/Azimuth` | backend and frontend |
-| `DominikSienkiewicz/BookOfStyling_com` | backend and frontend |
-| `DominikSienkiewicz/SkillSprintPlus_com` | backend and frontend |
 | `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
 
 "The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which

@@ -33,7 +33,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `platformDependencyCheck` warns ([PLAT-DEPR-001](docs/gates.md#plat-depr-001)) on
   `spring-boot-starter-oauth2-resource-server` and `spring-boot-starter-oauth2-client`, which Spring Boot 4 deprecates
   in favor of `spring-boot-starter-security-oauth2-resource-server` and `spring-boot-starter-security-oauth2-client`.
-  BookOfStyling and SkillSprintPlus rename them before the MINOR that removes the old names (manual).
+  A consumer that declares them renames them before the MINOR that removes the old names (manual).
 - `seniordev.java-conventions` adds `platformPinCheck` to `check`: a build whose settings plugin and
   catalog are pinned to different releases now fails, naming both versions and the fix. Read both pins
   from `platformVersion` or run `scripts/platform-bump.sh` (manual). It also registers `lint` and
@@ -53,8 +53,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   image for a manual fix.
 - `seniordev.spring-modulith-conventions` imports `platform-bom` of its own release instead of the three Spring
   BOMs and its `ext` overrides ([ADR-0013](docs/adr/0013-catalog-for-aliases-bom-for-constraints.md)). The resolved
-  versions do not change. Delete your own override blocks in the bump PR: Azimuth's `eachDependency`,
-  BookOfStyling's `extra["jackson-bom.version"]` and SkillSprintPlus's `eachDependency` on jackson-databind;
+  versions do not change. Delete your own override blocks in the bump PR, such as Azimuth's `eachDependency`;
   `platformBomOverrideCheck` now lists every `*.version` property a consumer still sets (manual).
 - `seniordev.java-conventions` adds the JUnit BOM, Jupiter and the launcher of the canon to the tests. Delete the
   same three lines from a backend's `build.gradle.kts` once it is pinned to this release; set
@@ -62,7 +61,8 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `check` runs `platformQuarantineCheck`: a test tagged `quarantine` without
   `// quarantine: <issue-url> until YYYY-MM-DD` above the tag fails ([PLAT-QUA-001](docs/gates.md#plat-qua-001)),
   and an expired one fails on CI. `test` of the Spring conventions also leaves out tests tagged `model`, which
-  run in the new `modelTest`, outside `check`. No consumer tags a test `quarantine` or `model` today (none).
+  run in the new `modelTest`, outside `check`. A project that registers its own `modelTest`, as Azimuth does,
+  keeps it, and the convention logs that it did not add a second one (none).
 - `seniordev.quality-conventions` applies `org.sonarqube` only in the root project (F-13). A multi-module build adds
   `id("seniordev.sonar-conventions")` to its root `build.gradle.kts`, which runs one analysis over the JaCoCo report
   of every module; until then no module has a `sonar` task. Touchstone is the only multi-module consumer and runs no
@@ -83,24 +83,23 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master, because
   `deploy.yml` tags the migrate image with the highest prefix there. Today's consumer changelogs pass; a
   failure names the file and the fix (manual).
-- Attestate_io and BookOfStyling use `spring-modulith-starter-jpa` without an `event_publication` table,
-  so the event registry does not persist publications. Copy
+- A backend that uses `spring-modulith-starter-jpa` without an `event_publication` table has an event registry
+  that does not persist publications. Copy
   `templates/db/liquibase/modulith-event-publication.yaml` as the next `changes/NNNN-…` file and include it
   in the master; `AbstractSchemaValidationIT` then proves the schema (manual,
   [consuming.md](docs/consuming.md#database-migrations)).
 - `templates/Dockerfile.backend` builds in layers, starts `JarLauncher` from `/app` instead of
   `java -jar /app/app.jar`, and declares a liveness `HEALTHCHECK` and `JAVA_TOOL_OPTIONS`. Re-copy it to
   `backend/Dockerfile`, then in the compose files: drop a `command:` or `entrypoint:` that names
-  `/app/app.jar`; delete the backend's `healthcheck:`, which replaces the image's (BookOfStyling only checks
-  that the port is open, and SkillSprintPlus runs `curl`, which `sapmachine:27-jre` does not contain, so its
-  backend never becomes healthy); and drop a `JAVA_TOOL_OPTIONS` unless it means to replace both flags
+  `/app/app.jar`; delete the backend's `healthcheck:`, which replaces the image's (a check that only opens the
+  port proves little, and `sapmachine:27-jre` has no `curl`, so a `curl` check never passes); and drop a `JAVA_TOOL_OPTIONS` unless it means to replace both flags
   (manual, [consuming.md](docs/consuming.md#runtime-image)).
 - `templates/.editorconfig` indents Java with two spaces, as google-java-format in `seniordev.java-conventions`
   formats it, and keeps tabs for Kotlin and `*.kts`. Re-copy it, so editors stop fighting `spotlessApply`;
   `platform-templates-check` reports a stale copy (manual).
 - The pg18 image keeps its data in `/var/lib/postgresql/18/docker`, so `infra/docker-compose.yml` now mounts
   `postgres-data` at `/var/lib/postgresql`. With the old `/var/lib/postgresql/data` mount, pg18 refuses to
-  start. Change the mount in your copy: Attestate_io still has the old one (manual).
+  start. Change the mount in your copy (manual).
 - `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, as `release.sh` does, and treats the
   `.kotlin/` cache as regenerable output. Re-copy it from `templates/merge.sh` when `platform-templates-check`
   reports it, and write messages such as `feat: add X` (manual).
@@ -109,8 +108,8 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `backend/AGENTS.md` (`platform-agents-backend`; the root `AGENTS.md` when Gradle sits at the root) and
   `frontend/AGENTS.md` (`platform-agents-frontend`). Where one of those directories has no `CLAUDE.md`, it writes
   one that imports `@AGENTS.md`; an existing `CLAUDE.md` is never changed, only flagged when it lacks the import.
-  After the bump, delete what those files copied from Platform, such as the "Stack (version-pinned)" and
-  convention-plugin sections of BookOfStyling and SkillSprintPlus, whose versions are already stale, and keep only
+  After the bump, delete what those files copied from Platform, such as hand-copied "Stack (version-pinned)" or
+  convention-plugin sections, whose versions go stale with every bump, and keep only
   project rules outside the markers (manual).
 - `platform-bump` now moves your callers of Platform's reusable workflows to the bumped tag,
   `@v1` included, and a `platform-ref:` input of `deploy.yml` with them. Review the workflow diff
@@ -146,8 +145,8 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   the installed `@dominiksienkiewicz/versions` release, and it governs `optionalDependencies`. A
   caret on a Platform pin, pins from two releases, or an optional dependency off the canon now
   fails `frontend-ci`. `scripts/platform-bump.sh` already writes consistent pins; fix hand edits (manual).
-- The roadmap toolkit (BookOfStyling, SkillSprintPlus) is marked *experimental*: only its marker contract
-  is stable. Re-copy `templates/roadmap/scripts/**` and the new issue form
+- The roadmap toolkit is marked *experimental*: only its marker contract is stable. A repository that
+  copied it re-copies `templates/roadmap/scripts/**` and the new issue form
   `templates/roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml`; `roadmap-unblock.yml` now runs only for
   issues closed as completed, one run at a time. Run the marker self-heal with `--preview <ID>` and
   `--dry-run` first: it rewrites titles and bodies, now from the Backlog Handoff table (manual).
@@ -354,8 +353,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `docs/compatibility.md`: the Java toolchain, runtime image, Gradle, Spring and frontend versions of
   each release, back to 1.4.0, with a test that fails when the top row drifts from the catalog. Every
   npm package declares `engines.node` `>=22.13`, so npm warns on an older Node at install time.
-- `@dominiksienkiewicz/prettier-config` (*incubating*): Prettier with `prettier-plugin-tailwindcss`, the
-  configuration BookOfStyling already uses.
+- `@dominiksienkiewicz/prettier-config` (*incubating*): Prettier with `prettier-plugin-tailwindcss`.
 - `docs/consuming.md` shows how to adopt the incubating catalog bundles and the security starter, with
   the properties that replace the two existing `SecurityConfig` variants.
 - `platformBomOverrideCheck` on `check` warns about every BOM version property a consumer sets outside
@@ -749,7 +747,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - `extractCheckstyleConfig` and `extractSpotbugsConfig` no longer capture the plugin script object in
   their actions, which the configuration cache cannot serialize; a consumer that turns the cache on
   no longer fails `check` on them.
-- Roadmap toolkit: auto-unblock reads the older SkillSprintPlus marker layout, takes the status from the
+- Roadmap toolkit: auto-unblock reads the older marker layout, takes the status from the
   `status:*` label, ignores prerequisites closed as not planned, and fails instead of claiming changes it
   did not make. The generator stops before creating anything when the issue snapshot fails or is
   truncated, stops on a duplicate roadmap ID, keeps an auto-unblocked status and ticked criteria on
