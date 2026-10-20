@@ -160,6 +160,27 @@ artifact attestation from Platform's `release.yml`, or found no Platform jar at 
 **Fix:** a jar of a release older than 1.6.0 has no attestation: bump Platform. Otherwise the jar did not come
 from a Platform release; resolve it again from GitHub Packages, and report it if it still fails.
 
+### PLAT-RED-001
+
+**Cause:** with `red-proof: true`, `backend-ci.yml` found a `fix:` commit in the pull request that adds or changes
+no test class, so nothing proves that it fixes a bug.
+**Fix:** add the regression test to the same commit ([fix a bug test-first](runbooks/tdd-bugfix.md)); a change
+that fixes no reported behaviour takes another type, such as `refactor:` or `chore:`.
+
+### PLAT-RED-002
+
+**Cause:** the test classes of a `fix:` commit pass against the production code of its parent, so they do not
+reproduce the bug the commit fixes.
+**Fix:** change the test until it fails on the parent for the reason of the report, and run only that test to see
+it red before the fix.
+
+### PLAT-RED-003
+
+**Cause:** none of the test classes of a `fix:` commit ran against its parent: the test does not compile there,
+the context does not start, or `red-proof-tasks` does not name the task that holds the class.
+**Fix:** read the end of the Gradle log in the job; write the test against the API of the parent, or add the task
+to `red-proof-tasks`.
+
 ## Deprecations
 
 ### PLAT-DEPR-001
