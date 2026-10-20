@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/tailwind-preset",
-  "version": "1.5.31",
+  "version": "1.6.0",
   "description": "Shared design tokens for Tailwind CSS v4, as a CSS-first @theme.",
   "license": "MIT",
   "engines": {
