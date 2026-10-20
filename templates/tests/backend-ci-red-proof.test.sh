@@ -117,6 +117,7 @@ run "$broken" "$added" 'test integrationTest'
 
 run "$base" "$added"
 [[ $RC -eq 1 ]] || fail 'one unproven fix: commit fails the whole pull request'
-grep -qF '[PLAT-RED-001]' <<<"$OUT" && grep -qF '[PLAT-RED-002]' <<<"$OUT" && grep -qF '[PLAT-RED-003]' <<<"$OUT" \
-  || fail 'every fix: commit of the pull request is checked'
+for code in PLAT-RED-001 PLAT-RED-002 PLAT-RED-003; do
+  grep -qF "[$code]" <<<"$OUT" || fail "every fix: commit of the pull request is checked, $code missing"
+done
 echo 'OK: backend-ci red-proof runs the tests of each fix: commit against its parent and requires them to fail'
