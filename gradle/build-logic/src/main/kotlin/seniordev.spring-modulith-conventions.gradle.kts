@@ -137,11 +137,21 @@ tasks.named("check") {
 
 // Testy modelu (@ModelTest, N-CAP-8): wolne przebiegi, np. z modelem w PlatformOllamaContainer (pobiera wagi),
 // uruchamiane świadomie, poza `check` i poza sumą pokrycia, więc nie wydłużają każdego PR-a.
-tasks.register<Test>("modelTest") {
-	description = "Runs the tests tagged model; outside check, run it on purpose."
-	group = "verification"
-	testClassesDirs = testSourceSet.output.classesDirs
-	classpath = testSourceSet.runtimeClasspath
-	useJUnitPlatform { includeTags("model") }
-	shouldRunAfter(tasks.named("test"))
+// Rejestracja po skrypcie projektu, jak `lint` i `format` w java-conventions: projekt z własnym `modelTest`
+// (Azimuth: większy heap pod model ONNX) zostaje przy swoim, zamiast paść na "Cannot add task 'modelTest'".
+afterEvaluate {
+	if ("modelTest" in tasks.names) {
+		logger.warn(
+			"seniordev.spring-modulith-conventions: $path defines its own modelTest task, so the Platform modelTest is not registered there",
+		)
+	} else {
+		tasks.register<Test>("modelTest") {
+			description = "Runs the tests tagged model; outside check, run it on purpose."
+			group = "verification"
+			testClassesDirs = testSourceSet.output.classesDirs
+			classpath = testSourceSet.runtimeClasspath
+			useJUnitPlatform { includeTags("model") }
+			shouldRunAfter(tasks.named("test"))
+		}
+	}
 }

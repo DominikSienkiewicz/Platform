@@ -1,7 +1,4 @@
 # Repozytoria konsumentów Platform — jedno owner/name na linię. Czyta je scripts/consumer-audit.sh;
 # ta sama lista stoi w README.md (sekcja Consumers) i w CLAUDE.md.
-DominikSienkiewicz/Attestate_io
 DominikSienkiewicz/Azimuth
-DominikSienkiewicz/BookOfStyling_com
-DominikSienkiewicz/SkillSprintPlus_com
 DominikSienkiewicz/Touchstone
