@@ -16,7 +16,7 @@ consumer's `AGENTS.md`.
 | `gradle/test-fixtures/`, `gradle/*-starter/` | the test fixtures and the incubating Spring Boot starters |
 | `frontend/packages/` | the npm packages; `versions/versions.json` is the single source of frontend versions |
 | `.github/workflows/` | the reusable workflows consumers call, and Platform's own CI and release |
-| `.claude-plugin/`, `plugins/platform/` | the Claude Code marketplace and its `platform` plugin: four skills that open the runbooks at the tag a repository pins |
+| `.claude-plugin/`, `plugins/platform/` | the Claude Code marketplace and its `platform` plugin: seven skills that open the runbooks at the tag a repository pins |
 | `templates/` | files consumers copy byte for byte, with their tests in `templates/tests/` |
 | `docs/` | maintained documentation; `docs/adr/` holds the decisions, `docs/runbooks/` the procedures |
 
@@ -69,6 +69,9 @@ The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platf
 - Gate failures carry a code such as `[PLAT-DEP-001]` with a link; follow the fix it names.
 - Run Gradle through `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. The default gate is `lint` and `format`;
   run tests only when asked.
+- Write the test before the code: run only that test (`--tests <Class>`) to see it red in its assertion, then
+  green; run whole suites only when asked. A bug fix starts with a test that reproduces it, in one `fix:` commit.
+  Skills: `/platform:tdd-feature`, `/platform:tdd-bugfix`, `/platform:ddd-modeling`.
 - Test an unreleased Platform change only with `-PplatformRepository` (Decision 6), never with a copied config.
 - Reusable workflows are pinned to an exact `@vX.Y.Z`; never `@v1`, never `secrets: inherit`.
 - Hand a branch off with `scripts/merge.sh <branch> '<conventional commit message>'`; never merge into `main`.

@@ -63,6 +63,12 @@ abstract class PlatformExtension
 		abstract class Mutation {
 			/** Pakiety, które mutuje PIT, każdy z podpakietami. Nieustawione: domyślne PIT-a, klasy `<group>.*`. */
 			abstract val targetPackages: ListProperty<String>
+
+			/**
+			 * Minimalna siła mutacji PIT, ułamek 0..1, zaokrąglany w górę do pełnego procentu. Nieustawione: właściwość
+			 * `platform.mutation.threshold`, potem bez progu (domyślne PIT-a). Wartość spoza 0..1 failuje z PLAT-MUT-001.
+			 */
+			abstract val threshold: Property<BigDecimal>
 		}
 
 		abstract class StaticAnalysis {

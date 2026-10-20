@@ -35,6 +35,14 @@ on:
         description: "Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step."
         type: string
         default: ""
+      red-proof:
+        description: "On a pull_request event, run a red-proof job: every fix: commit of the pull request must add or change a test class, and those classes must fail against the production code (src/main) of the commit's parent. Needs the pull request's history, so the job checks out with full depth."
+        type: boolean
+        default: false
+      red-proof-tasks:
+        description: "Gradle test tasks the red-proof job runs, separated by whitespace, each with --tests for every test class of the fix: commit, such as `test integrationTest`."
+        type: string
+        default: "test"
     secrets:
       gpr_token:
         description: "Classic PAT with read:packages for Platform's GitHub Packages. Without it the caller's automatic GITHUB_TOKEN is used, which needs packages: read and access to Platform's packages."
@@ -296,3 +304,127 @@ jobs:
                       out.write("No test or Checkstyle report and no Gradle failure description; read the step log.\n")
           # <<< ci-digest
           PY
+
+  # Dowód czerwieni (TDD): commit `fix:` musi nieść test, który pada na kodzie produkcyjnym rodzica. Testy z commita,
+  # `src/main` z rodzica; gałąź jest zielona w każdym commicie, więc czerwień widać tylko tak. Blok testuje
+  # templates/tests/backend-ci-red-proof.test.sh.
+  red-proof:
+    name: Red-proof of fix commits
+    if: ${{ inputs.red-proof && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        id: toolchain-jdk
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.toolchain-java-version }}
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java-version }}
+
+      - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      - name: Expose the toolchain JDK to Gradle
+        env:
+          TOOLCHAIN_JDK: ${{ steps.toolchain-jdk.outputs.path }}
+        run: |
+          mkdir -p "${GRADLE_USER_HOME:-$HOME/.gradle}"
+          echo "org.gradle.java.installations.paths=$TOOLCHAIN_JDK" >> "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties"
+
+      - name: Prove that each fix commit's tests fail on its parent
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RED_PROOF_TASKS: ${{ inputs.red-proof-tasks }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
+        run: |
+          # >>> red-proof
+          set -euo pipefail
+          top=$(git rev-parse --show-toplevel)
+          log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/red-proof.log"
+          summary="${GITHUB_STEP_SUMMARY:-/dev/null}"
+          read -r -a tasks <<< "${RED_PROOF_TASKS:-test}"
+          # Klasa testowa: plik źródłowy poza src/main, którego nazwa kończy się jak klasa testu w JUnit/Spock.
+          source_file='^(.*/)?src/([^/]+)/(java|kotlin|groovy)/(.+)\.(java|kt|groovy)$'
+          test_name='(Test|Tests|IT|ITCase|Spec)$'
+          trap 'git -C "$top" reset --quiet --hard; git -C "$top" checkout --quiet --detach "$HEAD_SHA"' EXIT
+          printf '## Red-proof\n\n| Commit | Test class | On the parent |\n|---|---|---|\n' >> "$summary"
+          failed=0
+          fixes=0
+          while IFS= read -r commit; do
+            subject=$(git log -1 --format=%s "$commit")
+            [[ "$subject" =~ ^fix(\([^\)]*\))?!?: ]] || continue
+            fixes=$((fixes + 1))
+            short=$(git rev-parse --short "$commit")
+            classes=()
+            while IFS= read -r path; do
+              [[ "$path" =~ $source_file ]] || continue
+              source_set="${BASH_REMATCH[2]}"
+              name="${BASH_REMATCH[4]}"
+              if [[ "$source_set" != main && "$name" =~ $test_name ]]; then classes+=("${name//\//.}"); fi
+            done < <(git diff-tree --no-commit-id --name-only -r --diff-filter=AM "$commit")
+            if [ "${#classes[@]}" -eq 0 ]; then
+              echo "::error title=PLAT-RED-001::[PLAT-RED-001] $short \"$subject\" adds or changes no test class, so nothing proves the bug it fixes"
+              printf "| \`%s\` | none | PLAT-RED-001 |\n" "$short" >> "$summary"
+              failed=1
+              continue
+            fi
+            # Testy z commita, kod produkcyjny z rodzica: plik dodany w commicie znika, zmieniony wraca do rodzica.
+            git -C "$top" reset --quiet --hard
+            git -C "$top" checkout --quiet --detach "$commit"
+            while IFS= read -r path; do
+              if git -C "$top" cat-file -e "$commit^:$path" 2> /dev/null; then
+                git -C "$top" checkout --quiet "$commit^" -- "$path"
+              else
+                git -C "$top" rm --quiet -- "$path"
+              fi
+            done < <(git diff-tree --no-commit-id --name-only -r "$commit" | grep -E '(^|/)src/main/' || true)
+            find "$top" -type d -path '*/build/test-results' -prune -exec rm -rf {} +
+            arguments=()
+            for task in "${tasks[@]}"; do
+              arguments+=("$task")
+              for class in "${classes[@]}"; do arguments+=(--tests "$class"); done
+            done
+            echo "$short: ./gradlew ${arguments[*]}"
+            ./gradlew "${arguments[@]}" --continue --no-daemon -Pplatform.test.retry=off > "$log" 2>&1 || true
+            red=0
+            ran=0
+            for class in "${classes[@]}"; do
+              result="did not run"
+              while IFS= read -r report; do
+                if grep -Eq '<testsuite[^>]* (failures|errors)="[1-9]' "$report"; then
+                  result="red"
+                elif [ "$result" != red ]; then
+                  result="green"
+                fi
+              done < <(find "$top" -type f -path '*/build/test-results/*' \( -name "TEST-$class.xml" -o -name "TEST-$class\$*.xml" \))
+              [ "$result" = "did not run" ] || ran=1
+              [ "$result" != red ] || red=1
+              printf "| \`%s\` | \`%s\` | %s |\n" "$short" "$class" "$result" >> "$summary"
+            done
+            if [ "$red" -eq 1 ]; then
+              echo "red-proof: $short \"$subject\" fails on its parent, as a regression test must"
+            elif [ "$ran" -eq 1 ]; then
+              echo "::error title=PLAT-RED-002::[PLAT-RED-002] $short \"$subject\": ${classes[*]} pass on the parent commit, so they do not reproduce the bug"
+              failed=1
+            else
+              tail -n 40 "$log"
+              echo "::error title=PLAT-RED-003::[PLAT-RED-003] $short \"$subject\": ${classes[*]} did not run on the parent commit (compilation or setup failed); the log ends above"
+              failed=1
+            fi
+          done < <(git rev-list --reverse --no-merges "$BASE_SHA..$HEAD_SHA")
+          [ "$fixes" -gt 0 ] || echo "red-proof: no fix: commit between ${BASE_SHA:0:7} and ${HEAD_SHA:0:7}, nothing to prove"
+          exit "$failed"
+          # <<< red-proof

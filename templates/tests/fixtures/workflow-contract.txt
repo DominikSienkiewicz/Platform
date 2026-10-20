@@ -13,6 +13,8 @@ backend-ci.yml input toolchain-java-version type=string default="27"
 backend-ci.yml input gradle-task type=string default="build"
 backend-ci.yml input verify-provenance type=boolean default=false
 backend-ci.yml input lint-task type=string default=""
+backend-ci.yml input red-proof type=boolean default=false
+backend-ci.yml input red-proof-tasks type=string default="test"
 backend-ci.yml secret gpr_token required=false
 backend-ci.yml permissions contents: read
 backend-ci.yml permissions packages: read

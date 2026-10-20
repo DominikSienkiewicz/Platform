@@ -13,6 +13,7 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `gpr.user`, `gpr.key` | `~/.gradle/gradle.properties` | unset | GitHub Packages credentials (classic PAT with `read:packages`); an empty or whitespace-only value counts as unset | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
 | `GITHUB_ACTOR`, `GITHUB_TOKEN` | environment | unset | fallback credentials for GitHub Packages, used on CI; an empty or whitespace-only value counts as unset | [seniordev.settings-conventions](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts) |
 | `coverageMinimum` | `gradle.properties` or `-P` | `0.00` | JaCoCo coverage threshold on `check`, a decimal between 0 and 1 | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.mutation.threshold` | `gradle.properties` or `-P` | unset, no threshold | minimum PIT mutation score of `pitest`, a decimal between 0 and 1 rounded up to a whole percent ([PLAT-MUT-001](gates.md#plat-mut-001) otherwise) | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
 | `sonarProjectKey` | `gradle.properties` | `DominikSienkiewicz_<rootProject.name>` | SonarQube Cloud project key | [seniordev.quality-conventions](../gradle/build-logic/src/main/kotlin/seniordev.quality-conventions.gradle.kts) |
 | `platform.javac.werror` | `-P` or `gradle.properties` | `false` | `true` adds `-Werror`: every javac warning fails the compilation, Error Prone's included; a ratchet for a repository that has cleared its warnings | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.deprecations.mode` | `-P` or `gradle.properties` | `warn` | `fail` makes `platformDependencyCheck` fail while a deprecated dependency, property or plugin is in use ([gates](gates.md#plat-depr-001)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
@@ -90,7 +91,10 @@ configured, and setting it afterwards fails instead of being ignored.
 platform {
     coverage { minimum.set("0.80".toBigDecimal()) }
     sonar { projectKey.set("DominikSienkiewicz_Orders") }
-    mutation { targetPackages.add("pl.example.orders") }
+    mutation {
+        targetPackages.add("pl.example.orders")
+        threshold.set("0.60".toBigDecimal())
+    }
     staticAnalysis { failOnBugs.set(true) }
 }
 ```
@@ -100,6 +104,7 @@ platform {
 | `coverage.minimum` | threshold of `jacocoTestCoverageVerification`, a decimal between 0 and 1 ([PLAT-COV-002](gates.md#plat-cov-002) otherwise) | `coverageMinimum`, then 0.00 |
 | `sonar.projectKey` | the SonarQube Cloud project key of the analysis | `sonarProjectKey`, then `DominikSienkiewicz_<rootProject.name>` |
 | `mutation.targetPackages` | the packages PIT mutates, each with its subpackages | PIT's default, `<group>.*` |
+| `mutation.threshold` | minimum mutation score of `pitest`, a decimal between 0 and 1, rounded up to a whole percent for PIT's `mutationThreshold` ([PLAT-MUT-001](gates.md#plat-mut-001) otherwise) | `platform.mutation.threshold`, then no threshold |
 | `staticAnalysis.failOnBugs` | `true` makes SpotBugs findings fail the build | `false`, report-only ([ADR-0005](adr/0005-spotbugs-report-only.md)) |
 
 ## seniordev.quality-conventions
@@ -108,7 +113,7 @@ Source: [`seniordev.quality-conventions.gradle.kts`](../gradle/build-logic/src/m
 
 | Task or setting | On `check` | Knob | Default |
 |---|---|---|---|
-| `pitest` | no | `platform { mutation { targetPackages } }`, or `pitest { targetClasses.set(listOf("com.example.*")) }` | the plugin's default, the project's `group` followed by `.*`; PIT 1.30.0, JUnit 5 plugin 1.2.3 |
+| `pitest` | no | `platform { mutation { targetPackages; threshold } }`, `platform.mutation.threshold`, or `pitest { targetClasses.set(listOf("com.example.*")) }` | the plugin's default, the project's `group` followed by `.*`; PIT 1.30.0, JUnit 5 plugin 1.2.3 |
 | `spotbugsMain`, `spotbugsTest` | yes, report-only | `platform { staticAnalysis { failOnBugs.set(true) } }`, or `spotbugs { ignoreFailures.set(false) }` | findings are reported, not failed ([ADR-0005](adr/0005-spotbugs-report-only.md)) |
 | `cyclonedxBom` | no | none | an SBOM of `runtimeClasspath` only, the input of `security-scan.yml` |
 | `sonar` | no | `platform { sonar { projectKey } }`, `sonarProjectKey` | organisation `dominiksienkiewicz`, coverage from `jacocoTestReport`; only in the root project |

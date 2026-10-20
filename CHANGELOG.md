@@ -23,6 +23,31 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   class `@IntegrationTest` or `@PostgresIntegrationTest`. A repository that needs time sets the opt-out
   `platform.test.guard=warn` in `gradle.properties` (or `-Pplatform.test.guard=warn`), which the Java conventions
   now pass to every test JVM; a value other than `warn` or `fail` fails with a message that names it (manual).
+- The `platform-agents` block of `AGENTS.md` gains a test-first rule (red and green observed by running only the
+  test being written, whole suites on request, a bug fix starting with a reproducing test) and names the skills
+  `/platform:tdd-feature`, `/platform:tdd-bugfix` and `/platform:ddd-modeling`; `platform-bump` replaces the block
+  (none).
+- The new knobs are opt-in: the `red-proof` input of `backend-ci.yml` defaults to `false`, and without
+  `platform { mutation { threshold } }` or `platform.mutation.threshold` PIT keeps its own default of no threshold.
+  To use them, set `red-proof: true` in the caller or a threshold in `gradle.properties` (manual).
+
+### Added
+
+- Three Claude Code skills in the `platform` plugin, `tdd-feature`, `tdd-bugfix` and `ddd-modeling`, each a thin
+  entry to its new runbook at the pinned tag: [build a feature test-first](docs/runbooks/tdd-feature.md) (an
+  acceptance criterion as Given/When/Then, red observed in an assertion by running only that test, the smallest
+  code, a refactor, one commit per behaviour that names the red test), [fix a bug test-first](docs/runbooks/tdd-bugfix.md)
+  (a permanent regression test, one `fix:` commit) and [model a domain with DDD](docs/runbooks/ddd-modeling.md)
+  (glossary, context map, the choice of building block, an ADR with rejected alternatives for each pattern, module
+  boundaries verified by a test). `docs/consumer-agents.md` lists the rule, the skills and the runbooks.
+- `backend-ci.yml` input `red-proof` (default `false`) and `red-proof-tasks` (default `test`): on a pull request
+  the job `red-proof` runs the test classes each `fix:` commit added or changed against the production code
+  (`src/main`) of the commit's parent and requires one of them to fail, with the codes `PLAT-RED-001` (no test
+  class), `PLAT-RED-002` (green on the parent) and `PLAT-RED-003` (did not run there). See
+  [reusable-workflows.md](docs/reusable-workflows.md#red-proof).
+- `platform { mutation { threshold } }` and the property `platform.mutation.threshold`: a minimum PIT mutation
+  score as a decimal between 0 and 1, rounded up to a whole percent for PIT's `mutationThreshold`; a value outside
+  0..1 fails with `PLAT-MUT-001`. Unset, nothing changes ([reference](docs/reference.md#the-platform-block)).
 
 ## [1.6.0] - 2026-10-20
 
