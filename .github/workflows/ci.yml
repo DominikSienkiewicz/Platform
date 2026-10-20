@@ -312,11 +312,20 @@ jobs:
             echo "::notice::SONAR_TOKEN is not set, so the SonarQube Cloud analysis is skipped."
             exit 0
           fi
+          # Każdy moduł dostaje analizę, także po porażce poprzedniego; krok failuje dopiero po pętli.
+          # Blok testuje templates/tests/ci-sonar-modules.test.sh.
+          # >>> sonar-modules
+          failed=0
           for m in test-fixtures security-starter; do
             echo "::group::gradle/$m — sonar"
-            ( cd "gradle/$m" && ./gradlew --no-daemon build sonar -Dsonar.qualitygate.wait=true )
+            if ! ( cd "gradle/$m" && ./gradlew --no-daemon build sonar -Dsonar.qualitygate.wait=true ); then
+              failed=1
+              echo "::error::gradle/$m: the SonarQube Cloud analysis failed or its quality gate is red"
+            fi
             echo "::endgroup::"
           done
+          exit "$failed"
+          # <<< sonar-modules
 
   # Jawna walidacja gradle-wrapper.jar każdego modułu wobec sum publikowanych przez Gradle. setup-gradle
   # robi to domyślnie także w innych jobach, ale Scorecard (Binary-Artifacts) uznaje wyłącznie tę akcję.

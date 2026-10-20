@@ -50,3 +50,9 @@ yet the `sonar` job stayed green. The job now runs with
 `sonar.qualitygate.wait=true`, so a rejected analysis or a red quality gate fails Platform's CI, and the one-time
 setup renames each project's main branch to `main`. Consumers keep the scanner's default; the wait is Platform's
 own job only.
+
+Waiting surfaced two more setup gaps, now part of the one-time setup in [RELEASING.md](../../RELEASING.md): the
+projects are public, because the organisation's Free plan caps private code at 50k lines and Azimuth already fills
+it, and each has a New code definition, without which the quality gate is not computed and the scanner reports
+`NONE` as failed. The job also analyses every module before it fails, so a red `platform-test-fixtures` no longer
+hides the state of `platform-security-starter`.
