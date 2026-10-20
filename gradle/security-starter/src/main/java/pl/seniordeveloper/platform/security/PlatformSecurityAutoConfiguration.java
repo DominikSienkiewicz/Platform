@@ -99,6 +99,8 @@ public class PlatformSecurityAutoConfiguration {
     }
   }
 
+  // csrf=off to świadomy opt-in dla API bez uwierzytelnienia ciasteczkiem; domyślnie ON.
+  @SuppressWarnings("java:S4502")
   private static void configureCsrf(HttpSecurity http, PlatformSecurityProperties.Csrf mode) {
     if (mode == PlatformSecurityProperties.Csrf.OFF) {
       http.csrf(csrf -> csrf.disable());
