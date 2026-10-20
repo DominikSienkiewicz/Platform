@@ -30,8 +30,7 @@ final class PlatformJwtResourceServer {
   private PlatformJwtResourceServer() {}
 
   static void configure(
-      HttpSecurity http, PlatformSecurityProperties.Jwt jwt, ListableBeanFactory beanFactory)
-      throws Exception {
+      HttpSecurity http, PlatformSecurityProperties.Jwt jwt, ListableBeanFactory beanFactory) {
     if (beanFactory.getBeanNamesForType(JwtDecoder.class).length == 0) {
       throw new IllegalStateException(MISSING_DECODER);
     }

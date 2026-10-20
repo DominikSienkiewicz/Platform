@@ -232,7 +232,7 @@ class PlatformSecurityAutoConfigurationTest {
   static class UserSecurityConfiguration {
 
     @Bean
-    SecurityFilterChain userSecurityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain userSecurityFilterChain(HttpSecurity http) {
       return http.authorizeHttpRequests(auth -> auth.anyRequest().denyAll()).build();
     }
   }
