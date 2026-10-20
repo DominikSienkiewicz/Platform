@@ -90,6 +90,12 @@ override cannot redefine what is canonical.
 (`jacocoTestCoverageVerification`; `backend-ci.yml` names the code).
 **Fix:** cover the code the report lists, or lower the threshold in a reviewed change.
 
+### PLAT-MUT-001
+
+**Cause:** `platform { mutation { threshold } }` or `platform.mutation.threshold` is not a decimal between 0 and 1.
+**Example:** `platform.mutation.threshold=60` or `platform.mutation.threshold=0,6`.
+**Fix:** write a fraction, such as `platform.mutation.threshold=0.60`.
+
 ### PLAT-VER-001
 
 **Cause:** Gradle dependency verification rejected an artifact without a checksum in

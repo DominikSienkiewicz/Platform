@@ -8,6 +8,7 @@
  *
  * targetClasses dla PIT: `platform { mutation { targetPackages.add("pl.seniordeveloper.attestate") } }` (N-DX-15),
  * albo jak dotąd pitest { targetClasses.set(listOf("pl.seniordeveloper.attestate.*")) }; bez obu PIT bierze `<group>.*`.
+ * Próg siły mutacji: `platform { mutation { threshold } }` albo `platform.mutation.threshold`, ułamek 0..1; bez obu bez progu.
  *
  * SonarQube (F-13): plugin org.sonarqube żyje w KORZENIU hierarchii — tu tylko wtedy, gdy ten projekt jest rootem
  * (konsument jednomodułowy). Wielomodułowy root aplikuje seniordev.sonar-conventions, a moduły dopisują do analizy
@@ -18,9 +19,12 @@ import com.github.spotbugs.snom.SpotBugsTask
 import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.sonarqube.gradle.SonarExtension
 import pl.seniordeveloper.gradle.PlatformExtension
+import pl.seniordeveloper.gradle.PlatformGates
 import pl.seniordeveloper.gradle.PlatformSonar
 import pl.seniordeveloper.gradle.PlatformVersions
 import java.io.File
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 plugins {
 	java
@@ -30,6 +34,32 @@ plugins {
 }
 
 val platformSettings = PlatformExtension.of(project)
+platformSettings.mutation.threshold.finalizeValueOnRead()
+
+// Próg jako ułamek 0..1, jak coverageMinimum; PIT chce pełnych procentów, więc zaokrąglamy w górę — nigdy łagodniej,
+// niż napisał konsument. Właściwość waliduje się od razu, pole bloku `platform` dopiero przy odczycie (PLAT-MUT-001).
+fun invalidMutationThreshold(
+	source: String,
+	raw: String,
+): Nothing =
+	throw GradleException(
+		PlatformGates.line(PlatformGates.MUTATION_INVALID, "$source must be a decimal between 0 and 1 (e.g. 0.60); got '$raw'") +
+			"\n" + PlatformGates.footer(listOf(PlatformGates.MUTATION_INVALID)),
+	)
+
+fun BigDecimal.isFraction(): Boolean = this >= BigDecimal.ZERO && this <= BigDecimal.ONE
+
+val mutationThresholdFromProperty: BigDecimal? =
+	providers.gradleProperty("platform.mutation.threshold").orNull?.let { raw ->
+		raw.trim().toBigDecimalOrNull()?.takeIf { it.isFraction() }
+			?: invalidMutationThreshold("platform.mutation.threshold", raw)
+	}
+val mutationThresholdPercent: Provider<Int> =
+	platformSettings.mutation.threshold
+		.map { value ->
+			value.takeIf { it.isFraction() } ?: invalidMutationThreshold("platform { mutation { threshold } }", value.toPlainString())
+		}.orElse(providers.provider { mutationThresholdFromProperty })
+		.map { it.movePointRight(2).setScale(0, RoundingMode.CEILING).intValueExact() }
 
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
@@ -45,6 +75,7 @@ pitest {
 	targetClasses.set(
 		platformSettings.mutation.targetPackages.map { packages -> packages.map { "$it.*" }.toSet().takeIf { it.isNotEmpty() } },
 	)
+	mutationThreshold.set(mutationThresholdPercent)
 }
 
 // SBOM = powierzchnia PRODUKCYJNA (to, co shippujemy). Domyślnie plugin bierze WSZYSTKIE
