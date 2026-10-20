@@ -36,13 +36,24 @@ final class ModulithMermaidDiagram {
         modules.stream().sorted(Comparator.comparing(ModulithMermaidDiagram::identifier)).toList();
     var diagram = new StringBuilder("flowchart LR\n");
     for (var module : sorted) {
-      diagram.append(INDENT + nodeId(module) + "[\"" + label(module) + "\"]\n");
+      diagram
+          .append(INDENT)
+          .append(nodeId(module))
+          .append("[\"")
+          .append(label(module))
+          .append("\"]\n");
     }
     for (var module : sorted) {
       for (var edge : relationsOf(module, modules).entrySet()) {
         for (var relation : edge.getValue()) {
-          diagram.append(INDENT + nodeId(module) + " -->|" + relation.label + "| " + edge.getKey());
-          diagram.append('\n');
+          diagram
+              .append(INDENT)
+              .append(nodeId(module))
+              .append(" -->|")
+              .append(relation.label)
+              .append("| ")
+              .append(edge.getKey())
+              .append('\n');
         }
       }
     }
@@ -89,7 +100,7 @@ final class ModulithMermaidDiagram {
 
   // Prefiks chroni przed słowami kluczowymi Mermaid (np. moduł `end` albo `style` psuje flowchart).
   private static String nodeId(ApplicationModule module) {
-    return "module_" + identifier(module).replaceAll("[^A-Za-z0-9_]", "_");
+    return "module_" + identifier(module).replaceAll("\\W", "_");
   }
 
   private enum Relation {

@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -53,7 +55,7 @@ public abstract class AbstractLiquibaseChangelogTest {
   @Test
   @DisplayName(
       "The Liquibase master changelog exists on the classpath and parses with its includes")
-  protected void masterChangelogExists() throws Exception {
+  protected void masterChangelogExists() {
     verifyMasterChangelog(MASTER_CHANGELOG, getClass().getClassLoader());
   }
 
@@ -61,12 +63,12 @@ public abstract class AbstractLiquibaseChangelogTest {
   @DisplayName(
       "Every file in db/changelog/changes is named NNNN-<slug>.yaml with a unique prefix and reaches the"
           + " master changelog")
-  protected void changesFollowTheDeployNaming() throws Exception {
+  protected void changesFollowTheDeployNaming() throws IOException {
     verifyDeployNaming(MASTER_CHANGELOG, getClass().getClassLoader());
   }
 
   // Package-private: LiquibaseMasterChangelogTest sprawdza przypadki na własnych classloaderach.
-  static void verifyMasterChangelog(String location, ClassLoader loader) throws Exception {
+  static void verifyMasterChangelog(String location, ClassLoader loader) {
     assertNotNull(
         loader.getResource(location),
         "Missing classpath:/"
@@ -78,7 +80,7 @@ public abstract class AbstractLiquibaseChangelogTest {
   }
 
   // Package-private: LiquibaseDeployNamingTest sprawdza przypadki na własnych classloaderach.
-  static void verifyDeployNaming(String master, ClassLoader loader) throws Exception {
+  static void verifyDeployNaming(String master, ClassLoader loader) throws IOException {
     List<String> files = changeFiles(loader);
     if (files.isEmpty()) {
       return;
@@ -108,16 +110,16 @@ public abstract class AbstractLiquibaseChangelogTest {
       }
     }
     Set<String> included = includedChangeFiles(parse(master, loader));
-    for (String file : files) {
-      if (!included.contains(file)) {
-        problems.add(
-            CHANGES
-                + file
-                + ": no changeset from this file reaches classpath:/"
-                + master
-                + ", so Liquibase never applies it; include it in the master");
-      }
-    }
+    files.stream()
+        .filter(file -> !included.contains(file))
+        .map(
+            file ->
+                CHANGES
+                    + file
+                    + ": no changeset from this file reaches classpath:/"
+                    + master
+                    + ", so Liquibase never applies it; include it in the master")
+        .forEach(problems::add);
     if (!problems.isEmpty()) {
       fail(
           "deploy.yml tags the migrate image with the highest four-digit prefix in "
@@ -128,15 +130,15 @@ public abstract class AbstractLiquibaseChangelogTest {
   }
 
   private static List<String> changeFiles(ClassLoader loader) throws IOException {
-    Set<String> names = new TreeSet<>();
-    for (Resource resource :
-        new PathMatchingResourcePatternResolver(loader)
-            .getResources("classpath*:" + CHANGES + "*")) {
-      if (resource.isReadable() && resource.getFilename() != null) {
-        names.add(resource.getFilename());
-      }
-    }
-    return List.copyOf(names);
+    return Arrays.stream(
+            new PathMatchingResourcePatternResolver(loader)
+                .getResources("classpath*:" + CHANGES + "*"))
+        .filter(Resource::isReadable)
+        .map(Resource::getFilename)
+        .filter(Objects::nonNull)
+        .distinct()
+        .sorted()
+        .toList();
   }
 
   private static Set<String> includedChangeFiles(DatabaseChangeLog changeLog) {
@@ -151,7 +153,8 @@ public abstract class AbstractLiquibaseChangelogTest {
     return included;
   }
 
-  private static DatabaseChangeLog parse(String location, ClassLoader loader) throws Exception {
+  // close() akcesora deklaruje Exception (AutoCloseable), więc jego porażka też kończy się fail.
+  private static DatabaseChangeLog parse(String location, ClassLoader loader) {
     try (var accessor = new ClassLoaderResourceAccessor(loader)) {
       return ChangeLogParserFactory.getInstance()
           .getParser(location, accessor)
@@ -163,6 +166,11 @@ public abstract class AbstractLiquibaseChangelogTest {
               + " does not parse: "
               + e.getMessage(),
           e);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return fail("Interrupted while closing the Liquibase resource accessor", e);
+    } catch (Exception e) {
+      return fail("Cannot close the Liquibase resource accessor: " + e.getMessage(), e);
     }
   }
 }

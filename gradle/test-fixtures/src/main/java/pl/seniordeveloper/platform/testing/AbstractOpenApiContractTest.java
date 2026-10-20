@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -214,13 +215,9 @@ public abstract class AbstractOpenApiContractTest {
   }
 
   private static Set<Operation> withoutIgnored(Set<Operation> operations, Set<String> prefixes) {
-    Set<Operation> kept = new HashSet<>();
-    for (Operation operation : operations) {
-      if (prefixes.stream().noneMatch(operation.path()::startsWith)) {
-        kept.add(operation);
-      }
-    }
-    return kept;
+    return operations.stream()
+        .filter(operation -> prefixes.stream().noneMatch(operation.path()::startsWith))
+        .collect(Collectors.toCollection(HashSet::new));
   }
 
   private static Set<Operation> sortedDifference(Set<Operation> left, Set<Operation> right) {

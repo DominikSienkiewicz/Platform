@@ -48,15 +48,16 @@ public abstract class AbstractFlywayMigrationTest {
   // Flyway: V<wersja>__<opis>.sql (versioned) lub R__<opis>.sql (repeatable). Separator = podwójny
   // '_'.
   // Package-private: FlywayNamePatternTest sprawdza wzorzec wprost, bez katalogu migracji na
-  // classpath.
-  static final Pattern FLYWAY_NAME = Pattern.compile("^(V\\d+(?:[._]\\d+)*__|R__).+\\.sql$");
+  // classpath. Dzierżawcze *+: segment wersji nigdy nie pasuje do "__", więc cofanie niczego nie
+  // zmienia, a zachłanne * przepełniało stos przy długiej wersji.
+  static final Pattern FLYWAY_NAME = Pattern.compile("^(V\\d+(?:[._]\\d+)*+__|R__).+\\.sql$");
 
-  private static final Pattern VERSION = Pattern.compile("^V(\\d+(?:[._]\\d+)*)__");
+  private static final Pattern VERSION = Pattern.compile("^V(\\d+(?:[._]\\d+)*+)__");
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   @Test
   @DisplayName("Every Flyway migration root holds well-named migrations with unique versions")
-  protected void migrationsExistAndAreWellNamed() throws Exception {
+  protected void migrationsExistAndAreWellNamed() throws IOException, URISyntaxException {
     var roots = migrationRoots(getClass().getClassLoader());
     assertFalse(
         roots.isEmpty(),
@@ -130,7 +131,7 @@ public abstract class AbstractFlywayMigrationTest {
       boolean opened = true;
       try {
         jar = FileSystems.newFileSystem(uri, Map.of());
-      } catch (FileSystemAlreadyExistsException alreadyOpen) {
+      } catch (FileSystemAlreadyExistsException _) {
         jar = FileSystems.getFileSystem(uri);
         opened = false;
       }
