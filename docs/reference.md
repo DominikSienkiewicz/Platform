@@ -20,6 +20,7 @@ are in [reusable-workflows.md](reusable-workflows.md).
 | `platform.agent.testForks`, `platform.agent.testHeap`, `springContextCacheSize` | `-P` or `gradle.properties` | the `AI_AGENT` profile, else Gradle's | `maxParallelForks`, `maxHeapSize` and `spring.test.context.cache.maxSize` of every test task; an explicit value applies with or without `AI_AGENT`; `springContextCacheSize` is an ADR-0007 exception, because Azimuth already sets it ([agent-profile.md](agent-profile.md)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.junit.baseline` | `-P` or `gradle.properties` | `true` | `false` stops the conventions from adding the JUnit BOM, Jupiter and the launcher to the tests | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.test.retry`, `PLATFORM_TEST_RETRY` | `-P`, environment | unset (`backend-ci.yml` sets the variable to `detect`) | `detect` applies `org.gradle.test-retry` with one retry and `failOnPassedAfterRetry`: the build stays red, the report shows which tests are flaky; the property wins over the variable, so `-Pplatform.test.retry=off` turns it off | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
+| `platform.test.guard` | `-P` or `gradle.properties` | unset, which fails | `warn` turns the failure of a platform container under the unit `test` task into a warning; every test task gets the value as a system property, and a value other than `warn` or `fail` fails with a message that names it ([container guard](#test-fixtures)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts), [PlatformTestTaskGuard](../gradle/test-fixtures/src/main/java/pl/seniordeveloper/platform/testing/PlatformTestTaskGuard.java) of the test fixtures |
 | `CI` | environment | unset | `true` makes `platformQuarantineCheck` fail on an expired quarantine ([gates](gates.md#plat-qua-002)) | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.quarantine.today` | `-P` | today | the date `platformQuarantineCheck` compares with; for Platform's own tests | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
 | `platform.toolchain.override` | `-P` | unset | replaces the Java toolchain of the canon with that version and warns; for the upstream canary and experiments, never for a release | [seniordev.java-conventions](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts) |
@@ -68,7 +69,7 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | `lint` | no | a project's own `lint` task wins | `spotlessCheck`, every Checkstyle task, `platformDependencyCheck`, `platformPinCheck` and `platformQuarantineCheck`, without tests |
 | `format` | no | a project's own `format` task wins | `spotlessApply` |
 | `platformRuntimeImageCheck` | yes | none | the final `FROM` of `Dockerfile` (project or root) must run Java 27 or newer; skipped when there is no Dockerfile or the image is not a JVM image |
-| test tasks | — | `AI_AGENT`, `platform.agent.test*`, `springContextCacheSize`, `platform.junit.baseline`, `platform.test.retry` | JUnit Platform with the JUnit BOM, Jupiter and the launcher of the canon; each task passes its name in the system property `platform.test.task` |
+| test tasks | — | `AI_AGENT`, `platform.agent.test*`, `springContextCacheSize`, `platform.junit.baseline`, `platform.test.retry`, `platform.test.guard` | JUnit Platform with the JUnit BOM, Jupiter and the launcher of the canon; each task passes its name in the system property `platform.test.task`, and `platform.test.guard` when the build sets it ([container guard](#test-fixtures)) |
 
 Every failure carries a code such as `[PLAT-DEP-001]` and a link to its section of [gates.md](gates.md) in the
 docs of that release; the fixes are also in [consuming.md](consuming.md#troubleshooting). The tasks are
@@ -350,10 +351,22 @@ and of two registrations of one property the later wins. A context in which some
 source instead of through `@Import`, fails to start with a message that names the fix.
 
 `@IntegrationTest` and `@ModelTest` carry the tags `integration` and `model`; `PlatformTestTags` holds
-their names. When the test task names itself in the system property `platform.test.task`, a platform
-container started under `test` prints "WARNING: Testcontainers used in the unit 'test' task … annotate
-the test class with @IntegrationTest or @PostgresIntegrationTest". With `platform.test.guard=fail` it
-throws instead; a later MINOR release makes that the default.
+their names. When the test task names itself in the system property `platform.test.task`, as every test task
+of `seniordev.java-conventions` does, a platform container configured under `test` fails before it starts,
+with "Testcontainers used in the unit 'test' task … annotate the test class with @IntegrationTest or
+@PostgresIntegrationTest" as the cause of the context failure. The guard mode is `platform.test.guard`:
+
+| `platform.test.guard` | A platform container under `test` |
+|---|---|
+| unset, blank or `fail` | throws `IllegalStateException` with the fix |
+| `warn` | prints the fix on stderr as `WARNING: …` and lets the container start, for a repository that needs time to tag its tests |
+| any other value, `WARN` included | throws, and the message names the value as not a guard mode, so a typo never turns the guard off |
+
+Set the opt-out as a Gradle property, `platform.test.guard=warn` in `gradle.properties` or
+`-Pplatform.test.guard=warn`; the Java conventions pass it to every test JVM, which a `-D` on the Gradle
+command line does not reach. A build without the conventions sets the system property on its test task. The mode matters only
+under `test`: other tasks and a task that does not name itself never consult it. 1.6.0 only warned by
+default ([ADR-0019](adr/0019-new-failure-modes-warn-first.md)).
 
 The same configuration runs the application locally against a container, from `src/test/java`:
 

@@ -15,6 +15,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ## [Unreleased]
 
+### Consumer action required
+
+- The container guard of `platform-test-fixtures` now fails by default: a platform container
+  (`PlatformSharedPostgresContainer`, `PlatformPostgresContainer`, `PlatformOllamaContainer`) configured under the
+  unit `test` task throws `IllegalStateException` before it starts, where 1.6.0 printed a warning. Tag such a test
+  class `@IntegrationTest` or `@PostgresIntegrationTest`. A repository that needs time sets the opt-out
+  `platform.test.guard=warn` in `gradle.properties` (or `-Pplatform.test.guard=warn`), which the Java conventions
+  now pass to every test JVM; a value other than `warn` or `fail` fails with a message that names it (manual).
+
 ## [1.6.0] - 2026-10-20
 
 ### Consumer action required
