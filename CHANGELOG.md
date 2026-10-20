@@ -15,6 +15,8 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-20
+
 ### Consumer action required
 
 Each entry ends with the migration `platform-bump` runs, `manual`, or `none` when no consumer is affected
@@ -624,7 +626,10 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
 - The canon no longer ships known HIGH or CRITICAL CVEs with a fix: `seniordev.spring-modulith-conventions`
   overrides Tomcat to 11.0.27 and Jackson to 3.1.8 and 2.21.8 above the Spring Boot 4.1.1 BOM, the catalog
   moves jsoup to 1.23.2 and the frontend canon js-yaml to 4.3.2. `scripts/platform-bump.sh` regenerates the
-  lockfiles and verification metadata these versions change.
+  lockfiles and verification metadata these versions change. The bumps fix Tomcat CVE-2026-65905, CVE-2026-65182
+  and CVE-2026-68525 (all CRITICAL); jackson-core CVE-2026-89425 and CVE-2026-89407 and jackson-databind
+  CVE-2026-91777, CVE-2026-83557, CVE-2026-68497, CVE-2026-19032 and CVE-2026-91776, in Jackson 3 and 2 alike;
+  jsoup CVE-2026-75140; and js-yaml CVE-2026-84375 (ids from OSV, 2026-10-20).
 - `templates/setup-gh-deploy.sh` verifies the scanned SSH host key against the new
   `SSH_HOST_KEY_SHA256` before pushing anything, warns when it is empty, and exits non-zero when a
   `gh` call fails instead of ending with "Gotowe". Sync the copy in `scripts/`.

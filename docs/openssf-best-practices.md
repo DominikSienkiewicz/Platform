@@ -13,7 +13,7 @@ shows no badge until the badge is earned.
 | **Not met** | no evidence today; the row says what it would take |
 | **Owner action** | the answer depends on something only the maintainer can state or check, or the evidence is partial |
 
-Of the 67 criteria, 45 are **Met**, 11 **N/A**, 2 **Not met** (both SUGGESTED) and 9 **Owner action**. Six of the
+Of the 67 criteria, 46 are **Met**, 11 **N/A**, 2 **Not met** (both SUGGESTED) and 8 **Owner action**. Five of the
 Owner actions are MUST criteria; they are listed in [what is left](#what-is-left) with the answer to give each.
 
 ## Basics
@@ -46,7 +46,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `version_semver` | SUGGESTED | **Owner action** | The format is `MAJOR.MINOR.PATCH`, but ADR-0002 makes a MINOR carry consumer action and says it deviates from strict SemVer on purpose. Recommended answer: Met, with that sentence as the justification. |
 | `version_tags` | SUGGESTED | **Met** | Annotated tags `vX.Y.Z` made by `release.sh`, protected by [`release-tags.json`](../.github/rulesets/release-tags.json). |
 | `release_notes` | MUST | **Met** | [CHANGELOG](../CHANGELOG.md) has a section per version with "Consumer action required"; [`release.yml`](../.github/workflows/release.yml) publishes it as the GitHub Release through [`changelog-section.sh`](../scripts/changelog-section.sh). |
-| `release_notes_vulns` | MUST | **Owner action** | The [CVE response](versions.md#cve-response) procedure now requires the CVE ids in the `CHANGELOG.md` entry of a release that fixes a vulnerability, so it is met from the next release. Published releases name no ids, and the `[Unreleased]` entry on the Tomcat, Jackson, jsoup and js-yaml bumps in [CHANGELOG](../CHANGELOG.md) names none yet; add them before that release is cut. |
+| `release_notes_vulns` | MUST | **Met** | The [CVE response](versions.md#cve-response) procedure requires the CVE ids in the `CHANGELOG.md` entry of a release that fixes a vulnerability, and 1.6.0 names them for its Tomcat, Jackson, jsoup and js-yaml bumps ([CHANGELOG](../CHANGELOG.md)). |
 
 ## Reporting
 
@@ -115,14 +115,12 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 ## What is left
 
-The six MUST criteria marked **Owner action**, each with the answer to give:
+The five MUST criteria marked **Owner action**, each with the answer to give:
 
 1. `know_secure_design` and `know_common_errors`: the maintainer attests on the form. Nothing to change in the repository.
 2. `report_responses` and `vulnerability_report_response`: read the tracker and the advisories of the last 12 and 6 months.
    With no vulnerability reports in 6 months, answer N/A for the second.
 3. `vulnerabilities_fixed_60_days`: open the Security tab and clear every alert older than 60 days, medium included.
-4. `release_notes_vulns`: put the CVE ids of the Tomcat, Jackson, jsoup and js-yaml bumps into their `[Unreleased]`
-   entry before the next release is cut. From that release the criterion is met.
 
 ## Applying
 

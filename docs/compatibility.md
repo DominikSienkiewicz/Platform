@@ -6,7 +6,7 @@ release reads its row; a maintainer who bumps a toolchain, a BOM or Gradle adds 
 <!-- compatibility-matrix -->
 | Platform | Released | Java toolchain | Runtime image | JDK running Gradle | Gradle minimum | Gradle tested | Spring Boot | Spring Modulith | Spring AI | Node | Next.js | pnpm (Platform) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1.6.0 | unreleased | 27 | `sapmachine:27-jre` | 25 | 9.6.1 | 9.8.1 | 4.1.1 | 2.1.1 | 2.0.1 | >=22.13 | 16.4.0 | 11.18.0 |
+| 1.6.0 | 2026-10-20 | 27 | `sapmachine:27-jre` | 25 | 9.6.1 | 9.8.1 | 4.1.1 | 2.1.1 | 2.0.1 | >=22.13 | 16.4.0 | 11.18.0 |
 | 1.5.31 | 2026-10-14 | 27 | `sapmachine:27-jre` | 25 | not declared | 9.8.1 | 4.1.1 | 2.1.1 | 2.0.1 | not declared | 16.4.0 | 11.18.0 |
 | 1.5.29 | 2026-09-25 | 27 | `sapmachine:27-jre` | 25 | not declared | 9.6.1 | 4.1.0 | 2.1.0 | 2.0.0 | not declared | 16.3.0 | 11.18.0 |
 | 1.5.0 | never published | 26 | `eclipse-temurin:25-jre` ¹ | 25 | not declared | 9.6.1 | 4.1.0 | 2.1.0 | 2.0.0 | not declared | 16.2.7 | 9.15.0 |
