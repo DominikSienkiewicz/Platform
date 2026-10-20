@@ -47,7 +47,7 @@ class SharedPostgresContainerIT {
 
   @Test
   void theFootprintGateNamesTheFixWhenMoreContainersRunThanAllowed() {
-    try (ConfigurableApplicationContext _ = start(FirstApplication.class)) {
+    try (var _ = start(FirstApplication.class)) {
       new AbstractTestcontainersFootprintTest() {}.onePostgresContainerPerJvm();
 
       AbstractTestcontainersFootprintTest noneAllowed =

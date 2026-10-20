@@ -57,8 +57,7 @@ public class PlatformSecurityAutoConfiguration {
       PlatformSecurityProperties props,
       ListableBeanFactory beanFactory,
       ApplicationContext context,
-      ObjectProvider<CorsConfigurationSource> corsSources)
-      throws Exception {
+      ObjectProvider<CorsConfigurationSource> corsSources) {
     boolean jwt = props.getMode() == PlatformSecurityProperties.Mode.JWT;
     if (jwt
         && !ClassUtils.isPresent(
@@ -66,45 +65,66 @@ public class PlatformSecurityAutoConfiguration {
       throw new IllegalStateException(PlatformJwtResourceServer.MISSING_DEPENDENCY);
     }
 
-    if (beanFactory.containsBean("corsFilter")) {
-      http.cors(Customizer.withDefaults());
-    } else {
-      // MVC supplies a fallback source; an explicit application source takes precedence.
-      var explicitCorsSources =
-          beanFactory.getBeansOfType(CorsConfigurationSource.class).entrySet().stream()
-              .filter(entry -> !entry.getKey().equals("mvcHandlerMappingIntrospector"))
-              .map(Map.Entry::getValue)
-              .toList();
-      var corsSource =
-          explicitCorsSources.size() == 1
-              ? explicitCorsSources.getFirst()
-              : corsSources.getIfAvailable();
-      if (corsSource != null) {
-        http.cors(cors -> cors.configurationSource(corsSource));
-      }
-    }
-
-    if (props.getCsrf() == PlatformSecurityProperties.Csrf.OFF) {
-      http.csrf(csrf -> csrf.disable());
-    } else if (props.getCsrf() == PlatformSecurityProperties.Csrf.SPA) {
-      http.csrf(csrf -> csrf.spa());
-    }
+    configureCors(http, beanFactory, corsSources);
+    configureCsrf(http, props.getCsrf());
     // Tryb JWT jest bezstanowy z definicji: token w każdym żądaniu, bez sesji do przejęcia.
     if (props.isStateless() || jwt) {
       http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
     }
+    configureAuthorization(http, props);
+    configureAuthentication(http, props, beanFactory);
+    return http.build();
+  }
 
+  private static void configureCors(
+      HttpSecurity http,
+      ListableBeanFactory beanFactory,
+      ObjectProvider<CorsConfigurationSource> corsSources) {
+    if (beanFactory.containsBean("corsFilter")) {
+      http.cors(Customizer.withDefaults());
+      return;
+    }
+    // MVC supplies a fallback source; an explicit application source takes precedence.
+    var explicitCorsSources =
+        beanFactory.getBeansOfType(CorsConfigurationSource.class).entrySet().stream()
+            .filter(entry -> !entry.getKey().equals("mvcHandlerMappingIntrospector"))
+            .map(Map.Entry::getValue)
+            .toList();
+    var corsSource =
+        explicitCorsSources.size() == 1
+            ? explicitCorsSources.getFirst()
+            : corsSources.getIfAvailable();
+    if (corsSource != null) {
+      http.cors(cors -> cors.configurationSource(corsSource));
+    }
+  }
+
+  // csrf=off to świadomy opt-in dla API bez uwierzytelnienia ciasteczkiem; domyślnie ON.
+  @SuppressWarnings("java:S4502")
+  private static void configureCsrf(HttpSecurity http, PlatformSecurityProperties.Csrf mode) {
+    if (mode == PlatformSecurityProperties.Csrf.OFF) {
+      http.csrf(csrf -> csrf.disable());
+    } else if (mode == PlatformSecurityProperties.Csrf.SPA) {
+      http.csrf(csrf -> csrf.spa());
+    }
+  }
+
+  private static void configureAuthorization(HttpSecurity http, PlatformSecurityProperties props) {
+    boolean permitAll = props.getMode() == PlatformSecurityProperties.Mode.PERMIT_ALL;
     http.authorizeHttpRequests(
         auth -> {
           auth.requestMatchers(props.getPermittedPaths().toArray(String[]::new)).permitAll();
-          if (props.getMode() == PlatformSecurityProperties.Mode.PERMIT_ALL) {
+          if (permitAll) {
             auth.anyRequest().permitAll();
           } else {
             auth.anyRequest().authenticated();
           }
         });
+  }
 
-    if (jwt) {
+  private static void configureAuthentication(
+      HttpSecurity http, PlatformSecurityProperties props, ListableBeanFactory beanFactory) {
+    if (props.getMode() == PlatformSecurityProperties.Mode.JWT) {
       PlatformJwtResourceServer.configure(http, props.getJwt(), beanFactory);
     } else if (props.isHttpBasic()
         && props.getMode() == PlatformSecurityProperties.Mode.AUTHENTICATED) {
@@ -119,7 +139,6 @@ public class PlatformSecurityAutoConfiguration {
           exceptions ->
               exceptions.authenticationEntryPoint(problems).accessDeniedHandler(problems));
     }
-    return http.build();
   }
 
   @Bean

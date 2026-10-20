@@ -697,6 +697,13 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   `@Autowired` parameter instead of a private field, and `PlatformPostgresContainer` is
   `@Deprecated(since = "1.6.0")`. A subclass that overrides one of those test methods with the old signature
   no longer compiles; no consumer does (none).
+- The SonarQube findings in `platform-security-starter` are fixed without changing behavior:
+  `PlatformSecurityAutoConfiguration.platformSecurityFilterChain` no longer declares `throws Exception`, which
+  Spring Security 7 no longer throws from the `HttpSecurity` DSL or `build()`, and assembles the chain in one
+  private method per concern (CORS, CSRF, authorization, authentication) instead of one method above the
+  cognitive-complexity limit (java:S3776, java:S112). The opt-in `platform.security.csrf=off` stays and is
+  suppressed for java:S4502 on that one method. A subclass that overrides `platformSecurityFilterChain` with
+  `throws Exception` no longer compiles; no consumer does (none).
 - The `example` job of `release.yml` gives the npm step `GITHUB_TOKEN`, the variable that the rendered
   `frontend/.npmrc` (from `templates/npmrc`) reads, taken from the workflow's own token with `packages: read`.
   The job only set `NODE_AUTH_TOKEN`, which feeds the file `actions/setup-node` writes, and npm takes the token
