@@ -775,6 +775,12 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   dashboards empty: CI analyses `main`, the hand-made projects' main branch was `master`, and the Free plan
   analyses only the main branch and pull requests of a private project. RELEASING.md and ADR-0012 add renaming the main branch to `main` to the
   one-time setup, and `templates/tests/ci-sonar.test.sh` checks the job's flag. No consumer is affected (none).
+- The `sonar` job of Platform's own `ci.yml` analyses every module before it fails, naming each module whose
+  analysis failed; before, a red `platform-test-fixtures` ended the step, so `platform-security-starter` was never
+  analysed. `templates/tests/ci-sonar-modules.test.sh` runs the loop on stub Gradle wrappers. The one-time setup in
+  RELEASING.md and ADR-0012 adds the two steps the waiting job exposed: both projects are public, because the
+  Free plan caps the organisation's private code at 50k lines and Azimuth fills it, and each has a New code
+  definition, without which the quality gate is not computed. No consumer is affected (none).
 
 ## [1.5.31] - 2026-10-14
 
