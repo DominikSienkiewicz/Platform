@@ -52,6 +52,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
   1.7.0 failed with `No matching version found for @dominiksienkiewicz/eslint-config@1.6.0`; nothing of 1.7.0 was
   published. A package missing from the registry (E404) now skips the image with a notice; any other registry
   error fails the job.
+- `backend-ci-smoke` in `ci.yml` builds the `java-library` starter on a Platform version GitHub Packages really has.
+  The starter pin stayed at 1.7.0, which was never published, so the smoke failed on every commit after it with
+  `Plugin [id: 'seniordev.settings-conventions', version: '1.7.0'] was not found`, and the release commit of the
+  next version would have failed the same way on its parent's pin. `smoke-platform-version` now asks GitHub
+  Packages for the versions of the `settings-conventions` marker and, when the chosen version is missing, builds on
+  the newest published version below it with a notice; an API error or no published version fails the job.
 
 ## [1.7.0] - 2026-10-21
 
