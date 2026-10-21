@@ -13,9 +13,19 @@ Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag;
 1.0.2 to 1.1.0 come from an abandoned auto-versioning model and have no matching release of the
 other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
 1.6.0 itself has only its Maven artifacts: the npm publish failed, so it has no npm packages, no GitHub
-Release with assets and no `v1` move; 1.7.0 replaces it.
+Release with assets and no `v1` move. 1.7.0 is tagged but was never published: its release gate failed
+before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
+
+### Fixed
+
+- The `frontend-image` job of `ci.yml` asks the registry whether the release it pins published each
+  `@dominiksienkiewicz/*` package (`npm view <name>@<version>`), not only the release tag. 1.6.0 carries its
+  packages at 1.6.0 in git, but its npm publish failed, so the job tried to install them and the release gate of
+  1.7.0 failed with `No matching version found for @dominiksienkiewicz/eslint-config@1.6.0`; nothing of 1.7.0 was
+  published. A package missing from the registry (E404) now skips the image with a notice; any other registry
+  error fails the job.
 
 ## [1.7.0] - 2026-10-21
 
