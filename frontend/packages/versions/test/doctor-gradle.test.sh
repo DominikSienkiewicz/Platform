@@ -10,7 +10,7 @@ fail() { echo "FAIL: $*" >&2; cat "$tmp/out" >&2; exit 1; }
 : > "$tmp/out"
 
 mkdir -p "$tmp/bin"
-printf '#!/usr/bin/env bash\necho "openjdk version \\"25.0.3\\" 2026-10-14" >&2\n' > "$tmp/bin/java"
+printf '#!/usr/bin/env bash\necho "openjdk version \\"27.0.1\\" 2026-10-14" >&2\n' > "$tmp/bin/java"
 chmod +x "$tmp/bin/java"
 
 repo="$tmp/repo"

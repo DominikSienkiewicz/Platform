@@ -79,9 +79,9 @@ if [[ "$has_gradle" -eq 1 ]]; then
   java_line=$(java -version 2>&1 | head -1)
   java_major=$(sed -n -E 's/.*version "([0-9]+).*/\1/p' <<<"$java_line")
   if [[ -z "$java_major" ]]; then
-    report FAIL PD010 "no java on PATH" "install JDK 25 or newer to run Gradle (README, Requirements)"
-  elif [[ "$java_major" -lt 25 ]]; then
-    report FAIL PD010 "java on PATH is $java_major; Platform's plugins are compiled for 25" "run Gradle on JDK 25 or newer (JAVA_HOME)"
+    report FAIL PD010 "no java on PATH" "install JDK 27 or newer to run Gradle (README, Requirements)"
+  elif [[ "$java_major" -lt 27 ]]; then
+    report FAIL PD010 "java on PATH is $java_major; Platform's plugins are compiled for 27" "run Gradle on JDK 27 or newer (JAVA_HOME)"
   else
     report PASS PD010 "java on PATH is $java_major"
   fi
