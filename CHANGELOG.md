@@ -18,6 +18,16 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Added
+
+- Catalog aliases without a version, managed by the Spring Boot BOM through `platform-bom`: `boot-starter-jdbc`,
+  `boot-test-jdbc`, `postgresql`, `jackson-databind` and `jackson-dataformat-yaml` (Jackson 3). A module that
+  does not apply the Spring conventions takes their versions from `implementation(platform(libs.platform.bom))`.
+
 ## [1.8.1] - 2026-10-21
 
 ### Consumer action required

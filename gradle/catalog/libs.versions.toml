@@ -88,6 +88,7 @@ platform-web-starter = { group = "pl.seniordeveloper", name = "platform-web-star
 # --- Startery Spring Boot / Modulith (BOM-managed → BEZ wersji; spina je bundle poniżej) ---
 boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
 boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
+boot-starter-jdbc = { group = "org.springframework.boot", name = "spring-boot-starter-jdbc" }
 boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
 boot-starter-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc" }
 modulith-starter-core = { group = "org.springframework.modulith", name = "spring-modulith-starter-core" }
@@ -98,8 +99,14 @@ boot-docker-compose = { group = "org.springframework.boot", name = "spring-boot-
 spring-ai-docker-compose = { group = "org.springframework.ai", name = "spring-ai-spring-boot-docker-compose" }
 boot-test-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator-test" }
 boot-test-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test" }
+boot-test-jdbc = { group = "org.springframework.boot", name = "spring-boot-starter-jdbc-test" }
 boot-test-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation-test" }
 boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc-test" }
+
+# --- Biblioteki zarządzane BOM-ami (BEZ wersji): moduły bez Springa biorą wersję z platform(libs.platform.bom) ---
+postgresql = { group = "org.postgresql", name = "postgresql" }
+jackson-databind = { group = "tools.jackson.core", name = "jackson-databind" }
+jackson-dataformat-yaml = { group = "tools.jackson.dataformat", name = "jackson-dataformat-yaml" }
 
 [bundles]
 # Kręgosłup web+modulith i slice'y testowe — powielane inline w repo konsumentów. Wersje z BOM-ów.
