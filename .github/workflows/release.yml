@@ -438,7 +438,9 @@ jobs:
           app="$RUNNER_TEMP/spring-app"
           cp -R templates/jvm/spring-app "$app"
           cp templates/jvm/java-library/gradlew "$app/gradlew"
-          cp -R templates/jvm/java-library/gradle "$app/gradle"
+          # spring-app ma własne gradle/ (kryteria JVM demona): `cp -R gradle gradle` zagnieździłby wrapper w gradle/gradle.
+          # Kroki do `cd "$app"` testuje templates/tests/release-verify-bundle-wrapper.test.sh.
+          mkdir -p "$app/gradle" && cp -R templates/jvm/java-library/gradle/wrapper "$app/gradle/"
           sed -i "s/^platformVersion=.*/platformVersion=$V/" "$app/gradle.properties"
           cd "$app"
           env -u GITHUB_TOKEN -u GITHUB_ACTOR GRADLE_USER_HOME="$RUNNER_TEMP/clean-gradle-home" \

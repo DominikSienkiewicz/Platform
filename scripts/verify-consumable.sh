@@ -34,7 +34,8 @@ for starter in java-library spring-app; do
   cp -R "$root/templates/jvm/$starter" "$copy"
   if [[ ! -f "$copy/gradlew" ]]; then
     cp "$root/templates/jvm/java-library/gradlew" "$copy/gradlew"
-    cp -R "$root/templates/jvm/java-library/gradle" "$copy/gradle"
+    # spring-app ma własne gradle/ (kryteria JVM demona): `cp -R gradle gradle` zagnieździłby wrapper w gradle/gradle.
+    mkdir -p "$copy/gradle" && cp -R "$root/templates/jvm/java-library/gradle/wrapper" "$copy/gradle/"
   fi
   sed -i.bak "s/^platformVersion=.*/platformVersion=$version/" "$copy/gradle.properties" && rm -f "$copy/gradle.properties.bak"
 done
