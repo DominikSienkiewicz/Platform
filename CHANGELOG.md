@@ -12,8 +12,12 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag; test-fixtures
 1.0.2 to 1.1.0 come from an abandoned auto-versioning model and have no matching release of the
 other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
+1.6.0 itself has only its Maven artifacts: the npm publish failed, so it has no npm packages, no GitHub
+Release with assets and no `v1` move; 1.7.0 replaces it.
 
 ## [Unreleased]
+
+## [1.7.0] - 2026-10-21
 
 ### Consumer action required
 
@@ -48,6 +52,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 - `platform { mutation { threshold } }` and the property `platform.mutation.threshold`: a minimum PIT mutation
   score as a decimal between 0 and 1, rounded up to a whole percent for PIT's `mutationThreshold`; a value outside
   0..1 fails with `PLAT-MUT-001`. Unset, nothing changes ([reference](docs/reference.md#the-platform-block)).
+
+### Fixed
+
+- The `npm` job of `release.yml` publishes each packed tarball as `./dist/<file>.tgz`. Since 1.6.0 it passed
+  `dist/<file>.tgz`, which npm reads as the GitHub shorthand `owner/repo` and tries to clone over SSH, so the job
+  failed with `Permission denied (publickey)` and every job after it was skipped. Release 1.6.0 therefore has its
+  Maven artifacts in GitHub Packages but no npm packages, no GitHub Release with assets (which the `platform-bump`
+  stub downloads) and no `v1` move; use 1.7.0 instead. `templates/tests/release-npm-publish-path.test.sh` runs the
+  publish block against an npm stub that rejects a spec that is not a path.
 
 ## [1.6.0] - 2026-10-20
 

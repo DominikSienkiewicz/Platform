@@ -44,7 +44,7 @@ grep -q 'private — pomijam' "$tmp/out.txt" || fail 'a private package must be 
 grep -q 'released@9.9.9 już w registry' "$tmp/out.txt" || fail 'an already published package must be skipped'
 
 (cd "$tmp/frontend" && bash "$tmp/publish.sh") > "$tmp/out.txt" 2>&1 || fail "publishing the packed tarball must succeed"
-grep -qx 'npm publish dist/x-alpha-9.9.9.tgz' "$STUB_LOG" || fail 'the job must publish the attested tarball itself'
+grep -qx 'npm publish ./dist/x-alpha-9.9.9.tgz' "$STUB_LOG" || fail 'the job must publish the attested tarball itself'
 
 : > "$tmp/frontend/dist/x-conflict-9.9.9.tgz"
 (cd "$tmp/frontend" && bash "$tmp/publish.sh") > "$tmp/out.txt" 2>&1 || fail 'a version conflict is idempotent, not a failure'

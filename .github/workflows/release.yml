@@ -253,7 +253,8 @@ jobs:
           for tgz in dist/*.tgz; do
             [ -e "$tgz" ] || continue
             echo "== publish $tgz =="
-            npm publish "$tgz" 2>&1 | tee /tmp/pub-npm.log
+            # `./` jest konieczne: npm czyta `dist/x.tgz` jako skrót GitHub `owner/repo` (git ls-remote).
+            npm publish "./$tgz" 2>&1 | tee /tmp/pub-npm.log
             rc=${PIPESTATUS[0]}
             if [ "$rc" -ne 0 ]; then
               if grep -qiE "E409|409 Conflict|cannot publish over" /tmp/pub-npm.log; then
