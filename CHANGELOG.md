@@ -18,6 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-10-21
+
+### Consumer action required
+
+None.
+
 ### Fixed
 
 - The post-release checks `verify-consumable` (`scripts/verify-consumable.sh`) and `verify-bundle` (`release.yml`)
