@@ -70,7 +70,7 @@ Inputs:
 |---|---|---|---|
 | `timeout-minutes` | number | `30` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
 | `working-directory` | string | `backend` | Directory of the Gradle build, relative to the repository root (`.` for the templates/jvm layout). |
-| `java-version` | string | `25` | JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer. |
+| `java-version` | string | `27` | JDK that runs Gradle. Platform builds and tests its plugins with Gradle on Java 27 (ADR-0034), the only JDK it supports for Gradle. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `gradle-task` | string | `build` | Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.test.retry=off here turns that off. |
 | `verify-provenance` | boolean | `false` | Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars. |
@@ -228,7 +228,7 @@ Inputs:
 |---|---|---|---|
 | `timeout-minutes` | number | `15` | Minutes before each job is cancelled; GitHub's default is 360. Raise it for a slower build. |
 | `working-directory` | string | `backend` | Directory of the Gradle build, relative to the repository root. |
-| `java-version` | string | `25` | JDK that runs Gradle for the CycloneDX SBOM. |
+| `java-version` | string | `27` | JDK that runs Gradle for the CycloneDX SBOM. |
 | `severity-cutoff` | string | `high` | Grype fail threshold for the SBOM and the frontend lockfile: negligible, low, medium, high or critical. |
 | `run-frontend` | boolean | `true` | Also scan frontend/package-lock.json. Use false for a backend without a frontend. |
 | `only-if-deps-changed` | boolean | `false` | On push and pull_request, scan only when a changed path matches deps-pattern. Schedules and manual runs always scan. |
@@ -358,7 +358,7 @@ Inputs:
 <!-- docs-gen:inputs sonar.yml -->
 | Input | Type | Default | Description |
 |---|---|---|---|
-| `java-version` | string | `25` | JDK that runs Gradle for the backend scan. |
+| `java-version` | string | `27` | JDK that runs Gradle for the backend scan. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `node-version` | string | `24` | Node.js version for the frontend tests and coverage. |
 <!-- /docs-gen -->
@@ -416,7 +416,7 @@ Inputs:
 |---|---|---|---|
 | `timeout-minutes` | number | `30` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
 | `version` | string | empty | Platform version to bump to; empty takes the newest release of the current MAJOR. |
-| `java-version` | string | `25` | JDK that runs Gradle for the lockfile regeneration. Platform's build-logic is compiled for Java 25. |
+| `java-version` | string | `27` | JDK that runs Gradle for the lockfile regeneration. Platform supports Gradle on Java 27 only (ADR-0034). |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `node-version` | string | `24` | Node.js version that runs the platform-bump bin and npm. |
 <!-- /docs-gen -->
@@ -519,7 +519,7 @@ Inputs:
 | `has-worker` | boolean | `false` | Also build the <app>-eval-worker image. |
 | `migrate-image-suffix` | string | `migrate` | Suffix of the migration image (e.g. 'migrate' or 'db-migrate'). |
 | `migrate-tag-source` | string | `backend` | Tag of the migration image: 'backend' (the backend version) or 'changelog' (the changelog number). |
-| `java-version` | string | `25` | JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer. |
+| `java-version` | string | `27` | JDK that runs Gradle. Platform builds and tests its plugins with Gradle on Java 27 (ADR-0034), the only JDK it supports for Gradle. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `has-migrate` | boolean | `true` | Build and run a separate migration image. Use false for applications that migrate on start (Flyway). |
 | `scan-images` | boolean | `false` | Scan the pushed images before deploying (Grype gate, optional Snyk). Opt-in. |

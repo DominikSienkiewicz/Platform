@@ -16,9 +16,9 @@ on:
         type: string
         default: backend
       java-version:
-        description: "JDK that runs Gradle. Platform's build-logic is compiled for Java 25, so Gradle must run on 25 or newer."
+        description: "JDK that runs Gradle. Platform builds and tests its plugins with Gradle on Java 27 (ADR-0034), the only JDK it supports for Gradle."
         type: string
-        default: "25"
+        default: "27"
       toolchain-java-version:
         description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string

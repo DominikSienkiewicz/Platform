@@ -1,6 +1,7 @@
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	`kotlin-dsl`
@@ -11,15 +12,20 @@ plugins {
 group = "pl.seniordeveloper.gradle"
 version = providers.gradleProperty("platformVersion").get()
 
-// Pin toolchainu na 25, żeby compileJava i compileKotlin celowały w ten sam JVM-target niezależnie
-// od ambientowego JDK (lokalnie JDK 26 dawał ostrzeżenie o niespójności 26 vs 25).
+// Toolchain 27 = jeden JDK wszędzie (ADR-0034); literał zamiast katalogu pilnuje templates/tests/jdk-everywhere.test.sh.
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(25)
+		languageVersion = JavaLanguageVersion.of(27)
 	}
 	// Źródła convention pluginów obok binarki: konsument czyta w IDE, co plugin robi z jego buildem.
 	withSourcesJar()
 }
+
+// Kotlin wbudowany w Gradle 9.8.1 (2.4.10) zna JVM-target najwyżej 26, więc bytecode build-logic to jawnie 26
+// dla Kotlina i Javy (bez ostrzeżenia o niespójności 27 vs 26). Podnieś do 27, gdy embedded Kotlin dostanie JVM_27.
+val buildLogicBytecode = 26
+kotlin.compilerOptions.jvmTarget = JvmTarget.fromTarget(buildLogicBytecode.toString())
+tasks.withType<JavaCompile>().configureEach { options.release = buildLogicBytecode }
 
 repositories {
 	gradlePluginPortal()

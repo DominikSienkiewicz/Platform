@@ -48,7 +48,7 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "25"
+          java-version: "27"
       - name: Rebuild every Maven module into a bundle
         env:
           V: ${{ steps.release.outputs.version }}

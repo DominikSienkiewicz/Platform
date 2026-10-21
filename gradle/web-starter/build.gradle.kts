@@ -9,8 +9,6 @@ group = "pl.seniordeveloper"
 version = providers.gradleProperty("platformVersion").get()
 
 java {
-	// 25 nadpisuje toolchain 27 z java-conventions: artefakt ładuje się w Gradle na JDK 25 (README, Requirements).
-	toolchain { languageVersion = JavaLanguageVersion.of(25) }
 	// Sources i javadoc jar obok binarki: IDE konsumenta pokazuje źródła i przykłady z javadoc bez dekompilacji.
 	withSourcesJar()
 	withJavadocJar()

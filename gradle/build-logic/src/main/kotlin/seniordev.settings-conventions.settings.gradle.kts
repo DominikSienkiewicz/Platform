@@ -30,7 +30,7 @@ plugins {
 // Najstarszy Gradle, na którym TestKit buduje konsumenta (PlatformMinimumGradleFunctionalTest). Starszy dostaje
 // komunikat z naprawą zamiast przypadkowego błędu ładowania Kotlin DSL — o ile plugin w ogóle się załaduje.
 // Lustro: minimumConsumerGradle w gradle/build-logic/gradle.properties; pilnuje PlatformGradleVersionMirrorTest.
-val minimumConsumerGradle: GradleVersion = GradleVersion.version("9.6.1")
+val minimumConsumerGradle: GradleVersion = GradleVersion.version("9.8.1")
 if (GradleVersion.current() < minimumConsumerGradle) {
 	throw GradleException(
 		"Platform requires Gradle ${minimumConsumerGradle.version} or newer, but this build runs " +
