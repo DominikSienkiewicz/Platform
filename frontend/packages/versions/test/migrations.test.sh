@@ -41,6 +41,26 @@ grep -qF "Dockerfile:1: move \`eclipse-temurin:26-jre-alpine\` to a Java 27 runt
   || { cat "$fixture_work/runtime-image-27.out"; fail 'an image variant the migration does not know must be left for a manual fix'; }
 grep -qF 'removed overrides.postcss: 8.4.31' "$fixture_work/drop-stale-overrides.out" || fail 'the removed overrides must be listed'
 
+# 1.8.0: Gradle na JDK 27 (ADR-0034). Callery Platform i .sdkmanrc automatycznie; kryteria demona i setup-java
+# poza callerami Platform tylko jako notatka, bo migracja nie wie, czy ten JDK uruchamia Gradle'a.
+tree=$(migrate gradle-jdk-27 1.7.0 1.8.0)
+diff -r "$(fixture gradle-jdk-27 after)" "$tree" || fail 'gradle-jdk-27: before/ must become after/'
+grep -q 'applied  .*gradle-jdk-27' "$fixture_work/gradle-jdk-27.out" || { cat "$fixture_work/gradle-jdk-27.out"; fail 'gradle-jdk-27: the runner must report it applied'; }
+(cd "$tree" && bash "$runner" apply 1.7.0 1.8.0) > "$fixture_work/gradle-jdk-27.again"
+diff -r "$(fixture gradle-jdk-27 after)" "$tree" || fail 'gradle-jdk-27: a second run must change nothing'
+if grep -q 'applied  .*gradle-jdk-27' "$fixture_work/gradle-jdk-27.again"; then cat "$fixture_work/gradle-jdk-27.again"; fail 'gradle-jdk-27: a second run must not apply it again'; fi
+for expected in \
+  '.github/workflows/ci.yml:27: java-version 21 is set outside a Platform caller; raise it to 27 if this JDK runs Gradle' \
+  'backend/gradle/gradle-daemon-jvm.properties: toolchainVersion=25; run ./gradlew updateDaemonJvm --jvm-version=27'; do
+  grep -qF -- "$expected" "$fixture_work/gradle-jdk-27.out" || { cat "$fixture_work/gradle-jdk-27.out"; fail "gradle-jdk-27: missing manual note: $expected"; }
+  grep -qF -- "$expected" "$fixture_work/gradle-jdk-27.again" || { cat "$fixture_work/gradle-jdk-27.again"; fail "gradle-jdk-27: a second run must repeat: $expected"; }
+done
+template_sdkman=$(sed -n 's/^java=//p' "$here/../../../../templates/.sdkmanrc")
+grep -qx "SDKMAN_JAVA=\"$template_sdkman\"" "$here/../migrations/1.8.0-gradle-jdk-27.sh" \
+  || fail "gradle-jdk-27 must write java=$template_sdkman, the value of templates/.sdkmanrc"
+tree=$(migrate gradle-jdk-27 1.6.0 1.7.0)
+diff -r "$(fixture gradle-jdk-27 before)" "$tree" >/dev/null || fail 'a bump to 1.7.0 must not run 1.8.0 migrations'
+
 # Obraz migracji = ostatni FROM szablonu, z którego biorą go konsumenci.
 template_image=$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' "$here/../../../../templates/Dockerfile.backend" | tail -1)
 grep -qx "RUNTIME_IMAGE=\"$template_image\"" "$here/../migrations/1.6.0-runtime-image-27.sh" \

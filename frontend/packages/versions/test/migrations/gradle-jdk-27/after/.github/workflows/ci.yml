@@ -1,0 +1,27 @@
+name: CI
+on: [push]
+permissions:
+  contents: read
+  packages: read
+jobs:
+  backend:
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.7.0
+    with:
+      java-version: "27" # the JDK that runs Gradle
+      toolchain-java-version: "27"
+  sonar:
+    uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@v1.7.0
+    with:
+      java-version: 27
+    secrets: inherit
+  deploy:
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1.7.0
+    with:
+      java-version: ${{ vars.GRADLE_JDK }}
+  tool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
