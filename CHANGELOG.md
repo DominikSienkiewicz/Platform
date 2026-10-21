@@ -49,6 +49,15 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
   score as a decimal between 0 and 1, rounded up to a whole percent for PIT's `mutationThreshold`; a value outside
   0..1 fails with `PLAT-MUT-001`. Unset, nothing changes ([reference](docs/reference.md#the-platform-block)).
 
+### Fixed
+
+- The `npm` job of `release.yml` publishes each packed tarball as `./dist/<file>.tgz`. Since 1.6.0 it passed
+  `dist/<file>.tgz`, which npm reads as the GitHub shorthand `owner/repo` and tries to clone over SSH, so the job
+  failed with `Permission denied (publickey)` and every job after it was skipped. Release 1.6.0 therefore has its
+  Maven artifacts in GitHub Packages but no npm packages, no GitHub Release with assets (which the `platform-bump`
+  stub downloads) and no `v1` move; use 1.7.0 instead. `templates/tests/release-npm-publish-path.test.sh` runs the
+  publish block against an npm stub that rejects a spec that is not a path.
+
 ## [1.6.0] - 2026-10-20
 
 ### Consumer action required
