@@ -12,7 +12,7 @@ fail() { echo "FAIL: $*" >&2; cat "$tmp/out" >&2; exit 1; }
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/java" <<'STUB'
 #!/usr/bin/env bash
-echo "openjdk version \"${FAKE_JAVA:-25.0.3}\" 2026-10-14" >&2
+echo "openjdk version \"${FAKE_JAVA:-27.0.1}\" 2026-10-14" >&2
 STUB
 cat > "$tmp/bin/curl" <<'STUB'
 #!/usr/bin/env bash
@@ -55,11 +55,11 @@ rm "$bad/frontend/package-lock.json"
 printf 'FROM eclipse-temurin:26-jre\n' > "$bad/backend/Dockerfile"
 printf 'jobs:\n  ci:\n    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1\n' > "$bad/.github/workflows/ci.yml"
 touch "$bad/.secrets.local"
-if FAKE_CODE=401 FAKE_JAVA=21.0.4 doctor "$bad"; then fail 'a broken repository must fail'; fi
+if FAKE_CODE=401 FAKE_JAVA=25.0.3 doctor "$bad"; then fail 'a broken repository must fail'; fi
 for expected in \
   'FAIL PD020 the Platform pins disagree' \
   'WARN PD021 reusable workflow references: v1 (1)' \
-  "FAIL PD010 java on PATH is 21; Platform's plugins are compiled for 25" \
+  "FAIL PD010 java on PATH is 25; Platform supports Gradle on JDK 27 only" \
   'FAIL PD031 GitHub Packages rejected the credentials from GPR_TOKEN (401)' \
   'fix: use a classic PAT, not a fine-grained one, and check that it has not expired' \
   'FAIL PD060 backend/Dockerfile runs eclipse-temurin:26-jre, older than the Java 27 toolchain of 1.6.0' \

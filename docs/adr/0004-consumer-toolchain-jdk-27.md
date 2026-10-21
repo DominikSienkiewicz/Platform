@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted — 2026-09-25 (recorded 2026-10-18)
+Superseded — 2026-10-21 by [ADR-0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md): Gradle,
+`build-logic` and the toolchain run on one JDK 27. Accepted 2026-09-25 (recorded 2026-10-18).
 
 ## Context
 

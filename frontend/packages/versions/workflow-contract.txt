@@ -8,7 +8,7 @@ api-contract.yml input timeout-minutes type=number default=10
 api-contract.yml permissions contents: read
 backend-ci.yml input timeout-minutes type=number default=30
 backend-ci.yml input working-directory type=string default=backend
-backend-ci.yml input java-version type=string default="25"
+backend-ci.yml input java-version type=string default="27"
 backend-ci.yml input toolchain-java-version type=string default="27"
 backend-ci.yml input gradle-task type=string default="build"
 backend-ci.yml input verify-provenance type=boolean default=false
@@ -32,7 +32,7 @@ deploy.yml input compose-dir type=string default="."
 deploy.yml input has-worker type=boolean default=false
 deploy.yml input migrate-image-suffix type=string default="migrate"
 deploy.yml input migrate-tag-source type=string default="backend"
-deploy.yml input java-version type=string default="25"
+deploy.yml input java-version type=string default="27"
 deploy.yml input toolchain-java-version type=string default="27"
 deploy.yml input has-migrate type=boolean default=true
 deploy.yml input scan-images type=boolean default=false
@@ -69,7 +69,7 @@ frontend-ci.yml permissions contents: read
 frontend-ci.yml permissions packages: read
 platform-bump.yml input timeout-minutes type=number default=30
 platform-bump.yml input version type=string default=""
-platform-bump.yml input java-version type=string default="25"
+platform-bump.yml input java-version type=string default="27"
 platform-bump.yml input toolchain-java-version type=string default="27"
 platform-bump.yml input node-version type=string default="24"
 platform-bump.yml secret gpr_token required=false
@@ -89,7 +89,7 @@ scorecard.yml job analysis permissions id-token: write
 scorecard.yml job analysis permissions contents: read
 security-scan.yml input timeout-minutes type=number default=15
 security-scan.yml input working-directory type=string default=backend
-security-scan.yml input java-version type=string default="25"
+security-scan.yml input java-version type=string default="27"
 security-scan.yml input severity-cutoff type=string default=high
 security-scan.yml input run-frontend type=boolean default=true
 security-scan.yml input only-if-deps-changed type=boolean default=false
@@ -101,7 +101,7 @@ semgrep.yml input timeout-minutes type=number default=10
 semgrep.yml input config type=string default="p/default p/secrets p/java p/javascript p/typescript p/dockerfile p/github-actions"
 semgrep.yml input semgrep-version type=string default="1.168.0"
 semgrep.yml permissions contents: read
-sonar.yml input java-version type=string default="25"
+sonar.yml input java-version type=string default="27"
 sonar.yml input toolchain-java-version type=string default="27"
 sonar.yml input node-version type=string default="24"
 sonar.yml secret SONAR_TOKEN required=false

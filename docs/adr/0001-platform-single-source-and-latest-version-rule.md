@@ -33,8 +33,9 @@ failure.
 2. **Latest-in-portfolio rule.** When the same tool or library exists at different versions
    across repositories, the newest one wins. It lands in the platform as the single source
    and every repository consumes it through the platform pin. Exceptions must be
-   **documented** — for example, `build-logic` and Gradle stay on JDK 25 while consumers
-   compile for JDK 27; see [ADR-0004](0004-consumer-toolchain-jdk-27.md).
+   **documented** — for example, `build-logic` and Gradle stayed on JDK 25 while consumers
+   compiled for JDK 27 ([ADR-0004](0004-consumer-toolchain-jdk-27.md)), until
+   [ADR-0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md) put them on one JDK.
 3. **Version changes flow through a platform release plus a bump in the consumer**, never
    through a manual per-repository edit. A new library means a catalog entry and a release
    first, and only then a bump downstream.

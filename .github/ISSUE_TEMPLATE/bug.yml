@@ -36,7 +36,7 @@ body:
     attributes:
       label: Environment
       description: JDK running Gradle, Gradle version, Node version, operating system.
-      placeholder: JDK 25.0.3, Gradle 9.8.1, Node 24, macOS 15
+      placeholder: JDK 27.0.1, Gradle 9.8.1, Node 24, macOS 15
   - type: textarea
     id: what
     attributes:

@@ -1,10 +1,10 @@
-# Devcontainer Platform (N-SHOW-11): JDK 25 uruchamia Gradle'a, JDK 27 to toolchain kanonu, Node 24 i pnpm z corepack.
+# Devcontainer Platform (N-SHOW-11): JDK 27 uruchamia Gradle'a i jest toolchainem kanonu (ADR-0034), Node 24 i pnpm z corepack.
 # Wersje nie są nowym źródłem prawdy: templates/tests/devcontainer.test.sh porównuje je z katalogiem (java),
 # backend-ci.yml (java-version), frontend/.nvmrc i packageManager z frontend/package.json.
 # Obraz bazowy po digeście (OpenSSF Scorecard, Pinned-Dependencies); nowy: docker buildx imagetools inspect <obraz:tag>.
 FROM mcr.microsoft.com/devcontainers/base:2-ubuntu-24.04@sha256:d94c97dd9cacf183d0a6fd12a8e87b526e9e928307674ae9c94139139c0c6eae
 
-ARG GRADLE_JDK=25
+ARG GRADLE_JDK=27
 ARG TOOLCHAIN_JDK=27
 ARG NODE_MAJOR=24
 ARG PNPM_VERSION=11.18.0
@@ -14,7 +14,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN set -eux; \
     apt-get update; apt-get install -y --no-install-recommends jq xz-utils; rm -rf /var/lib/apt/lists/*; \
     case "$(dpkg --print-architecture)" in amd64) jdk_arch=x64; node_arch=x64 ;; arm64) jdk_arch=aarch64; node_arch=arm64 ;; esac; \
-    for version in "$GRADLE_JDK" "$TOOLCHAIN_JDK"; do \
+    for version in $(printf '%s\n' "$GRADLE_JDK" "$TOOLCHAIN_JDK" | sort -u); do \
       asset=$(curl -fsSL "https://api.adoptium.net/v3/assets/latest/$version/hotspot?architecture=$jdk_arch&image_type=jdk&os=linux&vendor=eclipse"); \
       link=$(jq -r '.[0].binary.package.link' <<<"$asset"); \
       checksum=$(jq -r '.[0].binary.package.checksum' <<<"$asset"); \
@@ -30,5 +30,5 @@ RUN set -eux; \
     corepack enable; \
     corepack prepare "pnpm@$PNPM_VERSION" --activate
 
-ENV JAVA_HOME=/opt/jdk-25
-ENV PATH=/opt/jdk-25/bin:$PATH
+ENV JAVA_HOME=/opt/jdk-27
+ENV PATH=/opt/jdk-27/bin:$PATH

@@ -24,11 +24,11 @@ on:
   workflow_call:
     inputs:
       java-version:
-        # build-logic Platform (>=1.3.11) jest skompilowane do bytecode'u 25 -> samo Gradle MUSI jechać
-        # na JDK 25 (nie wystarczy toolchain 25 z Foojay). Zrównane z backend-ci.yml (default "25").
+        # Od 1.8.0 Platform wspiera Gradle'a tylko na JDK 27 (build-logic: bytecode 26, budowane i testowane na 27)
+        # -> samo Gradle MUSI jechać na JDK 27, nie wystarczy toolchain. Zrównane z backend-ci.yml (default "27", ADR-0034).
         description: "JDK that runs Gradle for the backend scan."
         type: string
-        default: "25"
+        default: "27"
       toolchain-java-version:
         description: "Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay."
         type: string

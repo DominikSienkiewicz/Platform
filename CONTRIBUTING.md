@@ -8,7 +8,7 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes.
 
 ## Development setup
 
-The [devcontainer](.devcontainer/devcontainer.json) has everything: JDK 25 to run Gradle, JDK 27 as the toolchain,
+The [devcontainer](.devcontainer/devcontainer.json) has everything: JDK 27 to run Gradle and as the toolchain,
 Node 24 and pnpm. Without it, follow [docs/local-development.md](docs/local-development.md).
 
 ## Rules a change must follow

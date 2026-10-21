@@ -21,7 +21,9 @@ a Dockerfile (`platformRuntimeImageCheck`).
 - **Java toolchain**: the bytecode consumers compile to, catalog entry `java`.
 - **Runtime image**: the final `FROM` of [`templates/Dockerfile.backend`](../templates/Dockerfile.backend).
 - **JDK running Gradle**: the JDK `backend-ci.yml` runs Gradle on; Platform's build-logic is compiled
-  for it.
+  for it. From 1.8.0 it equals the Java toolchain, one JDK for everything
+  ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)), and the Gradle minimum is the
+  first Gradle that starts on it.
 - **Gradle minimum**: the oldest Gradle the settings plugin accepts and TestKit builds a consumer on.
   **Gradle tested**: Platform's own wrappers and the version `platform-bump` gives a consumer.
 - **Spring Boot, Spring Modulith, Spring AI**: the BOMs `seniordev.spring-modulith-conventions`

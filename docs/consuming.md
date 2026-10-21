@@ -6,11 +6,12 @@ into the platform itself. Every task, property and default the plugins add is li
 
 ## Prerequisites
 
-- **JDK 25 for the Gradle daemon.** Platform's plugins are compiled for Java 25. A backend copied from
-  `templates/jvm/*` carries `gradle/gradle-daemon-jvm.properties`, so the wrapper starts from any JDK and Gradle
-  selects or downloads a Java 25 for the daemon itself. Without that file, copy
+- **JDK 27 for the Gradle daemon.** From 1.8.0 Platform builds and tests its plugins with Gradle on
+  JDK 27 and supports no other JDK for Gradle ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)),
+  so Gradle 9.8.1 or newer must run on JDK 27. A backend copied from `templates/jvm/*` carries `gradle/gradle-daemon-jvm.properties`, so the wrapper
+  starts from any JDK and Gradle selects or downloads a Java 27 for the daemon itself. Without that file, copy
   [`templates/.sdkmanrc`](../templates/.sdkmanrc) to the repository root and run `sdk env install`, or point
-  `JAVA_HOME` at a JDK 25. Regenerate the file with `./gradlew updateDaemonJvm --jvm-version=25`; on Linux,
+  `JAVA_HOME` at a JDK 27. Regenerate the file with `./gradlew updateDaemonJvm --jvm-version=27`; on Linux,
   check that the x86-64 URL names a glibc Temurin build, not an Alpine one.
 - **JDK 27 as the toolchain.** `seniordev.java-conventions` compiles for Java 27. Locally Foojay can
   provision it; otherwise register an installed JDK with `org.gradle.java.installations.paths`.
@@ -621,7 +622,7 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | ID | Checks |
 |---|---|
 | PD001 | the command runs inside a git repository |
-| PD010 | the `java` on PATH is 25 or newer, which Gradle needs to load Platform's plugins |
+| PD010 | the `java` on PATH is 27 or newer, which Gradle needs to load Platform's plugins |
 | PD011 | the Gradle wrapper exists and is executable |
 | PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@dominiksienkiewicz/*`) is the same release |
 | PD021 | the reusable workflow references are that exact release (`@v1` warns) |
@@ -647,7 +648,8 @@ the release that produced it.
 |---|---|---|
 | `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a devcontainer forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
-| `UnsupportedClassVersionError` … `class file version 69.0` while the plugins load | Gradle runs on a JDK older than 25 | Run Gradle on JDK 25 or newer (`sdk env`, or `JAVA_HOME`) |
+| `UnsupportedClassVersionError` … `class file version 70.0` while the plugins load | Gradle runs on a JDK older than 26; Platform supports only 27 | Run Gradle on JDK 27 or newer (`sdk env`, or `JAVA_HOME`) |
+| `Unsupported class file major version 71` from Groovy as Gradle starts | the wrapper is older than Gradle 9.8.1, which cannot run on JDK 27 | Run `scripts/platform-bump.sh`, which moves the wrapper, or `./gradlew wrapper --gradle-version 9.8.1` on an older JDK |
 | `No matching toolchains found for requested specification` with `languageVersion=27` | No JDK 27 is installed or registered | Install a JDK 27 and register it with `org.gradle.java.installations.paths`; on glibc Linux avoid Foojay's Alpine build ([versions](versions.md)) |
 | `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version differs from the catalog, or the library is not in it | Follow the action on each line: use the `libs.…` alias; for "the Platform BOMs manage it at …", drop the version (or override the BOM property, which `platformBomOverrideCheck` reports); for "no Platform BOM manages it", add the library to the catalog first |
 | `The Platform pins diverge: seniordev.settings-conventions is …, platform-catalog is …` | `settings.gradle.kts` pins the settings plugin and the catalog to different releases | Run `scripts/platform-bump.sh <version>`, or read both pins from `platformVersion` as the [settings snippet](#backend) shows |
