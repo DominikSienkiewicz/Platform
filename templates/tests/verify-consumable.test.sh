@@ -9,8 +9,12 @@ trap 'rm -rf "$tmp"' EXIT
 fail() { echo "FAIL: $*" >&2; echo "--- output ---" >&2; cat "$tmp/out" >&2; exit 1; }
 
 mkdir -p "$tmp/bin"
+# Jak prawdziwy wrapper: bez gradlew i gradle/wrapper/gradle-wrapper.jar w kopii startera Gradle nie rusza.
 cat > "$tmp/gradlew" <<'STUB'
 #!/usr/bin/env bash
+if [[ ! -f gradlew || ! -f gradle/wrapper/gradle-wrapper.jar ]]; then
+  echo "Error: Unable to access jarfile $PWD/gradle/wrapper/gradle-wrapper.jar"; exit 1
+fi
 echo "$PWD $*" >> "$FAKE_LOG"
 count=$(grep -c . "$FAKE_LOG")
 if [[ "$FAKE_GRADLE" == flaky && "$count" -eq 1 ]]; then echo "Could not resolve: 401"; exit 1; fi
@@ -54,6 +58,8 @@ export PATH="$tmp/bin:$PATH" VERIFY_GRADLEW="$tmp/gradlew" VERIFY_BACKOFF=0 FAKE
 check() { : > "$FAKE_LOG"; : > "$tmp/summary"; GITHUB_STEP_SUMMARY="$tmp/summary" bash "$root/scripts/verify-consumable.sh" 9.9.9 > "$tmp/out" 2>&1; }
 
 FAKE_GRADLE=ok check || fail 'a consumable release must pass'
+grep -q '/spring-app --no-daemon help dependencies' "$FAKE_LOG" \
+  || fail 'spring-app, whose gradle/ holds only the daemon JVM criteria, must get the wrapper of java-library'
 [[ $(grep -c 'help dependencies --configuration testRuntimeClasspath --refresh-dependencies' "$FAKE_LOG") -eq 2 ]] \
   || fail 'both starters must resolve testRuntimeClasspath with --refresh-dependencies'
 # shellcheck disable=SC2016 # literal backticks of the Markdown row

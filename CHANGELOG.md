@@ -18,6 +18,20 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-10-21
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- The post-release checks `verify-consumable` (`scripts/verify-consumable.sh`) and `verify-bundle` (`release.yml`)
+  give the `spring-app` starter the Gradle wrapper of `java-library` inside its own `gradle/` directory. Since
+  `spring-app` gained `gradle/gradle-daemon-jvm.properties`, `cp -R` nested the wrapper in `gradle/gradle/wrapper`,
+  so both checks of 1.8.0 failed with `Unable to access jarfile …/gradle/wrapper/gradle-wrapper.jar`; the published
+  1.8.0 artifacts are not affected.
+
 ## [1.8.0] - 2026-10-21
 
 ### Consumer action required
