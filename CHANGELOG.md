@@ -12,8 +12,12 @@ Sections from 1.5.26 to 1.5.31 were reconstructed from the release history on 20
 Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag; test-fixtures
 1.0.2 to 1.1.0 come from an abandoned auto-versioning model and have no matching release of the
 other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
+1.6.0 itself has only its Maven artifacts: the npm publish failed, so it has no npm packages, no GitHub
+Release with assets and no `v1` move; 1.7.0 replaces it.
 
 ## [Unreleased]
+
+## [1.7.0] - 2026-10-21
 
 ### Consumer action required
 
