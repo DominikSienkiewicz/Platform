@@ -28,7 +28,7 @@ Every settled decision of the maintainer's backlog has an ADR; Decision 23 was a
 | 33 (warn first) | [0019](0019-new-failure-modes-warn-first.md) |
 | 36 (platform-bom) | [0013](0013-catalog-for-aliases-bom-for-constraints.md) |
 | 37 (Prometheus) | [0033](0033-prometheus-is-opt-in.md) |
-| Gate codes, agent guidance, support window, quarantine, docs site, nullness, toolchain override (2026-10-19) | [0027](0027-gate-codes-are-a-contract.md), [0028](0028-agent-guidance-beside-claude-md.md), [0029](0029-support-window.md), [0030](0030-quarantine-with-a-deadline.md), [0031](0031-docs-site-with-zensical.md), [0032](0032-nullness-checking-is-opt-in.md), [0004](0004-consumer-toolchain-jdk-27.md) |
+| Gate codes, agent guidance, support window, quarantine, docs site, nullness, toolchain override (2026-10-19) | [0027](0027-gate-codes-are-a-contract.md), [0028](0028-agent-guidance-beside-claude-md.md), [0029](0029-support-window.md), [0030](0030-quarantine-with-a-deadline.md), [0031](0031-docs-site-with-zensical.md), [0032](0032-nullness-checking-is-opt-in.md), [0004](0004-consumer-toolchain-jdk-27.md) (carried over by [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)) |
 
 The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI fails when it is stale.
 
@@ -37,7 +37,7 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0001](0001-platform-single-source-and-latest-version-rule.md) | Platform as the single source of shared artifacts, and the latest-in-portfolio rule | Accepted |
 | [0002](0002-release-and-versioning-contract.md) | Release and versioning contract | Accepted |
 | [0003](0003-local-platform-resolution.md) | Local platform resolution through an explicit platformRepository | Accepted |
-| [0004](0004-consumer-toolchain-jdk-27.md) | Consumers compile for non-LTS JDK 27 while Gradle and build-logic run on JDK 25 | Accepted |
+| [0004](0004-consumer-toolchain-jdk-27.md) | Consumers compile for non-LTS JDK 27 while Gradle and build-logic run on JDK 25 | Superseded |
 | [0005](0005-spotbugs-report-only.md) | SpotBugs stays report-only until a measurable exit criterion is met | Accepted |
 | [0006](0006-pnpm-in-platform-npm-in-consumers.md) | pnpm in Platform's workspace, npm with a committed lockfile in consumers | Accepted |
 | [0007](0007-public-naming.md) | Public naming of Platform artifacts and configuration keys | Accepted |
@@ -67,3 +67,4 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0031](0031-docs-site-with-zensical.md) | A documentation site built with Zensical, deployed when the owner enables Pages | Accepted |
 | [0032](0032-nullness-checking-is-opt-in.md) | Nullness checking is opt-in | Accepted |
 | [0033](0033-prometheus-is-opt-in.md) | Prometheus is opt-in in the observability starter | Accepted |
+| [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md) | One JDK 27 runs Gradle, compiles build-logic and is the consumer toolchain | Accepted |

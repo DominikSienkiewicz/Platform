@@ -193,8 +193,14 @@ pins all of it.
 
 The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
 `actions/setup-java` (input `toolchain-java-version`, default `27`) and register it through
-`org.gradle.java.installations.paths` in the Gradle user home. Gradle itself still runs on
-the `java-version` JDK (25), because `build-logic` is compiled to Java 25 bytecode.
+`org.gradle.java.installations.paths` in the Gradle user home. Gradle itself runs on the
+`java-version` JDK, which is the same Java 27 since 1.8.0: Platform builds and tests `build-logic` with Gradle on
+JDK 27 and supports no other JDK for Gradle ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)).
+The Kotlin embedded in Gradle 9.8.1 (2.4.10) targets at most JVM 26, so `build-logic` pins its bytecode to 26 for
+Kotlin and Java until that Kotlin can target 27; both inputs stay, so a
+consumer can try a newer toolchain without moving Gradle. `templates/tests/jdk-everywhere.test.sh` fails
+when any JDK of the workflows, SDKMAN, the devcontainers or the starters' daemon criteria leaves the
+catalog's `java`.
 
 Foojay is bypassed on CI on purpose. On 2026-09-25 it indexed Temurin 27 for Linux only as the
 Alpine (musl) build; the resolver prefers Temurin, picked that archive on the glibc runner and
@@ -258,7 +264,7 @@ reads the entry from the catalog of the target release and moves the consumer's 
 the distribution's SHA-256.
 
 A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
-`gradle/build-logic/gradle.properties` (9.6.1). `PlatformMinimumGradleFunctionalTest` builds a
+`gradle/build-logic/gradle.properties` (9.8.1, the first Gradle that starts on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
 consumer on that version, and `seniordev.settings-conventions` fails an older build with a message
 that names the fix. Raising the minimum is a consumer action: a MINOR release with a CHANGELOG entry.
 

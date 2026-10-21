@@ -1,7 +1,7 @@
 # Bump a consumer
 
 **Preconditions:** a clean working tree, a classic token with `read:packages` (`gpr.key` in
-`~/.gradle/gradle.properties`, or `GITHUB_TOKEN`), JDK 25 for Gradle.
+`~/.gradle/gradle.properties`, or `GITHUB_TOKEN`), JDK 27 for Gradle (from 1.8.0; JDK 25 for earlier pins).
 
 1. Preview the impact: `scripts/platform-bump.sh --dry-run --report`.
 2. Read the release notes and the "Consumer action required" items it prints; apply each one.

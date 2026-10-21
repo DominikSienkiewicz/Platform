@@ -166,7 +166,7 @@ checks with `strict: true`.
 Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
 and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
-they keep Java 25 bytecode. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
+they compile to the same Java 27 bytecode as consumers' code. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
 
 ### The starter's modules
 
@@ -256,13 +256,15 @@ workflow comments, which are written for the maintainer.
 
 ## Requirements
 
-JDK 25 for the Gradle daemon: `build-logic`, `test-fixtures` and `security-starter` compile
-to Java 25 bytecode. The JVM starters carry daemon JVM criteria, so their wrapper starts from any JDK and
-Gradle selects or downloads Java 25. Consumers compile on toolchain 27, which Foojay provisions locally when it
-is not installed; the reusable CI workflows install it with `setup-java` instead
-([`docs/versions.md`](docs/versions.md)). The backend runtime image is `sapmachine:27-jre`.
-Consumers run Gradle 9.6.1 or newer: TestKit builds a consumer on that minimum and on the 9.8.1 of
-Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
+JDK 27, one JDK for everything ([ADR-0034](docs/adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)):
+it runs the Gradle daemon, builds `build-logic` (Java 26 bytecode until the Kotlin embedded in Gradle can target 27)
+and compiles Platform's Java modules and consumers on toolchain 27. The JVM starters carry daemon JVM criteria, so their wrapper starts from any JDK and
+Gradle selects or downloads Java 27; Foojay provisions the toolchain locally when it is not installed, and the
+reusable CI workflows install it with `setup-java` instead ([`docs/versions.md`](docs/versions.md)). The backend
+runtime image is `sapmachine:27-jre`.
+Consumers run Gradle 9.8.1 or newer, the first Gradle that starts on JDK 27 (9.6.1 stops with Groovy's
+"Unsupported class file major version 71"): TestKit builds a consumer on that minimum, which is also the version
+of Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
 Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages, which declare the
 Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a

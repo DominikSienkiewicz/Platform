@@ -18,6 +18,32 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+- Gradle runs on JDK 27, the only JDK Platform now builds, tests and supports Gradle on
+  ([ADR-0034](docs/adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)). `build-logic` is Java 26 bytecode
+  (the highest target of the Kotlin embedded in Gradle 9.8.1), so a daemon on JDK 25 stops with
+  `UnsupportedClassVersionError` (`class file version 70.0`) while the plugins load. The migration
+  `1.8.0-gradle-jdk-27` moves a literal `java-version` below 27 in the callers of Platform's reusable workflows and
+  `java=` in `.sdkmanrc` and `backend/.sdkmanrc` to `27-tem`. Callers that leave `java-version` unset get 27 from the
+  new default. Manual: regenerate `gradle/gradle-daemon-jvm.properties` with
+  `./gradlew updateDaemonJvm --jvm-version=27` (the migration names the file), raise any other `setup-java` that
+  runs Gradle (the migration names each one), and point a local `JAVA_HOME` at JDK 27.
+- The oldest supported consumer Gradle is 9.8.1, up from 9.6.1, which cannot start on JDK 27 (Groovy:
+  "Unsupported class file major version 71"); `seniordev.settings-conventions` fails an older build with the fix.
+  `platform-bump` moves the wrapper to 9.8.1 (automatic).
+- `platform-doctor` reports PD010 as a failure for a `java` on PATH older than 27, where it accepted 25 (none; the
+  fix is the item above).
+
+### Changed
+
+- One JDK everywhere: the catalog's `java` (27) runs Gradle in every Platform workflow, compiles `build-logic` and
+  Platform's Java modules (`test-fixtures` and the starters no longer override the toolchain to 25), and is named by
+  the SDKMAN files, both devcontainers and the daemon JVM criteria of the JVM starters. The `java-version` input of
+  `backend-ci.yml`, `deploy.yml`, `platform-bump.yml`, `security-scan.yml` and `sonar.yml` defaults to `27`; the
+  `toolchain-java-version` input stays. ADR-0034 supersedes ADR-0004, and `templates/tests/jdk-everywhere.test.sh`
+  fails when any of these JDKs leaves the catalog's `java`.
+
 ### Fixed
 
 - The `frontend-image` job of `ci.yml` asks the registry whether the release it pins published each
