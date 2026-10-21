@@ -394,11 +394,17 @@ jobs:
   # Wersja Platform dla backend-ci-smoke. Commit wydania z release.sh podbija pin startera do wersji, której
   # GitHub Packages jeszcze nie ma: release.yml publikuje ją dopiero po zielonym verify (= ten workflow), a push
   # main i tag niosą ten sam commit. Gdy pin różni się od pinu rodzica, smoke buduje na pinie rodzica, czyli
-  # ostatnim wydaniu; każdy inny commit na własnym pinie. Blok testuje templates/tests/smoke-platform-version.test.sh.
+  # ostatnim wydaniu; każdy inny commit na własnym pinie. Wersji, której nie ma w rejestrze (wydanie 1.7.0 nic nie
+  # opublikowało), smoke nie bierze: schodzi do najnowszej opublikowanej niższej, kluczując po markerze
+  # settings-conventions z gradle/maven-modules.txt jak version-exists w release.yml.
+  # Blok testuje templates/tests/smoke-platform-version.test.sh.
   smoke-platform-version:
     name: Smoke Platform version
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
+      packages: read
     outputs:
       version: ${{ steps.pin.outputs.version }}
     steps:
@@ -407,6 +413,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 2 # rodzic HEAD: pin ostatniego wydania na commicie wydania
       - id: pin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPR_OWNER: ${{ github.repository_owner }}
         run: |
           # >>> smoke-platform-version
           pin_file=templates/jvm/java-library/gradle.properties
@@ -417,6 +426,18 @@ jobs:
           if [ -n "$parent" ] && [ "$parent" != "$pin" ]; then
             version=$parent
             echo "::notice title=backend-ci-smoke::This commit moves the starter pin to $pin, which release.yml publishes only after this CI passes, so the smoke builds on $parent."
+          fi
+          marker=$(awk '$1 == "build-logic" { print $2 }' gradle/maven-modules.txt)
+          published=$(gh api --paginate "/users/$GPR_OWNER/packages/maven/$marker/versions" --jq '.[].name')
+          if ! grep -qxF "$version" <<<"$published"; then
+            below=$(printf '%s\n%s\n' "$published" "$version" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -uV \
+              | awk -v wanted="$version" '$0 == wanted { print previous; exit } { previous = $0 }')
+            if [ -z "$below" ]; then
+              echo "::error title=backend-ci-smoke::Neither $version nor any version below it is in GitHub Packages."
+              exit 1
+            fi
+            echo "::notice title=backend-ci-smoke::$version is not in GitHub Packages, so the smoke builds on $below."
+            version=$below
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           # <<< smoke-platform-version
