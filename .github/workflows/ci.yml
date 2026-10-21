@@ -201,6 +201,8 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
           MANIFEST: ${{ runner.temp }}/consumer/frontend/package.json
+          # npm view w bloku shipped czyta token przez .npmrc wygenerowanego frontendu.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           # Wersje zależności z kanonu wydania, nie checkoutu: peery eslint-config i prettier-config są dokładne,
@@ -219,10 +221,12 @@ jobs:
           # >>> frontend-image-shipped
           # Wydania sprzed 1.6.0 publikowały paczki npm w wersjach własnych (1.0.0), nie w wersji Platform, więc pin
           # na takim wydaniu nie istnieje w rejestrze. Wtedy notka zamiast czerwieni; pierwsze wydanie, które
-          # publikuje każdą przypiętą paczkę w swojej wersji, włącza budowanie obrazu samo.
+          # publikuje każdą przypiętą paczkę w swojej wersji, włącza budowanie obrazu samo. Tag to za mało: npm
+          # publish 1.6.0 padł, więc o publikacji rozstrzyga rejestr (E404 = brak, inny błąd npm wywala job).
           missing=$(node - "$MANIFEST" "$VERSION" <<'NODE'
           const { execFileSync } = require("node:child_process");
           const { readFileSync } = require("node:fs");
+          const { dirname } = require("node:path");
           const [manifestPath, version] = process.argv.slice(2);
           const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
           const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
@@ -237,7 +241,17 @@ jobs:
           }
           const pinned = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies })
             .filter((name) => name.startsWith("@dominiksienkiewicz/"));
-          process.stdout.write(pinned.filter((name) => published.get(name) !== version).join(" "));
+          const inRegistry = (name) => {
+            try {
+              const shown = execFileSync("npm", ["view", `${name}@${version}`, "version"],
+                { cwd: dirname(manifestPath), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+              return shown.trim() === version;
+            } catch (error) {
+              if (/E404/.test(String(error.stderr))) return false;
+              throw error;
+            }
+          };
+          process.stdout.write(pinned.filter((name) => published.get(name) !== version || !inRegistry(name)).join(" "));
           NODE
           )
           if [ -n "$missing" ]; then
