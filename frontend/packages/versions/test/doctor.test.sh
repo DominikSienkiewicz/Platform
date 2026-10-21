@@ -59,7 +59,7 @@ if FAKE_CODE=401 FAKE_JAVA=25.0.3 doctor "$bad"; then fail 'a broken repository 
 for expected in \
   'FAIL PD020 the Platform pins disagree' \
   'WARN PD021 reusable workflow references: v1 (1)' \
-  "FAIL PD010 java on PATH is 25; Platform's plugins are compiled for 27" \
+  "FAIL PD010 java on PATH is 25; Platform supports Gradle on JDK 27 only" \
   'FAIL PD031 GitHub Packages rejected the credentials from GPR_TOKEN (401)' \
   'fix: use a classic PAT, not a fine-grained one, and check that it has not expired' \
   'FAIL PD060 backend/Dockerfile runs eclipse-temurin:26-jre, older than the Java 27 toolchain of 1.6.0' \
