@@ -18,7 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-21
+
 ### Consumer action required
+
+1.7.0 was never published, so a repository on 1.6.0 also takes the consumer actions of 1.7.0 below. They have
+no migration (manual or none); `platform-bump` runs every migration after the pinned version up to 1.8.0.
 
 - Gradle runs on JDK 27, the only JDK Platform now builds, tests and supports Gradle on
   ([ADR-0034](docs/adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)). `build-logic` is Java 26 bytecode
