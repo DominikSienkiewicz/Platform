@@ -91,6 +91,7 @@ platform-web-starter = { group = "pl.seniordeveloper", name = "platform-web-star
 boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
 boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
 boot-starter-jdbc = { group = "org.springframework.boot", name = "spring-boot-starter-jdbc" }
+boot-starter-liquibase = { group = "org.springframework.boot", name = "spring-boot-starter-liquibase" }
 boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
 boot-starter-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc" }
 modulith-starter-core = { group = "org.springframework.modulith", name = "spring-modulith-starter-core" }
@@ -102,6 +103,7 @@ spring-ai-docker-compose = { group = "org.springframework.ai", name = "spring-ai
 boot-test-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator-test" }
 boot-test-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa-test" }
 boot-test-jdbc = { group = "org.springframework.boot", name = "spring-boot-starter-jdbc-test" }
+boot-test-liquibase = { group = "org.springframework.boot", name = "spring-boot-starter-liquibase-test" }
 boot-test-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation-test" }
 boot-test-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc-test" }
 

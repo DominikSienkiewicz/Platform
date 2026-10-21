@@ -27,6 +27,9 @@ None.
 - Catalog aliases without a version, managed by the Spring Boot BOM through `platform-bom`: `boot-starter-jdbc`,
   `boot-test-jdbc`, `postgresql`, `jackson-databind` and `jackson-dataformat-yaml` (Jackson 3). A module that
   does not apply the Spring conventions takes their versions from `implementation(platform(libs.platform.bom))`.
+- Catalog aliases `boot-starter-liquibase` and `boot-test-liquibase`, without a version. Liquibase 5, which the
+  Spring Boot 4.1 BOM manages, is licensed under the Functional Source License, not Apache 2.0; a consumer
+  that adopts it records that choice.
 - Catalog entry `picocli` 4.7.7, the command-line parser for consumers that ship a CLI without Spring.
 
 ## [1.8.1] - 2026-10-21
