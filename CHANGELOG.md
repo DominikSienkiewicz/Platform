@@ -18,6 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.3] - 2026-10-22
+
+### Consumer action required
+
+None.
+
 ### Fixed
 
 - `templates/manifest.json` lists `agent-gradle.sh` as `scripts/agent-gradle.sh`. The managed agents blocks tell
