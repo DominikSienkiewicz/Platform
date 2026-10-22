@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Wskazówki dla agentów (N-SHOW-1): każda komenda, task, bin i ścieżka z bloku platform-agents, AGENTS.md, arkusza
 # docs/consumer-agents.md i runbooków istnieje (scripts/check-agent-docs.py), skrypt konsumenta z samego szablonu
-# trafia do konsumentów przez templates/manifest.json, a blok w AGENTS.md Platform jest bajt w bajt kanonem
-# templates/agents/platform-block.md. Atrapa ze zmienioną nazwą skryptu albo z szablonem spoza manifestu musi failować.
+# trafia do konsumentów przez templates/manifest.json, blok backendu nie narzuca jednego narzędzia migracji, a blok
+# w AGENTS.md Platform jest bajt w bajt kanonem templates/agents/platform-block.md. Atrapa ze zmienioną nazwą
+# skryptu albo z szablonem spoza manifestu musi failować.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 tmp=$(mktemp -d)
@@ -14,6 +15,16 @@ block=$(awk '/<!-- BEGIN platform-agents/,/<!-- END platform-agents -->/' "$root
 [[ "$block" == "$(cat "$root/templates/agents/platform-block.md")" ]] || fail 'the block in AGENTS.md must equal templates/agents/platform-block.md'
 cmp -s "$root/templates/agents/platform-block.md" "$root/frontend/packages/versions/agents/platform-block.md" \
   || fail 'the versions package must ship the same block'
+
+# Blok backendu trafia do każdego konsumenta z Gradle, jakiegokolwiek narzędzia migracji używa; Platform wspiera
+# każde z templates/db/, więc blok nazywa konwencję każdego z nich albo żadnego.
+tools=() named=()
+for dir in "$root"/templates/db/*/; do
+  tools+=("$(basename "$dir")")
+  if grep -qiF "$(basename "$dir")" "$root/templates/agents/backend-block.md"; then named+=("$(basename "$dir")"); fi
+done
+[[ ${#named[@]} -eq 0 || ${#named[@]} -eq ${#tools[@]} ]] \
+  || fail "the backend block names only ${named[*]} of the migration tools in templates/db/ (${tools[*]})"
 
 fixture="$tmp/platform"
 mkdir -p "$fixture/templates/agents" "$fixture/docs/runbooks" "$fixture/scripts" "$fixture/frontend/packages/versions"
@@ -40,4 +51,4 @@ grep -qF 'templates/agents/platform-block.md:2: `scripts/tool.sh` reaches no con
   || fail 'the failure must name the file, line, path and the manifest'
 printf '{ "files": [ { "source": "tool.sh", "target": "scripts/tool.sh" } ] }\n' > "$fixture/templates/manifest.json"
 python3 -I "$root/scripts/check-agent-docs.py" "$fixture" > /dev/null || fail 'a template the manifest ships must pass'
-echo 'OK: the agent guidance names only commands, tasks, bins and paths that exist, consumer scripts reach consumers, and AGENTS.md carries the canon block'
+echo 'OK: the agent guidance names only commands, tasks, bins and paths that exist, consumer scripts reach consumers, the backend block names no single migration tool, and AGENTS.md carries the canon block'
