@@ -18,6 +18,14 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- `templates/manifest.json` lists `agent-gradle.sh` as `scripts/agent-gradle.sh`. The managed agents blocks tell
+  every consumer to run Gradle through that launcher, but only `scripts/new-consumer.sh` wrote it, so a repository
+  adopted earlier never received it and `platform-templates-check` did not report it; it now reports `MISSING`
+  with the `curl` command that restores the copy. `scripts/check-agent-docs.py` fails when agent guidance names a
+  consumer script `scripts/<x>` that exists only as `templates/<x>` and the manifest does not ship.
+
 ## [1.8.2] - 2026-10-21
 
 ### Consumer action required

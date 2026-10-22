@@ -30,7 +30,8 @@ Platform agent profile: testForks=1 testHeap=2g springContextCache=4 (AI_AGENT=1
 ## Gradle invocations
 
 Copy [`templates/agent-gradle.sh`](../templates/agent-gradle.sh) to `scripts/agent-gradle.sh` and run
-`AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. It runs `./gradlew` from the repository root, or
+`AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`; `scripts/new-consumer.sh` writes it into a new repository, and
+`platform-templates-check`, which `platform-bump` runs, reports a missing or stale copy. It runs `./gradlew` from the repository root, or
 `backend/gradlew` from `backend/` when the root has no wrapper, and adds
 `--max-workers=$AI_AGENT_MAX_WORKERS --no-parallel`. A run of `test`, `integrationTest`, `check` or `build`
 first takes one of `AI_AGENT_TEST_SLOTS` machine-wide slots, so parallel agents never run more test suites at

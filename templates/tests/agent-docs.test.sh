@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Wskazówki dla agentów (N-SHOW-1): każda komenda, task, bin i ścieżka z bloku platform-agents, AGENTS.md, arkusza
-# docs/consumer-agents.md i runbooków istnieje (scripts/check-agent-docs.py), a blok w AGENTS.md Platform jest
-# bajt w bajt kanonem templates/agents/platform-block.md. Atrapa ze zmienioną nazwą skryptu musi failować.
+# docs/consumer-agents.md i runbooków istnieje (scripts/check-agent-docs.py), skrypt konsumenta z samego szablonu
+# trafia do konsumentów przez templates/manifest.json, a blok w AGENTS.md Platform jest bajt w bajt kanonem
+# templates/agents/platform-block.md. Atrapa ze zmienioną nazwą skryptu albo z szablonem spoza manifestu musi failować.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 tmp=$(mktemp -d)
@@ -26,4 +27,17 @@ python3 -I "$root/scripts/check-agent-docs.py" "$fixture" > /dev/null || fail 't
 mv "$fixture/scripts/canary.sh" "$fixture/scripts/preview.sh"
 if OUT=$(python3 -I "$root/scripts/check-agent-docs.py" "$fixture"); then fail 'a renamed script must fail the check'; fi
 grep -qF 'docs/runbooks/cut-release.md:1: `scripts/canary.sh` does not exist' <<<"$OUT" || fail 'the failure must name the file, line and path'
-echo 'OK: the agent guidance names only commands, tasks, bins and paths that exist, and AGENTS.md carries the canon block'
+
+# Ścieżka konsumenta scripts/<x>, której Platform nie ma poza szablonem templates/<x>, musi trafiać do konsumentów
+# przez templates/manifest.json; sam szablon bez wpisu nie dociera do żadnego repo.
+mv "$fixture/scripts/preview.sh" "$fixture/scripts/canary.sh"
+printf -- '- Run `bash scripts/tool.sh lint`.\n' >> "$fixture/templates/agents/platform-block.md"
+cp "$fixture/templates/agents/platform-block.md" "$fixture/AGENTS.md"
+: > "$fixture/templates/tool.sh"
+printf '{ "files": [] }\n' > "$fixture/templates/manifest.json"
+if OUT=$(python3 -I "$root/scripts/check-agent-docs.py" "$fixture"); then fail 'a template no consumer receives must fail the check'; fi
+grep -qF 'templates/agents/platform-block.md:2: `scripts/tool.sh` reaches no consumer: add templates/tool.sh to templates/manifest.json' <<<"$OUT" \
+  || fail 'the failure must name the file, line, path and the manifest'
+printf '{ "files": [ { "source": "tool.sh", "target": "scripts/tool.sh" } ] }\n' > "$fixture/templates/manifest.json"
+python3 -I "$root/scripts/check-agent-docs.py" "$fixture" > /dev/null || fail 'a template the manifest ships must pass'
+echo 'OK: the agent guidance names only commands, tasks, bins and paths that exist, consumer scripts reach consumers, and AGENTS.md carries the canon block'
