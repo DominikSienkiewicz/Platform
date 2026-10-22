@@ -4,7 +4,8 @@
 Reads the code spans of templates/agents/platform-block.md and the other templates/agents/*-block.md, AGENTS.md,
 docs/consumer-agents.md, docs/runbooks/*.md and the SKILL.md of every skill of the plugins/*/ plugins:
 - a path under a Platform root (scripts/, templates/, docs/, gradle/, frontend/packages/, .github/workflows/) or a
-  root script (./release.sh) exists in the tree; a consumer path scripts/<x> may be the template templates/<x>;
+  root script (./release.sh) exists in the tree; a consumer path scripts/<x> may be the template templates/<x>, which
+  templates/manifest.json must then ship to consumers as scripts/<x>;
 - `./gradlew <task>` names a task the build-logic sources register, or a task of Gradle or of an applied plugin;
 - a platform-<name> word is a bin of one of the frontend/packages/*/package.json;
 - a link at a release tag (…/blob/v<version>/docs/gates.md#<code>) names a file that exists in the tree, whatever
@@ -58,6 +59,18 @@ def bins():
     return names
 
 
+def shipped_targets():
+    manifest = os.path.join(root, "templates/manifest.json")
+    if not os.path.isfile(manifest):
+        return set()
+    return {entry["target"] for entry in json.load(open(manifest, encoding="utf-8"))["files"]}
+
+
+def template_only(bare):
+    return (bare.startswith("scripts/") and not os.path.exists(os.path.join(root, bare))
+            and os.path.exists(os.path.join(root, "templates", bare[len("scripts/"):])))
+
+
 def path_exists(path):
     path = path[2:] if path.startswith("./") else path
     if os.path.exists(os.path.join(root, path)):
@@ -66,7 +79,7 @@ def path_exists(path):
 
 
 def main():
-    known_tasks, known_bins, problems = tasks(), bins(), []
+    known_tasks, known_bins, shipped, problems = tasks(), bins(), shipped_targets(), []
     for doc in DOCS:
         full = os.path.join(root, doc)
         if not os.path.isfile(full):
@@ -95,8 +108,13 @@ def main():
                         problems.append(f"{doc}:{number}: `{candidate}` names a root script that does not exist")
                     for path in PATH.findall(candidate):
                         bare = path[2:] if path.startswith("./") else path
-                        if bare.startswith(PLATFORM_ROOTS) and bare not in NOT_IN_TREE and not path_exists(path):
+                        if not bare.startswith(PLATFORM_ROOTS) or bare in NOT_IN_TREE:
+                            continue
+                        if not path_exists(path):
                             problems.append(f"{doc}:{number}: `{path}` does not exist")
+                        elif template_only(bare) and bare not in shipped:
+                            problems.append(f"{doc}:{number}: `{path}` reaches no consumer: add "
+                                            f"templates/{bare[len('scripts/'):]} to templates/manifest.json")
     if problems:
         print("Agent guidance names things that do not exist:\n  " + "\n  ".join(problems))
         sys.exit(1)
