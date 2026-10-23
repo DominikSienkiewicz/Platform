@@ -18,6 +18,16 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- The frontend canon moves `next` and `eslint-config-next` from 16.4.0 to 16.4.2, which fixes GHSA-2464-fhr4-w9xw
+  (CRITICAL, unauthenticated remote code execution through the Image Optimization API with SVG input),
+  GHSA-673q-mjm6-r5xr (CRITICAL, unauthenticated remote code execution in `use cache` functions) and
+  GHSA-p3m5-59mp-jv5r (HIGH, denial of service in App Router Server Actions). All three affect every Next.js
+  release from 16.0.0 to 16.4.0; Grype fails a consumer's frontend scan on them.
+  `@dominiksienkiewicz/eslint-config` follows the canon in its dependencies and peers, and `platform-bump` applies
+  the new versions.
+
 ## [1.8.3] - 2026-10-22
 
 ### Consumer action required

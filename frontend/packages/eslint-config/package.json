@@ -27,13 +27,13 @@
   },
   "devDependencies": {
     "eslint": "10.8.1",
-    "eslint-config-next": "16.4.0",
-    "next": "16.4.0"
+    "eslint-config-next": "16.4.2",
+    "next": "16.4.2"
   },
   "peerDependencies": {
     "eslint": "10.8.1",
-    "eslint-config-next": "16.4.0",
-    "next": "16.4.0"
+    "eslint-config-next": "16.4.2",
+    "next": "16.4.2"
   },
   "repository": {
     "type": "git",
