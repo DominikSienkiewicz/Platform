@@ -18,6 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-10-23
+
+### Consumer action required
+
+None.
+
 ### Fixed
 
 - The frontend canon moves `next` and `eslint-config-next` from 16.4.0 to 16.4.2, which fixes GHSA-2464-fhr4-w9xw
