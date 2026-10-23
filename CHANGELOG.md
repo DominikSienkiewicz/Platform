@@ -18,6 +18,27 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-10-23
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- The frontend canon moves `next` and `eslint-config-next` from 16.4.0 to 16.4.2, which fixes GHSA-2464-fhr4-w9xw
+  (CRITICAL, unauthenticated remote code execution through the Image Optimization API with SVG input),
+  GHSA-673q-mjm6-r5xr (CRITICAL, unauthenticated remote code execution in `use cache` functions) and
+  GHSA-p3m5-59mp-jv5r (HIGH, denial of service in App Router Server Actions). All three affect every Next.js
+  release from 16.0.0 to 16.4.0; Grype fails a consumer's frontend scan on them.
+  `@dominiksienkiewicz/eslint-config` follows the canon in its dependencies and peers, and `platform-bump` applies
+  the new versions.
+- The frontend canon moves `vite` from 8.0.16 to 8.1.6, which fixes GHSA-587h-7wmj-h5pm (HIGH, the `fs.existsSync()`
+  check of the `launch-editor` that Vite up to 8.1.5 bundles can be bypassed on Windows). `platform-bump` applies it
+  where `vite` is a declared dependency; where it arrives only through `vitest` or `@vitejs/plugin-react`, npm keeps
+  the locked version, and `npm update vite --package-lock-only` takes the fix. Platform's own workspace lockfile
+  resolves 8.1.6.
+
 ## [1.8.3] - 2026-10-22
 
 ### Consumer action required
