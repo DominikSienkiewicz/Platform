@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/openapi",
-  "version": "1.8.3",
+  "version": "1.8.4",
   "description": "Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current.",
   "license": "MIT",
   "engines": {
