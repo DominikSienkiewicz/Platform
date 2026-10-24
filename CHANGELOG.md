@@ -18,6 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-10-25
+
+### Consumer action required
+
+None.
+
 ### Fixed
 
 - The frontend canon moves `zod` from 4.4.3 to 4.6.7, which fixes CVE-2023-54404 / GHSA-mrhx-c7xc-m3w5 (HIGH,
