@@ -18,6 +18,14 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- The frontend canon moves `zod` from 4.4.3 to 4.6.7, which fixes CVE-2023-54404 / GHSA-mrhx-c7xc-m3w5 (HIGH,
+  memory exhaustion: an array, set or map schema collects one issue per failing element before it checks its size
+  bounds, so an oversized input can crash the process). Every `zod` release before 4.6.6 is affected; 4.6.7 differs
+  from 4.6.6 only in its version string. Grype fails a consumer's frontend scan on it. `platform-bump` applies the
+  new version where `zod` is a declared dependency; Platform's own workspace lockfile resolves 4.6.7.
+
 ## [1.8.4] - 2026-10-23
 
 ### Consumer action required
