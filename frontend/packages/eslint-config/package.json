@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/eslint-config",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "description": "Shared ESLint flat config: Next.js core-web-vitals and TypeScript.",
   "license": "MIT",
   "engines": {

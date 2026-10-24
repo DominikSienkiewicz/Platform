@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/query",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "private": true,
   "description": "Shared QueryClient (staleTime 60 s, refetchOnWindowFocus off) and a QueryProvider with React Query Devtools.",
   "license": "MIT",
