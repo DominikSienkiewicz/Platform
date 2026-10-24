@@ -18,6 +18,24 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-10-25
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- The frontend canon moves `zod` from 4.4.3 to 4.6.7, which fixes CVE-2023-54404 / GHSA-mrhx-c7xc-m3w5 (HIGH,
+  memory exhaustion: an array, set or map schema collects one issue per failing element before it checks its size
+  bounds, so an oversized input can crash the process). Every `zod` release before 4.6.6 is affected; 4.6.7 differs
+  from 4.6.6 only in its version string. Grype fails a consumer's frontend scan on it. `platform-bump` applies the
+  new version where `zod` is a declared dependency; Platform's own workspace lockfile resolves 4.6.7.
+- The frontend canon moves `shadcn` from 4.10.0 to 4.22.1, the first release that depends on zod 4 (`^4.2.0`), because
+  every earlier release pulls zod 3.25.76, which the same advisory covers and which has no fixed 3.x release. The
+  canon now resolves no zod 3. `@dominiksienkiewicz/ui` follows the canon in its devDependency, and its built registry
+  is byte-identical to the 4.10.0 build.
+
 ## [1.8.4] - 2026-10-23
 
 ### Consumer action required

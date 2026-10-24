@@ -456,7 +456,7 @@ The component registry `@dominiksienkiewicz/ui` is *incubating*: it has no hoste
 consumer has adopted it. If you install it, also add an `@source` line that points from
 `globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@dominiksienkiewicz/ui";`
 in `app/globals.css`, or `@source "../../node_modules/@dominiksienkiewicz/ui";` in `src/app/globals.css`.
-Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.10.0 …`), never an
+Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.22.1 …`), never an
 unpinned one.
 
 `vitest.config.ts`:
