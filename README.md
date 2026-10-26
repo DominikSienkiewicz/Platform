@@ -270,8 +270,8 @@ Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a
 starter on the current Gradle release candidate and watches for an `eclipse-temurin` image of the
 toolchain; each finding opens or updates one issue, and its next-JDK leg builds the starter on an early-access
-toolchain. Every Tuesday `reproducibility.yml` rebuilds the latest tag and compares every jar's digest with
-GitHub Packages. After every CI run, `ci-budget.yml` compares each job's duration with
+toolchain and fails when a tool cannot read its bytecode, report-only SpotBugs included. Every Tuesday
+`reproducibility.yml` rebuilds the latest tag and compares every jar's digest with GitHub Packages. After every CI run, `ci-budget.yml` compares each job's duration with
 `.github/ci-budgets.json` and warns on an overrun; after every push to `main`, `release-draft.yml` keeps the
 draft release **Next** current.
 

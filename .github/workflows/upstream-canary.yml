@@ -5,7 +5,8 @@ name: Upstream canary
 #   gradle-rc:     cały zestaw TestKit build-logic na bieżącym Gradle RC (-PplatformTestGradleVersion, GradleRunner
 #                  .withGradleVersion); bez RC noga się pomija.
 #   next-jdk:      starter java-library z toolchainem o jeden wyżej niż kanon (-Pplatform.toolchain.override) na buildzie EA
-#                  Temurin; bez buildu EA noga się pomija.
+#                  Temurin; czerwona także wtedy, gdy narzędzie nie czyta bajtkodu (SpotBugs report-only nie failuje
+#                  buildu); bez buildu EA noga się pomija.
 #   runtime-image: czy jest już eclipse-temurin:<java>-jre i czy przechodzi bramkę Grype z container-scan.yml —
 #                  warunek powrotu z sapmachine (docs/versions.md, "Runtime image for the JDK 27 toolchain").
 on:
@@ -117,6 +118,7 @@ jobs:
         env:
           NEXT: ${{ steps.next.outputs.version }}
           NEXT_JDK: ${{ steps.next-jdk.outputs.path }}
+          BUILD_LOG: ${{ runner.temp }}/next-jdk-build.log
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.gradle"
@@ -128,18 +130,54 @@ jobs:
           app="$RUNNER_TEMP/java-library"
           cp -R templates/jvm/java-library "$app"
           cd "$app"
-          ./gradlew --no-daemon build -PplatformRepository="file://$repo" -Pplatform.toolchain.override="$NEXT"
+          ./gradlew --no-daemon build -PplatformRepository="file://$repo" -Pplatform.toolchain.override="$NEXT" 2>&1 \
+            | tee "$BUILD_LOG"
+      # SpotBugs jest report-only (ADR-0005), więc bajtkod, którego nie czyta, kończy się "exit code 4" przy zielonym
+      # buildzie. Ten sam warunek co PlatformConsumerFunctionalTest.assertAnalyzersReadTheBytecode dla toolchainu kanonu;
+      # nieznany pakiet w ramkach stosu też failuje. Blok testuje templates/tests/upstream-canary-bytecode.test.sh.
+      - name: Check that every tool reads the next toolchain's bytecode
+        id: bytecode
+        if: ${{ !cancelled() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') }}
+        env:
+          NEXT: ${{ steps.next.outputs.version }}
+          BUILD_LOG: ${{ runner.temp }}/next-jdk-build.log
+        run: |
+          # >>> scan-unread-bytecode
+          [ -f "$BUILD_LOG" ] || exit 0
+          tools=$(awk '
+            /Unsupported class file major version/ { if (pending) print "an unidentified tool"; pending = 1; window = 12; next }
+            pending && /org\.jacoco\./ { print "JaCoCo"; pending = 0 }
+            pending && /edu\.umd\.cs\.findbugs\./ { print "SpotBugs"; pending = 0 }
+            pending && --window == 0 { print "an unidentified tool"; pending = 0 }
+            END { if (pending) print "an unidentified tool" }
+          ' "$BUILD_LOG" | LC_ALL=C sort -u | paste -sd, - | sed 's/,/, /g')
+          echo "tools=$tools" >> "$GITHUB_OUTPUT"
+          if [ -n "$tools" ]; then
+            echo "::error::$tools cannot read the bytecode of the Java $NEXT toolchain (Unsupported class file major version)."
+            exit 1
+          fi
+          # <<< scan-unread-bytecode
       - name: Report the failure
-        if: ${{ failure() && steps.build.outcome == 'failure' }}
+        if: ${{ failure() && (steps.build.outcome == 'failure' || steps.bytecode.outcome == 'failure') }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           NEXT: ${{ steps.next.outputs.version }}
+          BUILD: ${{ steps.build.outcome }}
+          TOOLS: ${{ steps.bytecode.outputs.tools }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
-            echo "The \`java-library\` starter does not build with a Java $NEXT toolchain (Temurin early access) and the Platform of this commit."
+            if [ "$BUILD" = failure ]; then
+              echo "The \`java-library\` starter does not build with a Java $NEXT toolchain (Temurin early access) and the Platform of this commit."
+            else
+              echo "The \`java-library\` starter builds with a Java $NEXT toolchain (Temurin early access) and the Platform of this commit, but not every tool reads its bytecode."
+            fi
             echo "Formatter, Lombok and the analyzers are the usual first breakages; see docs/versions.md before a toolchain move."
+            if [ -n "$TOOLS" ]; then
+              echo ""
+              echo "Cannot read the Java $NEXT bytecode (\`Unsupported class file major version\`): $TOOLS."
+            fi
             echo ""
             echo "Run: $RUN_URL"
           } > "$RUNNER_TEMP/issue.md"
