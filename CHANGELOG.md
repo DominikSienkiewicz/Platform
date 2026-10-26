@@ -18,6 +18,14 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- The next-JDK leg of `upstream-canary.yml` now also fails when a tool cannot read the early-access toolchain's
+  bytecode (`Unsupported class file major version` in the build output), and its issue names those tools. SpotBugs
+  is report-only, so on Java 28 it analyzed no class while the build carried on: the first run was red only because
+  of JaCoCo 0.8.15, and a JaCoCo release with Java 28 support would have turned the leg green with SpotBugs still
+  blind. The check is the one TestKit already applies to the canon toolchain.
+
 ## [1.8.5] - 2026-10-25
 
 ### Consumer action required
