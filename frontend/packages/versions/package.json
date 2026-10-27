@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/versions",
-  "version": "1.8.5",
+  "version": "1.8.6",
   "description": "The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor.",
   "license": "MIT",
   "engines": {
