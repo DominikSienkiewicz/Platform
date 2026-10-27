@@ -47,6 +47,8 @@ foojayResolver = "1.0.0"
 mapstruct = "1.6.3"
 jsoup = "1.23.2"
 picocli = "4.7.7"
+garminFit = "21.218.0"                   # Garmin FIT Java SDK (Trening: odczyt plików FIT z zegarka). Licencja FIT Protocol License Agreement, nie OSI
+commonmark = "0.31.0"                    # commonmark-java (Trening: raporty Markdown → HTML bez surowego HTML-a, z tabelami GFM)
 wiremock = "3.13.2"
 sonarqube = "7.5.0.8588"                 # marker pluginu na classpath build-logic; aplikowany w quality-conventions. >= 7.5: skaner 4.2.1 zacieniowany z bcprov 1.85.2 (CVE w 1.84)
 openrewrite = "8.88.3"                   # Attestate (ADR-0005)
@@ -75,6 +77,9 @@ mapstruct = { group = "org.mapstruct", name = "mapstruct", version.ref = "mapstr
 mapstruct-processor = { group = "org.mapstruct", name = "mapstruct-processor", version.ref = "mapstruct" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 picocli = { group = "info.picocli", name = "picocli", version.ref = "picocli" }
+garmin-fit = { group = "com.garmin", name = "fit", version.ref = "garminFit" }
+commonmark = { group = "org.commonmark", name = "commonmark", version.ref = "commonmark" }
+commonmark-ext-gfm-tables = { group = "org.commonmark", name = "commonmark-ext-gfm-tables", version.ref = "commonmark" }
 wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", version.ref = "wiremock" }
 jspecify = { group = "org.jspecify", name = "jspecify", version.ref = "jspecify" }
 errorprone-core = { group = "com.google.errorprone", name = "error_prone_core", version.ref = "errorprone" }

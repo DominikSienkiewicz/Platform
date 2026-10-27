@@ -23,6 +23,8 @@ before any artifact went out, so use 1.8.0, which replaces both.
 - Catalog: the jOOQ code generation plugin (`libs.plugins.jooq.codegen`, `org.jooq.jooq-codegen-gradle`), pinned to
   the jOOQ version Spring Boot manages; `PlatformBomImportFunctionalTest` fails when the two diverge. Usage:
   [consuming.md](docs/consuming.md#jooq-code-generation).
+- Catalog: `garmin-fit` (Garmin FIT Java SDK 21.218.0, under the FIT Protocol License Agreement, which is not
+  OSI-approved), and `commonmark` with `commonmark-ext-gfm-tables` (commonmark-java 0.31.0).
 
 ### Fixed
 
