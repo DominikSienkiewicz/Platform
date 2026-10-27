@@ -434,6 +434,21 @@ with a comment that says why:
 class SchemaValidationIT extends AbstractSchemaValidationIT { }
 ```
 
+`AbstractEventPublicationRegistryIT` runs Spring Modulith's event publication registry on the application's
+migrated schema: it boots the application on `PlatformSharedPostgresContainer`, stores a probe publication
+through `EventPublicationRepository`, completes it, finds it among the completed ones and deletes it. It works
+with either registry starter. `spring-modulith-starter-jdbc` does not check the schema at startup, so without
+this test a missing `event_publication` table or column shows up only at the first event in production; with
+`spring-modulith-starter-jpa` it adds a real write to `AbstractSchemaValidationIT`. It sets
+`spring.modulith.events.jdbc.schema-initialization.enabled=false`, because the JDBC registry otherwise creates
+the table itself and the test would pass without the migration. The test-fixtures artifact
+declares `spring-modulith-events-core` as `compileOnly`, so the registry comes from the application's own
+starter. Put the subclass in the application's package or below it:
+
+```java
+class EventPublicationRegistryIT extends AbstractEventPublicationRegistryIT { }
+```
+
 `PlatformArchRules` (package `…testing.arch`) is a small set of ArchUnit rules, one field each, so a
 consumer takes all of them or a few: no standard streams, no `java.util.logging`, no generic exceptions,
 no field injection, `@Transactional` methods that are not private, `@RestController` methods that return

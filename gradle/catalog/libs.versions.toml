@@ -102,6 +102,7 @@ boot-starter-validation = { group = "org.springframework.boot", name = "spring-b
 boot-starter-webmvc = { group = "org.springframework.boot", name = "spring-boot-starter-webmvc" }
 modulith-starter-core = { group = "org.springframework.modulith", name = "spring-modulith-starter-core" }
 modulith-starter-jpa = { group = "org.springframework.modulith", name = "spring-modulith-starter-jpa" }
+modulith-starter-jdbc = { group = "org.springframework.modulith", name = "spring-modulith-starter-jdbc" }
 modulith-actuator = { group = "org.springframework.modulith", name = "spring-modulith-actuator" }
 modulith-observability = { group = "org.springframework.modulith", name = "spring-modulith-observability" }
 boot-docker-compose = { group = "org.springframework.boot", name = "spring-boot-docker-compose" }
