@@ -28,6 +28,7 @@ resilience4j = "2.4.0"
 bucket4j = "8.19.0"
 shedlock = "7.7.0"
 javers = "7.11.7"
+jooq = "3.21.7"                          # lustro jooq.version z BOM-u Boota: tylko dla pluginu generatora jooq-codegen (pluginów żaden BOM nie zarządza); bump wyłącznie razem z Bootem, rozjazd wywala PlatformBomImportFunctionalTest
 spotless = "8.9.0"
 ktlint = "1.8.0"                          # formater Kotlin w Spotless samego build-logic (D-14); konsumenci go nie dostają
 googleJavaFormat = "1.36.1"              # → PlatformVersions: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
@@ -129,6 +130,8 @@ test-retry = { id = "org.gradle.test-retry", version.ref = "testRetry" }
 cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 errorprone = { id = "net.ltgt.errorprone", version.ref = "errorpronePlugin" }
+# Generator jOOQ konsumenta (DDLDatabase z migracji Flyway); runtime jOOQ i jooq-meta-extensions bez wersji, z BOM-u Boota.
+jooq-codegen = { id = "org.jooq.jooq-codegen-gradle", version.ref = "jooq" }
 # Convention pluginy publikowane z gradle/build-logic (id = nazwa pliku *.gradle.kts). Pin = dynamiczny `platform`.
 conventions-java = { id = "seniordev.java-conventions", version.ref = "platform" }
 conventions-quality = { id = "seniordev.quality-conventions", version.ref = "platform" }

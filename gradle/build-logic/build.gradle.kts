@@ -252,6 +252,7 @@ tasks.withType<Test>().configureEach {
 		"springAi" to libs.versions.springAi,
 		"junit" to libs.versions.junit,
 		"jsoup" to libs.versions.jsoup,
+		"jooq" to libs.versions.jooq,
 		"errorprone" to libs.versions.errorprone,
 		"nullaway" to libs.versions.nullaway,
 	).forEach { (name, version) ->

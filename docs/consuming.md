@@ -248,6 +248,28 @@ an `event_publication_archive` table. Platform's CI validates both templates wit
 entity of the catalog's Spring Modulith version, and `AbstractSchemaValidationIT` does the same for the
 application's own migrations ([reference](reference.md#test-fixtures)).
 
+## jOOQ code generation
+
+Spring Boot's BOM manages every `org.jooq` artifact, so the runtime needs no version. The code generator is a
+Gradle plugin, which no BOM reaches, so the catalog pins it as `libs.plugins.jooq.codegen` at the jOOQ version
+that Spring Boot manages; a Platform test fails when a Boot bump moves jOOQ without the catalog. The generator's
+own dependencies come from the same BOM through `platform(libs.platform.bom)`:
+
+```kotlin
+plugins {
+    alias(libs.plugins.jooq.codegen)
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
+    jooqCodegen(platform(libs.platform.bom))
+    jooqCodegen("org.jooq:jooq-meta-extensions")
+}
+```
+
+`jooq-meta-extensions` provides `DDLDatabase`, which generates the code from the Flyway migrations without a
+database, so compiling and `test` stay Docker-free ([ADR-0009](adr/0009-integration-tag-is-a-contract.md)).
+
 ## CI
 
 Call the reusable workflows by the exact tag of your Platform pin and pass the token explicitly.

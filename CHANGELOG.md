@@ -18,6 +18,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Added
+
+- Catalog: the jOOQ code generation plugin (`libs.plugins.jooq.codegen`, `org.jooq.jooq-codegen-gradle`), pinned to
+  the jOOQ version Spring Boot manages; `PlatformBomImportFunctionalTest` fails when the two diverge. Usage:
+  [consuming.md](docs/consuming.md#jooq-code-generation).
+
 ### Fixed
 
 - The next-JDK leg of `upstream-canary.yml` now also fails when a tool cannot read the early-access toolchain's
