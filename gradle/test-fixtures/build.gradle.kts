@@ -53,6 +53,8 @@ dependencies {
 	compileOnly(libs.archunit.junit5)
 	// AbstractModulithDocumentationTest: Documenter jest w spring-modulith-docs, który daje spring-modulith-starter-test.
 	compileOnly("org.springframework.modulith:spring-modulith-docs")
+	// AbstractEventPublicationRegistryIT: EventPublicationRepository konsument ma ze startera rejestru (JPA albo JDBC).
+	compileOnly("org.springframework.modulith:spring-modulith-events-core")
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
@@ -101,6 +103,52 @@ tasks.test {
 	// Ten moduł nie dzieli testów na zadania: jego testy kontenerów świadomie biegną w `test`, więc strażnik
 	// PlatformTestTaskGuard (failuje na kontenerze w szybkim `test` konsumenta) dostaje inną nazwę zadania.
 	systemProperty("platform.test.task", "platformModuleTest")
+}
+
+// Rejestr zdarzeń Spring Modulith na JDBC (spring-modulith-starter-jdbc) kontra szablony templates/db
+// i AbstractEventPublicationRegistryIT. Osobny classpath, bo starter JPA z `test` dałby drugie
+// EventPublicationRepository. Z `test` bierze tylko skompilowane klasy (SchemaTemplates), bez zasobów:
+// jego db/migration i changelog nie mogą wejść do aplikacji JDBC.
+val jdbcRegistryTest: SourceSet by sourceSets.creating {
+	compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output.classesDirs
+	runtimeClasspath += output + compileClasspath
+}
+configurations.named(jdbcRegistryTest.implementationConfigurationName) { extendsFrom(configurations.api.get()) }
+dependencies {
+	"jdbcRegistryTestImplementation"("org.junit.jupiter:junit-jupiter")
+	"jdbcRegistryTestImplementation"("org.assertj:assertj-core")
+	"jdbcRegistryTestImplementation"("org.springframework.boot:spring-boot-starter-jdbc")
+	"jdbcRegistryTestImplementation"("org.springframework.modulith:spring-modulith-starter-jdbc")
+	// Starter daje rejestr tylko w runtime; testy wołają EventPublicationRepository wprost.
+	"jdbcRegistryTestImplementation"("org.springframework.modulith:spring-modulith-events-core")
+	"jdbcRegistryTestImplementation"("org.springframework.boot:spring-boot-starter-flyway")
+	"jdbcRegistryTestImplementation"("org.springframework.boot:spring-boot-starter-liquibase")
+	"jdbcRegistryTestRuntimeOnly"("org.postgresql:postgresql")
+	"jdbcRegistryTestRuntimeOnly"("org.flywaydb:flyway-database-postgresql")
+	"jdbcRegistryTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+}
+val jdbcRegistryTestTask =
+	tasks.register<Test>("jdbcRegistryTest") {
+		description = "Runs the Spring Modulith JDBC event registry tests against the templates in templates/db."
+		group = LifecycleBasePlugin.VERIFICATION_GROUP
+		testClassesDirs = jdbcRegistryTest.output.classesDirs
+		classpath = jdbcRegistryTest.runtimeClasspath
+		shouldRunAfter(tasks.test)
+		inputs.dir(platformTemplates.dir("db")).withPropertyName("dbTemplates").withPathSensitivity(PathSensitivity.RELATIVE)
+		systemProperty("platform.templates.dir", platformTemplates.asFile.absolutePath)
+		systemProperty("platform.test.task", "platformModuleTest")
+	}
+tasks.check { dependsOn(jdbcRegistryTestTask) }
+// Konwencje sumują pokrycie z `test` i `integrationTest` po nazwie; AbstractEventPublicationRegistryIT
+// ćwiczy tylko jdbcRegistryTest, więc bez jego danych bramka liczyłaby fixture jako niepokryty.
+val jdbcRegistryCoverage = fileTree(layout.buildDirectory) { include("jacoco/jdbcRegistryTest.exec") }
+tasks.named<JacocoReport>("jacocoTestReport") {
+	dependsOn(jdbcRegistryTestTask)
+	executionData(jdbcRegistryCoverage)
+}
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+	dependsOn(jdbcRegistryTestTask)
+	executionData(jdbcRegistryCoverage)
 }
 
 val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")

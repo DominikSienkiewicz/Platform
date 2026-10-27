@@ -233,9 +233,15 @@ contract: `AbstractLiquibaseChangelogTest` fails on a file outside `NNNN-<slug>.
 prefix and on a file no changeset of which reaches the master. Flyway applications name migrations
 `V<n>__<description>.sql`, which `AbstractFlywayMigrationTest` checks ([reference](reference.md#test-fixtures)).
 
-`spring-modulith-starter-jpa` (also in the `modulith-web` bundle) stores event publications in the
-`event_publication` table, and no Spring Modulith artifact creates it. Without the table the registry does
-not persist publications, so events are not republished after a failure. Copy the canonical migration:
+`spring-modulith-starter-jpa` (also in the `modulith-web` bundle) and `spring-modulith-starter-jdbc`
+(`libs.modulith.starter.jdbc`) store event publications in the `event_publication` table. Use one registry
+starter, not both: each brings its own `EventPublicationRepository`. Without the table the registry does not
+persist publications, so events are not republished after a failure. The JPA registry never creates the table.
+The JDBC registry creates it at startup unless `spring.modulith.events.jdbc.schema-initialization.enabled=false`:
+Spring Modulith 2.1 turns the creation on when the property is missing, although its configuration metadata
+lists `false`. Set it to `false` when migrations own the schema, so the table has one definition (Modulith's
+own declares `completion_attempts` nullable, the templates `NOT NULL DEFAULT 0`). Copy the canonical
+migration:
 
 | Migration tool | Template | Copy to |
 |---|---|---|
@@ -246,7 +252,35 @@ Both use `CREATE TABLE IF NOT EXISTS`, so a database where the table was created
 without an error. They cover the completion modes `UPDATE` (the default) and `DELETE`; `ARCHIVE` also needs
 an `event_publication_archive` table. Platform's CI validates both templates with Hibernate against the
 entity of the catalog's Spring Modulith version, and `AbstractSchemaValidationIT` does the same for the
-application's own migrations ([reference](reference.md#test-fixtures)).
+application's own migrations ([reference](reference.md#test-fixtures)). The same CI runs the JDBC registry on
+both templates, also with the table in a non-default schema, and `AbstractEventPublicationRegistryIT` does that
+for the application's own migrations, with either starter.
+
+A table outside the default schema needs `spring.modulith.events.jdbc.schema=<schema>` for the JDBC registry,
+and the migration has to create the table in that schema (for Flyway, `spring.flyway.default-schema` and
+`spring.flyway.schemas`), because the templates do not qualify the table name.
+
+## jOOQ code generation
+
+Spring Boot's BOM manages every `org.jooq` artifact, so the runtime needs no version. The code generator is a
+Gradle plugin, which no BOM reaches, so the catalog pins it as `libs.plugins.jooq.codegen` at the jOOQ version
+that Spring Boot manages; a Platform test fails when a Boot bump moves jOOQ without the catalog. The generator's
+own dependencies come from the same BOM through `platform(libs.platform.bom)`:
+
+```kotlin
+plugins {
+    alias(libs.plugins.jooq.codegen)
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
+    jooqCodegen(platform(libs.platform.bom))
+    jooqCodegen("org.jooq:jooq-meta-extensions")
+}
+```
+
+`jooq-meta-extensions` provides `DDLDatabase`, which generates the code from the Flyway migrations without a
+database, so compiling and `test` stay Docker-free ([ADR-0009](adr/0009-integration-tag-is-a-contract.md)).
 
 ## CI
 

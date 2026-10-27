@@ -18,6 +18,22 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Added
+
+- Catalog: the jOOQ code generation plugin (`libs.plugins.jooq.codegen`, `org.jooq.jooq-codegen-gradle`), pinned to
+  the jOOQ version Spring Boot manages; `PlatformBomImportFunctionalTest` fails when the two diverge. Usage:
+  [consuming.md](docs/consuming.md#jooq-code-generation).
+- Catalog: `garmin-fit` (Garmin FIT Java SDK 21.218.0, under the FIT Protocol License Agreement, which is not
+  OSI-approved), and `commonmark` with `commonmark-ext-gfm-tables` (commonmark-java 0.31.0).
+- Spring Modulith JDBC event registry: test-fixtures gains `AbstractEventPublicationRegistryIT`, which stores and
+  completes a publication through the registry on the application's migrated schema, each call in its own
+  transaction, with either registry starter and every completion mode (CI covers JDBC in `UPDATE` and `DELETE`
+  mode and JPA). Platform's CI now runs the JDBC registry on both `event_publication` templates, also in a
+  non-default schema (`jdbcRegistryTest` in test-fixtures). Catalog alias `modulith-starter-jdbc`. The docs
+  note that Spring Modulith 2.1 creates the JDBC table itself unless
+  `spring.modulith.events.jdbc.schema-initialization.enabled=false`
+  ([consuming.md](docs/consuming.md#database-migrations)).
+
 ### Fixed
 
 - The next-JDK leg of `upstream-canary.yml` now also fails when a tool cannot read the early-access toolchain's

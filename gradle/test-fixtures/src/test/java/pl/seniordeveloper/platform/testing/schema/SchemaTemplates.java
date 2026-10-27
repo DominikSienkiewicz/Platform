@@ -7,16 +7,18 @@ import java.nio.file.Path;
 
 /**
  * Kanoniczne migracje z {@code templates/db/}, czytane z repozytorium, a nie z kopii w zasobach
- * testu.
+ * testu. Publiczna, bo korzystają z niej też testy rejestru JDBC z osobnego source setu {@code
+ * jdbcRegistryTest}.
  */
-final class SchemaTemplates {
+public final class SchemaTemplates {
 
-  // Ścieżkę ustawia build.gradle.kts, który deklaruje też katalog jako wejście taska test.
+  // Ścieżkę ustawia build.gradle.kts, który deklaruje też katalog jako wejście tasków test i
+  // jdbcRegistryTest.
   private static final String TEMPLATES_PROPERTY = "platform.templates.dir";
 
   private SchemaTemplates() {}
 
-  static String liquibaseChangeLog() {
+  public static String liquibaseChangeLog() {
     return "file:" + template("db/liquibase/modulith-event-publication.yaml");
   }
 
@@ -24,7 +26,7 @@ final class SchemaTemplates {
    * Flyway wymaga numeru wersji w nazwie, więc szablon {@code V__…} trafia do katalogu jako {@code
    * V1__…}.
    */
-  static String flywayLocation() {
+  public static String flywayLocation() {
     try {
       Path location = Files.createTempDirectory("platform-flyway-");
       Files.copy(
