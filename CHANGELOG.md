@@ -18,6 +18,15 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Added
+
+- Catalog: `pdfbox` (Apache PDFBox 3.0.8, Apache License 2.0), which brings `pdfbox-io`, `fontbox` and
+  `commons-logging` transitively.
+
 ## [1.8.6] - 2026-10-27
 
 ### Consumer action required
