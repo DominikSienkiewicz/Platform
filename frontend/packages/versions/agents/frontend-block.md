@@ -1,4 +1,5 @@
 <!-- BEGIN platform-agents-frontend v{{VERSION}} (managed by platform-bump; edits inside these markers are replaced) -->
+
 ## Frontend rules for agents (Platform {{VERSION}})
 
 The stack of Platform {{VERSION}}, taken from its frontend canon `versions.json` and enforced by
@@ -15,4 +16,5 @@ Vitest {{vitest}}, ESLint {{eslint}}, Prettier {{prettier}}. Read versions from 
   Vitest uses `AI_AGENT_MAX_WORKERS` workers (2 unless set).
 - With `platform.openapi` in `package.json`, API types come from the committed spec through `platform-openapi-gen`,
   and `platform-openapi-check` fails on stale types: regenerate them, never edit them.
+
 <!-- END platform-agents-frontend -->
