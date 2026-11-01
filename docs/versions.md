@@ -89,6 +89,12 @@ Three CVE overrides came back after the first canon scan, because no Boot releas
 Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
 as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
 
+Guava has a CVE floor although Boot does not manage it. `javers-persistence-sql` 7.11.7, which
+`javers-spring-boot-starter-sql` brings, declares Guava 33.5.0-jre, and so does Javers 7.11.9, the newest release.
+That version has CVE-2026-102554 (GHSA-xxph-c9ww-hj94, HIGH, fixed in 33.7.2). `platform-bom` therefore constrains
+`com.google.guava:guava` to the catalog's `guava` (33.7.2-jre), and `PlatformBomImportFunctionalTest` checks that a
+consumer of the Javers starter resolves it. Drop the floor when a Javers release brings Guava 33.7.2 or later.
+
 The convention plugins themselves carry one floor of their own. The CycloneDX Gradle plugin brings
 Jackson 2.22.2, with four HIGH advisories fixed in 2.22.3. `gradle/build-logic` therefore imports
 `com.fasterxml.jackson:jackson-bom` at the catalog's `jackson2Tooling` (2.22.3). The import is part of the
@@ -130,7 +136,8 @@ consumer which releases are affected.
 
 When it is red, the maintainer:
 
-1. bumps the canon entry or the catalog version, or, for a library the Spring Boot BOM manages, adds
+1. bumps the canon entry or the catalog version, or, for a library the Spring Boot BOM manages or one
+   that even the newest release of a catalog library brings at a vulnerable version, adds
    a CVE floor to the catalog and `platform-bom` (with its key in `scripts/check-canon-floors.py`; see
    [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)) until a Boot release
    manages a fixed version;

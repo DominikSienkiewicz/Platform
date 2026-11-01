@@ -26,7 +26,7 @@ import canon_diff  # noqa: E402
 CONVENTION_VERSIONS = {
     "java", "gradle", "googleJavaFormat", "checkstyle", "jacoco", "spotbugs", "pitestTool", "pitestJunit5",
     "springBoot", "springModulith", "springAi", "junit", "archunit", "lombok", "tomcat", "jacksonBom", "jackson2Bom",
-    "errorprone", "nullaway",
+    "guava", "errorprone", "nullaway",
 }
 ALIAS = re.compile(r"\blibs\.([A-Za-z0-9_.]+)")
 USES = re.compile(r"uses:\s*[A-Za-z0-9_.-]+/Platform/\.github/workflows/([A-Za-z0-9_.-]+\.ya?ml)@")

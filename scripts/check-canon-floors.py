@@ -20,6 +20,7 @@ FLOORS = {
         "org.apache.tomcat.embed:tomcat-embed-el",
         "org.apache.tomcat.embed:tomcat-embed-websocket",
     ],
+    "guava": ["com.google.guava:guava"],
 }
 
 

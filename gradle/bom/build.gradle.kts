@@ -35,6 +35,10 @@ dependencies {
 				because("CVE: Spring Boot ${libs.versions.springBoot.get()} manages Tomcat 11.0.24 (three Critical, fixed in 11.0.25)")
 			}
 		}
+		// Boot Guavą nie zarządza: przynosi ją tranzytywnie Javers (i Error Prone), więc podłoga jest constraintem.
+		api("com.google.guava:guava:${libs.versions.guava.get()}") {
+			because("CVE-2026-102554: javers-persistence-sql ${libs.versions.javers.get()} brings Guava 33.5.0-jre (High, fixed in 33.7.2)")
+		}
 		api("org.projectlombok:lombok:${libs.versions.lombok.get()}") {
 			because("compatibility: Spring Boot ${libs.versions.springBoot.get()} manages Lombok 1.18.46, which fails on javac 27")
 		}
