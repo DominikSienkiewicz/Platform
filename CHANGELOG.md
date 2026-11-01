@@ -18,9 +18,16 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-11-01
+
 ### Consumer action required
 
 None.
+
+### Added
+
+- Catalog: `pdfbox` (Apache PDFBox 3.0.8, Apache License 2.0), which brings `pdfbox-io`, `fontbox` and
+  `commons-logging` transitively.
 
 ### Fixed
 
@@ -32,17 +39,6 @@ None.
   `nullness-conventions`. Spring Boot does not manage Guava, so the floor is a constraint of its own;
   `canon-cve-scan.yml` failed on it. `spring-modulith-conventions` imports the BOM for every configuration, and a
   build without it takes the floor with `platform(libs.platform.bom)`.
-
-## [1.8.7] - 2026-11-01
-
-### Consumer action required
-
-None.
-
-### Added
-
-- Catalog: `pdfbox` (Apache PDFBox 3.0.8, Apache License 2.0), which brings `pdfbox-io`, `fontbox` and
-  `commons-logging` transitively.
 
 ## [1.8.6] - 2026-10-27
 
