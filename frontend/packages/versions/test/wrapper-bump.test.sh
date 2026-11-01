@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The wrapper block of bin/platform-bump.sh moves the consumer's Gradle wrapper to the gradle version of
 # the target release's catalog, with the distribution's SHA-256, and leaves it alone when it already runs
-# that version or the catalog has no gradle entry (releases before 1.6.0). Cut out between its markers and
-# run against stub curl and gradlew.
+# that version or a newer one, or the catalog has no gradle entry (releases before 1.6.0). Cut out between its
+# markers and run against stub curl and gradlew.
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")/.." && pwd)/bin/platform-bump.sh"
@@ -45,7 +45,8 @@ layout() {
 run() {
   local dir="$1"
   : > "$WORK/curl.log"
-  (cd "$dir" && PATH="$WORK/bin:$PATH" CURL_LOG="$WORK/curl.log" OWNER=DominikSienkiewicz TARGET=1.6.0 TOKEN=dummy bash "$WORK/wrapper.sh")
+  (cd "$dir" && PATH="$WORK/bin:$PATH" CURL_LOG="$WORK/curl.log" OWNER=DominikSienkiewicz TARGET=1.6.0 TOKEN=dummy bash "$WORK/wrapper.sh") \
+    > "$WORK/out.log"
 }
 
 # (a) an older wrapper moves to the catalog's gradle with its checksum
@@ -67,4 +68,20 @@ CATALOG_TOML=$'[versions]\njava = "27"' run "$dir"
 CATALOG_TOML="" run "$dir"
 [[ ! -s "$dir/gradlew.log" ]] || fail 'an unreachable catalog must leave the wrapper alone'
 
-echo 'OK: platform-bump moves the Gradle wrapper to the catalog version of the target release'
+# (d) a wrapper newer than the catalog stays, and the bump says so; versions compare as numbers
+dir=$(layout newer 9.8.3)
+CATALOG_TOML=$'[versions]\ngradle = "9.8.2"' run "$dir"
+[[ ! -s "$dir/gradlew.log" ]] || fail "a wrapper newer than the catalog must stay: $(cat "$dir/gradlew.log")"
+grep -qF 'Gradle wrapper: 9.8.3 is newer than 9.8.2 of the catalog' "$WORK/out.log" \
+  || fail "the bump must say that it keeps the newer wrapper: $(cat "$WORK/out.log")"
+dir=$(layout newer-minor 9.10.0)
+CATALOG_TOML=$'[versions]\ngradle = "9.8.2"' run "$dir"
+[[ ! -s "$dir/gradlew.log" ]] || fail '9.10.0 is newer than 9.8.2 and must stay'
+
+# (e) an older wrapper whose version sorts after the catalog's as text still moves up
+dir=$(layout older-minor 9.8.1)
+CATALOG_TOML=$'[versions]\ngradle = "9.10.0"' run "$dir"
+grep -qx 'wrapper --gradle-version 9.10.0 --gradle-distribution-sha256-sum 0123abcd --no-daemon' "$dir/gradlew.log" \
+  || fail "9.8.1 must move up to 9.10.0: $(cat "$dir/gradlew.log" 2>/dev/null)"
+
+echo 'OK: platform-bump moves the Gradle wrapper up to the catalog version of the target release, never down'

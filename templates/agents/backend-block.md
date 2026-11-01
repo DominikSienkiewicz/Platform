@@ -1,4 +1,5 @@
 <!-- BEGIN platform-agents-backend v{{VERSION}} (managed by platform-bump; edits inside these markers are replaced) -->
+
 ## Backend rules for agents (Platform {{VERSION}})
 
 The stack of Platform {{VERSION}}, taken from its catalog and enforced by the build: Java {{java}} toolchain,
@@ -21,4 +22,5 @@ JUnit {{junit}}. Read versions from `libs.versions.toml` of that release, never 
   https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consuming.md#database-migrations
 - GitHub Packages credentials: `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` locally,
   `GITHUB_ACTOR` and `GITHUB_TOKEN` on CI; never in the repository.
+
 <!-- END platform-agents-backend -->
