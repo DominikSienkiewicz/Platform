@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/ui",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "description": "shadcn registry (utils, button).",
   "license": "MIT",
   "engines": {
