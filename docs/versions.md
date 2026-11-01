@@ -203,7 +203,7 @@ The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchai
 `org.gradle.java.installations.paths` in the Gradle user home. Gradle itself runs on the
 `java-version` JDK, which is the same Java 27 since 1.8.0: Platform builds and tests `build-logic` with Gradle on
 JDK 27 and supports no other JDK for Gradle ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)).
-The Kotlin embedded in Gradle 9.8.1 (2.4.10) targets at most JVM 26, so `build-logic` pins its bytecode to 26 for
+The Kotlin embedded in Gradle 9.8.2 (2.4.10) targets at most JVM 26, so `build-logic` pins its bytecode to 26 for
 Kotlin and Java until that Kotlin can target 27; both inputs stay, so a
 consumer can try a newer toolchain without moving Gradle. `templates/tests/jdk-everywhere.test.sh` fails
 when any JDK of the workflows, SDKMAN, the devcontainers or the starters' daemon criteria leaves the

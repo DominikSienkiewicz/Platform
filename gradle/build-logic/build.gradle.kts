@@ -21,7 +21,7 @@ java {
 	withSourcesJar()
 }
 
-// Kotlin wbudowany w Gradle 9.8.1 (2.4.10) zna JVM-target najwyżej 26, więc bytecode build-logic to jawnie 26
+// Kotlin wbudowany w Gradle 9.8.2 (2.4.10) zna JVM-target najwyżej 26, więc bytecode build-logic to jawnie 26
 // dla Kotlina i Javy (bez ostrzeżenia o niespójności 27 vs 26). Podnieś do 27, gdy embedded Kotlin dostanie JVM_27.
 val buildLogicBytecode = 26
 kotlin.compilerOptions.jvmTarget = JvmTarget.fromTarget(buildLogicBytecode.toString())
