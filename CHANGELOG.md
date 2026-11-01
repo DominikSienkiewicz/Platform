@@ -18,6 +18,21 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `platform-bom` raises Guava to 33.7.2-jre (new catalog key `guava`), which fixes CVE-2026-102554 /
+  GHSA-xxph-c9ww-hj94 (HIGH, uncontrolled memory allocation when `CompactHashMap`, `CompactHashSet` or
+  `MapMakerInternalMap` is deserialized from an untrusted stream). Every Guava release up to 33.7.1 is affected.
+  `javers-spring-boot-starter-sql` brings 33.5.0-jre onto the application's runtime classpath, at the catalog's
+  Javers 7.11.7 and the newest 7.11.9 alike, and Error Prone 2.50.0 brings it into the `errorprone` configuration of
+  `nullness-conventions`. Spring Boot does not manage Guava, so the floor is a constraint of its own;
+  `canon-cve-scan.yml` failed on it. `spring-modulith-conventions` imports the BOM for every configuration, and a
+  build without it takes the floor with `platform(libs.platform.bom)`.
+
 ## [1.8.7] - 2026-11-01
 
 ### Consumer action required

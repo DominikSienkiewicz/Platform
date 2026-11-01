@@ -19,6 +19,7 @@ lombok = "1.18.48"                       # → platform-bom: constraint z becaus
 tomcat = "11.0.27"                       # → platform-bom: podłoga CVE (constraint z because) — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
 jacksonBom = "3.1.8"                     # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
 jackson2Bom = "2.21.8"                   # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
+guava = "33.7.2-jre"                     # → platform-bom: podłoga CVE (constraint z because) — CVE-2026-102554: javers-persistence-sql 7.11.7 (i najnowszy 7.11.9) ciągnie 33.5.0-jre (High, poprawka 33.7.2). Boot Guavą nie zarządza. Zdejmij, gdy Javers przyniesie >= 33.7.2
 springDependencyManagement = "1.1.7"
 springModulith = "2.1.1"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
 springAi = "2.0.1"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u)

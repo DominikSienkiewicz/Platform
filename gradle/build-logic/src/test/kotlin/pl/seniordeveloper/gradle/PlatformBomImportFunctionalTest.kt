@@ -39,6 +39,16 @@ class PlatformBomImportFunctionalTest {
 	}
 
 	@Test
+	fun `the platform BOM raises the Guava that Javers brings to the CVE floor`() {
+		val consumer = ConsumerFixture(directory, "spring-app")
+		consumer.appendToBuildScript("dependencies { implementation(libs.javers.spring.boot.starter.sql) }")
+
+		val guava = insight(consumer, "com.google.guava:guava", "runtimeClasspath")
+
+		assertTrue(guava.contains("com.google.guava:guava:${canon("guava")}"), guava)
+	}
+
+	@Test
 	fun `the catalog jOOQ version is the one the platform BOM manages`() {
 		val consumer = ConsumerFixture(directory, "spring-app")
 		consumer.appendToBuildScript("dependencies { implementation(\"org.jooq:jooq\") }")

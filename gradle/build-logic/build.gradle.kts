@@ -242,6 +242,7 @@ tasks.withType<Test>().configureEach {
 		"tomcat" to libs.versions.tomcat,
 		"jacksonBom" to libs.versions.jacksonBom,
 		"jackson2Bom" to libs.versions.jackson2Bom,
+		"guava" to libs.versions.guava,
 		"pitestTool" to libs.versions.pitestTool,
 		"pitestJunit5" to libs.versions.pitestJunit5,
 		"checkstyle" to libs.versions.checkstyle,

@@ -46,6 +46,19 @@ run above || fail 'a version above its floor must pass'
 
 if run boot-jackson old-libs; then :; else fail 'a catalog without the floors (an older tag) has nothing to enforce'; fi
 
+# GHSA-xxph-c9ww-hj94 (CVE-2026-102554): javers-persistence-sql 7.11.x ciągnie Guavę 33.5.0-jre, poprawka w 33.7.2.
+# Podłoga ma sufiks wariantu (-jre), a porównanie idzie po części liczbowej.
+cat > "$work/guava-libs.versions.toml" <<'TOML'
+[versions]
+guava = "33.7.2-jre"
+TOML
+sbom javers-guava com.google.guava:guava:33.5.0-jre
+if run javers-guava guava-libs; then fail 'Guava 33.5.0-jre below the catalog floor 33.7.2-jre must fail'; fi
+grep -qF 'com.google.guava:guava 33.5.0-jre is below the floor 33.7.2-jre (guava)' "$work/out.txt" \
+  || fail 'the Guava failure must name the component, its version, the floor and the catalog key'
+sbom guava-at-floor com.google.guava:guava:33.7.2-jre
+run guava-at-floor guava-libs || fail 'Guava at its floor must pass'
+
 # Każda podłoga CVE z gradle/bom (`because("CVE`) ma swój klucz w skrypcie. Klucz stoi w deklaracji nad
 # `because`; sam powód cytuje wersję Boota (`libs.versions.springBoot`), która podłogą nie jest.
 python3 "$root/scripts/check-canon-floors.py" --keys > "$work/keys.txt"

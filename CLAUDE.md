@@ -106,7 +106,9 @@ opublikuj, podbij pin w repo konsumenta.
    i `jackson-2-bom.version` 2.21.8 wróciły, bo Boot 4.1.1 (najnowszy) zarządza podatnymi 11.0.24,
    3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; wersje stoją tylko w katalogu, a nakłada je `platform-bom`
    (constraints z `because`, Jackson importowany przed Bootem), który importują konwencje — zdejmij je, gdy BOM
-   Boota dojdzie do poprawek. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
+   Boota dojdzie do poprawek. Podłoga CVE `guava` 33.7.2-jre (CVE-2026-102554) to constraint `platform-bom` bez
+   właściwości Boota (Boot Guavą nie zarządza): Javers 7.11.7–7.11.9 ciągnie 33.5.0-jre — zdejmij ją, gdy Javers
+   przyniesie >= 33.7.2. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
    zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
    Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje; zarządzanie ArchUnit na runtime
    pilnuje `PlatformToolVersionMirrorTest`. Polityka nadpisań (ostateczność, warunek usunięcia przy każdym):
