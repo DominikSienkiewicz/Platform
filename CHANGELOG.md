@@ -18,6 +18,24 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Changed
+
+- The canon moves to Gradle 9.8.2: the catalog entry `gradle`, Platform's own wrappers and the stack the
+  `platform-agents-backend` block names. `platform-bump` moves a consumer's wrapper to it with the checksum
+  services.gradle.org publishes, as before; with 9.8.1 in the canon it had moved a consumer already on 9.8.2 back.
+  `minimumConsumerGradle` stays 9.8.1.
+
+### Fixed
+
+- The `platform-agents`, `platform-agents-backend` and `platform-agents-frontend` blocks that `platform-bump` writes
+  are in the form Prettier gives them: a blank line after the BEGIN comment and before the END comment. Without
+  them a consumer's `prettier --check .` failed on `frontend/AGENTS.md` after the bump, as in strict `frontend-ci`.
+  The next bump rewrites a consumer's blocks in the new form; a block formatted by hand needs nothing.
+
 ## [1.8.7] - 2026-11-01
 
 ### Consumer action required
