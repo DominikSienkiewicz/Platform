@@ -263,8 +263,8 @@ Gradle selects or downloads Java 27; Foojay provisions the toolchain locally whe
 reusable CI workflows install it with `setup-java` instead ([`docs/versions.md`](docs/versions.md)). The backend
 runtime image is `sapmachine:27-jre`.
 Consumers run Gradle 9.8.1 or newer, the first Gradle that starts on JDK 27 (9.6.1 stops with Groovy's
-"Unsupported class file major version 71"): TestKit builds a consumer on that minimum, which is also the version
-of Platform's own wrappers, and `platform-bump` moves a consumer's wrapper to the catalog's version.
+"Unsupported class file major version 71"): TestKit builds a consumer on that minimum. Platform's own wrappers run
+the catalog's version, 9.8.2, and `platform-bump` moves an older consumer wrapper up to it, never a newer one down.
 Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages, which declare the
 Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a

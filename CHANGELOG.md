@@ -25,11 +25,15 @@ None.
 ### Changed
 
 - The canon moves to Gradle 9.8.2: the catalog entry `gradle`, Platform's own wrappers and the stack the
-  `platform-agents-backend` block names. `platform-bump` moves a consumer's wrapper to it with the checksum
-  services.gradle.org publishes, as before; with 9.8.1 in the canon it had moved a consumer already on 9.8.2 back.
-  `minimumConsumerGradle` stays 9.8.1.
+  `platform-agents-backend` block names. `platform-bump` moves an older consumer wrapper up to it with the
+  checksum services.gradle.org publishes. `minimumConsumerGradle` stays 9.8.1.
 
 ### Fixed
+
+- `platform-bump` moves a consumer's Gradle wrapper only up to the catalog's version: a wrapper newer than the
+  canon stays, and the bump prints that it keeps it. Before, any difference moved the wrapper to the canon, so the
+  1.8.7 bump took a consumer from its deliberate 9.8.2 back to 9.8.1. Versions compare as numbers (9.10.0 is newer
+  than 9.8.2). The fix acts from the bump to this release on, because a bump runs the bin of its target release.
 
 - The `platform-agents`, `platform-agents-backend` and `platform-agents-frontend` blocks that `platform-bump` writes
   are in the form Prettier gives them: a blank line after the BEGIN comment and before the END comment. Without

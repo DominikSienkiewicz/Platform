@@ -716,8 +716,21 @@ fi
 # --- Wrapper Gradle: wersja `gradle` z katalogu wydania docelowego (od 1.6.0), z sumą SHA-256 dystrybucji.
 #     Konsument jedzie na własnym wrapperze, a Platform kompiluje pluginy (kotlin-dsl) na wersji z katalogu;
 #     PlatformMinimumGradleFunctionalTest pilnuje minimum, ten blok trzyma wrapper na wersji testowanej.
-#     Katalog bez wpisu `gradle` (starsze wydania) albo niedostępny = wrapper bez zmian. ---
+#     Katalog bez wpisu `gradle` (starsze wydania) albo niedostępny = wrapper bez zmian. Tylko w górę: wrapper
+#     nowszy niż kanon to świadomy wybór repo (Training jechał na 9.8.2, gdy kanon miał 9.8.1), więc zostaje. ---
 # platform-bump:wrapper
+# 0, gdy wersja $1 jest nowsza niż $2; pola X.Y.Z porównane jako liczby, brakujące pole = 0.
+gradle_newer() {
+  local -a newer older
+  local field
+  IFS=. read -r -a newer <<<"$1"
+  IFS=. read -r -a older <<<"$2"
+  for field in 0 1 2; do
+    (( ${newer[field]:-0} > ${older[field]:-0} )) && return 0
+    (( ${newer[field]:-0} < ${older[field]:-0} )) && return 1
+  done
+  return 1
+}
 for wrapper_dir in backend .; do
   props="$wrapper_dir/gradle/wrapper/gradle-wrapper.properties"
   [[ -f "$props" && -x "$wrapper_dir/gradlew" ]] || continue
@@ -728,9 +741,13 @@ for wrapper_dir in backend .; do
     gradle_target="$(sed -n -E 's/^gradle[[:space:]]*=[[:space:]]*"([0-9.]+)".*/\1/p' "$catalog_toml" | head -1)"
     gradle_current="$(sed -n -E 's#^distributionUrl=.*gradle-([0-9.]+)-(bin|all)\.zip.*#\1#p' "$props" | head -1)"
     if [[ -n "$gradle_target" && "$gradle_target" != "$gradle_current" ]]; then
-      echo "==> Gradle wrapper: $gradle_current -> $gradle_target"
-      gradle_sum="$(curl -fsSL --proto '=https' "https://services.gradle.org/distributions/gradle-$gradle_target-bin.zip.sha256")"
-      ( cd "$wrapper_dir" && ./gradlew wrapper --gradle-version "$gradle_target" --gradle-distribution-sha256-sum "$gradle_sum" --no-daemon )
+      if [[ -n "$gradle_current" ]] && gradle_newer "$gradle_current" "$gradle_target"; then
+        echo "==> Gradle wrapper: $gradle_current is newer than $gradle_target of the catalog, so it stays"
+      else
+        echo "==> Gradle wrapper: $gradle_current -> $gradle_target"
+        gradle_sum="$(curl -fsSL --proto '=https' "https://services.gradle.org/distributions/gradle-$gradle_target-bin.zip.sha256")"
+        ( cd "$wrapper_dir" && ./gradlew wrapper --gradle-version "$gradle_target" --gradle-distribution-sha256-sum "$gradle_sum" --no-daemon )
+      fi
     fi
   fi
   rm -f "$catalog_toml"

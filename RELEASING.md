@@ -388,8 +388,8 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   `platform-workflows-check`: the permissions it grants, its inputs and its secrets. It reports
   `ERROR` and `WARN` lines and does not fail the bump; run it on its own (exit 1 on an error) to
   gate a pull request;
-- moves the Gradle wrapper to the catalog's `gradle` version of the target release, with the
-  distribution's SHA-256;
+- moves an older Gradle wrapper up to the catalog's `gradle` version of the target release, with the
+  distribution's SHA-256, and keeps a newer one;
 - regenerates `gradle.lockfile` and, when the repository verifies dependencies,
   `gradle/verification-metadata.xml`;
 - lists the local version overrides in the backend's Gradle scripts (`useVersion`, `force`,

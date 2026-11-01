@@ -267,8 +267,8 @@ each workflow that builds. A new module copies the wrapper of an existing one.
 
 The catalog entry `gradle` is the version of those wrappers, and `PlatformGradleVersionMirrorTest`
 fails when a wrapper or the `gradle-version` of `canon-cve-scan.yml` differs from it. `platform-bump`
-reads the entry from the catalog of the target release and moves the consumer's wrapper to it, with
-the distribution's SHA-256.
+reads the entry from the catalog of the target release and moves an older consumer wrapper up to it, with
+the distribution's SHA-256. A newer wrapper stays, as the repository's own choice, and the bump says so.
 
 A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
 `gradle/build-logic/gradle.properties` (9.8.1, the first Gradle that starts on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
