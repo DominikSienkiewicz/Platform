@@ -1,19 +1,25 @@
 # Platform
 
+**Designed and maintained by [Dominik Sienkiewicz](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change. How that works: [engineering with agents](docs/engineering-with-agents.md).
+
+A shared build platform for a multi-repository JVM and frontend organisation. Build
+configuration, quality gates, dependency versions and frontend presets live here once,
+are published as versioned artifacts, and are consumed like any other dependency.
+
+![Java 27](https://img.shields.io/badge/Java-27-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Gradle 9](https://img.shields.io/badge/Gradle-9-02303A?style=for-the-badge&logo=gradle&logoColor=white)
+![Kotlin DSL](https://img.shields.io/badge/Kotlin-DSL-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
+
 [![CI](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml)
 [![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-**Designed and maintained by [Dominik](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change. How that works: [engineering with agents](docs/engineering-with-agents.md).
 
 **Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
 solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
 it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
-
-A shared build platform for a multi-repository JVM and frontend organisation. Build
-configuration, quality gates, dependency versions and frontend presets live here once,
-are published as versioned artifacts, and are consumed like any other dependency.
 
 > Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
 > consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
