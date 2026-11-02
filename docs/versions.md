@@ -283,6 +283,14 @@ the consumer TestKit suite in `build-logic` is the verification gate. It runs th
 file major version", and starts the packaged Spring `bootJar` from its own runtime classpath.
 What each release changed is recorded in [CHANGELOG.md](../CHANGELOG.md), not here.
 
+The next-JDK canary uses Java 28 early access without changing the Java 27 canon. JaCoCo 0.8.16
+supports Java 27 and experimentally supports Java 28; SpotBugs 4.10.5 brings ASM 9.11, which reads
+class-file major 72. `PlatformJava28AnalyzerFunctionalTest` compiles the Java-library fixture on the
+regular toolchain and changes its class-file major to 72, then checks JaCoCo instrumentation and
+analysis with the consumer's isolated tool classpath and runs SpotBugs against that class. It catches
+the parser regression without requiring an EA JDK in the normal suite; it does not establish runtime
+or preview-feature compatibility. The canary remains the check of the actual EA toolchain.
+
 ## Frontend canon
 
 `frontend/packages/versions/versions.json` is the frontend counterpart of the catalog: every npm

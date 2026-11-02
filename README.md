@@ -270,7 +270,10 @@ Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a
 starter on the current Gradle release candidate and watches for an `eclipse-temurin` image of the
 toolchain; each finding opens or updates one issue, and its next-JDK leg builds the starter on an early-access
-toolchain and fails when a tool cannot read its bytecode, report-only SpotBugs included. Every Tuesday
+toolchain and fails when a tool cannot read its bytecode, report-only SpotBugs included. The catalog pins
+JaCoCo 0.8.16 (Java 27 support and experimental Java 28 support) and SpotBugs 4.10.5 (ASM 9.11).
+`PlatformJava28AnalyzerFunctionalTest` checks instrumentation and analysis of class-file major 72 on
+the regular JDK 27 test host; the canary checks the actual early-access toolchain. Every Tuesday
 `reproducibility.yml` rebuilds the latest tag and compares every jar's digest with GitHub Packages. After every CI run, `ci-budget.yml` compares each job's duration with
 `.github/ci-budgets.json` and warns on an overrun; after every push to `main`, `release-draft.yml` keeps the
 draft release **Next** current.
