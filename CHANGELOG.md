@@ -18,6 +18,18 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Fixed
+
+- JaCoCo moves from 0.8.15 to 0.8.16 and SpotBugs from 4.10.3 to 4.10.5 so their parsers read Java 28
+  class files (major 72). The previous versions rejected them in the next-JDK canary: JaCoCo failed
+  instrumentation, reporting and coverage verification, and report-only SpotBugs could analyze no classes.
+  Java 27 remains the canon; Java 28 support in JaCoCo is experimental. The regression checks JaCoCo
+  instrumentation and analysis and the SpotBugs task without weakening the canary or quality gates.
+
 ## [1.8.8] - 2026-11-01
 
 ### Consumer action required

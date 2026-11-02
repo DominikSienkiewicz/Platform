@@ -13,7 +13,7 @@
 [versions]
 platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts; celowo nierozwiązywalny, żeby zepsuty inject failował głośno
 gradle = "9.8.2"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
-java = "27"                              # → PlatformVersions: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09). JaCoCo 0.8.15: class-file 26/27 nieoficjalne
+java = "27"                              # → PlatformVersions: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09)
 springBoot = "4.1.1"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
 lombok = "1.18.48"                       # → platform-bom: constraint z because, importowany przez spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
 tomcat = "11.0.27"                       # → platform-bom: podłoga CVE (constraint z because) — CVE: Boot 4.1.1 ma 11.0.24 (3x Critical, poprawka 11.0.25). Zdejmij, gdy BOM Boota >= 11.0.25
@@ -34,7 +34,7 @@ spotless = "8.9.0"
 ktlint = "1.8.0"                          # formater Kotlin w Spotless samego build-logic (D-14); konsumenci go nie dostają
 googleJavaFormat = "1.36.1"              # → PlatformVersions: googleJavaFormat(...) w java-conventions. JDK 27 wymaga >= 1.35.0 (1.28: NoSuchFieldError endPositions, 1.34.1: błąd na `var`)
 spotbugsPlugin = "6.5.9"                 # plugin Gradle; SAM SpotBugs to spotbugs
-spotbugs = "4.10.3"                      # → PlatformVersions: toolVersion w quality-conventions (SAM SpotBugs, nie plugin Gradle)
+spotbugs = "4.10.5"                      # → PlatformVersions: toolVersion w quality-conventions; ASM 9.11 czyta class-file 72 (kanarek JDK 28)
 checkstyle = "13.10.0"                   # → PlatformVersions: toolVersion w java-conventions (guard configów czyta stąd)
 pitest = "1.19.0"                        # plugin Gradle info.solidsoft.pitest; SAM PIT to pitestTool
 # testRetry >= 1.6.6: wcześniejsze mają ASM bez class-file 71 (JDK 27) i failują task testów z NullPointerException.
@@ -43,7 +43,7 @@ pitestTool = "1.30.0"                    # → PlatformVersions: pitestVersion w
 pitestJunit5 = "1.2.3"                   # → PlatformVersions: junit5PluginVersion w quality-conventions
 cyclonedx = "3.5.1"
 jackson2Tooling = "2.22.3"               # → build-logic: platform jackson-bom na classpath pluginów — CVE: CycloneDX 3.5.1 ciągnie Jacksona 2.22.2 (4x High, poprawka 2.22.3). Aplikacji konsumenta nie dotyczy (tam jackson2Bom). Zdejmij, gdy CycloneDX przyniesie Jacksona >= 2.22.3
-jacoco = "0.8.15"                        # → PlatformVersions: toolVersion w java-conventions
+jacoco = "0.8.16"                        # → PlatformVersions: toolVersion w java-conventions; Java 27 oficjalnie, Java 28 eksperymentalnie
 foojayResolver = "1.0.0"
 mapstruct = "1.6.3"
 jsoup = "1.23.2"

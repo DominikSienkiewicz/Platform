@@ -147,7 +147,7 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 jacoco {
-	// 0.8.15 = najnowsza stabilna; 0.8.14+ = class-file Java 25, 0.8.15 dodał EKSPERYMENTALNE wsparcie 26; class-file 27 również nieoficjalne (zweryfikowane w Azimuth).
+	// Kanon obsługuje Javę 27 oficjalnie, a bajtkod Javy 28 eksperymentalnie (kanarek następnego JDK).
 	// Wersja z gradle/catalog: jacoco.
 	toolVersion = PlatformVersions.JACOCO
 }
