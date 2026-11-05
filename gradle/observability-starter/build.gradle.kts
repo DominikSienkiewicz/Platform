@@ -19,6 +19,9 @@ java {
 
 repositories { mavenCentral() }
 
+// Ostrzeżenie Javadoc wywala `build` w ci.yml, więc wychodzi na PR-ze, nie dopiero przy publikacji javadocJar z taga.
+tasks.javadoc { (options as CoreJavadocOptions).addBooleanOption("Werror", true) }
+
 // Decyzja 28: jak pozostałe moduły Java Platform — SonarQube Cloud z quality-conventions.
 pitest {
 	targetClasses.set(listOf("pl.seniordeveloper.platform.observability.*"))

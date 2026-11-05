@@ -54,7 +54,16 @@ public abstract class AbstractFlywayMigrationTest {
 
   private static final Pattern VERSION = Pattern.compile("^V(\\d+(?:[._]\\d+)*+)__");
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractFlywayMigrationTest() {}
+
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /**
+   * Sprawdza, że classpath ma migracje, a ich nazwy i wersje rozpozna Flyway.
+   *
+   * @throws IOException gdy nie da się odczytać roota migracji
+   * @throws URISyntaxException gdy adres roota migracji nie jest poprawnym URI
+   */
   @Test
   @DisplayName("Every Flyway migration root holds well-named migrations with unique versions")
   protected void migrationsExistAndAreWellNamed() throws IOException, URISyntaxException {

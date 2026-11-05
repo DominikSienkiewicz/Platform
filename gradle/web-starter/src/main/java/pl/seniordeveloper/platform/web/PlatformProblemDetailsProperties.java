@@ -15,18 +15,41 @@ public class PlatformProblemDetailsProperties {
    */
   private boolean legacyMessage = true;
 
+  /** Tworzy przełączniki z wartościami domyślnymi: oba włączone. */
+  public PlatformProblemDetailsProperties() {}
+
+  /**
+   * Czy starter mapuje wyjątki na {@code application/problem+json}.
+   *
+   * @return {@code true}, gdy kontrakt błędów działa; domyślnie {@code true}
+   */
   public boolean isEnabled() {
     return enabled;
   }
 
+  /**
+   * Ustawia, czy starter mapuje wyjątki na {@code application/problem+json}.
+   *
+   * @param enabled {@code false} oddaje obsługę błędów Spring Bootowi
+   */
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
 
+  /**
+   * Czy odpowiedź kopiuje {@code detail} do pola {@code message} najwyższego poziomu.
+   *
+   * @return {@code true}, gdy pole jest obecne; domyślnie {@code true} w całej linii 1.x
+   */
   public boolean isLegacyMessage() {
     return legacyMessage;
   }
 
+  /**
+   * Ustawia, czy odpowiedź kopiuje {@code detail} do pola {@code message} najwyższego poziomu.
+   *
+   * @param legacyMessage {@code false} usuwa pole, gdy żaden klient już go nie czyta
+   */
   public void setLegacyMessage(boolean legacyMessage) {
     this.legacyMessage = legacyMessage;
   }

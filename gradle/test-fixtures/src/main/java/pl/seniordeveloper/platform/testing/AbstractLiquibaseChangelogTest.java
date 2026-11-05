@@ -51,7 +51,11 @@ public abstract class AbstractLiquibaseChangelogTest {
   private static final String CHANGES = "db/changelog/changes/";
   private static final Pattern DEPLOY_NAME = Pattern.compile("(\\d{4})-[a-z0-9-]+\\.ya?ml");
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractLiquibaseChangelogTest() {}
+
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /** Sprawdza, że master changelog leży na classpath i parsuje się razem z plikami z include. */
   @Test
   @DisplayName(
       "The Liquibase master changelog exists on the classpath and parses with its includes")
@@ -59,6 +63,11 @@ public abstract class AbstractLiquibaseChangelogTest {
     verifyMasterChangelog(MASTER_CHANGELOG, getClass().getClassLoader());
   }
 
+  /**
+   * Sprawdza kontrakt nazw {@code db/changelog/changes/} z {@code deploy.yml}.
+   *
+   * @throws IOException gdy nie da się odczytać plików changelogu
+   */
   @Test
   @DisplayName(
       "Every file in db/changelog/changes is named NNNN-<slug>.yaml with a unique prefix and reaches the"

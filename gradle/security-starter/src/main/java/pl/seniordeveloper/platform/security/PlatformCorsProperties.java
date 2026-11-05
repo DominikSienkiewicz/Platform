@@ -23,34 +23,78 @@ public class PlatformCorsProperties {
   /** Whether the browser may send credentials, such as cookies, with a cross-origin request. */
   private boolean allowCredentials = true;
 
+  /** Tworzy właściwości z wartościami domyślnymi; Boot wiąże je przez settery. */
+  public PlatformCorsProperties() {}
+
+  /**
+   * Dozwolone originy.
+   *
+   * @return originy z {@code platform.cors.allowed-origins}; domyślnie pusta lista
+   */
   public List<String> getAllowedOrigins() {
     return allowedOrigins;
   }
 
+  /**
+   * Ustawia dozwolone originy.
+   *
+   * @param allowedOrigins originy, dla których Platform rejestruje konfigurację CORS
+   */
   public void setAllowedOrigins(List<String> allowedOrigins) {
     this.allowedOrigins = allowedOrigins;
   }
 
+  /**
+   * Dozwolone metody HTTP.
+   *
+   * @return metody; domyślnie GET, POST, PUT, PATCH, DELETE i OPTIONS
+   */
   public List<String> getAllowedMethods() {
     return allowedMethods;
   }
 
+  /**
+   * Ustawia dozwolone metody HTTP.
+   *
+   * @param allowedMethods metody dopuszczone w żądaniach cross-origin
+   */
   public void setAllowedMethods(List<String> allowedMethods) {
     this.allowedMethods = allowedMethods;
   }
 
+  /**
+   * Dozwolone nagłówki żądania.
+   *
+   * @return nagłówki; domyślnie {@code *}
+   */
   public List<String> getAllowedHeaders() {
     return allowedHeaders;
   }
 
+  /**
+   * Ustawia dozwolone nagłówki żądania.
+   *
+   * @param allowedHeaders nagłówki dopuszczone w żądaniach cross-origin
+   */
   public void setAllowedHeaders(List<String> allowedHeaders) {
     this.allowedHeaders = allowedHeaders;
   }
 
+  /**
+   * Czy przeglądarka może wysłać poświadczenia, np. ciasteczka, w żądaniu cross-origin.
+   *
+   * @return {@code true}, gdy poświadczenia są dozwolone; domyślnie {@code true}
+   */
   public boolean isAllowCredentials() {
     return allowCredentials;
   }
 
+  /**
+   * Ustawia, czy przeglądarka może wysłać poświadczenia w żądaniu cross-origin.
+   *
+   * @param allowCredentials {@code true} dopuszcza poświadczenia; origin {@code *} wyklucza tę
+   *     wartość i wywala start aplikacji
+   */
   public void setAllowCredentials(boolean allowCredentials) {
     this.allowCredentials = allowCredentials;
   }

@@ -52,8 +52,17 @@ public abstract class AbstractEventPublicationRegistryIT {
   private static final PublicationTargetIdentifier PROBE_LISTENER =
       PublicationTargetIdentifier.of("platform.event-publication-registry-probe");
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractEventPublicationRegistryIT() {}
+
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   // Zdarzenie-sonda to String, który serializer zdarzeń Moduliths zapisuje bez konfiguracji.
+  /**
+   * Zapisuje publikację przez rejestr, kończy ją i sprawdza, że przestała być niezakończona.
+   *
+   * @param repository rejestr publikacji aplikacji, JDBC albo JPA
+   * @param transactionManager menedżer, w którego transakcjach biegnie każde wywołanie rejestru
+   */
   @Test
   @DisplayName("The event publication registry stores a publication and completes it")
   protected void theRegistryStoresAndCompletesAPublication(

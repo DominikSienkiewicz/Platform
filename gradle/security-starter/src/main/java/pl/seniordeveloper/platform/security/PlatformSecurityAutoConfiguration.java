@@ -50,6 +50,20 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableConfigurationProperties({PlatformSecurityProperties.class, PlatformCorsProperties.class})
 public class PlatformSecurityAutoConfiguration {
 
+  /** Tworzona przez Spring Boota z listy auto-konfiguracji startera. */
+  public PlatformSecurityAutoConfiguration() {}
+
+  /**
+   * Łańcuch sterowany {@code platform.security.*}; własny bean konsumenta go zastępuje.
+   *
+   * @param http builder łańcucha od Spring Security
+   * @param props tryb, CSRF, sesja i przepuszczone ścieżki
+   * @param beanFactory beany aplikacji sprawdzane przy konfiguracji CORS i trybu JWT
+   * @param context kontekst, którego classloader sprawdza zależność resource servera w trybie JWT
+   * @param corsSources źródło CORS na wypadek, gdy aplikacja nie ma dokładnie jednego jawnego
+   * @return zbudowany łańcuch
+   * @throws IllegalStateException w trybie JWT bez zależności resource servera na classpath
+   */
   @Bean
   @ConditionalOnMissingBean
   public SecurityFilterChain platformSecurityFilterChain(
@@ -141,6 +155,14 @@ public class PlatformSecurityAutoConfiguration {
     }
   }
 
+  /**
+   * Źródło CORS z {@code platform.cors.*}, rejestrowane tylko z ustawionymi {@code
+   * allowed-origins}.
+   *
+   * @param cors właściwości CORS
+   * @return źródło z jedną konfiguracją dla każdej ścieżki
+   * @throws IllegalArgumentException przy originie {@code *} razem z {@code allow-credentials}
+   */
   @Bean
   @ConditionalOnMissingBean(
       value = CorsConfigurationSource.class,

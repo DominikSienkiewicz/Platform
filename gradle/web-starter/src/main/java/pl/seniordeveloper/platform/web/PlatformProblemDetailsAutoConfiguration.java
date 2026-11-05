@@ -27,6 +27,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @EnableConfigurationProperties(PlatformProblemDetailsProperties.class)
 public class PlatformProblemDetailsAutoConfiguration {
 
+  /** Tworzona przez Spring Boota z listy auto-konfiguracji startera. */
+  public PlatformProblemDetailsAutoConfiguration() {}
+
   /**
    * Handler kontraktu błędów.
    *

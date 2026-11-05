@@ -24,6 +24,9 @@ import org.springframework.modulith.docs.Documenter;
  */
 public abstract class AbstractModulithDocumentationTest {
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractModulithDocumentationTest() {}
+
   /**
    * Klasa główna aplikacji — punkt startu skanu modułów.
    *
@@ -50,6 +53,7 @@ public abstract class AbstractModulithDocumentationTest {
   }
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /** Zapisuje diagramy i kanwy modułów do {@link #outputFolder()}. */
   @Test
   @DisplayName("Spring Modulith writes the module diagrams and canvases")
   protected void writesModuleDocumentation() {

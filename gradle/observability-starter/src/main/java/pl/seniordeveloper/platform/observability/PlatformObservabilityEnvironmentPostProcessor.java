@@ -26,6 +26,9 @@ public class PlatformObservabilityEnvironmentPostProcessor
 
   static final String PROPERTY_SOURCE = "platformObservabilityDefaults";
 
+  /** Tworzony przez Spring Boota podczas przygotowania środowiska aplikacji. */
+  public PlatformObservabilityEnvironmentPostProcessor() {}
+
   @Override
   public void postProcessEnvironment(
       ConfigurableEnvironment environment, SpringApplication application) {

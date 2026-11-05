@@ -30,8 +30,17 @@ import org.springframework.core.env.Environment;
 @Import(PlatformSharedPostgresContainer.class)
 public abstract class AbstractSchemaValidationIT {
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractSchemaValidationIT() {}
+
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   // Environment przez parametr metody (SpringExtension), bez pola, którego podklasa nie potrzebuje.
+  /**
+   * Pilnuje, że kontekst wystartował z {@code ddl-auto=validate}; samo porównanie schematu z
+   * encjami robi Hibernate przy starcie kontekstu.
+   *
+   * @param environment środowisko kontekstu testu
+   */
   @Test
   @DisplayName(
       "The migrations create the schema every JPA entity expects, Spring Modulith's included")
