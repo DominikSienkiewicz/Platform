@@ -51,7 +51,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class PlatformSecurityAutoConfiguration {
 
   /** Tworzona przez Spring Boota z listy auto-konfiguracji startera. */
-  public PlatformSecurityAutoConfiguration() {}
+  public PlatformSecurityAutoConfiguration() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   /**
    * Łańcuch sterowany {@code platform.security.*}; własny bean konsumenta go zastępuje.

@@ -18,6 +18,13 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- The `sonar` job in `ci.yml` is green again. The explicit constructors added for the complete Javadoc were empty,
+  which `java:S1186` counts as debt, and four of them failed the quality gate of `platform-security-starter`. All
+  seven in the two analysed modules now say why they are empty; `templates/tests/sonar-empty-constructors.test.sh`
+  keeps it that way. Comments only, so no consumer is affected.
+
 ## [1.8.10] - 2026-11-05
 
 ### Consumer action required

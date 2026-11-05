@@ -69,7 +69,9 @@ public class PlatformSecurityProperties {
   private final Jwt jwt = new Jwt();
 
   /** Tworzy właściwości z bezpiecznymi wartościami domyślnymi; Boot wiąże je przez settery. */
-  public PlatformSecurityProperties() {}
+  public PlatformSecurityProperties() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   /** Ustawienia trybu JWT; dekoder i issuer zostają we właściwościach Boota. */
   public static class Jwt {
@@ -81,7 +83,9 @@ public class PlatformSecurityProperties {
     private String authoritiesClaim;
 
     /** Tworzy ustawienia bez własnego claimu: uprawnienia pochodzą ze scope i scp. */
-    public Jwt() {}
+    public Jwt() {
+      // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+    }
 
     /**
      * Claim z uprawnieniami.

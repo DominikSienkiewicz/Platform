@@ -17,7 +17,9 @@ import org.testcontainers.utility.DockerImageName;
 public class PlatformOllamaContainer {
 
   /** Tworzona przez Springa po {@code @Import}. */
-  public PlatformOllamaContainer() {}
+  public PlatformOllamaContainer() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   /**
    * Kontener Ollamy z obrazu {@link PlatformImages#OLLAMA}, podłączony przez service connection.

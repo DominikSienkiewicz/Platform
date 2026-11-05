@@ -24,7 +24,9 @@ public class PlatformCorsProperties {
   private boolean allowCredentials = true;
 
   /** Tworzy właściwości z wartościami domyślnymi; Boot wiąże je przez settery. */
-  public PlatformCorsProperties() {}
+  public PlatformCorsProperties() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   /**
    * Dozwolone originy.
