@@ -81,6 +81,10 @@ on:
         description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
         type: string
         default: "v1"
+      ssh-deploy:
+        description: "Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required."
+        type: boolean
+        default: true
       rollback-to-backend:
         description: "Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
         type: string
@@ -89,6 +93,13 @@ on:
         description: "Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
         type: string
         default: ""
+    outputs:
+      backend-tag:
+        description: "Tag of the backend image: the version of the checkout, or rollback-to-backend."
+        value: ${{ jobs.versions.outputs.backend }}
+      frontend-tag:
+        description: "Tag of the frontend image: the version of the checkout, or rollback-to-frontend."
+        value: ${{ jobs.versions.outputs.frontend }}
     # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
     # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
     secrets:
@@ -142,18 +153,24 @@ jobs:
           NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
           GHCR_OWNER: ${{ vars.GHCR_OWNER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          SSH_DEPLOY: ${{ inputs.ssh-deploy }}
         # SSH_* żyją w environmencie production, którego ten job nie widzi — sprawdza je pierwszy krok joba deploy.
+        # Bez wdrożenia SSH (ssh-deploy: false) DEPLOY_PATH nie jest potrzebny.
         run: |
+          # >>> preflight
           set -euo pipefail
+          required=(GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER)
+          if [ "$SSH_DEPLOY" = "true" ]; then required+=(DEPLOY_PATH); fi
           missing=()
-          for v in GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER DEPLOY_PATH; do
-            [ -z "${!v}" ] && missing+=("$v")
+          for v in "${required[@]}"; do
+            [ -n "${!v:-}" ] || missing+=("$v")
           done
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Missing secrets or variables: ${missing[*]}. Set them with templates/setup-gh-deploy.sh (docs/reusable-workflows.md, deploy.yml)."
             exit 1
           fi
           echo "Preflight OK."
+          # <<< preflight
 
   # ---- Wersje warstw = source of truth dla tagów obrazów ----
   versions:
@@ -418,7 +435,8 @@ jobs:
   deploy:
     needs: [versions, build-push]
     # Rollback pomija build-push, więc deploy biegnie także po pominiętym buildzie, ale nie po porażce.
-    if: ${{ !cancelled() && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
+    # ssh-deploy: false (promote.yml) pomija deploy w całości.
+    if: ${{ !cancelled() && inputs.ssh-deploy && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.deploy-timeout-minutes }}
     permissions:

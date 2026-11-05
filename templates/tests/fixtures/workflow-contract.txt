@@ -40,6 +40,7 @@ deploy.yml input scan-severity type=string default=high
 deploy.yml input compose-file type=string default="docker-compose.prod.yml"
 deploy.yml input base-env type=string default=""
 deploy.yml input platform-ref type=string default="v1"
+deploy.yml input ssh-deploy type=boolean default=true
 deploy.yml input rollback-to-backend type=string default=""
 deploy.yml input rollback-to-frontend type=string default=""
 deploy.yml secret GPR_USER required=false
@@ -79,6 +80,23 @@ platform-bump.yml job bump permissions contents: read
 platform-bump.yml job bump permissions packages: read
 platform-bump.yml job pull-request permissions contents: write
 platform-bump.yml job pull-request permissions pull-requests: write
+promote.yml input app-name type=string required=true
+promote.yml input infra-repository type=string required=true
+promote.yml input values-dir type=string required=true
+promote.yml input promote-app-id type=string required=true
+promote.yml input platform-ref type=string default="v1"
+promote.yml input build-timeout-minutes type=number default=30
+promote.yml input promote-timeout-minutes type=number default=5
+promote.yml secret GPR_USER required=false
+promote.yml secret GPR_KEY required=false
+promote.yml secret NPM_GH_TOKEN required=false
+promote.yml secret SNYK_TOKEN required=false
+promote.yml secret PROMOTE_APP_KEY required=true
+promote.yml permissions contents: read
+promote.yml job preflight permissions {}
+promote.yml job build permissions contents: read
+promote.yml job build permissions packages: write
+promote.yml job promote permissions contents: read
 roadmap-unblock.yml input timeout-minutes type=number default=5
 roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false
 roadmap-unblock.yml permissions contents: read

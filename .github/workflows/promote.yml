@@ -1,0 +1,173 @@
+name: Promote images (reusable)
+
+# Promocja zamiast wdrożenia SSH, dla klastra zarządzanego przez Argo CD (ADR-0035):
+#   1. build — deploy.yml z ssh-deploy: false buduje i skanuje obrazy backendu i frontendu oraz wypycha je do GHCR;
+#      budowanie zostaje w jednym miejscu, a konsumenci SSH nie zmieniają zachowania,
+#   2. promote — commit z nowymi tagami do values-backend.yaml i values-frontend.yaml w repozytorium GitOps
+#      (scripts/promote-image.sh), tokenem GitHub App z zapisem `contents` tylko do tego jednego repo.
+# Wdraża dopiero Argo CD, który widzi commit. Wycofanie to revert tego commitu; wejść rollbacku tu nie ma.
+#
+# Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md.
+# Caller nadaje `contents: read` i `packages: write` (job build wypycha obrazy).
+#
+# Bez własnego `concurrency`: deploy.yml ma grupę deploy-<app>, a ta sama grupa na obu poziomach zablokowałaby run.
+# Bez wejść Javy: build idzie na domyślnych deploy.yml, a PlatformToolVersionMirrorTest pilnuje dokładnej listy wejść JDK.
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Image name prefix, e.g. myapp for the images myapp-backend and myapp-frontend."
+        type: string
+        required: true
+      infra-repository:
+        description: "GitOps repository that holds the values files, as owner/name. The App token is limited to it."
+        type: string
+        required: true
+      values-dir:
+        description: "Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, relative to its root."
+        type: string
+        required: true
+      promote-app-id:
+        description: "The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository."
+        type: string
+        required: true
+      platform-ref:
+        description: "Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:."
+        type: string
+        default: "v1"
+      build-timeout-minutes:
+        description: "Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360."
+        type: number
+        default: 30
+      promote-timeout-minutes:
+        description: "Minutes before the promote job is cancelled; GitHub's default is 360."
+        type: number
+        default: 5
+    secrets:
+      GPR_USER:
+        description: "GitHub user owning GPR_KEY; the bootJar build resolves Platform's Gradle packages with them."
+        required: false
+      GPR_KEY:
+        description: "Classic PAT with read:packages for Platform's Gradle packages in the bootJar build."
+        required: false
+      NPM_GH_TOKEN:
+        description: "Classic PAT with read:packages, passed to the frontend image build as a BuildKit secret."
+        required: false
+      SNYK_TOKEN:
+        description: "Snyk token for the advisory image scan. Without it the Snyk steps are skipped; Grype stays the gate."
+        required: false
+      PROMOTE_APP_KEY:
+        description: "Private key of the GitHub App named by promote-app-id. Used only to mint a short-lived token for the promote job."
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- Fail-fast: ustawienia promocji sprawdzamy ZANIM ruszy build, a nie przy tokenie po pełnym buildzie ----
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check the promotion settings
+        env:
+          PROMOTE_APP_ID: ${{ inputs.promote-app-id }}
+          PROMOTE_APP_KEY: ${{ secrets.PROMOTE_APP_KEY }}
+        # Klucz App jest tylko sprawdzany pod kątem pustki; jego wartość nigdy nie trafia do wyjścia.
+        run: |
+          # >>> promote-preflight
+          set -euo pipefail
+          missing=()
+          for v in PROMOTE_APP_ID PROMOTE_APP_KEY; do
+            [ -n "${!v:-}" ] || missing+=("$v")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing promotion settings: ${missing[*]}. Set the variable PROMOTE_APP_ID and the secret PROMOTE_APP_KEY in the calling repository (docs/reusable-workflows.md, promote.yml)."
+            exit 1
+          fi
+          echo "Promote preflight OK."
+          # <<< promote-preflight
+        shell: bash
+
+  # ---- Budowanie i skan obrazów: ta sama ścieżka co przy SSH, bez kroku SSH ----
+  build:
+    needs: preflight
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      app-name: ${{ inputs.app-name }}
+      ssh-deploy: false
+      scan-images: true
+      has-migrate: false
+      platform-ref: ${{ inputs.platform-ref }}
+      build-timeout-minutes: ${{ inputs.build-timeout-minutes }}
+    secrets:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY: ${{ secrets.GPR_KEY }}
+      NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+  # ---- Commit tagów do repozytorium GitOps ----
+  promote:
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.promote-timeout-minutes }}
+    # Token workflow nie pisze; zapis do repo GitOps idzie tokenem App.
+    permissions:
+      contents: read
+    env:
+      INFRA_REPOSITORY: ${{ inputs.infra-repository }}
+      APP_NAME: ${{ inputs.app-name }}
+      VALUES_DIR: ${{ inputs.values-dir }}
+      BACKEND_TAG: ${{ needs.build.outputs.backend-tag }}
+      FRONTEND_TAG: ${{ needs.build.outputs.frontend-tag }}
+    steps:
+      - name: Split infra-repository into owner and name
+        id: repo
+        run: |
+          set -euo pipefail
+          if [[ ! "$INFRA_REPOSITORY" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "::error::infra-repository must be owner/name, got '$INFRA_REPOSITORY'."
+            exit 1
+          fi
+          { echo "owner=${INFRA_REPOSITORY%%/*}"; echo "name=${INFRA_REPOSITORY#*/}"; } >> "$GITHUB_OUTPUT"
+
+      # Token na jedno repo i samo `contents: write`; unieważniany po zakończeniu joba.
+      - name: Mint the GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ inputs.promote-app-id }}
+          private-key: ${{ secrets.PROMOTE_APP_KEY }}
+          owner: ${{ steps.repo.outputs.owner }}
+          repositories: ${{ steps.repo.outputs.name }}
+          permission-contents: write
+
+      # Domyślna gałąź repo GitOps, z zachowanym tokenem: skrypt sam commituje i pushuje do wyewidencjonowanej gałęzi.
+      - name: Check out the GitOps repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: ${{ inputs.infra-repository }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      # Platform jest publiczny: checkout bez tokenu, więc token App nie ląduje w _platform/.git/config.
+      - name: Fetch promote-image.sh from Platform
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          repository: DominikSienkiewicz/Platform
+          ref: ${{ inputs.platform-ref }}
+          path: _platform
+          persist-credentials: false
+
+      - name: Commit the new image tags
+        run: |
+          set -euo pipefail
+          bash _platform/scripts/promote-image.sh \
+            "chore: promote $APP_NAME to backend $BACKEND_TAG, frontend $FRONTEND_TAG" \
+            "$VALUES_DIR/values-backend.yaml=$BACKEND_TAG" \
+            "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"

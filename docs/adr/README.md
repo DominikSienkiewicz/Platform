@@ -68,3 +68,4 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0032](0032-nullness-checking-is-opt-in.md) | Nullness checking is opt-in | Accepted |
 | [0033](0033-prometheus-is-opt-in.md) | Prometheus is opt-in in the observability starter | Accepted |
 | [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md) | One JDK 27 runs Gradle, compiles build-logic and is the consumer toolchain | Accepted |
+| [0035](0035-promotion-by-commit-for-argo-cd.md) | Promotion by commit replaces SSH deploy for a cluster managed by Argo CD | Accepted |
