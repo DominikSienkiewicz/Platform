@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 11 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 12 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -483,6 +483,10 @@ package access, which the deploy does not wait for.
   given tag; an empty one keeps the version of the checkout. Wire them to `workflow_dispatch` inputs of
   the caller. The migrate tag follows the backend, so a rollback runs the older changelog, which finds
   nothing pending.
+- No SSH: `ssh-deploy: false` builds, scans and pushes the images and skips the `deploy` job; the
+  preflight then does not require `DEPLOY_PATH`, and the SSH secrets are not read. The default `true`
+  keeps the behaviour above. The `backend-tag` and `frontend-tag` outputs carry the pushed tags;
+  [`promote.yml`](#promoteyml) uses them.
 - Rollback on the host: `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
   before it replaces a layer. When the new backend, or a frontend whose compose service defines a
   healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
@@ -527,7 +531,74 @@ Inputs:
 | `compose-file` | string | `docker-compose.prod.yml` | Compose file name in compose-dir. |
 | `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
 | `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
+| `ssh-deploy` | boolean | `true` | Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required. |
 | `rollback-to-backend` | string | empty | Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
 | `rollback-to-frontend` | string | empty | Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
 <!-- /docs-gen -->
 
+## promote.yml
+
+Promotes the images of an application to a GitOps repository instead of deploying them over SSH, for a
+cluster that Argo CD keeps in sync with that repository
+([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). The `build` job calls `deploy.yml` with
+`ssh-deploy: false`, `scan-images: true` and `has-migrate: false`, so the images are built, scanned and pushed
+as before. The `promote` job then mints a GitHub App token and runs
+[`scripts/promote-image.sh`](../scripts/promote-image.sh), which sets `image.tag` in `values-backend.yaml`
+and `values-frontend.yaml` under `values-dir`, commits and pushes to the default branch. Argo CD deploys the
+commit; the workflow does not wait for it and runs no smoke test.
+
+- Permissions: `contents: read`, `packages: write` (the `build` job pushes to GHCR). The `promote` job
+  needs only `contents: read`; it writes with the App token.
+- Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, as for `deploy.yml`, and
+  `PROMOTE_APP_KEY`, the private key of the GitHub App, which is required. Pass them explicitly: a called
+  workflow gets nothing else, and `secrets: inherit` would hand over every secret of the repository.
+- Variables: `GHCR_OWNER`, as for `deploy.yml`. `DEPLOY_PATH` and the SSH secrets are not used.
+- GitHub App: install it on the GitOps repository only, with the repository permission **Contents: Read and
+  write** and nothing else. The workflow asks for a token on that one repository with `contents: write`, so
+  the App cannot reach any other repository, and the token is revoked when the job ends. Pass the App's
+  Client ID as `promote-app-id`.
+- Inputs: [promote.yml](../.github/workflows/promote.yml); `app-name`, `infra-repository`, `values-dir` and
+  `promote-app-id` are required. Set `platform-ref` to the tag in `uses:`, so that `promote-image.sh` comes
+  from the same release as the workflow.
+- Branch: the key of the App is a secret of the calling repository, not of an environment, so any workflow
+  that can read repository secrets can promote. Run the caller only from the release branch, for example
+  with `if: github.ref == 'refs/heads/release'` on the job, and protect that branch.
+- No rollback inputs: roll back by reverting the promotion commit in the GitOps repository.
+- No `concurrency` of its own: `deploy.yml` serializes builds per application, and the script retries a
+  push that another promotion beat, so two releases at once both end up in the repository.
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/release'
+    uses: DominikSienkiewicz/Platform/.github/workflows/promote.yml@vX.Y.Z
+    with:
+      app-name: myapp
+      infra-repository: <owner>/<gitops-repo>
+      values-dir: clusters/prod/myapp
+      promote-app-id: ${{ vars.PROMOTE_APP_ID }}
+      platform-ref: vX.Y.Z
+    secrets:
+      GPR_USER: ${{ secrets.GPR_USER }}
+      GPR_KEY: ${{ secrets.GPR_KEY }}
+      NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      PROMOTE_APP_KEY: ${{ secrets.PROMOTE_APP_KEY }}
+```
+
+Inputs:
+
+<!-- docs-gen:inputs promote.yml -->
+| Input | Type | Default | Description |
+|---|---|---|---|
+| `app-name` | string | required | Image name prefix, e.g. myapp; the images are <app-name>-backend and <app-name>-frontend. |
+| `infra-repository` | string | required | GitOps repository that holds the values files, as owner/name. The App token is limited to it. |
+| `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, relative to its root. |
+| `promote-app-id` | string | required | Client ID of the GitHub App that may write contents to infra-repository. |
+| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
+| `build-timeout-minutes` | number | `30` | Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360. |
+| `promote-timeout-minutes` | number | `5` | Minutes before the promote job is cancelled; GitHub's default is 360. |
+<!-- /docs-gen -->
