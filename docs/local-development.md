@@ -84,7 +84,8 @@ publishes into it once); checks the consumer's `HEAD` out in a throwaway worktre
 (`<consumer>/.worktrees/platform-preview-<commit>`); rewrites its pins there with the same rules as
 `platform-bump`; and runs Gradle with `-PplatformRepository`, an init script that adds the repository to
 `pluginManagement` (so consumers that do not read `platformRepository` there work too), `--write-locks`
-and `--dependency-verification=lenient`, which are acceptable only in that throwaway worktree. The
+and `--dependency-verification=off`, which are acceptable only in that throwaway worktree: the consumer's
+metadata cannot hold the checksums of a canary version, and a real `platform-bump` regenerates them. The
 default tasks are `compileJava compileTestJava platformDependencyCheck`. The consumer's own checkout is
 never touched, and the worktree is removed afterwards unless `--keep` is passed. `--frontend` also
 checks the consumer's `frontend/`: it applies the canon of the working tree with

@@ -52,7 +52,7 @@ for module in $modules; do
 done
 consumer_call=$(grep -F "platform-preview-$sha/backend |" "$FAKE_LOG") || { cat "$FAKE_LOG"; fail 'Gradle must run in the backend of the preview worktree'; }
 for argument in '--init-script' 'compileJava compileTestJava platformDependencyCheck' '-PplatformRepository=file://' \
-  '--write-locks' '--dependency-verification=lenient'; do
+  '--write-locks' '--dependency-verification=off'; do
   grep -qF -- "$argument" <<<"$consumer_call" || fail "the consumer run must pass $argument"
 done
 grep -qF "id(\"seniordev.settings-conventions\") version \"$preview\"" "$FAKE_SEEN" || fail 'the settings plugin pin must be rewritten'
