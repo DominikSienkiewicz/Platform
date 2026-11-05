@@ -8,7 +8,8 @@
 #      .git/info/exclude); główny checkout konsumenta zostaje nietknięty;
 #   4. piny przepisane tym samym blokiem co platform-bump (marker platform-bump:backend-pins) i platformVersion=;
 #   5. Gradle z -PplatformRepository, skryptem init dla pluginManagement (konsumenci, którzy go nie czytają),
-#      --write-locks i --dependency-verification=lenient — dopuszczalne tylko w tym jednorazowym worktree.
+#      --write-locks i --dependency-verification=off — dopuszczalne tylko w tym jednorazowym worktree: sum wersji
+#      -canary z definicji nie ma w metadanych konsumenta, a prawdziwy platform-bump je regeneruje.
 # Domyślne zadania to szybki pas: compileJava compileTestJava platformDependencyCheck. --frontend dokłada frontend
 # konsumenta: kanon z drzewa roboczego nakładany przez platform-versions-check --fix, potem sam check — zostaje to,
 # czego bump by nie naprawił (zależność bez wpisu w kanonie). Worktree znika na końcu, chyba że --keep.
@@ -100,7 +101,7 @@ read -r -a task_list <<<"$tasks"
 echo "==> ${consumer##*/} on Platform $preview: ${task_list[*]}"
 status=0
 (cd "$gradle_dir" && "$gradlew" --no-daemon --init-script "$init_script" "${task_list[@]}" \
-  -PplatformRepository="file://$staging" --write-locks --dependency-verification=lenient) || status=$?
+  -PplatformRepository="file://$staging" --write-locks --dependency-verification=off) || status=$?
 
 if [[ $status -eq 0 ]]; then
   echo "==> ${consumer##*/} passes ${task_list[*]} on Platform $preview."

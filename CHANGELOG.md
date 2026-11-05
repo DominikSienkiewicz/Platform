@@ -18,6 +18,10 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
 ### Fixed
 
 - The `tracing` feature of `platform-observability-starter` has its own source set and jar. Gradle 10 rejects a
@@ -26,6 +30,9 @@ before any artifact went out, so use 1.8.0, which replaces both.
 - The Javadoc of `platform-test-fixtures` and of the security, observability and web starters is complete, and a
   Javadoc warning now fails the build of these modules. The abstract test bases declare a `protected` constructor
   instead of the implicit public one, which changes nothing for a subclass.
+- `scripts/preview-on-consumer.sh`, and so `scripts/canary.sh`, runs the consumer with dependency verification off
+  instead of lenient. Lenient never failed the preview either: it only logged every canary artifact, whose checksums
+  the consumer's metadata cannot hold. The verification of a real bump does not change.
 
 ## [1.8.9] - 2026-11-05
 
