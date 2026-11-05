@@ -574,6 +574,11 @@ commit; the workflow does not wait for it and runs no smoke test.
   nested call.
 - Preflight: the `preflight` job fails first, before anything is built, when `promote-app-id` or the secret
   `PROMOTE_APP_KEY` is empty; it names the missing setting and never prints the key. `build` needs it.
+- Pinned `deploy.yml`: `build` calls `deploy.yml` by its full reference at a commit, not with `./`, because GitHub
+  looks a relative reference in a workflow called through an annotated tag up at the tag object and fails at startup
+  with "workflow was not found" ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). So a change to `deploy.yml`
+  reaches `promote.yml` only when that pin moves, in a later release. Version 1.8.9 of `promote.yml` cannot start;
+  use 1.8.10 or later.
 
 ```yaml
 permissions:

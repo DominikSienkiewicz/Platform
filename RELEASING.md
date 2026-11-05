@@ -127,6 +127,10 @@ secret exists (the secret is only reported; its value is yours to set).
    that `git ls-remote --tags` or `git/ref/tags` returns: the runner accepts both, but OpenSSF Scorecard
    rejects a tag object as an imposter commit and does not publish the result. The `action-pins` job of
    `ci.yml` runs `scripts/check-action-pins.sh`, which fails on such a pin and names the commit to use.
+   `promote.yml` pins `deploy.yml` the same way ([ADR-0035](docs/adr/0035-promotion-by-commit-for-argo-cd.md)),
+   so a change to `deploy.yml` reaches a promotion only when that pin moves. Run
+   `git diff <pinned-sha> HEAD -- .github/workflows/deploy.yml`; if the change matters to a promotion, move the pin
+   to the latest release that has it.
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
    (`--lag` adds how many releases and days each consumer is behind, whether it pins a yanked release
    and how many `@v1` references it keeps; `--adoption` compares each artifact's *incubating* label in

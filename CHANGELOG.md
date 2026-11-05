@@ -18,12 +18,17 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.10] - 2026-11-05
+
 ### Consumer action required
 
 None.
 
 ### Fixed
 
+- `promote.yml` starts when a caller pins it to a release. It called `deploy.yml` with `./`, which GitHub looks up at
+  the object of an annotated tag instead of its commit, so every run at 1.8.9 failed at startup with "workflow was not
+  found". It now calls `deploy.yml` by its full reference at a commit. Nothing else changes for a caller.
 - The `tracing` feature of `platform-observability-starter` has its own source set and jar. Gradle 10 rejects a
   feature on the main source set, which also published the main jar a second time. The documented form, the starter
   and the feature declared together, works as before; a build that declared only the feature adds the starter.

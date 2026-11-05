@@ -32,12 +32,21 @@ would bypass the one place that records what runs. The consumers that still depl
   is why the caller must run it only from the release branch.
 - There is no smoke test after the promotion: the runner cannot reach the cluster. Alerts and a manual check
   take its place.
-- The build runs in a nested reusable workflow. GitHub documents the nesting depth and the explicit secrets, but
-  not which commit `./` resolves to in a nested call; the first real run confirms it. Nothing is committed when
-  the build fails. The App token and the push run in the own job of `promote.yml`, not in the nested call.
+- The build runs in a nested reusable workflow, called by its full reference at a commit. Version 1.8.9 used `./`,
+  and its first real runs failed at startup with "workflow was not found": when a caller pins an annotated tag,
+  GitHub looks a relative reference up at the tag object instead of its commit
+  ([reported bug, no date for a fix](https://github.com/orgs/community/discussions/206746)). Platform's tags are
+  annotated because they carry the changelog ([ADR-0002](0002-release-and-versioning-contract.md)).
+- A change to `deploy.yml` reaches `promote.yml` only when that pin moves, in a later release; `RELEASING.md` has the
+  step.
+- Nothing is committed when the build fails. The App token and the push run in the own job of `promote.yml`, not in
+  the nested call.
 
 ## Revisit when
 
 The build moves out of `deploy.yml` into a workflow of its own that both `deploy.yml` and `promote.yml` call.
 That is future work: it would change the SSH path, which has no tests that execute it, and would require
 rewriting the tests that pin `deploy.yml`. Until then `promote.yml` wraps `deploy.yml`.
+
+GitHub resolves a relative reference at the commit of an annotated tag. `promote.yml` can then return to `./`, and the
+pin goes.
