@@ -93,6 +93,7 @@ promote.yml secret NPM_GH_TOKEN required=false
 promote.yml secret SNYK_TOKEN required=false
 promote.yml secret PROMOTE_APP_KEY required=true
 promote.yml permissions contents: read
+promote.yml job preflight permissions {}
 promote.yml job build permissions contents: read
 promote.yml job build permissions packages: write
 promote.yml job promote permissions contents: read

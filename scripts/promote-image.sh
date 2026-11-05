@@ -12,6 +12,7 @@ readonly TAG_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'
 readonly MAX_PUSH_ATTEMPTS=3
 
 usage() { echo "usage: promote-image.sh MESSAGE FILE=TAG [FILE=TAG...]" >&2; exit 2; }
+bad_pair() { echo "ERROR: invalid FILE=TAG pair '$1': $2" >&2; usage; }
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 # set_image_tag FILE TAG: wypisuje plik z podmienionym image.tag; wypisuje liczbę trafień do pliku $3.
@@ -43,11 +44,11 @@ shift
 files=()
 tags=()
 for pair in "$@"; do
-  [[ "$pair" == *=* ]] || usage
+  [[ "$pair" == *=* ]] || bad_pair "$pair" "expected FILE=TAG"
   file=${pair%%=*}
   tag=${pair#*=}
-  [[ -n "$file" && "$file" != /* && "$file" != *..* ]] || usage
-  [[ "$tag" =~ $TAG_PATTERN ]] || usage
+  [[ -n "$file" && "$file" != /* && "$file" != *..* ]] || bad_pair "$pair" "FILE must be a relative path without '..'"
+  [[ "$tag" =~ $TAG_PATTERN ]] || bad_pair "$pair" "TAG must match $TAG_PATTERN"
   files+=("$file")
   tags+=("$tag")
 done

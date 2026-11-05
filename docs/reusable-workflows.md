@@ -570,7 +570,10 @@ commit; the workflow does not wait for it and runs no smoke test.
   the same application edit the same `tag:` lines, so the rebase conflicts and the script exits 1, loudly and
   with nothing lost; run the later one again.
 - Timing: `needs: build` waits for every nested job, so the advisory Snyk scan can delay a promotion by up to
-  its time limit, though it cannot block it.
+  its time limit. It is not meant to block one (`continue-on-error`), but that has not yet been observed in a
+  nested call.
+- Preflight: the `preflight` job fails first, before anything is built, when `promote-app-id` or the secret
+  `PROMOTE_APP_KEY` is empty; it names the missing setting and never prints the key. `build` needs it.
 
 ```yaml
 permissions:

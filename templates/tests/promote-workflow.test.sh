@@ -64,6 +64,32 @@ for secret in GPR_USER GPR_KEY NPM_GH_TOKEN SNYK_TOKEN PROMOTE_APP_KEY; do
   grep -qE "^      $secret:$" "$promote" || fail "promote.yml must declare the $secret secret"
 done
 grep -qE '^        default: "v1"$' <(sed -n '/^      platform-ref:$/,/^      [a-z-]*:$/p' "$promote") || fail 'platform-ref must default to v1'
+
+# --- promote.yml: preflight ustawień promocji, zanim ruszy build ---
+promote_preflight_job=$(sed -n '/^  preflight:$/,/^  build:$/p' "$promote")
+[[ -n "$promote_preflight_job" ]] || fail 'promote.yml must have a preflight job before build'
+grep -qE '^    timeout-minutes: [0-9]+$' <<< "$promote_preflight_job" || fail 'the promote preflight job needs a time limit'
+grep -qFx '          PROMOTE_APP_ID: ${{ inputs.promote-app-id }}' <<< "$promote_preflight_job" || fail 'the promote preflight must pass inputs.promote-app-id as PROMOTE_APP_ID in its env:'
+grep -qFx '          PROMOTE_APP_KEY: ${{ secrets.PROMOTE_APP_KEY }}' <<< "$promote_preflight_job" || fail 'the promote preflight must pass secrets.PROMOTE_APP_KEY as PROMOTE_APP_KEY in its env:'
+grep -qE '^    needs: preflight$' <(sed -n '/^  build:$/,/^  promote:$/p' "$promote") || fail 'build must wait for the promote preflight'
+
+awk 'index($0, "# >>> promote-preflight") { inside = 1; next } index($0, "# <<< promote-preflight") { inside = 0 } inside { sub(/^          /, ""); print }' \
+  "$promote" > "$tmp/promote-preflight.sh"
+[[ -s "$tmp/promote-preflight.sh" ]] || fail 'promote.yml has no promote-preflight block between its markers'
+promote_preflight() {
+  (env PROMOTE_APP_ID="$1" PROMOTE_APP_KEY="$2" bash "$tmp/promote-preflight.sh") > "$tmp/out" 2>&1
+}
+promote_preflight id secret-key-value || fail 'the promote preflight must pass when both settings are set'
+promote_preflight '' secret-key-value && fail 'the promote preflight must fail without promote-app-id'
+grep -qF 'PROMOTE_APP_ID' "$tmp/out" || fail 'the promote preflight must name PROMOTE_APP_ID when it is missing'
+promote_preflight id '' && fail 'the promote preflight must fail without PROMOTE_APP_KEY'
+grep -qF 'PROMOTE_APP_KEY' "$tmp/out" || fail 'the promote preflight must name PROMOTE_APP_KEY when it is missing'
+promote_preflight '' '' && fail 'the promote preflight must fail when both are missing'
+promote_preflight id secret-key-value || true
+grep -qF 'secret-key-value' "$tmp/out" && fail 'the promote preflight must not print the key'
+promote_preflight '' secret-key-value || true
+grep -qF 'secret-key-value' "$tmp/out" && fail 'the promote preflight must not print the key on failure'
+
 build_job=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote")
 promote_job=$(sed -n '/^  promote:$/,$p' "$promote")
 [[ "$(grep -cE '^      (contents: read|packages: write)$' <<< "$build_job")" == 2 ]] \

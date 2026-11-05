@@ -79,6 +79,12 @@ for bad in "values-backend.yaml=latest" "values-backend.yaml=" "values-backend.y
   [[ "$(head_of "$work")" == "$base" ]] || fail "'$bad' committed"
   [[ -z "$(git -C "$work" status --porcelain)" ]] || fail "'$bad' left changes"
 done
+# Komunikat o złej parze wskazuje tę parę, a nie tylko składnię wywołania.
+for bad in "values-backend.yaml=latest" "values-backend.yaml" "/etc/values.yaml=1.2.3" "../values-backend.yaml=1.2.3"; do
+  run_promote "chore: promote" values-backend.yaml=1.2.3 "$bad"
+  [[ $rc -eq 2 ]] || fail "'$bad' named check exit $rc, want 2: $out"
+  grep -qF "$bad" <<< "$out" || fail "the message must name the offending pair '$bad': $out"
+done
 run_promote "chore: promote"
 [[ $rc -eq 2 ]] || fail "no pairs exit $rc, want 2"
 run_promote "" values-backend.yaml=1.2.3

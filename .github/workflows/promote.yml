@@ -65,8 +65,35 @@ permissions:
   contents: read
 
 jobs:
+  # ---- Fail-fast: ustawienia promocji sprawdzamy ZANIM ruszy build, a nie przy tokenie po pełnym buildzie ----
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check the promotion settings
+        env:
+          PROMOTE_APP_ID: ${{ inputs.promote-app-id }}
+          PROMOTE_APP_KEY: ${{ secrets.PROMOTE_APP_KEY }}
+        # Klucz App jest tylko sprawdzany pod kątem pustki; jego wartość nigdy nie trafia do wyjścia.
+        run: |
+          # >>> promote-preflight
+          set -euo pipefail
+          missing=()
+          for v in PROMOTE_APP_ID PROMOTE_APP_KEY; do
+            [ -n "${!v:-}" ] || missing+=("$v")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing promotion settings: ${missing[*]}. Set the variable PROMOTE_APP_ID and the secret PROMOTE_APP_KEY in the calling repository (docs/reusable-workflows.md, promote.yml)."
+            exit 1
+          fi
+          echo "Promote preflight OK."
+          # <<< promote-preflight
+        shell: bash
+
   # ---- Budowanie i skan obrazów: ta sama ścieżka co przy SSH, bez kroku SSH ----
   build:
+    needs: preflight
     uses: ./.github/workflows/deploy.yml
     permissions:
       contents: read
