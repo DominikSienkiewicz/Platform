@@ -24,7 +24,16 @@ done
 grep -qF 'value: ${{ jobs.versions.outputs.backend }}' "$deploy" || fail 'backend-tag must come from jobs.versions.outputs.backend'
 grep -qF 'value: ${{ jobs.versions.outputs.frontend }}' "$deploy" || fail 'frontend-tag must come from jobs.versions.outputs.frontend'
 
+deploy_job=$(sed -n '/^  deploy:$/,/^    runs-on:/p' "$deploy")
+grep -qFx "    if: \${{ !cancelled() && inputs.ssh-deploy && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}" <<< "$deploy_job" \
+  || fail 'the deploy job must run exactly when ssh-deploy is true, the versions succeeded and the build succeeded or was skipped'
+[[ "$(grep -cFx '          fail-build: true' "$deploy")" == 2 ]] || fail 'both Grype steps must keep fail-build: true: the scan is the gate of every promotion'
+grep -q 'fail-build: false' "$deploy" && fail 'no Grype step may set fail-build: false'
+
 # --- deploy.yml: preflight ---
+preflight_job=$(sed -n '/^  preflight:$/,/^  versions:$/p' "$deploy")
+grep -qFx '          SSH_DEPLOY: ${{ inputs.ssh-deploy }}' <<< "$preflight_job" || fail 'the preflight step must pass inputs.ssh-deploy as SSH_DEPLOY in its env:'
+
 awk 'index($0, "# >>> preflight") { inside = 1; next } index($0, "# <<< preflight") { inside = 0 } inside { sub(/^          /, ""); print }' \
   "$deploy" > "$tmp/preflight.sh"
 [[ -s "$tmp/preflight.sh" ]] || fail 'deploy.yml has no preflight block between its markers'
@@ -60,7 +69,7 @@ promote_job=$(sed -n '/^  promote:$/,$p' "$promote")
 [[ "$(grep -cE '^      (contents: read|packages: write)$' <<< "$build_job")" == 2 ]] \
   || fail 'the build job needs permissions contents: read and packages: write'
 grep -qE '^    needs: build$' <<< "$promote_job" || fail 'promote must wait for build'
-grep -qE "^    if: .*needs\.build\.result == 'success'" <<< "$promote_job" || fail 'promote must run only when build succeeded'
+grep -qFx "    if: \${{ needs.build.result == 'success' }}" <<< "$promote_job" || fail 'promote must run only when build succeeded, with no other way in'
 grep -qE '^      contents: read$' <<< "$promote_job" || fail 'the promote job needs contents: read'
 grep -qE '^      contents: write' <<< "$promote_job" && fail 'the workflow token of promote must not write; the App token does'
 
@@ -68,6 +77,17 @@ token_pin=$(grep -E 'uses: actions/create-github-app-token@' "$promote" || true)
 [[ "$token_pin" =~ @[0-9a-f]{40}\ \#\ v[0-9]+\.[0-9]+\.[0-9]+ ]] || fail 'the token action must be pinned to a commit SHA with a # vX.Y.Z comment'
 grep -qE '^          repositories: ' "$promote" || fail 'the App token must be limited to one repository'
 grep -qE '^          permission-contents: write$' "$promote" || fail 'the App token must carry only contents: write'
+grep -qFx '      BACKEND_TAG: ${{ needs.build.outputs.backend-tag }}' <<< "$promote_job" || fail 'BACKEND_TAG must be the backend-tag output of build'
+grep -qFx '      FRONTEND_TAG: ${{ needs.build.outputs.frontend-tag }}' <<< "$promote_job" || fail 'FRONTEND_TAG must be the frontend-tag output of build'
+# shellcheck disable=SC1003 # a backslash, not an escaped quote
+continued=$(printf ' \\') # a shell line continuation, spelled once to keep the quoting readable
+grep -qFx "            \"\$VALUES_DIR/values-backend.yaml=\$BACKEND_TAG\"$continued" "$promote" || fail 'values-backend.yaml must get the backend tag'
+grep -qFx '            "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"' "$promote" || fail 'values-frontend.yaml must get the frontend tag'
+grep -qFx "            \"chore: promote \$APP_NAME to backend \$BACKEND_TAG, frontend \$FRONTEND_TAG\"$continued" "$promote" || fail 'the commit message must name both tags'
+target_checkout=$(sed -n '/^      - name: Check out the GitOps repository$/,/^      - name: Fetch promote-image.sh/p' "$promote")
+grep -qFx '          repository: ${{ inputs.infra-repository }}' <<< "$target_checkout" || fail 'the target checkout must take infra-repository'
+grep -qFx '          token: ${{ steps.app-token.outputs.token }}' <<< "$target_checkout" || fail 'the target checkout must use the App token, which the script pushes with'
+grep -q 'persist-credentials' <<< "$target_checkout" && fail 'the target checkout must keep its credentials: the script pushes'
 grep -qE '^          path: _platform$' "$promote" || fail 'the scripts must come from a _platform checkout'
 grep -qE 'persist-credentials: false' <(sed -n '/path: _platform/,/^      - /p' "$promote") || fail 'the _platform checkout must not keep credentials'
 grep -qF 'scripts/promote-image.sh' "$promote" || fail 'promote must run scripts/promote-image.sh'

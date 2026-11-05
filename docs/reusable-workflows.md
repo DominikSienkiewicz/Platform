@@ -552,11 +552,12 @@ commit; the workflow does not wait for it and runs no smoke test.
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, as for `deploy.yml`, and
   `PROMOTE_APP_KEY`, the private key of the GitHub App, which is required. Pass them explicitly: a called
   workflow gets nothing else, and `secrets: inherit` would hand over every secret of the repository.
-- Variables: `GHCR_OWNER`, as for `deploy.yml`. `DEPLOY_PATH` and the SSH secrets are not used.
+- Variables: `GHCR_OWNER`, as for `deploy.yml`, and `PROMOTE_APP_ID`, the App identifier that the snippet below
+  passes as `promote-app-id`. `DEPLOY_PATH` and the SSH secrets are not used.
 - GitHub App: install it on the GitOps repository only, with the repository permission **Contents: Read and
   write** and nothing else. The workflow asks for a token on that one repository with `contents: write`, so
   the App cannot reach any other repository, and the token is revoked when the job ends. Pass the App's
-  Client ID as `promote-app-id`.
+  Client ID (recommended) or App ID as `promote-app-id`.
 - Inputs: [promote.yml](../.github/workflows/promote.yml); `app-name`, `infra-repository`, `values-dir` and
   `promote-app-id` are required. Set `platform-ref` to the tag in `uses:`, so that `promote-image.sh` comes
   from the same release as the workflow.
@@ -564,8 +565,12 @@ commit; the workflow does not wait for it and runs no smoke test.
   that can read repository secrets can promote. Run the caller only from the release branch, for example
   with `if: github.ref == 'refs/heads/release'` on the job, and protect that branch.
 - No rollback inputs: roll back by reverting the promotion commit in the GitOps repository.
-- No `concurrency` of its own: `deploy.yml` serializes builds per application, and the script retries a
-  push that another promotion beat, so two releases at once both end up in the repository.
+- No `concurrency` of its own: `deploy.yml` serializes builds per application. Releases of different
+  applications can promote at once: the script rebases onto the other commit and pushes again. Two promotions of
+  the same application edit the same `tag:` lines, so the rebase conflicts and the script exits 1, loudly and
+  with nothing lost; run the later one again.
+- Timing: `needs: build` waits for every nested job, so the advisory Snyk scan can delay a promotion by up to
+  its time limit, though it cannot block it.
 
 ```yaml
 permissions:
@@ -594,10 +599,10 @@ Inputs:
 <!-- docs-gen:inputs promote.yml -->
 | Input | Type | Default | Description |
 |---|---|---|---|
-| `app-name` | string | required | Image name prefix, e.g. myapp; the images are <app-name>-backend and <app-name>-frontend. |
+| `app-name` | string | required | Image name prefix, e.g. myapp for the images myapp-backend and myapp-frontend. |
 | `infra-repository` | string | required | GitOps repository that holds the values files, as owner/name. The App token is limited to it. |
 | `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, relative to its root. |
-| `promote-app-id` | string | required | Client ID of the GitHub App that may write contents to infra-repository. |
+| `promote-app-id` | string | required | The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository. |
 | `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
 | `build-timeout-minutes` | number | `30` | Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360. |
 | `promote-timeout-minutes` | number | `5` | Minutes before the promote job is cancelled; GitHub's default is 360. |

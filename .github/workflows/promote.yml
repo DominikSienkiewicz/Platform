@@ -17,7 +17,7 @@ on:
   workflow_call:
     inputs:
       app-name:
-        description: "Image name prefix, e.g. myapp; the images are <app-name>-backend and <app-name>-frontend."
+        description: "Image name prefix, e.g. myapp for the images myapp-backend and myapp-frontend."
         type: string
         required: true
       infra-repository:
@@ -29,7 +29,7 @@ on:
         type: string
         required: true
       promote-app-id:
-        description: "Client ID of the GitHub App that may write contents to infra-repository."
+        description: "The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository."
         type: string
         required: true
       platform-ref:

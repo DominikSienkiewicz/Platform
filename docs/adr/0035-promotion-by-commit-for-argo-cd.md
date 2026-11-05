@@ -32,8 +32,9 @@ would bypass the one place that records what runs. The consumers that still depl
   is why the caller must run it only from the release branch.
 - There is no smoke test after the promotion: the runner cannot reach the cluster. Alerts and a manual check
   take its place.
-- The App token and the push happen in a nested reusable workflow. GitHub documents the nesting depth and the
-  explicit secrets, but not which commit `./` resolves to in a nested call; the first real run confirms it.
+- The build runs in a nested reusable workflow. GitHub documents the nesting depth and the explicit secrets, but
+  not which commit `./` resolves to in a nested call; the first real run confirms it. Nothing is committed when
+  the build fails. The App token and the push run in the own job of `promote.yml`, not in the nested call.
 
 ## Revisit when
 

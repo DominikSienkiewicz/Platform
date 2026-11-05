@@ -22,6 +22,14 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 None.
 
+### Added
+
+- `promote.yml`, a reusable workflow that builds and scans the images through `deploy.yml` without SSH and commits
+  the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs
+  ([ADR-0035](docs/adr/0035-promotion-by-commit-for-argo-cd.md)). `deploy.yml` gains the input `ssh-deploy`
+  (default `true`, so SSH callers behave as before) and the outputs `backend-tag` and `frontend-tag`; with
+  `ssh-deploy: false` the preflight does not require `DEPLOY_PATH` and the `deploy` job is skipped.
+
 ### Fixed
 
 - JaCoCo moves from 0.8.15 to 0.8.16 and SpotBugs from 4.10.3 to 4.10.5 so their parsers read Java 28

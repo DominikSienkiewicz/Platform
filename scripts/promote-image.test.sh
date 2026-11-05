@@ -152,4 +152,17 @@ run_promote "chore: promote" values-backend.yaml=4.0.0
 [[ "$(wc -l < "$tmp/hook-runs" | tr -d ' ')" -eq 3 ]] || fail "expected 3 push attempts"
 ! grep -q '^  tag: 4.0.0' <<< "$(git -C "$bare" show main:values-backend.yaml)" || fail "exhausted run still reached bare"
 
+# 8. Płytki klon (checkout w promote.yml ma głębokość 1): wyścig z obcym commitem też zachowuje obie zmiany.
+new_repos plytki
+rm -r -f "$work"
+git clone -q --depth 1 --branch main "file://$bare" "$work" 2> /dev/null
+[[ "$(git -C "$work" rev-parse --is-shallow-repository)" == true ]] || fail "the work copy is not shallow"
+install_race_hook 1
+run_promote "chore: promote" values-backend.yaml=5.0.0
+[[ $rc -eq 0 ]] || fail "shallow race exit $rc: $out"
+grep -q '^  tag: 5.0.0' <<< "$(git -C "$bare" show main:values-backend.yaml)" || fail "shallow race lost the promotion"
+subjects=$(git -C "$bare" log --format=%s main)
+grep -qx "foreign 1" <<< "$subjects" || fail "shallow race lost the foreign commit"
+grep -qx "chore: promote" <<< "$subjects" || fail "shallow race lost the promote commit"
+
 echo "promote-image.test.sh: OK"
