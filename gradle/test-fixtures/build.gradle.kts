@@ -112,10 +112,11 @@ tasks.test {
 // i AbstractEventPublicationRegistryIT. Osobny classpath, bo starter JPA z `test` dałby drugie
 // EventPublicationRepository. Z `test` bierze tylko skompilowane klasy (SchemaTemplates), bez zasobów:
 // jego db/migration i changelog nie mogą wejść do aplikacji JDBC.
-val jdbcRegistryTest: SourceSet by sourceSets.creating {
-	compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output.classesDirs
-	runtimeClasspath += output + compileClasspath
-}
+val jdbcRegistryTest =
+	sourceSets.create("jdbcRegistryTest") {
+		compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output.classesDirs
+		runtimeClasspath += output + compileClasspath
+	}
 configurations.named(jdbcRegistryTest.implementationConfigurationName) { extendsFrom(configurations.api.get()) }
 dependencies {
 	"jdbcRegistryTestImplementation"("org.junit.jupiter:junit-jupiter")

@@ -162,12 +162,11 @@ public abstract class AbstractLiquibaseChangelogTest {
     return included;
   }
 
-  // close() akcesora deklaruje Exception (AutoCloseable), więc jego porażka też kończy się fail.
   private static DatabaseChangeLog parse(String location, ClassLoader loader) {
-    try (var accessor = new ClassLoaderResourceAccessor(loader)) {
+    try (var resources = new ClosingAccessor(new ClassLoaderResourceAccessor(loader))) {
       return ChangeLogParserFactory.getInstance()
-          .getParser(location, accessor)
-          .parse(location, new ChangeLogParameters(), accessor);
+          .getParser(location, resources.accessor())
+          .parse(location, new ChangeLogParameters(), resources.accessor());
     } catch (LiquibaseException | RuntimeException e) {
       return fail(
           "The Liquibase master changelog classpath:/"
@@ -175,11 +174,24 @@ public abstract class AbstractLiquibaseChangelogTest {
               + " does not parse: "
               + e.getMessage(),
           e);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return fail("Interrupted while closing the Liquibase resource accessor", e);
-    } catch (Exception e) {
-      return fail("Cannot close the Liquibase resource accessor: " + e.getMessage(), e);
+    }
+  }
+
+  // close() akcesora deklaruje Exception, co javac zgłasza jako [try] (możliwy
+  // InterruptedException)
+  // na każdym try-with-resources. Adapter obsługuje go tu, a porażka zamknięcia też kończy się
+  // fail.
+  private record ClosingAccessor(ClassLoaderResourceAccessor accessor) implements AutoCloseable {
+    @Override
+    public void close() {
+      try {
+        accessor.close();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        fail("Interrupted while closing the Liquibase resource accessor", e);
+      } catch (Exception e) {
+        fail("Cannot close the Liquibase resource accessor: " + e.getMessage(), e);
+      }
     }
   }
 }
