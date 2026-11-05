@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "platform.security")
 public class PlatformSecurityProperties {
 
+  /** Postawa łańcucha wobec żądań spoza {@code permitted-paths}. */
   public enum Mode {
     /** Reszta żądań wymaga uwierzytelnienia (domyślne — bezpieczne). */
     AUTHENTICATED,
@@ -67,6 +68,9 @@ public class PlatformSecurityProperties {
   /** Settings of mode=jwt. */
   private final Jwt jwt = new Jwt();
 
+  /** Tworzy właściwości z bezpiecznymi wartościami domyślnymi; Boot wiąże je przez settery. */
+  public PlatformSecurityProperties() {}
+
   /** Ustawienia trybu JWT; dekoder i issuer zostają we właściwościach Boota. */
   public static class Jwt {
 
@@ -76,55 +80,124 @@ public class PlatformSecurityProperties {
      */
     private String authoritiesClaim;
 
+    /** Tworzy ustawienia bez własnego claimu: uprawnienia pochodzą ze scope i scp. */
+    public Jwt() {}
+
+    /**
+     * Claim z uprawnieniami.
+     *
+     * @return nazwa claimu; {@code null}, gdy uprawnienia pochodzą ze scope i scp
+     */
     public String getAuthoritiesClaim() {
       return authoritiesClaim;
     }
 
+    /**
+     * Ustawia claim z uprawnieniami, gdy dostawca tożsamości nie używa scope ani scp.
+     *
+     * @param authoritiesClaim nazwa claimu; każda jego wartość staje się uprawnieniem z prefiksem
+     *     {@code SCOPE_}
+     */
     public void setAuthoritiesClaim(String authoritiesClaim) {
       this.authoritiesClaim = authoritiesClaim;
     }
   }
 
+  /**
+   * Postawa łańcucha.
+   *
+   * @return tryb; domyślnie {@link Mode#AUTHENTICATED}
+   */
   public Mode getMode() {
     return mode;
   }
 
+  /**
+   * Ustawia postawę łańcucha.
+   *
+   * @param mode tryb obowiązujący żądania spoza {@code permitted-paths}
+   */
   public void setMode(Mode mode) {
     this.mode = mode;
   }
 
+  /**
+   * Czy łańcuch wyłącza sesję HTTP. Tryb {@link Mode#JWT} wyłącza ją niezależnie od tej wartości.
+   *
+   * @return {@code true}, gdy sesja jest wyłączona; domyślnie {@code false}
+   */
   public boolean isStateless() {
     return stateless;
   }
 
+  /**
+   * Ustawia, czy łańcuch wyłącza sesję HTTP.
+   *
+   * @param stateless {@code true} wyłącza sesję, dla API uwierzytelnianego tokenem
+   */
   public void setStateless(boolean stateless) {
     this.stateless = stateless;
   }
 
+  /**
+   * Ochrona CSRF.
+   *
+   * @return tryb ochrony; domyślnie {@link Csrf#ON}
+   */
   public Csrf getCsrf() {
     return csrf;
   }
 
+  /**
+   * Ustawia ochronę CSRF.
+   *
+   * @param csrf tryb ochrony; {@link Csrf#OFF} tylko dla API bez uwierzytelnienia ciasteczkiem
+   */
   public void setCsrf(Csrf csrf) {
     this.csrf = csrf;
   }
 
+  /**
+   * Czy tryb {@link Mode#AUTHENTICATED} włącza HTTP Basic; inne tryby ignorują tę wartość.
+   *
+   * @return {@code true}, gdy HTTP Basic jest włączony; domyślnie {@code true}
+   */
   public boolean isHttpBasic() {
     return httpBasic;
   }
 
+  /**
+   * Ustawia, czy tryb {@link Mode#AUTHENTICATED} włącza HTTP Basic.
+   *
+   * @param httpBasic {@code true} włącza HTTP Basic
+   */
   public void setHttpBasic(boolean httpBasic) {
     this.httpBasic = httpBasic;
   }
 
+  /**
+   * Ścieżki, które nigdy nie wymagają uwierzytelnienia.
+   *
+   * @return wzorce ścieżek; domyślnie health i info Actuatora, których potrzebuje bramka deployu
+   */
   public List<String> getPermittedPaths() {
     return permittedPaths;
   }
 
+  /**
+   * Ustawia ścieżki, które nigdy nie wymagają uwierzytelnienia. Lista zastępuje wartości domyślne.
+   *
+   * @param permittedPaths wzorce ścieżek; bramka deployu potrzebuje health i info Actuatora
+   */
   public void setPermittedPaths(List<String> permittedPaths) {
     this.permittedPaths = permittedPaths;
   }
 
+  /**
+   * Ustawienia trybu {@link Mode#JWT}.
+   *
+   * @return zawsze ta sama, niepusta instancja ustawień
+   */
   public Jwt getJwt() {
     return jwt;
   }

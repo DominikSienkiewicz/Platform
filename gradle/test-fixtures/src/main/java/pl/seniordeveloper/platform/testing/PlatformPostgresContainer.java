@@ -22,8 +22,17 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformPostgresContainer {
 
+  /** Tworzona przez Springa po {@code @Import}. */
+  public PlatformPostgresContainer() {}
+
   // Uwaga: zmodularyzowany org.testcontainers.postgresql.PostgreSQLContainer jest NIE-generyczny
   // (brak <SELF>), więc używamy typu surowego — z <?>/<> kod się nie kompiluje.
+  /**
+   * Kontener PostgreSQL z pgvector z obrazu {@link PlatformImages#PGVECTOR}, podłączony przez
+   * service connection.
+   *
+   * @return kontener zarządzany przez kontekst testu
+   */
   @Bean
   @ServiceConnection
   @SuppressWarnings({"rawtypes", "unchecked"})

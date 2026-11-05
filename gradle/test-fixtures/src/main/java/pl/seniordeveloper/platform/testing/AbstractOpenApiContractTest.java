@@ -62,6 +62,9 @@ public abstract class AbstractOpenApiContractTest {
   private static final Set<String> HTTP_METHODS =
       Set.of("get", "put", "post", "delete", "options", "head", "patch", "trace");
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractOpenApiContractTest() {}
+
   /**
    * Ścieżka commitowanego specu, względem katalogu roboczego testu (moduł Gradle).
    *
@@ -86,6 +89,11 @@ public abstract class AbstractOpenApiContractTest {
   }
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /**
+   * Porównuje operacje ze specu z mappingami Spring MVC, w obie strony.
+   *
+   * @throws IOException gdy nie da się odczytać specu z {@link #specPath()}
+   */
   @Test
   @DisplayName(
       "The committed OpenAPI spec and the Spring MVC mappings describe the same operations")

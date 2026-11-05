@@ -18,10 +18,18 @@ import org.springframework.modulith.core.ApplicationModules;
  */
 public abstract class AbstractModulithVerificationTest {
 
-  /** Klasa główna aplikacji (z adnotacją @SpringBootApplication) — punkt startu skanu modułów. */
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractModulithVerificationTest() {}
+
+  /**
+   * Klasa główna aplikacji — punkt startu skanu modułów.
+   *
+   * @return klasa z adnotacją {@code @SpringBootApplication}
+   */
   protected abstract Class<?> applicationClass();
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /** Weryfikuje strukturę modułów: brak cykli i brak dostępu do internals innych modułów. */
   @Test
   @DisplayName("Struktura modułów Spring Modulith jest poprawna (verify)")
   protected void verifiesModuleStructure() {

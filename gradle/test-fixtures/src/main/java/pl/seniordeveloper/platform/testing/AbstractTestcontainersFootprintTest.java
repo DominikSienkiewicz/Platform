@@ -29,6 +29,9 @@ import org.testcontainers.DockerClientFactory;
 @IntegrationTest
 public abstract class AbstractTestcontainersFootprintTest {
 
+  /** Konstruktor dla podklasy konsumenta. */
+  protected AbstractTestcontainersFootprintTest() {}
+
   /**
    * Ile kontenerów PostgreSQL Platform może działać naraz w tej JVM.
    *
@@ -39,6 +42,7 @@ public abstract class AbstractTestcontainersFootprintTest {
   }
 
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
+  /** Liczy kontenery tej sesji i porównuje je z {@link #maximumPostgresContainers()}. */
   @Test
   @DisplayName("One Platform PostgreSQL container serves every Spring context of this JVM")
   protected void onePostgresContainerPerJvm() {

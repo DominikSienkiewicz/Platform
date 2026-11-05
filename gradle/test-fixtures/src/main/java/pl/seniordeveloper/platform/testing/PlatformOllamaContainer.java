@@ -16,6 +16,14 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformOllamaContainer {
 
+  /** Tworzona przez Springa po {@code @Import}. */
+  public PlatformOllamaContainer() {}
+
+  /**
+   * Kontener Ollamy z obrazu {@link PlatformImages#OLLAMA}, podłączony przez service connection.
+   *
+   * @return kontener zarządzany przez kontekst testu
+   */
   @Bean
   @ServiceConnection
   public OllamaContainer ollamaContainer() {

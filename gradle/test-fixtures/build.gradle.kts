@@ -16,6 +16,9 @@ java {
 
 repositories { mavenCentral() }
 
+// Ostrzeżenie Javadoc wywala `build` w ci.yml, więc wychodzi na PR-ze, nie dopiero przy publikacji javadocJar z taga.
+tasks.javadoc { (options as CoreJavadocOptions).addBooleanOption("Werror", true) }
+
 // Decyzja 28: Platform skanuje się w SonarQube Cloud jak konsumenci (zasada 8). projectKey z fallbacku
 // DominikSienkiewicz_<rootProject.name>; job `sonar` w ci.yml biegnie tylko z sekretem SONAR_TOKEN.
 pitest {
@@ -109,10 +112,11 @@ tasks.test {
 // i AbstractEventPublicationRegistryIT. Osobny classpath, bo starter JPA z `test` dałby drugie
 // EventPublicationRepository. Z `test` bierze tylko skompilowane klasy (SchemaTemplates), bez zasobów:
 // jego db/migration i changelog nie mogą wejść do aplikacji JDBC.
-val jdbcRegistryTest: SourceSet by sourceSets.creating {
-	compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output.classesDirs
-	runtimeClasspath += output + compileClasspath
-}
+val jdbcRegistryTest =
+	sourceSets.create("jdbcRegistryTest") {
+		compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output.classesDirs
+		runtimeClasspath += output + compileClasspath
+	}
 configurations.named(jdbcRegistryTest.implementationConfigurationName) { extendsFrom(configurations.api.get()) }
 dependencies {
 	"jdbcRegistryTestImplementation"("org.junit.jupiter:junit-jupiter")

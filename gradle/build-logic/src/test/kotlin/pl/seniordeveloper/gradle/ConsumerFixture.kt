@@ -9,9 +9,10 @@ import java.nio.file.Path
  * przez ten build do izolowanego repozytorium (platform.testRepository).
  *
  * Każdy przebieg idzie pod configuration cache i z `--warning-mode=all` (E1-15, Decyzja 10). `fail` byłoby właściwe,
- * ale gradle-pitest-plugin 1.19.0 woła przestarzałe Configuration.setVisible i nie ma wydania z poprawką; zamiast tego
- * [assertNoPlatformDeprecation] wywala test, gdy deprecacja pochodzi z konwencji Platform. Wróć do `fail`, gdy plugin
- * PIT przestanie ją zgłaszać. Toolchain przez `-D`, bo konfigurowanie toolchainów przez `-P` znika w Gradle 10.
+ * ale gradle-pitest-plugin 1.19.0 woła przestarzałe Configuration.setVisible, a poprawka czeka w niewydanym 1.20.0
+ * (wpis w CHANGELOG pluginu); zamiast tego [assertNoPlatformDeprecation] wywala test, gdy deprecacja pochodzi z konwencji
+ * Platform. Wróć do `fail`, gdy plugin PIT przestanie ją zgłaszać. Toolchain przez `-D`, bo konfigurowanie toolchainów
+ * przez `-P` znika w Gradle 10.
  */
 internal class ConsumerFixture private constructor(
 	private val directory: Path,

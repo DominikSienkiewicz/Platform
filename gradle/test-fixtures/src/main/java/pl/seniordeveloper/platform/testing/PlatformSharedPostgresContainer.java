@@ -37,6 +37,9 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class PlatformSharedPostgresContainer {
 
+  /** Tworzona przez Springa po {@code @Import}. */
+  public PlatformSharedPostgresContainer() {}
+
   private static final class Holder {
     static final PostgreSQLContainer CONTAINER = start(create());
 
