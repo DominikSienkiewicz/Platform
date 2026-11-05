@@ -18,6 +18,17 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Fixed
+
+- The `tracing` feature of `platform-observability-starter` has its own source set and jar. Gradle 10 rejects a
+  feature on the main source set, which also published the main jar a second time. The documented form, the starter
+  and the feature declared together, works as before; a build that declared only the feature adds the starter.
+- The Javadoc of `platform-test-fixtures` and of the security, observability and web starters is complete, and a
+  Javadoc warning now fails the build of these modules. The abstract test bases declare a `protected` constructor
+  instead of the implicit public one, which changes nothing for a subclass.
+
+## [1.8.9] - 2026-11-05
+
 ### Consumer action required
 
 None.
