@@ -254,7 +254,8 @@ wins. Source: [`PlatformObservabilityEnvironmentPostProcessor`](../gradle/observ
 | `platform.observability.public-metrics` | `false` | with `prometheus=true`, adds `/actuator/prometheus` to the default `platform.security.permitted-paths` of the security starter, for a scraper inside the network; an application that sets its own list adds the path itself |
 | `platform.observability.json-logs` | `false` | `logging.structured.format.console=ecs` |
 
-The `tracing` feature adds `spring-boot-starter-opentelemetry` (traces and OTLP export):
+The `tracing` feature adds `spring-boot-starter-opentelemetry` (traces and OTLP export). It carries only
+that dependency, so declare the starter as well:
 
 ```kotlin
 implementation(libs.platform.observability.starter)

@@ -14,7 +14,8 @@ java {
 	withJavadocJar()
 	// Wariant `tracing`: OpenTelemetry (ślady + eksport OTLP) tylko u konsumenta, który go zażąda capability
 	// pl.seniordeveloper:platform-observability-starter-tracing; bez tego starter nie wnosi exportera.
-	registerFeature("tracing") { usingSourceSet(sourceSets["main"]) }
+	// Własny, pusty source set, bo Gradle 10 odrzuca feature na `main`: wariant niesie tylko zależność.
+	registerFeature("tracing") { usingSourceSet(sourceSets.create("tracing")) }
 }
 
 repositories { mavenCentral() }
@@ -55,7 +56,12 @@ val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentV
 
 publishing {
 	publications {
-		create<MavenPublication>("maven") { from(components["java"]) }
+		create<MavenPublication>("maven") {
+			from(components["java"])
+			// Capability wariantu `tracing` wyraża tylko Gradle Module Metadata, a konsumenci Platform to buildy Gradle.
+			suppressPomMetadataWarningsFor("tracingApiElements")
+			suppressPomMetadataWarningsFor("tracingRuntimeElements")
+		}
 		withType<MavenPublication>().configureEach {
 			pom {
 				licenses {
@@ -88,3 +94,10 @@ providers.gradleProperty("platformBundleRepository").orNull?.let { repository ->
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }
+
+// PlatformObservabilityTracingVariantTest czyta opublikowane metadane wariantów: kontrakt requireFeature("tracing").
+tasks.test {
+	val moduleMetadata = tasks.named<GenerateModuleMetadata>("generateMetadataFileForMavenPublication").flatMap { it.outputFile }
+	inputs.file(moduleMetadata).withPropertyName("moduleMetadata").withPathSensitivity(PathSensitivity.NONE)
+	systemProperty("platform.moduleMetadata", moduleMetadata.get().asFile.absolutePath)
+}
