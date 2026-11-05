@@ -38,7 +38,9 @@ import org.testcontainers.utility.DockerImageName;
 public class PlatformSharedPostgresContainer {
 
   /** Tworzona przez Springa po {@code @Import}. */
-  public PlatformSharedPostgresContainer() {}
+  public PlatformSharedPostgresContainer() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   private static final class Holder {
     static final PostgreSQLContainer CONTAINER = start(create());

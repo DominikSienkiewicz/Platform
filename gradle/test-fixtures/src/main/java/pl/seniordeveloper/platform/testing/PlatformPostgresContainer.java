@@ -23,7 +23,9 @@ import org.testcontainers.utility.DockerImageName;
 public class PlatformPostgresContainer {
 
   /** Tworzona przez Springa po {@code @Import}. */
-  public PlatformPostgresContainer() {}
+  public PlatformPostgresContainer() {
+    // Pusty: jawny tylko po to, żeby opisać go w Javadoc (javadoc -Werror).
+  }
 
   // Uwaga: zmodularyzowany org.testcontainers.postgresql.PostgreSQLContainer jest NIE-generyczny
   // (brak <SELF>), więc używamy typu surowego — z <?>/<> kod się nie kompiluje.
