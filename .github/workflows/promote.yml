@@ -94,7 +94,9 @@ jobs:
   # ---- Budowanie i skan obrazów: ta sama ścieżka co przy SSH, bez kroku SSH ----
   build:
     needs: preflight
-    uses: ./.github/workflows/deploy.yml
+    # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
+    # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@067023e19f116a706bfa20f29660bab0e30b5013 # v1.8.9
     permissions:
       contents: read
       packages: write

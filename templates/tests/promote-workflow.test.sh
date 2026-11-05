@@ -48,7 +48,14 @@ grep -qF 'DEPLOY_PATH' "$tmp/out" || fail 'the preflight must name DEPLOY_PATH w
 grep -qF 'GPR_KEY' "$tmp/out" || fail 'the preflight must name GPR_KEY when it is missing'
 
 # --- promote.yml ---
-grep -qE '^    uses: \./\.github/workflows/deploy\.yml$' "$promote" || fail 'promote.yml must call ./.github/workflows/deploy.yml'
+# A caller pins promote.yml to an annotated tag. GitHub looks a relative reference in the called workflow up at the tag
+# object instead of its commit, and the run fails at startup with "workflow was not found" (ADR-0035).
+grep -qE '^[[:space:]]+(- )?uses: *(\./|\$/)' "$promote" \
+  && fail 'promote.yml must not use a relative reference: called through an annotated tag it fails with "workflow was not found"'
+build_uses=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | grep -E '^    uses: ' || true)
+[[ "$build_uses" =~ ^\ {4}uses:\ DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
+  || fail 'promote.yml must call deploy.yml by its full reference at a commit SHA with a # vX.Y.Z comment'
+printf '1.8.9\n%s\n' "${BASH_REMATCH[1]}" | sort -C -V || fail 'deploy.yml has the ssh-deploy input since v1.8.9: promote.yml must not pin an older one'
 grep -qE '^      ssh-deploy: false$' "$promote" || fail 'promote.yml must call deploy.yml with ssh-deploy: false'
 grep -qE '^      scan-images: true$' "$promote" || fail 'promote.yml must scan the images'
 grep -qE '^      has-migrate: false$' "$promote" || fail 'promote.yml must build without a migration image'
