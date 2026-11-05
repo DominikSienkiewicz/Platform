@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/vitest-config",
-  "version": "1.8.8",
+  "version": "1.8.9",
   "description": "Shared Vitest base configuration with the Testing Library setup for jsdom and React.",
   "license": "MIT",
   "engines": {
