@@ -18,6 +18,8 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.11] - 2026-11-08
+
 ### Consumer action required
 
 None.
@@ -29,13 +31,6 @@ None.
   the backend image is built, scanned and pushed, and the output `frontend-tag` is empty. The preflight refuses it
   together with `ssh-deploy: true`. `promote.yml` does not pass it yet: its pin of `deploy.yml` moves in a later
   release ([ADR-0035](docs/adr/0035-promotion-by-commit-for-argo-cd.md)).
-
-### Fixed
-
-- The `sonar` job in `ci.yml` is green again. The explicit constructors added for the complete Javadoc were empty,
-  which `java:S1186` counts as debt, and four of them failed the quality gate of `platform-security-starter`. All
-  seven in the two analysed modules now say why they are empty; `templates/tests/sonar-empty-constructors.test.sh`
-  keeps it that way. Comments only, so no consumer is affected.
 
 ## [1.8.10] - 2026-11-05
 
@@ -57,6 +52,11 @@ None.
 - `scripts/preview-on-consumer.sh`, and so `scripts/canary.sh`, runs the consumer with dependency verification off
   instead of lenient. Lenient never failed the preview either: it only logged every canary artifact, whose checksums
   the consumer's metadata cannot hold. The verification of a real bump does not change.
+- The `sonar` job in `ci.yml` is green again. The explicit constructors added for the complete Javadoc were empty,
+  which `java:S1186` counts as debt, and four of them failed the quality gate of `platform-security-starter`. All
+  seven in the two analysed modules now say why they are empty; `templates/tests/sonar-empty-constructors.test.sh`
+  keeps it that way. Comments only, so no consumer is affected. This entry was moved here after the release, so the
+  notes of the 1.8.10 tag and GitHub Release do not list it.
 
 ## [1.8.9] - 2026-11-05
 
