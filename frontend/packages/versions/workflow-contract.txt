@@ -41,6 +41,7 @@ deploy.yml input compose-file type=string default="docker-compose.prod.yml"
 deploy.yml input base-env type=string default=""
 deploy.yml input platform-ref type=string default="v1"
 deploy.yml input ssh-deploy type=boolean default=true
+deploy.yml input single-image type=boolean default=false
 deploy.yml input rollback-to-backend type=string default=""
 deploy.yml input rollback-to-frontend type=string default=""
 deploy.yml secret GPR_USER required=false
