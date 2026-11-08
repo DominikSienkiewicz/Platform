@@ -487,6 +487,13 @@ package access, which the deploy does not wait for.
   preflight then does not require `DEPLOY_PATH`, and the SSH secrets are not read. The default `true`
   keeps the behaviour above. The `backend-tag` and `frontend-tag` outputs carry the pushed tags;
   [`promote.yml`](#promoteyml) uses them.
+- One image: `single-image: true` is for an application whose boot jar serves its own frontend. Before
+  `bootJar`, `build-push` sets up Node 24 and runs `npm ci --ignore-scripts` in `frontend/` with
+  `NPM_GH_TOKEN` as `GITHUB_TOKEN`, which the `.npmrc` template reads, then `npm run build` without any
+  credential; the application's build packs the export into the jar. Only `<app>-backend` is built,
+  scanned and pushed, `frontend/package.json` is not read and `frontend-tag` is empty. It requires
+  `ssh-deploy: false`: the preflight refuses it with the SSH deploy, which runs a backend and a frontend.
+  `promote.yml` calls `deploy.yml` without it, so a promotion still builds both images.
 - Rollback on the host: `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
   before it replaces a layer. When the new backend, or a frontend whose compose service defines a
   healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
@@ -532,6 +539,7 @@ Inputs:
 | `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
 | `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
 | `ssh-deploy` | boolean | `true` | Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required. |
+| `single-image` | boolean | `false` | Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. Requires ssh-deploy: false. |
 | `rollback-to-backend` | string | empty | Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
 | `rollback-to-frontend` | string | empty | Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
 <!-- /docs-gen -->

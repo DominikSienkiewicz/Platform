@@ -12,6 +12,8 @@ name: Deploy (reusable)
 #   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP); przypięty przy bootstrapie,
 #     sprawdzony względem SSH_HOST_KEY_SHA256, gdy go podano (templates/setup-gh-deploy.sh)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
+#   • single-image: jeden obraz backendu z eksportem frontendu w jarze (npm ci + npm run build przed bootJar),
+#     bez obrazu frontendu; tylko z ssh-deploy: false, jak w promote.yml, bo wdrożenie SSH stawia dwa obrazy
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
 #   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
@@ -85,6 +87,10 @@ on:
         description: "Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required."
         type: boolean
         default: true
+      single-image:
+        description: "Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. Requires ssh-deploy: false."
+        type: boolean
+        default: false
       rollback-to-backend:
         description: "Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
         type: string
@@ -98,7 +104,7 @@ on:
         description: "Tag of the backend image: the version of the checkout, or rollback-to-backend."
         value: ${{ jobs.versions.outputs.backend }}
       frontend-tag:
-        description: "Tag of the frontend image: the version of the checkout, or rollback-to-frontend."
+        description: "Tag of the frontend image: the version of the checkout, or rollback-to-frontend; empty with single-image."
         value: ${{ jobs.versions.outputs.frontend }}
     # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
     # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
@@ -154,11 +160,16 @@ jobs:
           GHCR_OWNER: ${{ vars.GHCR_OWNER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
           SSH_DEPLOY: ${{ inputs.ssh-deploy }}
+          SINGLE_IMAGE: ${{ inputs.single-image }}
         # SSH_* żyją w environmencie production, którego ten job nie widzi — sprawdza je pierwszy krok joba deploy.
         # Bez wdrożenia SSH (ssh-deploy: false) DEPLOY_PATH nie jest potrzebny.
         run: |
           # >>> preflight
           set -euo pipefail
+          if [ "${SINGLE_IMAGE:-false}" = "true" ] && [ "$SSH_DEPLOY" = "true" ]; then
+            echo "::error::single-image builds no frontend image, but the SSH deploy runs a backend and a frontend. Call deploy.yml with ssh-deploy: false, as promote.yml does."
+            exit 1
+          fi
           required=(GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER)
           if [ "$SSH_DEPLOY" = "true" ]; then required+=(DEPLOY_PATH); fi
           missing=()
@@ -198,12 +209,16 @@ jobs:
           MIGRATE_TAG_SOURCE: ${{ inputs.migrate-tag-source }}
           ROLLBACK_BACKEND: ${{ inputs.rollback-to-backend }}
           ROLLBACK_FRONTEND: ${{ inputs.rollback-to-frontend }}
+          SINGLE_IMAGE: ${{ inputs.single-image }}
         run: |
           # >>> versions
           set -euo pipefail
           owner="$(echo "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')"
           backend="$(grep -E '^version=' backend/gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')"
-          frontend="$(node -p "require('./frontend/package.json').version")"
+          frontend=""
+          if [ "${SINGLE_IMAGE:-false}" != "true" ]; then
+            frontend="$(node -p "require('./frontend/package.json').version")"
+          fi
           # Rollback (N-REL-12): tag z wejścia zamiast wersji checkoutu; build-push wtedy nie rusza.
           backend="${ROLLBACK_BACKEND:-$backend}"
           frontend="${ROLLBACK_FRONTEND:-$frontend}"
@@ -307,6 +322,26 @@ jobs:
             echo "worker=$(chk "$REGISTRY/$OWNER/$APP-eval-worker:$BACKEND_VER")"
           } | tee -a "$GITHUB_OUTPUT"
 
+      # single-image: jar backendu niesie eksport frontendu, który build konsumenta pakuje przy bootJar, więc eksport
+      # powstaje przed nim. Token tylko w npm ci, jak w frontend-ci: npm run build to już kod zależności.
+      - name: Set up Node for the frontend export
+        if: ${{ inputs.single-image && steps.exists.outputs.backend == 'false' }}
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install the frontend for the export
+        if: ${{ inputs.single-image && steps.exists.outputs.backend == 'false' }}
+        working-directory: frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
+        run: npm ci --ignore-scripts
+      - name: Build the frontend export
+        if: ${{ inputs.single-image && steps.exists.outputs.backend == 'false' }}
+        working-directory: frontend
+        run: npm run build
+
       # bootJar potrzebny do obrazów backend/worker (pluginy Platform z GH Packages -> PAT).
       - name: Build bootJar
         if: steps.exists.outputs.backend == 'false' || (inputs.has-worker && steps.exists.outputs.worker == 'false')
@@ -355,7 +390,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ inputs.app-name }}-eval-worker
 
       - name: Build & push — frontend (token npm jako BuildKit secret; id-ki gh_token + github_token)
-        if: steps.exists.outputs.frontend == 'false'
+        if: ${{ !inputs.single-image && steps.exists.outputs.frontend == 'false' }}
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: frontend
@@ -384,7 +419,7 @@ jobs:
           only-fixed: true
           output-format: table
       - name: Grype scan — frontend (gate)
-        if: ${{ inputs.scan-images }}
+        if: ${{ inputs.scan-images && !inputs.single-image }}
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
           image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
@@ -409,6 +444,7 @@ jobs:
       IMAGE_PREFIX: ghcr.io/${{ needs.versions.outputs.owner }}/${{ inputs.app-name }}
       BACKEND_VER: ${{ needs.versions.outputs.backend }}
       FRONTEND_VER: ${{ needs.versions.outputs.frontend }}
+      SINGLE_IMAGE: ${{ inputs.single-image }}
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       # Obraz przypięty digestem, CLI wbudowany przy budowie (snyk/snyk-images 54dbb8b, stan 2026-10-18).
       # Lustro: container-scan.yml.
@@ -423,13 +459,17 @@ jobs:
       - name: Snyk scan (advisory)
         if: ${{ env.SNYK_TOKEN != '' }}
         run: |
+          # >>> snyk-scan
           set -uo pipefail
-          for image in "$IMAGE_PREFIX-backend:$BACKEND_VER" "$IMAGE_PREFIX-frontend:$FRONTEND_VER"; do
+          images=("$IMAGE_PREFIX-backend:$BACKEND_VER")
+          [ "$SINGLE_IMAGE" = "true" ] || images+=("$IMAGE_PREFIX-frontend:$FRONTEND_VER")
+          for image in "${images[@]}"; do
             docker pull "$image"
             docker run --rm -e SNYK_TOKEN -v /var/run/docker.sock:/var/run/docker.sock \
               "$SNYK_IMAGE" snyk container test "$image" --severity-threshold=high \
               || echo "::warning title=Snyk (advisory)::Snyk reported issues in $image"
           done
+          # <<< snyk-scan
 
   # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
   deploy:
