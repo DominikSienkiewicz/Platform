@@ -18,6 +18,8 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.8.12] - 2026-11-09
+
 ### Consumer action required
 
 None.
