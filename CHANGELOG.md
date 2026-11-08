@@ -18,6 +18,18 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Added
+
+- `deploy.yml` gains the input `single-image` (default `false`, so callers behave as before), for an application whose
+  boot jar serves its own frontend. With it, `npm ci` and `npm run build` run in `frontend/` before `bootJar`, only
+  the backend image is built, scanned and pushed, and the output `frontend-tag` is empty. The preflight refuses it
+  together with `ssh-deploy: true`. `promote.yml` does not pass it yet: its pin of `deploy.yml` moves in a later
+  release ([ADR-0035](docs/adr/0035-promotion-by-commit-for-argo-cd.md)).
+
 ### Fixed
 
 - The `sonar` job in `ci.yml` is green again. The explicit constructors added for the complete Javadoc were empty,
