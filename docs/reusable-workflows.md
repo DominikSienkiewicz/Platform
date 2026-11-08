@@ -493,7 +493,7 @@ package access, which the deploy does not wait for.
   credential; the application's build packs the export into the jar. Only `<app>-backend` is built,
   scanned and pushed, `frontend/package.json` is not read and `frontend-tag` is empty. It requires
   `ssh-deploy: false`: the preflight refuses it with the SSH deploy, which runs a backend and a frontend.
-  `promote.yml` calls `deploy.yml` without it, so a promotion still builds both images.
+  [`promote.yml`](#promoteyml) passes it on from its own `single-image` input.
 - Rollback on the host: `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
   before it replaces a layer. When the new backend, or a frontend whose compose service defines a
   healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
@@ -554,6 +554,11 @@ as before. The `promote` job then mints a GitHub App token and runs
 [`scripts/promote-image.sh`](../scripts/promote-image.sh), which sets `image.tag` in `values-backend.yaml`
 and `values-frontend.yaml` under `values-dir`, commits and pushes to the default branch. Argo CD deploys the
 commit; the workflow does not wait for it and runs no smoke test.
+
+- One image: `single-image: true` is for an application whose boot jar serves its own frontend. `build` calls
+  `deploy.yml` with [`single-image`](#deployyml), so only `<app>-backend` is built, scanned and pushed, and
+  `promote` sets `image.tag` in `values.yaml` under `values-dir` alone, with the message
+  `chore: promote <app> to <tag>`. The default `false` keeps the two files above.
 
 - Permissions: `contents: read`, `packages: write` (the `build` job pushes to GHCR). The `promote` job
   needs only `contents: read`; it writes with the App token.
@@ -617,7 +622,8 @@ Inputs:
 |---|---|---|---|
 | `app-name` | string | required | Image name prefix, e.g. myapp for the images myapp-backend and myapp-frontend. |
 | `infra-repository` | string | required | GitOps repository that holds the values files, as owner/name. The App token is limited to it. |
-| `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, relative to its root. |
+| `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, or values.yaml with single-image, relative to its root. |
+| `single-image` | boolean | `false` | Promote one image, for an application whose boot jar serves its frontend: deploy.yml builds it with single-image, and its tag goes to values.yaml in values-dir. |
 | `promote-app-id` | string | required | The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository. |
 | `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
 | `build-timeout-minutes` | number | `30` | Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360. |

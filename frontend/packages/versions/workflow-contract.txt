@@ -84,6 +84,7 @@ platform-bump.yml job pull-request permissions pull-requests: write
 promote.yml input app-name type=string required=true
 promote.yml input infra-repository type=string required=true
 promote.yml input values-dir type=string required=true
+promote.yml input single-image type=boolean default=false
 promote.yml input promote-app-id type=string required=true
 promote.yml input platform-ref type=string default="v1"
 promote.yml input build-timeout-minutes type=number default=30
