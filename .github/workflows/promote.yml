@@ -5,6 +5,8 @@ name: Promote images (reusable)
 #      budowanie zostaje w jednym miejscu, a konsumenci SSH nie zmieniają zachowania,
 #   2. promote — commit z nowymi tagami do values-backend.yaml i values-frontend.yaml w repozytorium GitOps
 #      (scripts/promote-image.sh), tokenem GitHub App z zapisem `contents` tylko do tego jednego repo.
+# single-image: jeden obraz backendu z eksportem frontendu w jarze (tryb single-image deploy.yml), a jego tag idzie do
+# jednego pliku values.yaml.
 # Wdraża dopiero Argo CD, który widzi commit. Wycofanie to revert tego commitu; wejść rollbacku tu nie ma.
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md.
@@ -25,9 +27,13 @@ on:
         type: string
         required: true
       values-dir:
-        description: "Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, relative to its root."
+        description: "Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, or values.yaml with single-image, relative to its root."
         type: string
         required: true
+      single-image:
+        description: "Promote one image, for an application whose boot jar serves its frontend: deploy.yml builds it with single-image, and its tag goes to values.yaml in values-dir."
+        type: boolean
+        default: false
       promote-app-id:
         description: "The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository."
         type: string
@@ -96,7 +102,7 @@ jobs:
     needs: preflight
     # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
     # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@067023e19f116a706bfa20f29660bab0e30b5013 # v1.8.9
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@49db4f48b2e76e8ddfdce4c39a29d46312eb37dc # v1.8.11
     permissions:
       contents: read
       packages: write
@@ -105,6 +111,7 @@ jobs:
       ssh-deploy: false
       scan-images: true
       has-migrate: false
+      single-image: ${{ inputs.single-image }}
       platform-ref: ${{ inputs.platform-ref }}
       build-timeout-minutes: ${{ inputs.build-timeout-minutes }}
     secrets:
@@ -167,9 +174,21 @@ jobs:
           persist-credentials: false
 
       - name: Commit the new image tags
+        if: ${{ !inputs.single-image }}
         run: |
           set -euo pipefail
           bash _platform/scripts/promote-image.sh \
             "chore: promote $APP_NAME to backend $BACKEND_TAG, frontend $FRONTEND_TAG" \
             "$VALUES_DIR/values-backend.yaml=$BACKEND_TAG" \
             "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"
+
+      # Jeden obraz: frontend-tag z deploy.yml jest pusty, więc idzie tylko tag backendu, do jednego pliku.
+      - name: Commit the new image tag
+        if: ${{ inputs.single-image }}
+        run: |
+          # >>> promote-single
+          set -euo pipefail
+          bash _platform/scripts/promote-image.sh \
+            "chore: promote $APP_NAME to $BACKEND_TAG" \
+            "$VALUES_DIR/values.yaml=$BACKEND_TAG"
+          # <<< promote-single
