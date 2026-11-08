@@ -18,6 +18,18 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Added
+
+- `promote.yml` gains the input `single-image` (default `false`, so callers behave as before), for an application whose
+  boot jar serves its own frontend. It calls `deploy.yml` with `single-image`, so only the backend image is built,
+  scanned and pushed, and commits only its tag, to `values.yaml` under `values-dir`, with the message
+  `chore: promote <app> to <tag>`. The pin of `deploy.yml` moves from 1.8.9 to 1.8.11, the first release with that
+  input ([ADR-0035](docs/adr/0035-promotion-by-commit-for-argo-cd.md)); a promotion of two images is unchanged.
+
 ## [1.8.11] - 2026-11-08
 
 ### Consumer action required
