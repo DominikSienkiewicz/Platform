@@ -18,6 +18,8 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-10
+
 ### Consumer action required
 
 - The job that calls `promote.yml` grants `id-token: write` besides `contents: read` and `packages: write`: its
