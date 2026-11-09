@@ -1,7 +1,8 @@
 name: Promote images (reusable)
 
 # Promocja zamiast wdrożenia SSH, dla klastra zarządzanego przez Argo CD (ADR-0035):
-#   1. build — deploy.yml z ssh-deploy: false buduje i skanuje obrazy backendu i frontendu oraz wypycha je do GHCR;
+#   1. build — deploy.yml z ssh-deploy: false buduje obrazy backendu i frontendu, wypycha je do GHCR, skanuje je po
+#      digeście bramkami Grype i Trivy, a dopiero gdy obie przejdą, podpisuje cosign keyless (job sign, ADR-0036);
 #      budowanie zostaje w jednym miejscu, a konsumenci SSH nie zmieniają zachowania,
 #   2. promote — commit z nowymi tagami do values-backend.yaml i values-frontend.yaml w repozytorium GitOps
 #      (scripts/promote-image.sh), tokenem GitHub App z zapisem `contents` tylko do tego jednego repo.
@@ -10,7 +11,8 @@ name: Promote images (reusable)
 # Wdraża dopiero Argo CD, który widzi commit. Wycofanie to revert tego commitu; wejść rollbacku tu nie ma.
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md.
-# Caller nadaje `contents: read` i `packages: write` (job build wypycha obrazy).
+# Caller nadaje `contents: read`, `packages: write` (job build wypycha obrazy) i `id-token: write` (job sign w deploy.yml
+# podpisuje je cosign keyless; GitHub sprawdza uprawnienia zagnieżdżonych jobów przed startem, ADR-0036).
 #
 # Bez własnego `concurrency`: deploy.yml ma grupę deploy-<app>, a ta sama grupa na obu poziomach zablokowałaby run.
 # Bez wejść Javy: build idzie na domyślnych deploy.yml, a PlatformToolVersionMirrorTest pilnuje dokładnej listy wejść JDK.
@@ -97,15 +99,16 @@ jobs:
           # <<< promote-preflight
         shell: bash
 
-  # ---- Budowanie i skan obrazów: ta sama ścieżka co przy SSH, bez kroku SSH ----
+  # ---- Budowanie, skan i podpis obrazów: ta sama ścieżka co przy SSH, bez kroku SSH ----
   build:
     needs: preflight
     # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
     # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@49db4f48b2e76e8ddfdce4c39a29d46312eb37dc # v1.8.11
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@c0a75233430f9e026e88e8cdb123d810d9da8bb4 # v1.9.0
     permissions:
       contents: read
       packages: write
+      id-token: write
     with:
       app-name: ${{ inputs.app-name }}
       ssh-deploy: false

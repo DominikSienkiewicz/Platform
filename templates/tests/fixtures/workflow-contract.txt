@@ -100,6 +100,7 @@ promote.yml permissions contents: read
 promote.yml job preflight permissions {}
 promote.yml job build permissions contents: read
 promote.yml job build permissions packages: write
+promote.yml job build permissions id-token: write
 promote.yml job promote permissions contents: read
 roadmap-unblock.yml input timeout-minutes type=number default=5
 roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false

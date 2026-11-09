@@ -110,7 +110,7 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 | `semgrep.yml` | Semgrep SAST over the source code |
 | `container-scan.yml` | scans published images: Grype is the gate, Snyk a non-blocking second opinion |
 | `deploy.yml` | builds and pushes images to GHCR; with `scan-images`, gates them by digest with Grype and Trivy and signs them with cosign keyless only after both pass; then deploys over SSH (unless `ssh-deploy: false`) with [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) |
-| `promote.yml` | builds, scans and pushes the images through `deploy.yml` without SSH (one image with `single-image`), then commits the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs |
+| `promote.yml` | builds and pushes the images through `deploy.yml` without SSH, gates them with Grype and Trivy and signs them keyless (one image with `single-image`), then commits the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs |
 | `roadmap-unblock.yml` | moves roadmap items to ready once their last prerequisite issue is closed |
 | `platform-bump.yml` | bumps the repository to a Platform release and opens a pull request with the diff, release notes and consumer actions |
 

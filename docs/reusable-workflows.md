@@ -561,19 +561,22 @@ Inputs:
 Promotes the images of an application to a GitOps repository instead of deploying them over SSH, for a
 cluster that Argo CD keeps in sync with that repository
 ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). The `build` job calls `deploy.yml` with
-`ssh-deploy: false`, `scan-images: true` and `has-migrate: false`, so the images are built, scanned and pushed
-as before. The `promote` job then mints a GitHub App token and runs
+`ssh-deploy: false`, `scan-images: true` and `has-migrate: false`, so the images are built and pushed, gated by
+Grype and Trivy, and signed with cosign keyless once both gates pass
+([signed images](security-scanning.md#signed-images)). The `promote` job then mints a GitHub App token and runs
 [`scripts/promote-image.sh`](../scripts/promote-image.sh), which sets `image.tag` in `values-backend.yaml`
 and `values-frontend.yaml` under `values-dir`, commits and pushes to the default branch. Argo CD deploys the
 commit; the workflow does not wait for it and runs no smoke test.
 
 - One image: `single-image: true` is for an application whose boot jar serves its own frontend. `build` calls
-  `deploy.yml` with [`single-image`](#deployyml), so only `<app>-backend` is built, scanned and pushed, and
+  `deploy.yml` with [`single-image`](#deployyml), so only `<app>-backend` is built, pushed, scanned and signed, and
   `promote` sets `image.tag` in `values.yaml` under `values-dir` alone, with the message
   `chore: promote <app> to <tag>`. The default `false` keeps the two files above.
 
-- Permissions: `contents: read`, `packages: write` (the `build` job pushes to GHCR). The `promote` job
-  needs only `contents: read`; it writes with the App token.
+- Permissions: `contents: read`, `packages: write` (the `build` job pushes to GHCR) and `id-token: write`, which
+  `build` passes on to the `sign` job of `deploy.yml`. GitHub checks the permissions of every nested job before the
+  run starts, so a caller without it fails at startup. The `promote` job needs only `contents: read`; it writes with
+  the App token.
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, as for `deploy.yml`, and
   `PROMOTE_APP_KEY`, the private key of the GitHub App, which is required. Pass them explicitly: a called
   workflow gets nothing else, and `secrets: inherit` would hand over every secret of the repository.
@@ -603,14 +606,15 @@ commit; the workflow does not wait for it and runs no smoke test.
   looks a relative reference in a workflow called through an annotated tag up at the tag object and fails at startup
   with "workflow was not found" ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). So a change to `deploy.yml`
   reaches `promote.yml` only when that pin moves, in a later release. Version 1.8.9 of `promote.yml` cannot start;
-  use 1.8.10 or later. The pin is still 1.8.11, so a promotion scans with Grype only and signs nothing yet; the Trivy
-  gate and the [signature](security-scanning.md#signed-images) arrive when the pin moves, and the caller then grants
-  `id-token: write`.
+  use 1.8.10 or later. The pin is 1.9.0, the first release whose `deploy.yml` gates with Trivy and signs; a
+  promotion fails, and commits nothing, when either gate or the signature fails. Accept a finding in both `.grype.yaml`
+  and `.trivyignore.yaml` ([accepting a finding](security-scanning.md#accepting-a-finding)).
 
 ```yaml
 permissions:
   contents: read
   packages: write
+  id-token: write
 jobs:
   promote:
     if: github.ref == 'refs/heads/release'
