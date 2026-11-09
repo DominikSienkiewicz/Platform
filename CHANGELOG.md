@@ -18,6 +18,26 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-10
+
+### Consumer action required
+
+- The job that calls `promote.yml` grants `id-token: write` besides `contents: read` and `packages: write`: its
+  `build` job passes it on to the `sign` job of `deploy.yml`, and GitHub checks the permissions of every nested job
+  before the run starts, so a caller without it fails at startup. A `permissions` block on the calling job replaces
+  the top-level one, so the grant goes into that block when the job has one. `platform-workflows-check` names a
+  caller that does not grant it (manual).
+- `promote.yml` always calls `deploy.yml` with `scan-images: true`, so a caller of `promote.yml` mirrors every image
+  finding it accepts in `.grype.yaml` in `.trivyignore.yaml`, or the Trivy gate fails the promotion on it
+  ([docs/security-scanning.md](docs/security-scanning.md#accepting-a-finding)) (manual).
+
+### Changed
+
+- `promote.yml` pins `deploy.yml` 1.9.0 instead of 1.8.11. A promotion now gates the images by digest with Grype
+  and Trivy and signs them with cosign keyless before it commits their tags. A failed gate or signature fails
+  `build`, and nothing is committed ([ADR-0036](docs/adr/0036-images-signed-keyless-after-the-gates.md)). The
+  certificate names `deploy.yml` at the pinned commit SHA and the calling repository.
+
 ## [1.9.0] - 2026-11-09
 
 ### Consumer action required
