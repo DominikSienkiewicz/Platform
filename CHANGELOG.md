@@ -18,6 +18,8 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-09
+
 ### Consumer action required
 
 - A caller of `deploy.yml` grants `id-token: write` besides `contents: read` and `packages: write`, also with
@@ -45,6 +47,12 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 - `deploy.yml` resolves each scanned image tag to its digest once, and Grype now scans that digest instead of the
   tag, so the gates and the signature cover the same image.
+- The pinned actions move to their latest release within the same major version: `anchore/scan-action` 7.4.2,
+  `docker/build-push-action` 7.4.0, `docker/login-action` 4.8.0, `docker/setup-buildx-action` 4.4.1, `gradle/actions`
+  6.4.1, `github/codeql-action` 4.39.3, `ossf/scorecard-action` 2.5.0, `SonarSource/sonarqube-scan-action` 8.4.1,
+  `actions/setup-python` 7.1.0 and `pnpm/action-setup` 6.1.1. Of the reusable workflows, `backend-ci.yml`,
+  `container-scan.yml`, `deploy.yml`, `scorecard.yml`, `security-scan.yml` and `sonar.yml` run them; a caller
+  changes nothing.
 
 ## [1.8.12] - 2026-11-09
 
