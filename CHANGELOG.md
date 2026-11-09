@@ -37,8 +37,9 @@ before any artifact went out, so use 1.8.0, which replaces both.
   gate rejects stays in GHCR unsigned. The job checks nothing out, runs no repository code and is the only one with
   `id-token: write`. The certificate names `DominikSienkiewicz/Platform/.github/workflows/deploy.yml` and the calling
   repository ([ADR-0036](docs/adr/0036-images-signed-keyless-after-the-gates.md),
-  [signed images](docs/security-scanning.md#signed-images)). The migration and `eval-worker` images are neither
-  scanned nor signed.
+  [signed images](docs/security-scanning.md#signed-images)). Every signature puts the certificate into Sigstore's
+  public logs for good, even for a private repository. The certificate names the calling repository, workflow,
+  branch, commit and run. The migration and `eval-worker` images are neither scanned nor signed.
 
 ### Changed
 
