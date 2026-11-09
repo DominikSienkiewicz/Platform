@@ -109,7 +109,7 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 | `security-scan.yml` | dependency CVE scan: CycloneDX SBOM + Grype for the backend, `package-lock.json` for the frontend; CRITICAL and HIGH fail the build |
 | `semgrep.yml` | Semgrep SAST over the source code |
 | `container-scan.yml` | scans published images: Grype is the gate, Snyk a non-blocking second opinion |
-| `deploy.yml` | builds and pushes images to GHCR, then deploys over SSH (unless `ssh-deploy: false`) with [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) |
+| `deploy.yml` | builds and pushes images to GHCR; with `scan-images`, gates them by digest with Grype and Trivy and signs them with cosign keyless only after both pass; then deploys over SSH (unless `ssh-deploy: false`) with [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) |
 | `promote.yml` | builds, scans and pushes the images through `deploy.yml` without SSH (one image with `single-image`), then commits the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs |
 | `roadmap-unblock.yml` | moves roadmap items to ready once their last prerequisite issue is closed |
 | `platform-bump.yml` | bumps the repository to a Platform release and opens a pull request with the diff, release notes and consumer actions |
@@ -247,7 +247,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
   local development stack (PostgreSQL with pgvector, Ollama) → [infra/README.md](infra/README.md).
 - **Design decisions** → [`docs/adr/`](docs/adr/), including the
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
-- **What the security scans gate and how to accept a finding** →
+- **What the security scans gate, how to accept a finding and how images are signed** →
   [docs/security-scanning.md](docs/security-scanning.md).
 - **Contributing** → [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
 - **Reporting a vulnerability** → [SECURITY.md](SECURITY.md).

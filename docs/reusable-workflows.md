@@ -457,10 +457,21 @@ Inputs:
 ## deploy.yml
 
 Builds, scans (optionally), pushes and deploys the application images to a host over SSH. With
-`scan-images: true`, Grype gates the deploy; Snyk runs in a separate advisory job with read-only
-package access, which the deploy does not wait for.
+`scan-images: true`, Grype and Trivy gate the deploy, and the `sign` job signs the scanned images once
+both gates pass. Snyk runs in a separate advisory job with read-only package access, which the deploy
+does not wait for.
 
-- Permissions: `contents: read`, `packages: write` (to push to GHCR).
+- Permissions: `contents: read`, `packages: write` (to push to GHCR), and `id-token: write` for the
+  `sign` job. GitHub checks the permissions of every called job before the run starts, so grant it
+  even with `scan-images: false`.
+- Scanning and signing: with `scan-images: true`, `build-push` resolves the backend tag, and the
+  frontend tag unless `single-image` is set, to a digest. Grype and Trivy scan that digest with the
+  `scan-severity` threshold and fail only on findings that have a fix. Every image is scanned before
+  the Trivy step fails. Accept a finding in `.grype.yaml` and `.trivyignore.yaml`. The `sign` job
+  then signs the same digests with cosign keyless. It has no checkout and runs no code of the
+  repository, and it is the only job with `id-token: write`. An image that a gate rejects stays in
+  GHCR unsigned. The identity in the certificate, and how to verify it, are in
+  [security-scanning.md](security-scanning.md#signed-images).
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, passed by the caller.
   They are declared optional so that the `preflight` job, not GitHub, names the missing ones.
 - Environment `production`: the `deploy` job runs in it. Its deployment branch policy admits only
@@ -505,6 +516,7 @@ package access, which the deploy does not wait for.
 permissions:
   contents: read
   packages: write
+  id-token: write
 jobs:
   deploy:
     uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
@@ -533,8 +545,8 @@ Inputs:
 | `java-version` | string | `27` | JDK that runs Gradle. Platform builds and tests its plugins with Gradle on Java 27 (ADR-0034), the only JDK it supports for Gradle. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `has-migrate` | boolean | `true` | Build and run a separate migration image. Use false for applications that migrate on start (Flyway). |
-| `scan-images` | boolean | `false` | Scan the pushed images before deploying (Grype gate, optional Snyk). Opt-in. |
-| `scan-severity` | string | `high` | Grype fail threshold for scan-images. |
+| `scan-images` | boolean | `false` | Scan the pushed images by digest before deploying (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in. |
+| `scan-severity` | string | `high` | Fail threshold of the Grype and Trivy gates for scan-images: negligible, low, medium, high or critical. |
 | `compose-file` | string | `docker-compose.prod.yml` | Compose file name in compose-dir. |
 | `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
 | `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
@@ -591,7 +603,9 @@ commit; the workflow does not wait for it and runs no smoke test.
   looks a relative reference in a workflow called through an annotated tag up at the tag object and fails at startup
   with "workflow was not found" ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). So a change to `deploy.yml`
   reaches `promote.yml` only when that pin moves, in a later release. Version 1.8.9 of `promote.yml` cannot start;
-  use 1.8.10 or later.
+  use 1.8.10 or later. The pin is still 1.8.11, so a promotion scans with Grype only and signs nothing yet; the Trivy
+  gate and the [signature](security-scanning.md#signed-images) arrive when the pin moves, and the caller then grants
+  `id-token: write`.
 
 ```yaml
 permissions:
