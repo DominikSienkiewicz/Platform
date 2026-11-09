@@ -18,6 +18,34 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+- A caller of `deploy.yml` grants `id-token: write` besides `contents: read` and `packages: write`, also with
+  `scan-images: false`: the new `sign` job requests it, and GitHub checks the permissions of every called job before
+  the run starts. `platform-workflows-check` names a caller that does not. No consumer calls `deploy.yml` directly
+  today (manual).
+- A caller with `scan-images: true` mirrors every image finding it accepts in `.grype.yaml` in `.trivyignore.yaml`,
+  or the new Trivy gate fails the run on it ([docs/security-scanning.md](docs/security-scanning.md#accepting-a-finding)).
+  `promote.yml` still pins `deploy.yml` 1.8.11, so callers of `promote.yml` change nothing until that pin moves
+  (manual).
+
+### Added
+
+- `deploy.yml` with `scan-images: true` gates the pushed images with Trivy next to Grype. It uses the same
+  `scan-severity` threshold, fails only on findings that have a fix, and reads exceptions from `.trivyignore.yaml`.
+  A new `sign` job then signs the scanned images with cosign keyless, only after both gates pass, so an image that a
+  gate rejects stays in GHCR unsigned. The job checks nothing out, runs no repository code and is the only one with
+  `id-token: write`. The certificate names `DominikSienkiewicz/Platform/.github/workflows/deploy.yml` and the calling
+  repository ([ADR-0036](docs/adr/0036-images-signed-keyless-after-the-gates.md),
+  [signed images](docs/security-scanning.md#signed-images)). Every signature puts the certificate into Sigstore's
+  public logs for good, even for a private repository. The certificate names the calling repository, workflow,
+  branch, commit and run. The migration and `eval-worker` images are neither scanned nor signed.
+
+### Changed
+
+- `deploy.yml` resolves each scanned image tag to its digest once, and Grype now scans that digest instead of the
+  tag, so the gates and the signature cover the same image.
+
 ## [1.8.12] - 2026-11-09
 
 ### Consumer action required
