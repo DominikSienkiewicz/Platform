@@ -14,6 +14,8 @@ name: Deploy (reusable)
 #   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
 #   • single-image: jeden obraz backendu z eksportem frontendu w jarze (npm ci + npm run build przed bootJar),
 #     bez obrazu frontendu; tylko z ssh-deploy: false, jak w promote.yml, bo wdrożenie SSH stawia dwa obrazy
+#   • scan-images: tag -> digest raz, potem bramki Grype i Trivy na tym digeście, a job sign podpisuje cosign keyless
+#     dokładnie te digesty, dopiero gdy obie bramki przeszły (łańcuch dostaw, Kyverno verifyImages po stronie klastra)
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
 #   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
@@ -64,11 +66,11 @@ on:
         type: boolean
         default: true
       scan-images:
-        description: "Scan the pushed images before deploying (Grype gate, optional Snyk). Opt-in."
+        description: "Scan the pushed images by digest before deploying (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in."
         type: boolean
         default: false
       scan-severity:
-        description: "Grype fail threshold for scan-images."
+        description: "Fail threshold of the Grype and Trivy gates for scan-images: negligible, low, medium, high or critical."
         type: string
         default: high
       compose-file:
@@ -261,6 +263,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    # Referencje po digeście, które przeszły bramki; podpisuje je job sign.
+    outputs:
+      images: ${{ steps.digests.outputs.images }}
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
       APP: ${{ inputs.app-name }}
@@ -407,13 +412,32 @@ jobs:
 
       # Cache warstw (cache-from/cache-to wyżej) dzieli limit 10 GB cache Actions repo konsumenta z cache Gradle;
       # GitHub usuwa najstarsze wpisy po przekroczeniu, więc przy rzadkich deployach to zysk, nie ryzyko.
-      # ---- Opt-in gate: skan obrazów PO push, PRZED deployem. Grype-fail => job pada => deploy się nie ruszy.
+      # Bramki i podpis dotyczą tych samych bajtów: tag z GHCR zamieniany na digest raz, potem wszystko po digeście.
+      # Obraz pominięty jako już istniejący też dostaje digest, więc ponowny run po poprawionym wyjątku go podpisze.
+      - name: Resolve the digests of the scanned images
+        id: digests
+        if: ${{ inputs.scan-images }}
+        env:
+          SINGLE_IMAGE: ${{ inputs.single-image }}
+        run: |
+          # >>> image-digests
+          set -euo pipefail
+          digest_of() { docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' | jq -er .digest; }
+          backend="$REGISTRY/$OWNER/$APP-backend@$(digest_of "$REGISTRY/$OWNER/$APP-backend:$BACKEND_VER")"
+          frontend=""
+          if [ "${SINGLE_IMAGE:-false}" != "true" ]; then
+            frontend="$REGISTRY/$OWNER/$APP-frontend@$(digest_of "$REGISTRY/$OWNER/$APP-frontend:$FRONTEND_VER")"
+          fi
+          { echo "backend=$backend"; echo "frontend=$frontend"; echo "images=$backend${frontend:+ $frontend}"; } | tee -a "$GITHUB_OUTPUT"
+          # <<< image-digests
+      # ---- Opt-in gate: skan obrazów PO push, PRZED deployem i podpisem. Fail Grype albo Trivy => job pada => deploy
+      #      się nie ruszy, a job sign nie podpisze obrazu, więc Kyverno go nie wpuści, choć leży w GHCR.
       #      Base-image OS CVE, tylko fixowalne. Snyk (druga opinia) biegnie w osobnym jobie snyk-advisory.
       - name: Grype scan — backend (gate)
         if: ${{ inputs.scan-images }}
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-backend:${{ env.BACKEND_VER }}
+          image: ${{ steps.digests.outputs.backend }}
           fail-build: true
           severity-cutoff: ${{ inputs.scan-severity }}
           only-fixed: true
@@ -422,11 +446,45 @@ jobs:
         if: ${{ inputs.scan-images && !inputs.single-image }}
         uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.APP }}-frontend:${{ env.FRONTEND_VER }}
+          image: ${{ steps.digests.outputs.frontend }}
           fail-build: true
           severity-cutoff: ${{ inputs.scan-severity }}
           only-fixed: true
           output-format: table
+      # Trivy obok Grype: ten sam próg, tylko podatności z poprawką, każdy obraz skanowany nawet po porażce poprzedniego.
+      # Wersja przypięta, setup-trivy sprawdza sumę kontrolną wydania. Wyjątki: .trivyignore.yaml w korzeniu repo
+      # (docs/security-scanning.md). Trivy biegnie tu, jak Grype, a nie w osobnym jobie: build-push i tak uruchamia kod
+      # zależności z packages: write, a osobny job bramki musiałby zmienić warunek joba deploy.
+      - name: Set up Trivy
+        if: ${{ inputs.scan-images }}
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.76.2
+      - name: Trivy scan — scanned images (gate)
+        if: ${{ inputs.scan-images }}
+        env:
+          IMAGES: ${{ steps.digests.outputs.images }}
+          SCAN_SEVERITY: ${{ inputs.scan-severity }}
+        run: |
+          # >>> trivy-scan
+          set -uo pipefail
+          case "$SCAN_SEVERITY" in
+            critical) severity=CRITICAL ;;
+            high) severity=HIGH,CRITICAL ;;
+            medium) severity=MEDIUM,HIGH,CRITICAL ;;
+            low) severity=LOW,MEDIUM,HIGH,CRITICAL ;;
+            negligible) severity=UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL ;;
+            *) echo "::error::scan-severity must be negligible, low, medium, high or critical, got '$SCAN_SEVERITY'."; exit 1 ;;
+          esac
+          ignore=()
+          if [ -f .trivyignore.yaml ]; then ignore=(--ignorefile .trivyignore.yaml); fi
+          failed=0
+          for image in $IMAGES; do
+            trivy image --image-src remote --scanners vuln --ignore-unfixed --exit-code 1 --severity "$severity" \
+              ${ignore[@]+"${ignore[@]}"} "$image" || failed=1
+          done
+          exit "$failed"
+          # <<< trivy-scan
 
   # ---- Snyk: druga opinia, nieblokująca, pomijana bez SNYK_TOKEN. Osobny job, bo obraz Snyka dostaje gniazdo
   #      Dockera hosta: tu może co najwyżej CZYTAĆ GHCR, a w build-push miałby packages: write tuż przed
@@ -470,6 +528,55 @@ jobs:
               || echo "::warning title=Snyk (advisory)::Snyk reported issues in $image"
           done
           # <<< snyk-scan
+
+  # ---- Podpis cosign keyless po bramkach: needs build-push, więc obraz odrzucony przez Grype albo Trivy zostaje
+  #      w GHCR bez podpisu, a Kyverno verifyImages go nie wpuści. Osobny job bez checkoutu i bez kodu repo: tylko on
+  #      ma id-token: write, więc kod zależności z buildu nie dostaje tożsamości podpisu. Certyfikat Fulcio wskazuje
+  #      ten workflow (Platform/.github/workflows/deploy.yml@<ref z uses:>) i repozytorium wywołującego; podpis idzie
+  #      do GHCR jako referrer obrazu (cosign v3, Sigstore bundle), wpis do publicznego Rekora.
+  sign:
+    needs: [versions, build-push]
+    if: ${{ inputs.scan-images }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      packages: write
+    env:
+      IMAGES: ${{ needs.build-push.outputs.images }}
+      IMAGE_PREFIX: ghcr.io/${{ needs.versions.outputs.owner }}/${{ inputs.app-name }}
+    steps:
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Podpisuje tylko digesty skanowanych obrazów tej aplikacji; każdą referencję sprawdza, zanim podpisze którąkolwiek.
+      - name: Sign the scanned images
+        run: |
+          # >>> sign-images
+          set -euo pipefail
+          read -ra images <<< "$IMAGES"
+          if [ "${#images[@]}" -eq 0 ]; then
+            echo "::error::build-push resolved no digest to sign."
+            exit 1
+          fi
+          for image in "${images[@]}"; do
+            case "$image" in
+              "$IMAGE_PREFIX-backend@sha256:"* | "$IMAGE_PREFIX-frontend@sha256:"*) ;;
+              *) echo "::error::Refusing to sign '$image': only scanned images of $IMAGE_PREFIX, by digest, are signed."; exit 1 ;;
+            esac
+            if [[ ! "${image##*@sha256:}" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "::error::Refusing to sign '$image': its digest is not a sha256 digest."
+              exit 1
+            fi
+          done
+          for image in "${images[@]}"; do
+            cosign sign --yes "$image"
+          done
+          # <<< sign-images
 
   # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
   deploy:

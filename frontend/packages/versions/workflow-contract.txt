@@ -60,6 +60,8 @@ deploy.yml job build-push permissions contents: read
 deploy.yml job build-push permissions packages: write
 deploy.yml job snyk-advisory permissions contents: read
 deploy.yml job snyk-advisory permissions packages: read
+deploy.yml job sign permissions id-token: write
+deploy.yml job sign permissions packages: write
 deploy.yml job deploy permissions contents: read
 frontend-ci.yml input timeout-minutes type=number default=20
 frontend-ci.yml input working-directory type=string default=frontend
