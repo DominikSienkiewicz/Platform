@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/prettier-config",
-  "version": "1.8.12",
+  "version": "1.9.0",
   "description": "Shared Prettier configuration with the Tailwind CSS class sorter (incubating).",
   "license": "MIT",
   "engines": {
