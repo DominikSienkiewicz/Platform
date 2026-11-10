@@ -45,7 +45,9 @@ free_disk() {
   rm -rf "${tmp:?}/home"
   mkdir -p "$tmp/home/.cache/grype/db/6" "$tmp/home/.cache/trivy" "$tmp/home/.gradle/caches"
   : > "$tmp/calls"
-  (env PATH="$tmp/bin:$PATH" CALLS="$tmp/calls" HOME="$tmp/home" "$@" bash "$tmp/disk.sh") > "$tmp/out" 2>&1
+  # Runner GitHuba, na którym biegnie ten test, sam ustawia RUNNER_ENVIRONMENT; ustawiają je tu tylko argumenty.
+  (env -u RUNNER_ENVIRONMENT PATH="$tmp/bin:$PATH" CALLS="$tmp/calls" HOME="$tmp/home" "$@" bash "$tmp/disk.sh") \
+    > "$tmp/out" 2>&1
 }
 calls_of() { grep "^$1 " "$tmp/calls" | cut -d' ' -f2- || true; }
 

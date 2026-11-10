@@ -17,6 +17,10 @@ pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.9.0\n%s\n' "$pin" | sort -C -V \
   || fail "deploy.yml signs the scanned images since v1.9.0: promote.yml must not pin an older one, got v$pin"
+# Do 1.10.0 sign tracił referencje obrazów, gdy właściciel był wartością sekretu (GPR_USER konsumenta), a Trivy tracił
+# miejsce na dysku przy czterech obrazach; obie poprawki ma deploy.yml od v1.10.1.
+printf '1.10.1\n%s\n' "$pin" | sort -C -V \
+  || fail "deploy.yml signs when the owner is a secret value and frees the disk for Trivy since v1.10.1: promote.yml must not pin an older one, got v$pin"
 grep -qFx '      scan-images: true' <<< "$build" || fail 'build must call deploy.yml with scan-images: true, or nothing is signed'
 build_grants=$(grants "$build" '    ')
 for grant in 'contents: read' 'packages: write' 'id-token: write'; do
