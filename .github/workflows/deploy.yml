@@ -263,9 +263,11 @@ jobs:
     permissions:
       contents: read
       packages: write
-    # Referencje po digeście, które przeszły bramki; podpisuje je job sign.
+    # Same digesty obrazów, które przeszły bramki; referencje z właścicielem składa z nich job sign. GitHub pomija wyjście
+    # joba, w którym jest wartość sekretu, a właściciel bywa wartością sekretu (GPR_USER konsumenta).
     outputs:
-      images: ${{ steps.digests.outputs.images }}
+      backend-digest: ${{ steps.digests.outputs.backend-digest }}
+      frontend-digest: ${{ steps.digests.outputs.frontend-digest }}
     env:
       OWNER: ${{ needs.versions.outputs.owner }}
       APP: ${{ inputs.app-name }}
@@ -423,12 +425,15 @@ jobs:
           # >>> image-digests
           set -euo pipefail
           digest_of() { docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' | jq -er .digest; }
-          backend="$REGISTRY/$OWNER/$APP-backend@$(digest_of "$REGISTRY/$OWNER/$APP-backend:$BACKEND_VER")"
-          frontend=""
+          backend_digest=$(digest_of "$REGISTRY/$OWNER/$APP-backend:$BACKEND_VER")
+          backend="$REGISTRY/$OWNER/$APP-backend@$backend_digest"
+          frontend="" frontend_digest=""
           if [ "${SINGLE_IMAGE:-false}" != "true" ]; then
-            frontend="$REGISTRY/$OWNER/$APP-frontend@$(digest_of "$REGISTRY/$OWNER/$APP-frontend:$FRONTEND_VER")"
+            frontend_digest=$(digest_of "$REGISTRY/$OWNER/$APP-frontend:$FRONTEND_VER")
+            frontend="$REGISTRY/$OWNER/$APP-frontend@$frontend_digest"
           fi
-          { echo "backend=$backend"; echo "frontend=$frontend"; echo "images=$backend${frontend:+ $frontend}"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "backend=$backend"; echo "frontend=$frontend"; echo "images=$backend${frontend:+ $frontend}"
+            echo "backend-digest=$backend_digest"; echo "frontend-digest=$frontend_digest"; } | tee -a "$GITHUB_OUTPUT"
           # <<< image-digests
       # ---- Opt-in gate: skan obrazów PO push, PRZED deployem i podpisem. Fail Grype albo Trivy => job pada => deploy
       #      się nie ruszy, a job sign nie podpisze obrazu, więc Kyverno go nie wpuści, choć leży w GHCR.
@@ -543,7 +548,8 @@ jobs:
       id-token: write
       packages: write
     env:
-      IMAGES: ${{ needs.build-push.outputs.images }}
+      BACKEND_DIGEST: ${{ needs.build-push.outputs.backend-digest }}
+      FRONTEND_DIGEST: ${{ needs.build-push.outputs.frontend-digest }}
       IMAGE_PREFIX: ghcr.io/${{ needs.versions.outputs.owner }}/${{ inputs.app-name }}
     steps:
       - name: Install cosign
@@ -553,22 +559,20 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Podpisuje tylko digesty skanowanych obrazów tej aplikacji; każdą referencję sprawdza, zanim podpisze którąkolwiek.
+      # Podpisuje tylko digesty skanowanych obrazów tej aplikacji, z referencjami złożonymi z jej prefiksu; każdy digest
+      # sprawdza, zanim podpisze którykolwiek.
       - name: Sign the scanned images
         run: |
           # >>> sign-images
           set -euo pipefail
-          read -ra images <<< "$IMAGES"
-          if [ "${#images[@]}" -eq 0 ]; then
-            echo "::error::build-push resolved no digest to sign."
+          if [ -z "${BACKEND_DIGEST:-}" ]; then
+            echo "::error::build-push resolved no backend digest to sign."
             exit 1
           fi
+          images=("$IMAGE_PREFIX-backend@$BACKEND_DIGEST")
+          if [ -n "${FRONTEND_DIGEST:-}" ]; then images+=("$IMAGE_PREFIX-frontend@$FRONTEND_DIGEST"); fi
           for image in "${images[@]}"; do
-            case "$image" in
-              "$IMAGE_PREFIX-backend@sha256:"* | "$IMAGE_PREFIX-frontend@sha256:"*) ;;
-              *) echo "::error::Refusing to sign '$image': only scanned images of $IMAGE_PREFIX, by digest, are signed."; exit 1 ;;
-            esac
-            if [[ ! "${image##*@sha256:}" =~ ^[0-9a-f]{64}$ ]]; then
+            if [[ ! "${image#*@}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
               echo "::error::Refusing to sign '$image': its digest is not a sha256 digest."
               exit 1
             fi

@@ -67,10 +67,10 @@ digests() {
   paste -sd'|' - < "$tmp/github-output"
 }
 outputs=$(digests SINGLE_IMAGE=false) || fail 'the image-digests block must run for two images'
-[[ "$outputs" == "backend=$backend|frontend=$frontend|images=$backend $frontend" ]] \
-  || fail "two images must resolve to the digest references of the backend and the frontend, got: $outputs"
+[[ "$outputs" == "backend=$backend|frontend=$frontend|images=$backend $frontend|backend-digest=$backend_digest|frontend-digest=$frontend_digest" ]] \
+  || fail "two images must resolve to the digest references and the digests of the backend and the frontend, got: $outputs"
 outputs=$(digests SINGLE_IMAGE=true FRONTEND_VER='') || fail 'the image-digests block must run for a single image'
-[[ "$outputs" == "backend=$backend|frontend=|images=$backend" ]] \
+[[ "$outputs" == "backend=$backend|frontend=|images=$backend|backend-digest=$backend_digest|frontend-digest=" ]] \
   || fail "a single image must resolve only the backend, got: $outputs"
 digests SINGLE_IMAGE=false BACKEND_VER=9.9.9 > /dev/null && fail 'a tag missing from GHCR must fail the digest step'
 
@@ -142,8 +142,11 @@ trivy_scan FAIL_ON=app-backend && fail 'a finding in the backend must fail the T
 [[ $(grep -c . "$tmp/calls") -eq 2 ]] || fail 'a finding in one image must not stop the scan of the others'
 
 # --- sign: podpis po obu bramkach, w jobie bez kodu repozytorium ---
-grep -qFx '      images: ${{ steps.digests.outputs.images }}' <<< "$build_push" \
-  || fail 'build-push must expose the scanned digests as its output images'
+# GitHub pomija wyjście joba, w którym jest wartość sekretu, a właściciel w referencji obrazu bywa wartością sekretu
+# (GPR_USER konsumenta), więc build-push wystawia same digesty, a sign składa z nich referencje.
+job_outputs=$(awk '/^    outputs:$/ { p = 1; next } p && /^      / { print; next } p { exit }' <<< "$build_push")
+[[ "$job_outputs" == $'      backend-digest: ${{ steps.digests.outputs.backend-digest }}\n      frontend-digest: ${{ steps.digests.outputs.frontend-digest }}' ]] \
+  || fail "build-push must expose only the scanned digests, never a reference with the owner, which GitHub drops when a secret holds that value; got: $(paste -sd'|' - <<< "$job_outputs")"
 grep -qF 'id-token' <<< "$build_push" && fail 'build-push runs dependency code, so it must never get id-token: write'
 sign=$(job sign)
 [[ -n "$sign" ]] || fail 'deploy.yml must have a sign job'
@@ -155,8 +158,10 @@ permissions=$(awk '/^    permissions:$/ { p = 1; next } p && /^      / { print; 
 [[ "$permissions" == $'      id-token: write\n      packages: write' ]] \
   || fail "sign needs exactly id-token: write and packages: write, got: $(paste -sd'|' - <<< "$permissions")"
 grep -qE 'actions/checkout|gradlew|npm ' <<< "$sign" && fail 'sign must not check out or run the code of the repository'
-grep -qFx '      IMAGES: ${{ needs.build-push.outputs.images }}' <<< "$sign" \
-  || fail 'sign must sign exactly the digests that build-push scanned'
+grep -qFx '      BACKEND_DIGEST: ${{ needs.build-push.outputs.backend-digest }}' <<< "$sign" \
+  || fail 'sign must sign exactly the backend digest that build-push scanned'
+grep -qFx '      FRONTEND_DIGEST: ${{ needs.build-push.outputs.frontend-digest }}' <<< "$sign" \
+  || fail 'sign must sign exactly the frontend digest that build-push scanned'
 grep -qFx '      IMAGE_PREFIX: ghcr.io/${{ needs.versions.outputs.owner }}/${{ inputs.app-name }}' <<< "$sign" \
   || fail 'sign must know the image prefix of the application'
 pinned sigstore/cosign-installer "$(step sign 'Install cosign')" \
@@ -168,16 +173,22 @@ sign_images() {
   : > "$tmp/calls"
   (env PATH="$tmp/bin:$PATH" CALLS="$tmp/calls" IMAGE_PREFIX=ghcr.io/owner/app "$@" bash "$tmp/sign.sh") > "$tmp/out" 2>&1
 }
-sign_images IMAGES="$backend $frontend" || fail 'the sign-images block must sign two scanned images'
+sign_images BACKEND_DIGEST="$backend_digest" FRONTEND_DIGEST="$frontend_digest" \
+  || fail 'the sign-images block must sign two scanned images'
 [[ "$(paste -sd'|' - < "$tmp/calls")" == "sign --yes $backend|sign --yes $frontend" ]] \
   || fail "each digest must be signed keyless, by digest, without a prompt, got: $(paste -sd'|' - < "$tmp/calls")"
-for bad in 'ghcr.io/owner/app-backend:2.0.0' "ghcr.io/owner/other-backend@$backend_digest" "ghcr.io/owner/app-migrate@$backend_digest" \
-  "ghcr.io/owner/app-backend@sha256:abc" ''; do
-  sign_images IMAGES="$bad" && fail "sign must refuse '$bad': only digests of the scanned images of this application are signed"
-  [[ ! -s "$tmp/calls" ]] || fail "sign must not call cosign at all for '$bad'"
+sign_images BACKEND_DIGEST="$backend_digest" FRONTEND_DIGEST='' || fail 'the sign-images block must sign a single scanned image'
+[[ "$(paste -sd'|' - < "$tmp/calls")" == "sign --yes $backend" ]] \
+  || fail "a single image must sign only the backend, got: $(paste -sd'|' - < "$tmp/calls")"
+for bad in '' '2.0.0' 'sha256:abc' "sha256:$(printf 'B%.0s' {1..64})" "$backend_digest ghcr.io/owner/other-backend@$backend_digest"; do
+  sign_images BACKEND_DIGEST="$bad" FRONTEND_DIGEST="$frontend_digest" \
+    && fail "sign must refuse the backend digest '$bad': only sha256 digests of the scanned images are signed"
+  [[ ! -s "$tmp/calls" ]] || fail "sign must not call cosign at all for the backend digest '$bad'"
 done
-sign_images IMAGES="$backend ghcr.io/owner/app-frontend:3.0.0" && fail 'one reference by tag must refuse the whole set'
-[[ ! -s "$tmp/calls" ]] || fail 'sign checks every reference before it signs any'
+grep -qF 'build-push resolved no backend digest' <<< "$(sign_images BACKEND_DIGEST='' FRONTEND_DIGEST=''; cat "$tmp/out")" \
+  || fail 'a missing backend digest must name build-push as the job that resolved none'
+sign_images BACKEND_DIGEST="$backend_digest" FRONTEND_DIGEST='sha256:abc' && fail 'one bad digest must refuse the whole set'
+[[ ! -s "$tmp/calls" ]] || fail 'sign checks every digest before it signs any'
 
 # --- kontrakt dla platform-workflows-check: wywołujący nadaje id-token: write ---
 for contract in "$root/frontend/packages/versions/workflow-contract.txt" "$root/templates/tests/fixtures/workflow-contract.txt"; do
