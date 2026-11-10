@@ -606,8 +606,9 @@ commit; the workflow does not wait for it and runs no smoke test.
   looks a relative reference in a workflow called through an annotated tag up at the tag object and fails at startup
   with "workflow was not found" ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). So a change to `deploy.yml`
   reaches `promote.yml` only when that pin moves, in a later release. Version 1.8.9 of `promote.yml` cannot start;
-  use 1.8.10 or later. The pin is 1.9.0, the first release whose `deploy.yml` gates with Trivy and signs; a
-  promotion fails, and commits nothing, when either gate or the signature fails. Accept a finding in both `.grype.yaml`
+  use 1.8.10 or later. The pin is 1.10.1. Its `deploy.yml` gates with Trivy and signs, as since 1.9.0. It also signs
+  when the repository owner is the value of a secret, and it frees the disk for Trivy. A promotion fails, and commits
+  nothing, when either gate or the signature fails. Accept a finding in both `.grype.yaml`
   and `.trivyignore.yaml` ([accepting a finding](security-scanning.md#accepting-a-finding)).
 
 ```yaml

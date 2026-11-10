@@ -104,7 +104,7 @@ jobs:
     needs: preflight
     # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
     # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@c0a75233430f9e026e88e8cdb123d810d9da8bb4 # v1.9.0
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@d88288965f4377fbab95db2f850aa70a1d0a2d3f # v1.10.1
     permissions:
       contents: read
       packages: write
