@@ -456,6 +456,23 @@ jobs:
           severity-cutoff: ${{ inputs.scan-severity }}
           only-fixed: true
           output-format: table
+      # Trivy pobiera bazę Java DB (blisko 1 GB spakowana) na dysk, który zapełniły już buildy, cache buildx i baza Grype:
+      # release Azimuth 0.1.69 padł na "no space left on device". Cache buildx jest już wyeksportowany do gha, baza Grype
+      # po jego bramkach niepotrzebna, a Android, .NET, GHC i CodeQL z obrazu runnera nie służą temu jobowi. Narzędzia
+      # usuwa tylko na runnerze GitHuba; porażka prune zostawia ostrzeżenie, bo o miejscu i tak rozstrzyga Trivy.
+      - name: Free the disk for the Trivy databases
+        if: ${{ inputs.scan-images }}
+        run: |
+          # >>> trivy-disk
+          set -euo pipefail
+          df -h /
+          docker buildx prune --all --force || echo "::warning::docker buildx prune failed; Trivy may run short of disk."
+          rm -rf "$HOME/.cache/grype"
+          if [ "${RUNNER_ENVIRONMENT:-}" = "github-hosted" ]; then
+            sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          fi
+          df -h /
+          # <<< trivy-disk
       # Trivy obok Grype: ten sam próg, tylko podatności z poprawką, każdy obraz skanowany nawet po porażce poprzedniego.
       # Wersja przypięta, setup-trivy sprawdza sumę kontrolną wydania. Wyjątki: .trivyignore.yaml w korzeniu repo
       # (docs/security-scanning.md). Trivy biegnie tu, jak Grype, a nie w osobnym jobie: build-push i tak uruchamia kod
