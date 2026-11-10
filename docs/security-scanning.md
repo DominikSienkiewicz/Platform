@@ -16,6 +16,11 @@ cannot fix yet. The caller side of each workflow is in [reusable-workflows.md](r
 | Snyk | `container-scan.yml`, `deploy.yml` | never: advisory only | — |
 | CodeQL (Platform only, not reusable) | `codeql.yml` | never: alerts go to Code scanning | dismiss the alert in Code scanning with a reason |
 
+Before Trivy runs, `deploy.yml` frees the runner's disk for Trivy's Java DB, which is close to 1 GB compressed. It
+prunes the buildx cache and removes the Grype database. On a GitHub-hosted runner it also removes toolchains the
+job does not use. The step logs the free space before and after, so check that log when Trivy reports "no space
+left on device".
+
 `only-fixed` differs on purpose. `container-scan.yml` defaults to `true`, because base images carry
 HIGH OS findings without a fix that would keep it red forever. `security-scan.yml` defaults to
 `false`: a dependency finding without a fix is still worth a decision, which the exception records.
@@ -74,7 +79,9 @@ therefore never runs it.
 
 - **What is signed.** The `build-push` job resolves the backend tag, and the frontend tag unless
   `single-image` is set, to a digest once. Grype and Trivy scan that digest, and the `sign` job signs the same
-  digest. The migration and `eval-worker` images are not scanned, so they are not signed either.
+  digest. `build-push` passes `sign` only the digests, and `sign` adds `ghcr.io/<owner>/<app-name>` itself:
+  GitHub drops a job output that contains a secret's value, and the owner's login is often a secret's value,
+  for example `GPR_USER`. The migration and `eval-worker` images are not scanned, so they are not signed either.
 - **How.** cosign keyless, through the public Sigstore instance. Fulcio issues a short-lived certificate from
   the job's GitHub OIDC token, so no signing key exists. The signature is a Sigstore bundle, attached to the
   image in GHCR as an OCI referrer (cosign 3). Its in-toto statement names the image only by its digest.

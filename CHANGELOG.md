@@ -18,6 +18,24 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `deploy.yml` signs the scanned images when the repository owner is also the value of a secret, such as a
+  `GPR_USER` that holds the owner's login. GitHub drops a job output that contains a secret's value, so the
+  `sign` job got no image references and failed with "build-push resolved no digest to sign" after both gates had
+  passed. `build-push` now exposes only the outputs `backend-digest` and `frontend-digest`, and `sign` builds each
+  reference from `ghcr.io/<owner>/<app-name>` and checks every digest before it signs any.
+- `deploy.yml` frees the runner's disk before Trivy downloads its Java DB, which failed a release with four images
+  on "no space left on device". After the last Grype gate a step prunes the buildx cache, already exported to the
+  `gha` cache, and removes the Grype database. On a GitHub-hosted runner it also removes the Android, .NET, GHC
+  and CodeQL toolchains, which the job does not use. It logs the free space before and after.
+- `promote.yml` still pins `deploy.yml` 1.9.0, so promotions get both fixes only once that pin moves to this
+  release.
+
 ## [1.10.0] - 2026-11-10
 
 ### Consumer action required
