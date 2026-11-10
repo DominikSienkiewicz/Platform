@@ -18,6 +18,19 @@ before any artifact went out, so use 1.8.0, which replaces both.
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-11-10
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- `promote.yml` pins `deploy.yml` 1.10.1 instead of 1.9.0. A promotion now signs its images when the repository
+  owner is also the value of a secret, such as a `GPR_USER` that holds the owner's login, and it frees the runner's
+  disk before Trivy downloads its Java DB. Before, the `sign` job got no image references and failed after both
+  gates had passed, and a release with four images could fail Trivy on "no space left on device".
+
 ## [1.10.1] - 2026-11-10
 
 ### Consumer action required
