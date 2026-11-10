@@ -14,7 +14,8 @@ Gaps in the history: 1.5.0 was never published, so use 1.5.1; 1.3.13 has no tag;
 other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries the released version.
 1.6.0 itself has only its Maven artifacts: the npm publish failed, so it has no npm packages, no GitHub
 Release with assets and no `v1` move. 1.7.0 is tagged but was never published: its release gate failed
-before any artifact went out, so use 1.8.0, which replaces both.
+before any artifact went out, so use 1.8.0, which replaces both. 1.10.1 is tagged but was never published either:
+a test of its release gate failed on the GitHub runner, so use 1.10.2, which carries its fixes.
 
 ## [Unreleased]
 
@@ -26,6 +27,9 @@ None.
 
 ### Fixed
 
+- The two fixes of `deploy.yml` listed under 1.10.1, which was tagged but never published, ship with this release:
+  `sign` gets only digests, so it signs when the repository owner is the value of a secret, and the runner's disk is
+  freed before Trivy downloads its Java DB.
 - `promote.yml` pins `deploy.yml` 1.10.1 instead of 1.9.0. A promotion now signs its images when the repository
   owner is also the value of a secret, such as a `GPR_USER` that holds the owner's login, and it frees the runner's
   disk before Trivy downloads its Java DB. Before, the `sign` job got no image references and failed after both
