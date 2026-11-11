@@ -22,7 +22,7 @@ jackson2Bom = "2.21.8"                   # → platform-bom: import przed Bootem
 guava = "33.7.2-jre"                     # → platform-bom: podłoga CVE (constraint z because) — CVE-2026-102554: javers-persistence-sql 7.11.7 (i najnowszy 7.11.9) ciągnie 33.5.0-jre (High, poprawka 33.7.2). Boot Guavą nie zarządza. Zdejmij, gdy Javers przyniesie >= 33.7.2
 springDependencyManagement = "1.1.7"
 springModulith = "2.1.1"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
-springAi = "2.0.1"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u)
+springAi = "2.0.2"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u). >= 2.0.2: MCP Java SDK 2.1.0, w którym metoda JSON-RPC bez handlera to błąd -32601 z HTTP 200, a nie HTTP 500 (2.0.1 ciągnie SDK 2.0.0, java-sdk#784)
 junit = "6.1.3"                          # → PlatformVersions: enforcedPlatform junit-bom w spring-modulith-conventions i baseline JUnit w java-conventions
 archunit = "1.5.0"                       # → PlatformVersions: archunitVersion w spring-modulith-conventions — też zarządzana na runtime (spring-modulith-core 2.1.1 ciągnie 1.4.2, które nie czyta class-file 71)
 resilience4j = "2.4.0"

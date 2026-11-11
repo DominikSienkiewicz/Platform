@@ -33,6 +33,24 @@ None.
   semantic conventions for server spans require; a thrown exception keeps its status and `exception` event, and
   client spans are unchanged. `spring.autoconfigure.exclude` turns it off.
 
+### Fixed
+
+- The catalog and `platform-bom` move Spring AI from 2.0.1 to 2.0.2, which brings the MCP Java SDK 2.1.0 instead of
+  2.0.0. A stateless MCP server (`spring-ai-starter-mcp-server-webmvc` with `spring.ai.mcp.server.protocol=STATELESS`)
+  now answers a JSON-RPC request for a method it has no handler for, such as the `server/discover` probe of newer MCP
+  clients, with HTTP 200 and the JSON-RPC error `-32601` (Method not found). On SDK 2.0.0 it answered HTTP 500 with
+  the serialized exception, stack trace included, as the body, and `http.server.requests` counted the request as
+  `status=500` ([modelcontextprotocol/java-sdk#784](https://github.com/modelcontextprotocol/java-sdk/issues/784),
+  fixed in SDK 2.0.1). The other changes are in the
+  [Spring AI 2.0.2 release notes](https://github.com/spring-projects/spring-ai/releases/tag/v2.0.2) and
+  [upgrade notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html#upgrading-to-2-0-2), among them the
+  Anthropic Java SDK 2.72.0, the OpenAI Java SDK 4.80.0 and new observations of the text-to-speech, transcription and
+  Stability AI image models.
+- Spring Boot stays at 4.1.1. Spring AI 2.0.2 was built against Boot 4.1.2, as each 2.0.x patch is built against the
+  Boot patch current at its release, but its BOM manages only `org.springframework.ai` artifacts and imports no other
+  BOM, and neither its release notes nor its upgrade notes require Boot 4.1.2. Boot 4.1.1 therefore keeps managing
+  Spring Framework 7.0.9, under the 7.0.10 that `mcp-spring-webmvc` 2.0.2 declares.
+
 ## [1.10.2] - 2026-11-10
 
 ### Consumer action required

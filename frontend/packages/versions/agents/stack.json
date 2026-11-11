@@ -3,6 +3,6 @@
   "gradle": "9.8.2",
   "springBoot": "4.1.1",
   "springModulith": "2.1.1",
-  "springAi": "2.0.1",
+  "springAi": "2.0.2",
   "junit": "6.1.3"
 }
