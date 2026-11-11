@@ -41,6 +41,9 @@ dependencies {
 	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 	"tracingApi"(platform(libs.platform.bom))
 	"tracingApi"("org.springframework.boot:spring-boot-starter-opentelemetry")
+	// Most Micrometer → OpenTelemetry tylko do kompilacji PlatformTracingAutoConfiguration: działa, gdy most
+	// jest na classpath aplikacji (wariant `tracing`), a bez niego auto-konfiguracja się wycofuje.
+	compileOnly("io.micrometer:micrometer-tracing-bridge-otel")
 	// Konfiguracja annotationProcessor nie dziedziczy BOM-a z api — platforma osobno.
 	annotationProcessor(platform(libs.platform.bom))
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
@@ -48,6 +51,10 @@ dependencies {
 	testImplementation(platform(libs.platform.bom))
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc")
+	// Tracer Boota na SDK OpenTelemetry i most Micrometera, jak w wariancie `tracing`, bez eksportu OTLP:
+	// ServerErrorSpanStatusTest czyta status spanu serwera z SDK.
+	testImplementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry")
+	testImplementation("io.micrometer:micrometer-tracing-bridge-otel")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
