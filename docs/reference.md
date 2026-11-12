@@ -263,6 +263,17 @@ implementation(libs.platform.observability.starter) { capabilities { requireFeat
 implementation(libs.bundles.observability.modulith) // spring-modulith-actuator and -observability
 ```
 
+With the Micrometer bridge to OpenTelemetry on the classpath, which the `tracing` feature brings,
+[`PlatformTracingAutoConfiguration`](../gradle/observability-starter/src/main/java/pl/seniordeveloper/platform/observability/PlatformTracingAutoConfiguration.java)
+gives an HTTP server span the status `ERROR` when Spring's server observation reports `outcome=SERVER_ERROR`
+(a 5xx response) and no exception reached the observation, as when a handler, an `@ExceptionHandler` or a
+transport such as the MCP SDK's writes the 500 itself. Before, only a thrown exception set the status, so TraceQL
+`status = error` missed those requests while `http_server_requests_seconds{status=~"5.."}` counted them. As the
+OpenTelemetry semantic conventions for server spans require, the status has no description, and a 4xx or a
+success leaves it unset. A thrown exception keeps the status, description and `exception` event the bridge
+records from it, and client spans are left as they are. An application turns it off with
+`spring.autoconfigure.exclude=pl.seniordeveloper.platform.observability.PlatformTracingAutoConfiguration`.
+
 ## Web starter (*incubating*)
 
 `pl.seniordeveloper:platform-web-starter` answers every error of a Spring MVC application as RFC 9457

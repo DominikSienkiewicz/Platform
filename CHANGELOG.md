@@ -19,6 +19,20 @@ a test of its release gate failed on the GitHub runner, so use 1.10.2, which car
 
 ## [Unreleased]
 
+### Consumer action required
+
+None.
+
+### Added
+
+- The observability starter gives an HTTP server span the status `ERROR` when its response is 5xx, also when no
+  exception reached the observation, as when a handler, an `@ExceptionHandler` or the MCP SDK's transport writes
+  the 500 itself. Before, only a thrown exception set the status, so TraceQL `status = error` found none of those
+  requests. `PlatformTracingAutoConfiguration` applies whenever the Micrometer bridge to OpenTelemetry is on the
+  classpath, which the `tracing` feature brings. A 4xx or a success leaves the status unset, as the OpenTelemetry
+  semantic conventions for server spans require; a thrown exception keeps its status and `exception` event, and
+  client spans are unchanged. `spring.autoconfigure.exclude` turns it off.
+
 ## [1.10.2] - 2026-11-10
 
 ### Consumer action required
