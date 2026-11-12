@@ -19,6 +19,8 @@ a test of its release gate failed on the GitHub runner, so use 1.10.2, which car
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-12
+
 ### Consumer action required
 
 None.
