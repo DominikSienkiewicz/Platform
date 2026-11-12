@@ -1,6 +1,6 @@
 {
   "name": "@dominiksienkiewicz/tsconfig",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "description": "Shared TypeScript configurations, base and Next.js.",
   "license": "MIT",
   "engines": {
