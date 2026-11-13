@@ -1,0 +1,19 @@
+name: CI
+on: [push]
+permissions:
+  contents: read
+  packages: read
+jobs:
+  backend:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v2.0.0
+  frontend:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v2.0.0
+  scan:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/container-scan.yml@v2.0.0
+    with:
+      images: '["ghcr.io/dominiksienkiewicz/app-backend:latest"]'
+  release:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/promote.yml@v2.0.0
+    with:
+      app-name: app
+      infra-repository: DominikSienkiewicz/Infrastructure

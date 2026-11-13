@@ -16,7 +16,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BIN="frontend/node_modules/.bin/platform-bump"
-if [[ -x "$BIN" ]]; then
+# Bin spod scope sprzed przeniesienia Platform do organizacji (@dominiksienkiewicz, do 1.10.3) nie dochodzi do jej
+# wydań, więc wtedy stub bierze bin z assetów wydania, jak w repo bez frontendu.
+legacy_bin=false
+[[ -d frontend/node_modules/@dominiksienkiewicz/versions ]] && legacy_bin=true
+if [[ -x "$BIN" && "$legacy_bin" == false ]]; then
   # Zainstalowany bin sam przekazuje sterowanie binowi wydania docelowego (handoff, N-DX-4).
   exec "$BIN" "$@"
 fi
@@ -24,10 +28,10 @@ fi
 # Repo bez frontendu (N-DX-4): bin z assetów GitHub Release Platform — publiczne, bez npm i bez PAT-a, sprawdzone
 # sumą z SHA256SUMS tego wydania. Wersja: argument X.Y.Z albo najnowsze wydanie; bin sam zostaje w bieżącym MAJOR
 # i, gdy cel jest inny niż on, oddaje sterowanie binowi celu.
-if ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
+if [[ "$legacy_bin" == false ]] && ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
   && ! grep -qs 'pl.seniordeveloper:platform-catalog:' backend/settings.gradle.kts settings.gradle.kts; then
   echo "Brak $BIN — zainstaluj zależności frontendu: (cd frontend && npm install)." >&2
-  echo "Bin istnieje od @seniordeveloper-pl-dominik-sienkiewicz/versions 1.3.8 — starszy pin w frontend/package.json" >&2
+  echo "Bin istnieje w paczce versions od 1.3.8 — starszy pin w frontend/package.json" >&2
   echo "podbij ręcznie do najnowszej wersji platformy i powtórz npm install." >&2
   exit 1
 fi

@@ -317,7 +317,8 @@ if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
   CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
-  CURRENT="$(grep -oE '"@seniordeveloper-pl-dominik-sienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  # Scope organizacji albo sprzed przeniesienia (do 1.10.3): ten drugi przepisuje migracja 2.0.0-organization-scope.
+  CURRENT="$(grep -oE '"@(seniordeveloper-pl-dominik-sienkiewicz|dominiksienkiewicz)/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
 fi
 
 # Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
@@ -546,12 +547,15 @@ def walk(node, path, parent, visit):
         if isinstance(v, dict): walk(v, at, name, visit)
         elif isinstance(v, str) and name and not v.startswith("$"): visit(node, k, name, v, at)
 
+# Piny Platform pod scope organizacji albo sprzed przeniesienia (do 1.10.3): migracja 2.0.0-organization-scope
+# zmienia potem nazwę, a wersja zostaje celem.
+platform=("@seniordeveloper-pl-dominik-sienkiewicz/", "@dominiksienkiewicz/")
 t=sys.argv[1]; p="frontend/package.json"; d=json.load(open(p))
 def to_target(node, key, name, version, at):
-    if name.startswith("@seniordeveloper-pl-dominik-sienkiewicz/"): node[key]=t
+    if name.startswith(platform): node[key]=t
 for sec in ("dependencies","devDependencies"):
     for k in list(d.get(sec,{})):
-        if k.startswith("@seniordeveloper-pl-dominik-sienkiewicz/"): d[sec][k]=t
+        if k.startswith(platform): d[sec][k]=t
 walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
@@ -561,7 +565,11 @@ PY
   TARGET_PACKAGE="$TMPD"
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
-  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
+  # Rejestr scope w poleceniu: frontend/.npmrc konsumenta sprzed przeniesienia zna tylko @dominiksienkiewicz, a zmienia
+  # go dopiero migracja 2.0.0-organization-scope; token hosta npm.pkg.github.com z .npmrc działa dla obu scope'ów.
+  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET" \
+    --@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com \
+    --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
     verify_provenance "$(ls "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz)"
     tar -xzf "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'

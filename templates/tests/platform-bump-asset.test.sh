@@ -47,6 +47,20 @@ rm -f "$tmp/call"
 run 1.9.0 --dry-run || fail 'a release under the organization scope must bump through its assets'
 [[ "$(sed -n 1p "$tmp/call")" == "$tmp/cache/1.9.0/package/bin/platform-bump.sh" ]] || fail 'the bin of the 1.9.0 release must run'
 
+# Repo z frontendem, w którym npm zainstalował bin spod scope sprzed przeniesienia do organizacji (do 1.10.3): ten bin
+# nie dojdzie do wydań organizacji, więc stub bierze bin z assetów wydania, także bez backendu.
+legacy="$tmp/legacy-frontend"
+mkdir -p "$legacy/scripts" "$legacy/frontend/node_modules/.bin" "$legacy/frontend/node_modules/@dominiksienkiewicz/versions/bin"
+cp "$root/templates/platform-bump.sh" "$legacy/scripts/platform-bump.sh"
+printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.10.3" } }\n' > "$legacy/frontend/package.json"
+printf '#!/usr/bin/env bash\necho legacy > "$BUMP_CALL"\n' > "$legacy/frontend/node_modules/@dominiksienkiewicz/versions/bin/platform-bump.sh"
+chmod +x "$legacy/frontend/node_modules/@dominiksienkiewicz/versions/bin/platform-bump.sh"
+ln -s ../@dominiksienkiewicz/versions/bin/platform-bump.sh "$legacy/frontend/node_modules/.bin/platform-bump"
+rm -f "$tmp/call"
+OUT=$(cd "$tmp" && BUMP_CALL="$tmp/call" PLATFORM_RELEASES_URL="file://$tmp/releases" PLATFORM_RELEASES_API="file://$tmp/latest.json" \
+  PLATFORM_CLI_CACHE="$tmp/cache" bash "$legacy/scripts/platform-bump.sh" 1.9.0 2>&1) || fail 'a frontend with the old installed bin must bump through the release assets'
+[[ "$(sed -n 1p "$tmp/call")" == "$tmp/cache/1.9.0/package/bin/platform-bump.sh" ]] || fail 'the bin of the release, not the old installed one, must run'
+
 release 1.8.0
 printf '0000  dominiksienkiewicz-versions-1.8.0.tgz\n' > "$tmp/releases/v1.8.0/SHA256SUMS"
 rm -f "$tmp/call"
