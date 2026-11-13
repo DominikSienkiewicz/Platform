@@ -581,12 +581,13 @@ fi
 
 # --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
 #     callera deploy.yml idą na v$TARGET razem z pinami (Decyzja 3: dokładny tag przesuwany przez bump). Ruchome
-#     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. ---
+#     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. Owner
+#     stary (DominikSienkiewicz) albo organizacja: konsument trzyma stary, dopóki migracja organizacji go nie przepisze. ---
 # platform-bump:workflows
 for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
   [[ -f "$workflow" ]] || continue
   sed -i.bak -E \
-    -e "s#(uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\3#" \
+    -e "s#(uses:[[:space:]]*(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\4#" \
     -e "s#^([[:space:]]*platform-ref:[[:space:]]*)[\"']?v[0-9]+(\.[0-9]+\.[0-9]+)?[\"']?[[:space:]]*\$#\1v$TARGET#" \
     "$workflow" && rm -f "$workflow.bak"
 done

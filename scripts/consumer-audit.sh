@@ -15,7 +15,8 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 consumers="${CONSUMERS_FILE:-$root/scripts/consumers.txt}"
-platform_repo="${PLATFORM_REPO:-DominikSienkiewicz/Platform}"
+# Wzorzec ERE repo Platform w `uses:` konsumentów: stary owner albo organizacja (przeniesienie 2026-11-13).
+platform_repo="${PLATFORM_REPO:-(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform}"
 
 usage() { echo "Usage: $0 [--lag | --adoption] [--from DIR]" >&2; }
 readme="${PLATFORM_README:-$root/README.md}"

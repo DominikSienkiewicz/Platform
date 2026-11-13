@@ -1,0 +1,6 @@
+on: [push]
+jobs:
+  scan:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/security-scan.yml@v1.7.0
+    with:
+      java-version: 27

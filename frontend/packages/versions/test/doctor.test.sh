@@ -69,6 +69,13 @@ for expected in \
 done
 grep -qE '^[0-9]+ check\(s\) failed' "$tmp/out" || fail 'the summary must count the failures'
 
+organization=$(repo organization)
+printf 'jobs:\n  ci:\n    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0\n' \
+  > "$organization/.github/workflows/ci.yml"
+doctor "$organization" --offline || fail 'a repository that calls Platform under the organization owner must pass'
+grep -qF 'PASS PD021 every reusable workflow reference is v1.6.0' "$tmp/out" \
+  || fail 'references under the organization owner must be counted'
+
 : > "$FAKE_CURL_LOG"
 doctor "$good" --offline || fail '--offline must still pass a good repository'
 [[ ! -s "$FAKE_CURL_LOG" ]] || fail '--offline must not call GitHub Packages'

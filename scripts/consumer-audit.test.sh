@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # consumer-audit.sh na fiksturach, bez sieci: parsowanie (--from) i pobieranie przez atrapę `gh`, która
 # serwuje te same pliki i loguje każde wywołanie — audyt wysyła wyłącznie GET i pobiera tylko pliki, które czyta.
+# acme/alpha woła Platform pod starym ownerem DominikSienkiewicz, acme/beta pod organizacją (od 2026-11-13).
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -68,12 +69,12 @@ EOF
 put acme/beta/.github/workflows/ci.yml <<'EOF'
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
 EOF
 put acme/beta/.github/workflows/bump.yml <<'EOF'
 jobs:
   bump:
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
 EOF
 printf 'main\n' | put acme/beta/branches.txt
 

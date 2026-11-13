@@ -61,7 +61,8 @@ else
   report PASS PD020 "every Platform pin is $PIN (${#pins[@]} pins)"
 fi
 
-refs=$(grep -rhoE "uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@[^[:space:]]+" .github/workflows 2>/dev/null \
+# Referencje pod starym ownerem i pod organizacją (od 2026-11-13), dopóki migracja organizacji ich nie przepisze.
+refs=$(grep -rhoE "uses:[[:space:]]*(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@[^[:space:]]+" .github/workflows 2>/dev/null \
   | sed -E 's/.*@//' | sort | uniq -c | awk '{print $2 " (" $1 ")"}' | tr '\n' ' ')
 if [[ -z "$refs" ]]; then
   report PASS PD021 "no caller of Platform's reusable workflows"

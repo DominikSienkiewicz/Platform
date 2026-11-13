@@ -2,7 +2,10 @@
 # The workflows block of bin/platform-bump.sh moves every reference to a Platform reusable workflow,
 # and the platform-ref input of deploy.yml callers, to the bumped tag (Decision 3: exact vX.Y.Z,
 # moved by platform-bump). The moving @v1 becomes exact too; a SHA reference and other repositories'
-# workflows stay as they are. The block is cut out between its markers and run on fixture workflows.
+# workflows stay as they are. References under the old owner DominikSienkiewicz and under the organization
+# SeniorDeveloper-pl-Dominik-Sienkiewicz both move, because a consumer carries the old owner until the
+# organization migration rewrites it.
+# The block is cut out between its markers and run on fixture workflows.
 set -euo pipefail
 
 SRC="$(cd "$(dirname "$0")/.." && pwd)/bin/platform-bump.sh"
@@ -28,6 +31,8 @@ jobs:
     uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v1 # moving
   pinned:
     uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@0123456789abcdef0123456789abcdef01234567
+  organization:
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/sonar.yml@v1.5.30
   other:
     uses: someone/else/.github/workflows/build.yml@v1.5.30
 YAML
@@ -45,6 +50,8 @@ ci="$repo/.github/workflows/ci.yml"
 grep -qx '    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$ci" || fail 'an exact ref must move to the target'
 grep -qx '    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v1.6.0 # moving' "$ci" || fail '@v1 must become the exact target'
 grep -q 'semgrep.yml@0123456789abcdef0123456789abcdef01234567' "$ci" || fail 'a SHA reference must stay'
+grep -qx '    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/sonar.yml@v1.6.0' "$ci" \
+  || fail 'a ref under the organization that owns Platform since 2026-11-13 must move as well'
 grep -q 'someone/else/.github/workflows/build.yml@v1.5.30' "$ci" || fail "another repository's workflow must stay"
 grep -q 'deploy.yml@v1.6.0' "$repo/.github/workflows/deploy.yaml" || fail '.yaml workflows must move too'
 grep -qx '      platform-ref: v1.6.0' "$repo/.github/workflows/deploy.yaml" || fail 'platform-ref must follow the target'
