@@ -230,6 +230,19 @@ preflight
 # brak gh tylko ostrzega, bo bump działał dotąd bez niego.
 # platform-bump:provenance
 version_key() { local IFS=.; read -r -a part <<<"$1"; printf '%05d%05d%05d' "${part[0]}" "${part[1]}" "${part[2]}"; }
+# Tożsamość podpisu = release.yml repo Platform: organizacji (wydania po przeniesieniu 2026-11-13) albo konta
+# osobistego (wydania do 1.10.3). Inne repo nie przechodzi; wyjście gh z każdej próby trafia do <plik>.provenance.
+attested_by_platform() {
+  local file=$1 owner
+  : > "$file.provenance"
+  for owner in SeniorDeveloper-pl-Dominik-Sienkiewicz DominikSienkiewicz; do
+    if GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$owner/Platform" \
+      --signer-workflow "$owner/Platform/.github/workflows/release.yml" >/dev/null 2>>"$file.provenance"; then
+      return 0
+    fi
+  done
+  return 1
+}
 verify_provenance() {
   local file=$1 name
   name=$(basename "$file")
@@ -239,8 +252,7 @@ verify_provenance() {
     echo "Provenance: Platform $TARGET predates the release attestations of 1.6.0, so $name is not verified."
   elif ! command -v gh >/dev/null 2>&1; then
     echo "WARNING: gh is not installed, so the provenance of $name was not verified."
-  elif GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$OWNER/Platform" \
-    --signer-workflow "$OWNER/Platform/.github/workflows/release.yml" >/dev/null 2>"$file.provenance"; then
+  elif attested_by_platform "$file"; then
     echo "Provenance: $name was built by Platform's release.yml."
   else
     echo "The provenance of $name does not verify, so platform-bump stops before using it:" >&2

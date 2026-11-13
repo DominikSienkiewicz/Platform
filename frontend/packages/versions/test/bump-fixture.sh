@@ -57,11 +57,16 @@ if [[ "$1" == pack ]]; then
 fi
 exit 0
 STUB
-# gh: `attestation verify` udaje się, chyba że FAKE_PROVENANCE=fail; wywołania trafiają do FAKE_GH_LOG.
+# gh: `attestation verify` udaje się, chyba że FAKE_PROVENANCE=fail, albo — z FAKE_SIGNER=<owner>/<repo> — tylko dla
+# atestacji tego repo (tożsamość podpisu wydania); wywołania trafiają do FAKE_GH_LOG.
 cat > "$fixture_work/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "gh $*" >> "$FAKE_GH_LOG"
 [[ "$1 $2" == "attestation verify" && "${FAKE_PROVENANCE:-ok}" == fail ]] && { echo 'no attestation matched' >&2; exit 1; }
+if [[ "$1 $2" == "attestation verify" && -n "${FAKE_SIGNER:-}" && " $* " != *" --repo $FAKE_SIGNER "* ]]; then
+  echo "no attestation of $FAKE_SIGNER matched" >&2
+  exit 1
+fi
 exit 0
 STUB
 chmod +x "$fixture_work/bin/curl" "$fixture_work/bin/npm" "$fixture_work/bin/gh"
