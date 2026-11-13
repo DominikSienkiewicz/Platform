@@ -37,7 +37,7 @@ scripts/new-consumer.sh --name order-service --package pl.example.orders --kind 
 
 Then provide the credentials: `GPR_TOKEN` as a repository secret for CI, and `gpr.user`/`gpr.key` and
 `GITHUB_TOKEN` locally ([Prerequisites](#prerequisites)); run `npm install` once in `frontend/` and commit
-the `package-lock.json` it writes. Once the public `DominikSienkiewicz/platform-example` repository exists,
+the `package-lock.json` it writes. Once the public `SeniorDeveloper-pl-Dominik-Sienkiewicz/platform-example` repository exists,
 every release regenerates it from this command ([RELEASING.md](../RELEASING.md#what-releaseyml-does)).
 
 It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
@@ -62,7 +62,7 @@ Backend, for a new repository started from a template:
    (1.5.31 or newer, the first release that supports `platformRepository`):
 
    ```bash
-   git ls-remote --tags --refs https://github.com/DominikSienkiewicz/Platform 'v*.*.*' | sed 's#.*/v##' | sort -V | tail -1
+   git ls-remote --tags --refs https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform 'v*.*.*' | sed 's#.*/v##' | sort -V | tail -1
    ```
 
 3. Check the wiring, then run the full build:
@@ -161,7 +161,7 @@ pluginManagement {
 		throw GradleException(
 			"No GitHub Packages credentials, so the Platform plugins cannot resolve. Set gpr.user and gpr.key in " +
 				"~/.gradle/gradle.properties, or GITHUB_ACTOR and GITHUB_TOKEN in the environment, with a classic token that " +
-				"has the read:packages scope (https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
+				"has the read:packages scope (https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
 				"To build against a local Platform instead, pass -PplatformRepository.",
 		)
 	}
@@ -170,7 +170,7 @@ pluginManagement {
 		gradlePluginPortal()
 		mavenCentral()
 		maven {
-			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			url = uri("https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform")
 			credentials {
 				username = gprUser
 				password = gprKey
@@ -298,13 +298,13 @@ permissions:
   packages: read
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       working-directory: . # "backend" for a repository with backend/ and frontend/
     secrets:
       gpr_token: ${{ secrets.GPR_TOKEN }}
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
     with:
       strict: true
     secrets:
@@ -522,14 +522,14 @@ container answers on port 3000.
 
 Every release from 1.6.0 on carries GitHub artifact attestations: SLSA build provenance that ties
 each published jar, the catalog TOML and each npm tarball to the `release.yml` run and commit that
-built it in `DominikSienkiewicz/Platform`. Verify a file you downloaded before you trust it:
+built it in `SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`. Verify a file you downloaded before you trust it:
 
 ```bash
 npm pack @dominiksienkiewicz/versions@X.Y.Z
 ```
 
 ```bash
-gh attestation verify dominiksienkiewicz-versions-X.Y.Z.tgz --repo DominikSienkiewicz/Platform
+gh attestation verify dominiksienkiewicz-versions-X.Y.Z.tgz --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
 ```
 
 A Maven artifact works the same way, for example `platform-test-fixtures-X.Y.Z.jar` from the Gradle
@@ -540,7 +540,7 @@ The files attached to a GitHub Release also carry their attestation as
 `platform-X.Y.Z-assets.sigstore.json`, so they can be verified offline, without the attestations API:
 
 ```bash
-gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-assets.sigstore.json --repo DominikSienkiewicz/Platform
+gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-assets.sigstore.json --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
 ```
 
 `platform-bump` checks the package it downloads this way before it uses it, for every target from

@@ -17,9 +17,9 @@ call the reusable workflows at an exact `@vX.Y.Z`, which `platform-bump` moves t
 Report privately. Do not open a public issue, pull request or discussion for a vulnerability.
 
 Use GitHub Private Vulnerability Reporting: open the
-[Security tab](https://github.com/DominikSienkiewicz/Platform/security) and choose
+[Security tab](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/security) and choose
 **Report a vulnerability**, or go straight to the
-[new advisory form](https://github.com/DominikSienkiewicz/Platform/security/advisories/new).
+[new advisory form](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/security/advisories/new).
 
 Please include:
 

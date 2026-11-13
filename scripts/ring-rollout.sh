@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "$usage" >&2; exit 2; }
-first=${RING_ROLLOUT_FIRST:-DominikSienkiewicz/Touchstone}
+first=${RING_ROLLOUT_FIRST:-SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone}
 poll=${RING_ROLLOUT_POLL:-20}
 timeout=${RING_ROLLOUT_TIMEOUT:-900}
 

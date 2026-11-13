@@ -31,7 +31,7 @@ if ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
   echo "podbij ręcznie do najnowszej wersji platformy i powtórz npm install." >&2
   exit 1
 fi
-OWNER="DominikSienkiewicz"
+OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
 releases="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
 api="${PLATFORM_RELEASES_API:-https://api.github.com/repos/$OWNER/Platform/releases/latest}"
 proto() { [[ "$1" == file://* ]] && printf '=file' || printf '=https'; }

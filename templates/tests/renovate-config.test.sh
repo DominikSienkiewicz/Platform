@@ -29,7 +29,7 @@ expect(!JSON.stringify(preset.customManagers ?? []).includes("platform-catalog")
 expect(!JSON.stringify(preset).includes("hostRules"), "default.json needs no registry credentials");
 expect((preset.customManagers ?? []).some((m) => m.managerFilePatterns.some((p) => p.includes("PlatformImages"))),
   "default.json keeps the Docker manager for PlatformImages.java");
-expect((platform.extends ?? []).includes("github>DominikSienkiewicz/Platform"), "renovate.json must extend the shared preset");
+expect((platform.extends ?? []).includes("github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"), "renovate.json must extend the shared preset");
 
 const managerFor = (fragment) => (platform.customManagers ?? []).find((m) => m.managerFilePatterns.some((p) => p.includes(fragment)));
 const regex = (manager) => new RegExp(manager.matchStrings[0], "g");

@@ -19,7 +19,7 @@ JUnit {{junit}}. Read versions from `libs.versions.toml` of that release, never 
 - The final stage of the Dockerfile follows `templates/Dockerfile.backend` of the pinned release.
 - A schema change is a new migration of the tool the repository already uses, named by its convention with the
   next free number; never edit an applied one. The conventions and their guards:
-  https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consuming.md#database-migrations
+  https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v{{VERSION}}/docs/consuming.md#database-migrations
 - GitHub Packages credentials: `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` locally,
   `GITHUB_ACTOR` and `GITHUB_TOKEN` on CI; never in the repository.
 

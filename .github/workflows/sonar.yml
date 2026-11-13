@@ -7,7 +7,7 @@ name: Sonar (reusable)
 #
 # Reusable: skan SonarQube Cloud dla monorepo (backend Gradle + frontend npm).
 # Wołane z cienkiego callera z jawnymi sekretami:
-#   uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
+#   uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
 #   secrets: { SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}, gpr_token: ${{ secrets.GPR_TOKEN }} }
 #
 # Oba joby są POMIJANE dopóki nie istnieje sekret SONAR_TOKEN (guard krokowy `if: env.SONAR_TOKEN != ''`),

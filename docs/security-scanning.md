@@ -105,24 +105,29 @@ therefore never runs it.
   | Field | Value |
   |---|---|
   | Issuer | `https://token.actions.githubusercontent.com` |
-  | Subject (SAN) | `https://github.com/DominikSienkiewicz/Platform/.github/workflows/deploy.yml@<ref>`. Fulcio builds it from the token's `job_workflow_ref`, so `<ref>` is the ref that the `uses:` line names: a commit SHA when `promote.yml` calls `deploy.yml`, and `refs/tags/vX.Y.Z` for a direct caller pinned to a tag |
-  | Source repository (`githubWorkflowRepository`, OID 1.3.6.1.4.1.57264.1.5) | the calling repository, for example `DominikSienkiewicz/Azimuth` |
+  | Subject (SAN) | `https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@<ref>`. Fulcio builds it from the token's `job_workflow_ref`, so `<ref>` is the ref that the `uses:` line names: a commit SHA when `promote.yml` calls `deploy.yml`, and `refs/tags/vX.Y.Z` for a direct caller pinned to a tag. An image signed before Platform moved to the organization on 2026-11-13 names `https://github.com/DominikSienkiewicz/Platform/...` instead |
+  | Source repository (`githubWorkflowRepository`, OID 1.3.6.1.4.1.57264.1.5) | the calling repository, for example `SeniorDeveloper-pl-Dominik-Sienkiewicz/Azimuth` |
   | Source ref (`githubWorkflowRef`, OID 1.3.6.1.4.1.57264.1.6) | the branch of the calling run, `refs/heads/release` for a promotion |
   | Trigger (`githubWorkflowTrigger`, OID 1.3.6.1.4.1.57264.1.2) | `push`, or `workflow_dispatch` for a manual run |
   | Predicate type of the signed statement | `https://sigstore.dev/cosign/sign/v1` |
 
-Verify one image by hand, by tag or by digest:
+Verify one image by hand, by tag or by digest. The expression accepts both owners of Platform, because images
+signed before the transfer keep the old identity; drop `DominikSienkiewicz|` once no running workload uses such an
+image:
 
 ```bash
 cosign verify ghcr.io/owner/myapp-backend:1.2.3 \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@' \
+  --certificate-identity-regexp '^https://github\.com/(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform/\.github/workflows/deploy\.yml@' \
   --certificate-github-workflow-repository owner/myapp
 ```
 
+`--certificate-github-workflow-repository` names the calling repository as the certificate recorded it, so an
+image signed before the caller moved to the organization carries its old owner there as well.
+
 In a cluster, a Kyverno `ImageValidatingPolicy` checks the same identity with a cosign `keyless` attestor.
 Use the `issuer` and `subjectRegExp` above in `identities`, and put `githubWorkflowRepository` and
-`githubWorkflowRef` in `additionalExtensions`. Kyverno 1.19.2 reads cosign 3 bundles from the image's OCI
+`githubWorkflowRef` in `additionalExtensions`; during the transition list both owners in each. Kyverno 1.19.2 reads cosign 3 bundles from the image's OCI
 referrers. The packages in GHCR are private, so give the policy pull credentials in `spec.credentials`.
 
 ## Platform's own frontend workspace

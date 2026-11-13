@@ -30,7 +30,7 @@ node -e 'const m = require(process.argv[1]); if (m.devDependencies["@dominiksien
 grep -qF 'Frontend: (cd' "$tmp/out" || fail 'the generator must say how to create package-lock.json'
 
 workflow="$tmp/shop/.github/workflows/ci.yml"
-grep -qF "uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version" "$workflow" || fail 'the frontend caller must use the exact tag'
+grep -qF "uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version" "$workflow" || fail 'the frontend caller must use the exact tag'
 grep -qx '      strict: true' "$workflow" || fail 'the frontend caller must run strict'
 [[ $(grep -c 'gpr_token: ${{ secrets.GPR_TOKEN }}' "$workflow") -eq 2 ]] || fail 'both callers pass gpr_token explicitly'
 

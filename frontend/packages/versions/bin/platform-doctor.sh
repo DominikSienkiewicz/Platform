@@ -18,7 +18,7 @@ for arg in "$@"; do
 done
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "FAIL PD001 not inside a git repository"; exit 1; }
 cd "$root" || exit 1
-OWNER=DominikSienkiewicz
+OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz
 failures=0
 report() { # report <PASS|WARN|FAIL> <ID> <message> [fix]
   printf '%-4s %s %s\n' "$1" "$2" "$3"

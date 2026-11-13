@@ -60,8 +60,8 @@ change, and the frontend from `versions.json`.
 
 ## Platform rules for agents (Platform {{VERSION}})
 
-For a repository that pins [DominikSienkiewicz/Platform](https://github.com/DominikSienkiewicz/Platform) {{VERSION}}.
-The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
+For a repository that pins [SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform) {{VERSION}}.
+The full rule sheet of that release: https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
 - Versions come only from the catalog (`libs.<alias>` in Gradle) or the frontend canon (`versions.json`).
   Never write a version inline: `platformDependencyCheck` and `platform-versions-check` fail the build.

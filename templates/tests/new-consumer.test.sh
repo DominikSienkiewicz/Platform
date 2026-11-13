@@ -23,7 +23,7 @@ grep -qx 'group = "pl.example.orders"' "$out/backend/build.gradle.kts" || fail '
 grep -qx 'platformVersion=1.6.0' "$out/backend/gradle.properties" || fail 'the pin must be the requested version'
 [[ -x "$out/backend/gradlew" ]] || fail 'the wrapper must be executable'
 workflow="$out/.github/workflows/ci.yml"
-grep -qF 'uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$workflow" || fail 'the caller must use the exact tag'
+grep -qF 'uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$workflow" || fail 'the caller must use the exact tag'
 if grep -qE '@v1$|@v1[^.]|secrets: inherit' "$workflow"; then fail 'no @v1 and no secrets: inherit'; fi
 grep -qx '  packages: read' "$workflow" || fail 'the caller must grant packages: read'
 grep -qF 'gpr_token: ${{ secrets.GPR_TOKEN }}' "$workflow" || fail 'the caller must pass gpr_token explicitly'

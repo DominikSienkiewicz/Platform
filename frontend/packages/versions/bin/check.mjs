@@ -103,7 +103,7 @@ if (fix && (drift.length > 0 || (canonVersion && looseOrMixedPins.length > 0))) 
 // Kody bramek (N-SHOW-8) z linkiem do docs wydania, z którego pochodzi kanon.
 /** @param {string} code */
 const gateLink = (code) =>
-  `https://github.com/DominikSienkiewicz/Platform/blob/v${canonVersion ?? "main"}/docs/gates.md#${code.toLowerCase()}`;
+  `https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v${canonVersion ?? "main"}/docs/gates.md#${code.toLowerCase()}`;
 const deprecations = declared.filter(({ name }) => deprecated[name]);
 for (const d of deprecations) {
   const { since, removeIn, replacement } = deprecated[d.name];
@@ -138,7 +138,7 @@ if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0)
 
 /** @param {{ at: string | null }} e */
 const where = (e) => (e.at ? ` [${e.at}]` : "");
-const platformCanon = "frontend/packages/versions/versions.json in DominikSienkiewicz/Platform";
+const platformCanon = "frontend/packages/versions/versions.json in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform";
 
 // GitHub Actions: adnotacja na linii wpisu w package.json (pierwsze wystąpienie "nazwa": "wersja") i tabela w podsumowaniu.
 if (process.env.GITHUB_ACTIONS === "true") {

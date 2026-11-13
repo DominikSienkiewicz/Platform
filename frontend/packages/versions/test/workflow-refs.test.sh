@@ -44,7 +44,7 @@ jobs:
       app-name: app
       platform-ref: "v1.5.30"
 YAML
-(cd "$repo" && OWNER=DominikSienkiewicz TARGET=1.6.0 bash "$WORK/workflows.sh")
+(cd "$repo" && OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz TARGET=1.6.0 bash "$WORK/workflows.sh")
 
 ci="$repo/.github/workflows/ci.yml"
 grep -qx '    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$ci" || fail 'an exact ref must move to the target'
@@ -58,6 +58,6 @@ grep -qx '      platform-ref: v1.6.0' "$repo/.github/workflows/deploy.yaml" || f
 
 empty="$WORK/empty"
 mkdir -p "$empty"
-(cd "$empty" && OWNER=DominikSienkiewicz TARGET=1.6.0 bash "$WORK/workflows.sh") || fail 'a repository without workflows must pass'
+(cd "$empty" && OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz TARGET=1.6.0 bash "$WORK/workflows.sh") || fail 'a repository without workflows must pass'
 
 echo 'OK: platform-bump moves Platform workflow refs and platform-ref to the exact target'

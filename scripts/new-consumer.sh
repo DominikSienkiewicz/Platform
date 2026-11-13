@@ -121,7 +121,7 @@ permissions:
 
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
     with:
       working-directory: backend
     secrets:
@@ -247,7 +247,7 @@ describe("Home", () => {
 TSX
   cat >> "$out/.github/workflows/ci.yml" <<YML
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
     with:
       working-directory: frontend
       strict: true

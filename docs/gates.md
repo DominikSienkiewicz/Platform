@@ -20,7 +20,7 @@ python3 scripts/gate-failures.py annotations.json
 
 The table holds counts only, never the messages.
 
-To escalate any of them, open an issue in DominikSienkiewicz/Platform with the code, the full message and
+To escalate any of them, open an issue in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform with the code, the full message and
 the Platform version from the link.
 
 ## Gradle

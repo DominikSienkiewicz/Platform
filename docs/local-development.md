@@ -21,7 +21,7 @@ For Gradle, in `~/.gradle/gradle.properties` — not in the repository:
 ```properties
 gpr.user=<github-login>
 gpr.key=<PAT with read:packages / write:packages>
-gpr.owner=DominikSienkiewicz
+gpr.owner=SeniorDeveloper-pl-Dominik-Sienkiewicz
 gpr.repo=Platform
 ```
 

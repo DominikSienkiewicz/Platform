@@ -19,7 +19,7 @@ bash "$root/scripts/new-consumer.sh" --name platform-example --package pl.senior
 cat > "$out/README.md" <<README
 # platform-example
 
-A product repository as [DominikSienkiewicz/Platform](https://github.com/DominikSienkiewicz/Platform) renders
+A product repository as [SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform) renders
 it: \`scripts/new-consumer.sh --kind spring-app --frontend next\` at Platform v$version. The backend applies the
 published convention plugins and catalog, the frontend pins every dependency at the Platform canon, and CI
 calls Platform's reusable workflows at the exact tag.

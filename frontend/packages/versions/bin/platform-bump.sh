@@ -90,7 +90,7 @@ if [[ ! -f backend/settings.gradle.kts ]] && [[ ! -f frontend/package.json ]] &&
   exit 1
 fi
 
-OWNER="DominikSienkiewicz"
+OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"
 
 TOKEN="${GPR_TOKEN:-${GITHUB_TOKEN:-}}"

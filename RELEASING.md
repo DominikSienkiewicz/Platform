@@ -15,7 +15,7 @@ until they bump:
 
 - **Artifacts** are pinned to the exact platform version.
 - **Reusable workflows** are called by the exact tag,
-  `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
+  `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
   pins. The moving `v1` tag, which `release.yml` moves forward after every successful release, still
   works for callers that have not migrated, and reaches them on their next CI run.
 
@@ -378,7 +378,7 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   when the layout has no pin, instead of reporting success;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
-- moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
+- moves every `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
   `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
   `deploy.yml` caller; a reference by commit SHA stays;
 - verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from

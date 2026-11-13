@@ -31,7 +31,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "url": "git+https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform.git",
     "directory": "frontend/packages/ui-registry"
   }
 }

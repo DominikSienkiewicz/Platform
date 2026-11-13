@@ -15,7 +15,7 @@ done < <(grep -oE '= "[A-Za-z0-9/_.-]+\.md"' "$root/zensical.toml" | sed -E 's/=
 python3 -I "$root/scripts/docs-site.py" v9.9.9 "$tmp/site-src" > /dev/null
 [[ -f "$tmp/site-src/zensical.toml" && -f "$tmp/site-src/docs/index.md" ]] || fail 'the site source must hold the config and the docs'
 [[ ! -e "$tmp/site-src/docs/concepts" ]] || fail 'docs/concepts/ stays local and out of the site'
-grep -qF '](https://github.com/DominikSienkiewicz/Platform/blob/v9.9.9/RELEASING.md' "$tmp/site-src/docs/consuming.md" \
+grep -qF '](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v9.9.9/RELEASING.md' "$tmp/site-src/docs/consuming.md" \
   || fail 'a link out of docs/ must point at the file on GitHub at the ref'
 grep -qF '](reference.md' "$tmp/site-src/docs/consuming.md" || fail 'a link inside docs/ stays relative'
 grep -q '](\.\./' "$tmp/site-src/docs/consuming.md" && fail 'no link may leave the site source'

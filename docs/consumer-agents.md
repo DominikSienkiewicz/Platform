@@ -89,7 +89,7 @@ repository pins, or `#v1` for the latest 1.x release (the skills read the pin th
 marketplace file exists from the first release that lists it in the [changelog](../CHANGELOG.md).
 
 ```bash
-claude plugin marketplace add DominikSienkiewicz/Platform#v<version> --scope project
+claude plugin marketplace add SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform#v<version> --scope project
 claude plugin install platform@seniordev-platform --scope project
 ```
 

@@ -31,7 +31,7 @@ grep -qE '^  DRIFT +scripts/b\.sh$' <<<"$out" || fail "edited copy not reported:
 grep -qE '^  MISSING +scripts/c\.sh$' <<<"$out" || fail "missing copy not reported: $out"
 grep -qE '^  DRIFT +scripts/opt\.sh$' <<<"$out" || fail "an optional file that exists is compared: $out"
 if grep -qE 'scripts/(a|unused)\.sh' <<<"$out"; then fail "a matching or unused file must stay quiet: $out"; fi
-grep -qF 'curl -fsSL https://raw.githubusercontent.com/DominikSienkiewicz/Platform/v9.9.9/templates/b.sh -o scripts/b.sh' <<<"$out" \
+grep -qF 'curl -fsSL https://raw.githubusercontent.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/v9.9.9/templates/b.sh -o scripts/b.sh' <<<"$out" \
   || fail "no restore command for the pinned ref: $out"
 grep -qF '3 of 4 templates are missing or differ' <<<"$out" || fail "unexpected summary: $out"
 

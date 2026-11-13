@@ -12,14 +12,14 @@ are published as versioned artifacts, and are consumed like any other dependency
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
-[![CI](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml)
-[![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
+[![CI](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml)
+[![Latest version](https://img.shields.io/github/v/tag/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
 solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
 it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform).
 
 > Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
 > consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
@@ -61,10 +61,10 @@ own schedule and rolls back by pinning an older version.
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
 | `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all five; `platform-bump.yml`, `api-contract.yml` and `promote.yml` none |
-| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
+| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit, the GitHub files, the default community health files of a `.github` repository and a devcontainer (*incubating*); each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
-| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add DominikSienkiewicz/Platform#vX.Y.Z` | none |
+| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform#vX.Y.Z` | none |
 | `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included) and `render-example.sh` (the public `platform-example` repository it renders for each release), `adr-index.sh` (the ADR index), `seed-community-health.sh` (copies the default community health files into a local clone of the owner's `.github` repository; no network), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `compare-rebuild.sh` (a rebuilt release against GitHub Packages, run by `reproducibility.yml`), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
@@ -83,8 +83,8 @@ described in [RELEASING.md](RELEASING.md).
 
 | Repository | Layout |
 |---|---|
-| `DominikSienkiewicz/Azimuth` | backend and frontend |
-| `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
+| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Azimuth` | backend and frontend |
+| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone` | multi-module backend, no frontend |
 
 "The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
@@ -94,7 +94,7 @@ The "Adopted by" column is from its run on 2026-10-18; an adoption pull request 
 
 ### Reusable workflows
 
-Consumers call them as `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
+Consumers call them as `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
 the tag of their Platform pin. Triggers are declared by the calling workflow; the platform keeps only
 the logic. What each caller must grant and pass, with a snippet per workflow, is in
 [docs/reusable-workflows.md](docs/reusable-workflows.md).
@@ -200,7 +200,7 @@ repository is public. Every GitHub Release from 1.6.0 on therefore carries the r
 `SHA256SUMS`, all attested. Build a starter from them without a token:
 
 ```bash
-gh release download vX.Y.Z --repo DominikSienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
+gh release download vX.Y.Z --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
 ```
 
 ```bash
