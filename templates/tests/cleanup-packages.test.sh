@@ -4,7 +4,9 @@
 # - it refuses to run without --protect, the versions consumers still pin;
 # - a protected version is never deleted, whatever its age;
 # - without --execute it only prints the plan;
-# - packages outside Platform are never touched.
+# - packages outside Platform are never touched;
+# - it lists and deletes the packages of the organization that owns Platform since 2026-11-13, not those
+#   of the token's user.
 #
 # gh is stubbed: it answers the package and version listings from fixtures and records every
 # DELETE, so the test never reaches GitHub.
@@ -31,9 +33,9 @@ if [ "${1:-}" = api ] && [ "${2:-}" = --method ] && [ "${3:-}" = DELETE ]; then
   exit 0
 fi
 case "$url" in
-  "/user/packages?package_type=maven") printf '%s\n' pl.seniordeveloper.platform-catalog com.example.other ;;
-  "/user/packages?package_type=npm") ;;
-  /user/packages/maven/pl.seniordeveloper.platform-catalog/versions)
+  "/orgs/SeniorDeveloper-pl-Dominik-Sienkiewicz/packages?package_type=maven") printf '%s\n' pl.seniordeveloper.platform-catalog com.example.other ;;
+  "/orgs/SeniorDeveloper-pl-Dominik-Sienkiewicz/packages?package_type=npm") ;;
+  /orgs/SeniorDeveloper-pl-Dominik-Sienkiewicz/packages/maven/pl.seniordeveloper.platform-catalog/versions)
     for entry in 1:1.5.25 2:1.5.26 3:1.5.27 4:1.5.28 5:1.5.29 6:1.5.30 7:1.5.31; do
       printf '{"id": %s, "name": "%s", "created_at": "2026-0%s-01T00:00:00Z"}\n' "${entry%%:*}" "${entry#*:}" "${entry%%:*}"
     done ;;
@@ -71,7 +73,7 @@ grep -q 'com.example.other' "$tmp/out" && fail 'packages outside Platform must n
 
 # --- Execute ---------------------------------------------------------------------------------
 run_cleanup --keep 2 --protect 1.5.26,1.5.29 --execute || { cat "$tmp/out" >&2; fail 'an executed run must succeed'; }
-expected=$(printf '/user/packages/maven/pl.seniordeveloper.platform-catalog/versions/%s\n' 4 3 1)
+expected=$(printf '/orgs/SeniorDeveloper-pl-Dominik-Sienkiewicz/packages/maven/pl.seniordeveloper.platform-catalog/versions/%s\n' 4 3 1)
 [[ "$(cat "$GH_DELETES")" == "$expected" ]] \
   || { cat "$GH_DELETES" >&2; fail 'an executed run must delete exactly the planned versions, newest first'; }
 

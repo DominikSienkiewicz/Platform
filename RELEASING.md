@@ -453,6 +453,8 @@ a deleted version only by accident. Clean up deliberately with
   unticked to delete.
 
 The workflow runs [`scripts/cleanup-packages.sh`](scripts/cleanup-packages.sh), which touches only
-Platform packages and refuses to run without `protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret
-(classic PAT with `read:packages` and `delete:packages`). GitHub can restore a deleted package
+Platform packages of the organization `SeniorDeveloper-pl-Dominik-Sienkiewicz` and refuses to run without
+`protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret (classic PAT with `read:packages` and `delete:packages`)
+of a user who administers those packages. The `@dominiksienkiewicz/*` npm packages up to 1.10.3 stay with the
+personal account, out of the script's reach. GitHub can restore a deleted package
 version for 30 days; after that it is gone.
