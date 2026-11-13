@@ -52,7 +52,7 @@ if [[ "$1" == pack ]]; then
     cp "$FAKE_PACKAGE/bin/workflows-check.py" "$staging/package/bin/"
     cp "$FAKE_PACKAGE/workflow-contract.txt" "$staging/package/"
   fi
-  tar -czf "$2/dominiksienkiewicz-versions-9.9.9.tgz" -C "$staging" package
+  tar -czf "$2/seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz" -C "$staging" package
   rm -rf "$staging"
 fi
 exit 0
@@ -79,7 +79,7 @@ consumer() {
   local dir="$fixture_work/$1" pin="${2:-1.5.29}"
   mkdir -p "$dir/frontend" "$dir/.github/workflows"
   git -C "$dir" init -q
-  printf '{\n  "devDependencies": {\n    "@dominiksienkiewicz/versions": "%s",\n    "react": "19.0.0"\n  }\n}\n' "$pin" > "$dir/frontend/package.json"
+  printf '{\n  "devDependencies": {\n    "@seniordeveloper-pl-dominik-sienkiewicz/versions": "%s",\n    "react": "19.0.0"\n  }\n}\n' "$pin" > "$dir/frontend/package.json"
   printf 'jobs:\n  frontend:\n    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v%s\n' "$pin" > "$dir/.github/workflows/ci.yml"
   [[ -z "${FIXTURE_EXTRA:-}" ]] || "$FIXTURE_EXTRA" "$dir"
   git -C "$dir" add -A

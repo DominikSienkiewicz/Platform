@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/new-consumer.sh --frontend next: frontend/ z konfiguracjami paczek Platform, skryptami trybu strict
 # i package.json, który przechodzi platform-versions-check kanonu tego checkoutu (każda zależność z kanonu,
-# każdy @dominiksienkiewicz/* na wersji wydania), plus caller frontend-ci.yml ze strict: true.
+# każdy @seniordeveloper-pl-dominik-sienkiewicz/* na wersji wydania), plus caller frontend-ci.yml ze strict: true.
 # shellcheck disable=SC2016 # literal GitHub expressions
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -23,8 +23,8 @@ for script in lint typecheck test build format:check; do
   node -e 'const s = require(process.argv[1]).scripts; if (!s[process.argv[2]]) process.exit(1)' "$web/package.json" "$script" \
     || fail "strict frontend-ci needs the $script script"
 done
-node -e 'const m = require(process.argv[1]); if (m.devDependencies["@dominiksienkiewicz/versions"] !== process.argv[2]) process.exit(1)' \
-  "$web/package.json" "$version" || fail "@dominiksienkiewicz/versions must be pinned at $version"
+node -e 'const m = require(process.argv[1]); if (m.devDependencies["@seniordeveloper-pl-dominik-sienkiewicz/versions"] !== process.argv[2]) process.exit(1)' \
+  "$web/package.json" "$version" || fail "@seniordeveloper-pl-dominik-sienkiewicz/versions must be pinned at $version"
 (cd "$web" && node "$root/frontend/packages/versions/bin/check.mjs") > "$tmp/check" 2>&1 \
   || { cat "$tmp/check" >&2; fail 'the generated package.json must pass platform-versions-check of this canon'; }
 grep -qF 'Frontend: (cd' "$tmp/out" || fail 'the generator must say how to create package-lock.json'

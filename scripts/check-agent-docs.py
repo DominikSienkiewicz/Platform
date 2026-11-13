@@ -101,7 +101,7 @@ def main():
                         problems.append(f"{doc}:{number}: `./gradlew {task}` names no registered task")
                 for word in BIN.findall(span):
                     if word not in known_bins and word not in WORKFLOW_NAMES and "/" not in span.split(word)[0][-1:]:
-                        problems.append(f"{doc}:{number}: `{word}` is not a bin of any @dominiksienkiewicz package")
+                        problems.append(f"{doc}:{number}: `{word}` is not a bin of any @seniordeveloper-pl-dominik-sienkiewicz package")
                 for candidate in candidates:
                     match = ROOT_SCRIPTS.match(candidate.split()[0]) if candidate.split() else None
                     if match and not os.path.exists(os.path.join(root, match.group(1))):

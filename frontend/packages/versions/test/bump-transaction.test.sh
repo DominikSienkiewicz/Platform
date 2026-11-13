@@ -7,7 +7,7 @@ source "$(dirname "$0")/bump-fixture.sh"
 
 # (a) cudze niezacommitowane zmiany w pliku, który bump przepisuje: kod 2, plik nietknięty
 dir=$(consumer dirty)
-printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.5.29", "react": "19.1.0" } }\n' > "$dir/frontend/package.json"
+printf '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.29", "react": "19.1.0" } }\n' > "$dir/frontend/package.json"
 cp "$dir/frontend/package.json" "$fixture_work/dirty.json"
 bump "$dir" 9.9.9
 [[ $rc -eq 2 ]] || { cat "$dir.log"; fail "(a) a dirty tree must exit 2, got $rc"; }
@@ -29,8 +29,8 @@ dir=$(consumer dry-run)
 : > "$FAKE_NPM_LOG"
 bump "$dir" --dry-run 9.9.9
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail '(c) a dry run must succeed'; }
-grep -qF -- '-    "@dominiksienkiewicz/versions": "1.5.29",' "$dir.log" || { cat "$dir.log"; fail '(c) the old pin must be shown'; }
-grep -qF -- '+    "@dominiksienkiewicz/versions": "9.9.9",' "$dir.log" || fail '(c) the new pin must be shown'
+grep -qF -- '-    "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.29",' "$dir.log" || { cat "$dir.log"; fail '(c) the old pin must be shown'; }
+grep -qF -- '+    "@seniordeveloper-pl-dominik-sienkiewicz/versions": "9.9.9",' "$dir.log" || fail '(c) the new pin must be shown'
 grep -qF -- '+    "react": "19.2.8"' "$dir.log" || fail '(c) the canon change must be shown'
 grep -qF -- '+    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v9.9.9' "$dir.log" || fail '(c) the workflow ref must be shown'
 [[ -z "$(git -C "$dir" status --porcelain)" ]] || { git -C "$dir" status --porcelain; fail '(c) a dry run must not change the tree'; }

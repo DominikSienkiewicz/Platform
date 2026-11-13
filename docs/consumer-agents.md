@@ -10,7 +10,7 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
   on an inline version, on a version that differs from the canon and on a `version(...)` override in
   `backend/settings.gradle.kts` ([gates](gates.md)).
 - Frontend: every version in `frontend/package.json`, `overrides` included, is exact and equal to the canon of
-  the installed `@dominiksienkiewicz/versions`; `npx platform-versions-check --fix` rewrites drift offline.
+  the installed `@seniordeveloper-pl-dominik-sienkiewicz/versions`; `npx platform-versions-check --fix` rewrites drift offline.
 - A library the canon lacks is added in Platform first ([add a JVM library](runbooks/add-jvm-library.md),
   [add a frontend dependency](runbooks/add-frontend-dependency.md)), never inline in the consumer.
 - An override above a BOM or a transitive pin is a last resort with its removal condition

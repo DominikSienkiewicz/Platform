@@ -2,7 +2,7 @@
 # render-example.sh <version> <out-dir> — publiczne repozytorium przykładowe platform-example (N-DX-3), wyrenderowane
 # z kanonu wydania <version> zamiast pisane ręcznie: spring-app z frontendem Next.js przez scripts/new-consumer.sh,
 # package-lock.json frontendu (frontend-ci instaluje przez npm ci) i README, które mówi, skąd przykład pochodzi.
-# npm potrzebuje odczytu @dominiksienkiewicz/* z GitHub Packages: biegnie w frontend/, którego .npmrc (templates/npmrc)
+# npm potrzebuje odczytu @seniordeveloper-pl-dominik-sienkiewicz/* z GitHub Packages: biegnie w frontend/, którego .npmrc (templates/npmrc)
 # czyta GITHUB_TOKEN. Woła go job example w release.yml; testy: templates/tests/render-example.test.sh (npm podmieniony
 # atrapą) i templates/tests/release-example-npm-auth.test.sh (token kroku joba example).
 set -euo pipefail

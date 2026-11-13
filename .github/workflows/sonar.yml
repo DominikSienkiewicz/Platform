@@ -112,7 +112,7 @@ jobs:
         if: ${{ env.SONAR_TOKEN != '' }}
         working-directory: frontend
         env:
-          # PAT read:packages do scoped @dominiksienkiewicz/* (fallback: automatyczny GITHUB_TOKEN).
+          # PAT read:packages do scoped @seniordeveloper-pl-dominik-sienkiewicz/* (fallback: automatyczny GITHUB_TOKEN).
           GITHUB_TOKEN: ${{ secrets.gpr_token || secrets.GITHUB_TOKEN }}
         # --ignore-scripts: spójnie z frontend-ci.yml — bez skryptów lifecycle zależności.
         run: npm ci --ignore-scripts

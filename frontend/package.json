@@ -1,5 +1,5 @@
 {
-  "name": "@dominiksienkiewicz/platform-frontend",
+  "name": "@seniordeveloper-pl-dominik-sienkiewicz/platform-frontend",
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@11.18.0",
@@ -7,7 +7,7 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "build:registry": "pnpm --filter @dominiksienkiewicz/ui build",
+    "build:registry": "pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/ui build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json"
   },

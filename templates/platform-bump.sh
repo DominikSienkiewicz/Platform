@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# platform-bump.sh — cienki STUB: deleguje do binu `platform-bump` pakietu @dominiksienkiewicz/versions.
+# platform-bump.sh — cienki STUB: deleguje do binu `platform-bump` pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions.
 # KANON LOGIKI bumpu żyje w Platform/frontend/packages/versions/bin/platform-bump.sh i dociera tu
 # przez npm (frontend/node_modules/.bin) albo, w repo bez frontendu, z assetów GitHub Release — NIE wklejaj
 # logiki bumpu do tego pliku ani do kopii per-repo.
@@ -27,7 +27,7 @@ fi
 if ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
   && ! grep -qs 'pl.seniordeveloper:platform-catalog:' backend/settings.gradle.kts settings.gradle.kts; then
   echo "Brak $BIN — zainstaluj zależności frontendu: (cd frontend && npm install)." >&2
-  echo "Bin istnieje od @dominiksienkiewicz/versions 1.3.8 — starszy pin w frontend/package.json" >&2
+  echo "Bin istnieje od @seniordeveloper-pl-dominik-sienkiewicz/versions 1.3.8 — starszy pin w frontend/package.json" >&2
   echo "podbij ręcznie do najnowszej wersji platformy i powtórz npm install." >&2
   exit 1
 fi

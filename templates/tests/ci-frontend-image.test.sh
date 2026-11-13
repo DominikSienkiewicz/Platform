@@ -126,9 +126,9 @@ packages() {
   local version="$1" private="$2"
   mkdir -p "$repo/frontend/packages/versions" "$repo/frontend/packages/eslint-config" "$repo/frontend/packages/api-client" \
     "$repo/frontend/packages/docs-only"
-  printf '{ "name": "@dominiksienkiewicz/versions", "version": "%s" }\n' "$version" > "$repo/frontend/packages/versions/package.json"
-  printf '{ "name": "@dominiksienkiewicz/eslint-config", "version": "%s" }\n' "$version" > "$repo/frontend/packages/eslint-config/package.json"
-  printf '{ "name": "@dominiksienkiewicz/api-client", "version": "%s", "private": %s }\n' "$version" "$private" \
+  printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "%s" }\n' "$version" > "$repo/frontend/packages/versions/package.json"
+  printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config", "version": "%s" }\n' "$version" > "$repo/frontend/packages/eslint-config/package.json"
+  printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/api-client", "version": "%s", "private": %s }\n' "$version" "$private" \
     > "$repo/frontend/packages/api-client/package.json"
   echo notes > "$repo/frontend/packages/docs-only/README.md"
 }
@@ -156,14 +156,14 @@ grep -qxF "$2" "$REGISTRY" && echo "${2##*@}"
 exit 0
 STUB
 chmod +x "$tmp/npm-bin/npm"
-printf '%s\n' @dominiksienkiewicz/versions@1.6.0 @dominiksienkiewicz/eslint-config@1.6.0 \
-  @dominiksienkiewicz/versions@1.7.0 @dominiksienkiewicz/api-client@1.7.0 > "$tmp/registry"
+printf '%s\n' @seniordeveloper-pl-dominik-sienkiewicz/versions@1.6.0 @seniordeveloper-pl-dominik-sienkiewicz/eslint-config@1.6.0 \
+  @seniordeveloper-pl-dominik-sienkiewicz/versions@1.7.0 @seniordeveloper-pl-dominik-sienkiewicz/api-client@1.7.0 > "$tmp/registry"
 
 # shipped <version> <pinned package...>: wypisuje wyjście shipped dla manifestu, który przypina pakiety na <version>
 shipped() {
   local version="$1"; shift
   node -e 'const [version, ...names] = process.argv.slice(1);
-    const pins = Object.fromEntries(names.map((name) => [`@dominiksienkiewicz/${name}`, version]));
+    const pins = Object.fromEntries(names.map((name) => [`@seniordeveloper-pl-dominik-sienkiewicz/${name}`, version]));
     process.stdout.write(JSON.stringify({ dependencies: { react: "19.2.0" }, devDependencies: pins }));' "$version" "$@" > "$tmp/package.json"
   : > "$tmp/output"
   (cd "$repo" && PATH="$tmp/npm-bin:$PATH" REGISTRY="$tmp/registry" GITHUB_OUTPUT="$tmp/output" MANIFEST="$tmp/package.json" \
@@ -172,18 +172,18 @@ shipped() {
 }
 [[ "$(shipped 1.6.0 versions eslint-config)" == true ]] || fail 'a release that publishes every pinned package at its version must build'
 [[ "$(shipped 1.5.31 versions eslint-config)" == false ]] || fail 'packages at 1.0.0 are not published at 1.5.31'
-grep -qF '::notice::Platform v1.5.31 does not publish @dominiksienkiewicz/versions @dominiksienkiewicz/eslint-config at 1.5.31' "$tmp/out" \
+grep -qF '::notice::Platform v1.5.31 does not publish @seniordeveloper-pl-dominik-sienkiewicz/versions @seniordeveloper-pl-dominik-sienkiewicz/eslint-config at 1.5.31' "$tmp/out" \
   || fail 'the notice must name every package the release does not publish'
 [[ "$(shipped 1.6.0 versions api-client)" == false ]] || fail 'a private package is never published'
 [[ "$(shipped 1.7.0 versions api-client)" == true ]] || fail 'a package that turned public is published'
 [[ "$(shipped 1.6.0 versions vitest-config)" == false ]] || fail 'a package the release does not contain is not published'
 [[ "$(shipped 1.8.0 versions eslint-config)" == false ]] \
   || fail 'a release whose packages are tagged at its version but missing from the registry (the failed npm publish of 1.6.0) must not build'
-grep -qF '::notice::Platform v1.8.0 does not publish @dominiksienkiewicz/versions @dominiksienkiewicz/eslint-config at 1.8.0' "$tmp/out" \
+grep -qF '::notice::Platform v1.8.0 does not publish @seniordeveloper-pl-dominik-sienkiewicz/versions @seniordeveloper-pl-dominik-sienkiewicz/eslint-config at 1.8.0' "$tmp/out" \
   || fail 'the notice must name every package missing from the registry'
 mkdir -p "$repo/frontend/packages/gone" "$repo/frontend/packages/locked"
-printf '{ "name": "@dominiksienkiewicz/gone", "version": "2.0.0" }\n' > "$repo/frontend/packages/gone/package.json"
-printf '{ "name": "@dominiksienkiewicz/locked", "version": "2.0.0" }\n' > "$repo/frontend/packages/locked/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/gone", "version": "2.0.0" }\n' > "$repo/frontend/packages/gone/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/locked", "version": "2.0.0" }\n' > "$repo/frontend/packages/locked/package.json"
 tag v2.0.0 "$(commit 'packages the registry answers with errors')"
 [[ "$(shipped 2.0.0 gone)" == false ]] || fail 'a package the registry answers with E404 is not published'
 if [[ -n "$(shipped 2.0.0 locked)" ]]; then fail 'another registry error (E401) must fail the step, not skip the image'; fi

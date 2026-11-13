@@ -32,8 +32,8 @@ expected=$(awk '!/^#/ && NF { printf "%s ", $1 }' "$root/gradle/maven-modules.tx
 listing=$(unzip -l "$tmp/out/platform-maven-repo-9.9.9.zip")
 grep -qF 'platform-maven-repo/pl/seniordeveloper/catalog/9.9.9/catalog-9.9.9.jar' <<<"$listing" \
   || fail 'the zip must hold the Maven repository layout under platform-maven-repo/'
-[[ -f "$tmp/out/dominiksienkiewicz-versions-9.9.9.tgz" ]] || fail 'every public npm package must be packed'
-if compgen -G "$tmp/out/dominiksienkiewicz-query-*" >/dev/null; then fail 'private packages are not attached'; fi
+[[ -f "$tmp/out/seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz" ]] || fail 'every public npm package must be packed'
+if compgen -G "$tmp/out/seniordeveloper-pl-dominik-sienkiewicz-query-*" >/dev/null; then fail 'private packages are not attached'; fi
 (cd "$tmp/out" && { sha256sum --check SHA256SUMS 2>/dev/null || shasum -a 256 --check SHA256SUMS; }) > /dev/null || fail 'SHA256SUMS must verify'
 [[ $(grep -c . "$tmp/out/SHA256SUMS") -eq $(find "$tmp/out" -type f ! -name SHA256SUMS | wc -l) ]] || fail 'SHA256SUMS must list every asset'
 if grep -qF SHA256SUMS "$tmp/out/SHA256SUMS"; then fail 'SHA256SUMS must not list itself'; fi

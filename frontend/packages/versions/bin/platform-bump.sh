@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# platform-bump — KANON (jedno źródło): bin pakietu @dominiksienkiewicz/versions, publikowany z Platform.
+# platform-bump — KANON (jedno źródło): bin pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions, publikowany z Platform.
 # Repo konsumenckie NIE trzymają kopii logiki — wołają go przez cienki stub -> node_modules/.../bin.
-# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @dominiksienkiewicz/*) do
+# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @seniordeveloper-pl-dominik-sienkiewicz/*) do
 # NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu z versions.json.
 # Obie operacje obejmują też sekcję `overrides` w package.json (piny CVE paczek transytywnych,
 # np. overrides.next.postcss) — pomijając referencje npm w formie "$nazwa".
@@ -317,7 +317,7 @@ if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
   CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
-  CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  CURRENT="$(grep -oE '"@seniordeveloper-pl-dominik-sienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
 fi
 
 # Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
@@ -531,7 +531,7 @@ if [[ -f backend/settings.gradle.kts ]] && ! grep -qF "$TARGET" backend/settings
   exit 1
 fi
 
-# --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---
+# --- Frontend: piny @seniordeveloper-pl-dominik-sienkiewicz/* + kanon wersji z @seniordeveloper-pl-dominik-sienkiewicz/versions ---
 if [[ -f frontend/package.json ]]; then
   python3 - "$TARGET" <<'PY'
 # platform-bump:pins — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
@@ -548,10 +548,10 @@ def walk(node, path, parent, visit):
 
 t=sys.argv[1]; p="frontend/package.json"; d=json.load(open(p))
 def to_target(node, key, name, version, at):
-    if name.startswith("@dominiksienkiewicz/"): node[key]=t
+    if name.startswith("@seniordeveloper-pl-dominik-sienkiewicz/"): node[key]=t
 for sec in ("dependencies","devDependencies"):
     for k in list(d.get(sec,{})):
-        if k.startswith("@dominiksienkiewicz/"): d[sec][k]=t
+        if k.startswith("@seniordeveloper-pl-dominik-sienkiewicz/"): d[sec][k]=t
 walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
@@ -561,9 +561,9 @@ PY
   TARGET_PACKAGE="$TMPD"
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
-  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
-    verify_provenance "$(ls "$TMPD"/dominiksienkiewicz-versions-*.tgz)"
-    tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
+  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
+    verify_provenance "$(ls "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz)"
+    tar -xzf "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
 # platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
@@ -592,9 +592,9 @@ json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
 PY
   elif grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
-    echo "WARNING: @dominiksienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
+    echo "WARNING: @seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
   else
-    echo "ERROR: npm pack @dominiksienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
+    echo "ERROR: npm pack @seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
     cat "$TMPD/pack.err" >&2
     echo "Fix the error above and run the bump again." >&2
     rm -rf "$TMPD"

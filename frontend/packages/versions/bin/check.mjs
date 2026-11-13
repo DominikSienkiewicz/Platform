@@ -3,9 +3,9 @@
 // Porównuje dependencies/devDependencies/optionalDependencies/overrides z package.json (cwd)
 // z versions.json tej paczki. peerDependencies aplikacji są świadomie poza governance.
 // Reguły:
-//   1. KAŻDA zależność (poza @dominiksienkiewicz/* — pin platformy) musi mieć wpis w kanonie.
+//   1. KAŻDA zależność (poza @seniordeveloper-pl-dominik-sienkiewicz/* — pin platformy) musi mieć wpis w kanonie.
 //   2. Wersja musi być IDENTYCZNA z kanonem (exact, bez ^/~).
-//   3. Piny @dominiksienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
+//   3. Piny @seniordeveloper-pl-dominik-sienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
 //      kanon z versions@X i preset z eslint-config@Y nie mogą pochodzić z różnych wydań.
 // Nowa biblioteka w repo = najpierw wpis w Platform versions.json + release, potem użycie.
 // `overrides` podlega tym samym regułom co zależność bezpośrednia — to tam żyją piny CVE paczek
@@ -28,7 +28,7 @@ const deprecated = canonFile.deprecated ?? {};
 // paczek). Bez niej konsument nie wie, czy podbić pin, czy powtórzyć bump. Kopia bez package.json (testy
 // hermetyczne) nie zna wersji — wtedy raport podaje ścieżkę versions.json.
 const canonVersion = readCanonVersion();
-const canonLabel = canonVersion ? `@dominiksienkiewicz/versions@${canonVersion}` : join(packageDir, "versions.json");
+const canonLabel = canonVersion ? `@seniordeveloper-pl-dominik-sienkiewicz/versions@${canonVersion}` : join(packageDir, "versions.json");
 
 function readCanonVersion() {
   try {
@@ -73,7 +73,7 @@ const missing = [];
 let governed = 0;
 for (const entry of declared) {
   const { name, have } = entry;
-  if (name.startsWith("@dominiksienkiewicz/")) continue; // pin platformy — poza kanonem
+  if (name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/")) continue; // pin platformy — poza kanonem
   if (have.startsWith("$")) continue; // referencja npm ("$typescript") — wersję rozwija npm
   governed += 1;
   const want = canon[name];
@@ -82,7 +82,7 @@ for (const entry of declared) {
 }
 
 // Bez znanej wersji kanonu (kopia testowa) wymagamy przynajmniej jednej wspólnej wartości wszystkich pinów.
-const platformPins = declared.filter(({ name, at }) => at === null && name.startsWith("@dominiksienkiewicz/"));
+const platformPins = declared.filter(({ name, at }) => at === null && name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/"));
 const pinValues = new Set(platformPins.map(({ have }) => have));
 const expectedPin = canonVersion ?? (pinValues.size === 1 ? [...pinValues][0] : null);
 let looseOrMixedPins = platformPins.filter(({ have }) => !/^\d+\.\d+\.\d+$/.test(have) || have !== expectedPin);

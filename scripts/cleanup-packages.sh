@@ -36,7 +36,7 @@ PROTECT="${PROTECT//[[:space:]]/}"
 }
 
 # Filtr bezpieczeństwa: tylko pakiety Platform, nigdy inne pakiety konta.
-PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@dominiksienkiewicz/)'
+PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@seniordeveloper-pl-dominik-sienkiewicz/)'
 if [[ "$EXECUTE" == 1 ]]; then
   echo "Mode: execute — planned versions are deleted."
 else

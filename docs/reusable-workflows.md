@@ -26,7 +26,7 @@ types and defaults are described in the workflow files themselves (every input h
   when the contract changes without updating its snapshot; copy the snapshot to
   `frontend/packages/versions/workflow-contract.txt` too, which `platform-workflows-check` reads.
 - **Check your callers.** `npx platform-workflows-check` (from `frontend/`, with
-  `@dominiksienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
+  `@seniordeveloper-pl-dominik-sienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
   contract: permissions, inputs, required inputs and secrets. `platform-bump` runs it against the
   release it moves to.
 
@@ -125,7 +125,7 @@ annotation and the job summary name that script. A strict caller whose `package.
 `platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.
-- Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.
+- Secret `gpr_token` (optional): a token that can read `@seniordeveloper-pl-dominik-sienkiewicz/*` from GitHub Packages.
   Without it the caller's automatic `GITHUB_TOKEN` is used, which also needs access to Platform's
   packages.
 - Inputs: [frontend-ci.yml](../.github/workflows/frontend-ci.yml).

@@ -44,18 +44,18 @@ Every artifact below is published at the same `platformVersion`.
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` | GitHub Packages (Maven) |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` | GitHub Packages (Maven) |
 | `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` | GitHub Packages (Maven) |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` | GitHub Packages (npm) |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` | GitHub Packages (npm) |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
-| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` | GitHub Packages (npm) |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
+| `frontend/packages/tsconfig/` | `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | GitHub Packages (npm) |
+| `frontend/packages/eslint-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | GitHub Packages (npm) |
+| `frontend/packages/tailwind-preset/` | `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` | GitHub Packages (npm) |
+| `frontend/packages/vitest-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` | GitHub Packages (npm) |
+| `frontend/packages/versions/` | `@seniordeveloper-pl-dominik-sienkiewicz/versions` | GitHub Packages (npm) |
+| `frontend/packages/openapi/` | `@seniordeveloper-pl-dominik-sienkiewicz/openapi` | GitHub Packages (npm) |
+| `frontend/packages/ui-registry/` | `@seniordeveloper-pl-dominik-sienkiewicz/ui` | GitHub Packages (npm) |
 
 The npm job publishes every workspace package under `frontend/packages/` that is not marked
 `"private": true`, so a new package is released as soon as it exists. Update this table and the
-README in the same change. `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are
+README in the same change. `@seniordeveloper-pl-dominik-sienkiewicz/api-client` and `@seniordeveloper-pl-dominik-sienkiewicz/query` are
 private until a first consumer adopts them; 1.5.31 is their last published release.
 
 ## One-time setup
@@ -358,7 +358,7 @@ In a consumer repository:
 Without an argument the script bumps to the newest release of the consumer's current MAJOR
 version; when a newer MAJOR exists it says so and leaves crossing it to an explicit version. Pass
 a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
-`platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
+`platform-bump` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
 - stops with exit code 2 before writing anything when a tool it needs is missing (`git`, `curl`,
@@ -381,7 +381,7 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - moves every `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
   `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
   `deploy.yml` caller; a reference by commit SHA stays;
-- verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from
+- verifies the attestation of the `@seniordeveloper-pl-dominik-sienkiewicz/versions` package it downloads (targets from
   1.6.0 on) with `gh attestation verify`, tied to Platform's `release.yml`, and stops when it fails;
   `--skip-provenance "<reason>"` overrides it, and a machine without `gh` gets a warning;
 - runs the upgrade migrations of the target release (`frontend/packages/versions/migrations/`) from

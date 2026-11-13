@@ -2,7 +2,7 @@
 # Next.js standalone runtime image; copy to <repo>/frontend/Dockerfile. Needs `output: "standalone"`
 # (templates/frontend/next.config.ts) and a public/ directory.
 # Build: docker build --secret id=github_token,env=GITHUB_TOKEN -t <image> frontend
-# The token (read:packages, for @dominiksienkiewicz/*) reaches only the npm ci step, never a layer.
+# The token (read:packages, for @seniordeveloper-pl-dominik-sienkiewicz/*) reaches only the npm ci step, never a layer.
 # node:24-slim (glibc, like the CI runners), not alpine: sharp and other native packages install their
 # prebuilt glibc binaries, as in CI; the choice is in docs/versions.md.
 

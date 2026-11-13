@@ -100,7 +100,7 @@ npm_dir=$(head -n 1 "$tmp/npm-dirs")
 # Plik użytkownika tak, jak pisze go actions/setup-node z registry-url i scope (NPM_CONFIG_USERCONFIG w $RUNNER_TEMP).
 cat > "$tmp/runner/.npmrc" <<'NPMRC'
 //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-@dominiksienkiewicz:registry=https://npm.pkg.github.com/
+@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com/
 NPMRC
 : > "$tmp/globalrc"
 # Środowisko kroku przed poprawką: tylko NODE_AUTH_TOKEN (atrapa), bez GITHUB_TOKEN.

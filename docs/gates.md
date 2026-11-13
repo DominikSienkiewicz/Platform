@@ -132,16 +132,16 @@ buildable on a laptop.
 
 ### PLAT-FE-003
 
-**Cause:** the `@dominiksienkiewicz/*` packages are not all pinned at one exact version, the release of the
-installed `@dominiksienkiewicz/versions`.
+**Cause:** the `@seniordeveloper-pl-dominik-sienkiewicz/*` packages are not all pinned at one exact version, the release of the
+installed `@seniordeveloper-pl-dominik-sienkiewicz/versions`.
 **Fix:** `npx platform-versions-check --fix`, or `scripts/platform-bump.sh <version>`.
 
 ## CI
 
 ### PLAT-CI-001
 
-**Cause:** strict `frontend-ci.yml` is missing something it requires: `@dominiksienkiewicz/versions`, one of
-the scripts `lint`, `typecheck`, `test`, `build` and `format:check`, or `@dominiksienkiewicz/openapi` when
+**Cause:** strict `frontend-ci.yml` is missing something it requires: `@seniordeveloper-pl-dominik-sienkiewicz/versions`, one of
+the scripts `lint`, `typecheck`, `test`, `build` and `format:check`, or `@seniordeveloper-pl-dominik-sienkiewicz/openapi` when
 `package.json` configures `platform.openapi`.
 **Fix:** add what the annotation names ([reusable-workflows.md](reusable-workflows.md#frontend-ciyml)).
 

@@ -1,13 +1,15 @@
 """Remove frontend overrides of packages the target canon no longer lists.
 
 The walk matches platform-bump's: "." names the parent package, a "$name" value is an npm reference and stays,
-and @dominiksienkiewicz/* pins stay. Emptied override objects are removed with their entries.
+and Platform pins stay, under the organization scope and under the scope before the transfer of 2026-11-13. Emptied
+override objects are removed with their entries.
 Usage: stale_overrides.py detect|apply <versions.json>. Exit status of detect: 0 fix needed, 1 nothing.
 """
 import json
 import sys
 
 PACKAGE = "frontend/package.json"
+PLATFORM_SCOPES = ("@seniordeveloper-pl-dominik-sienkiewicz/", "@dominiksienkiewicz/")
 
 
 def prune(node, parent, canon, removed, path):
@@ -19,7 +21,7 @@ def prune(node, parent, canon, removed, path):
             if not value:
                 del node[key]
         elif (isinstance(value, str) and name and not value.startswith("$")
-              and not name.startswith("@dominiksienkiewicz/") and name not in canon):
+              and not name.startswith(PLATFORM_SCOPES) and name not in canon):
             removed.append(f"{at}: {value}")
             del node[key]
 

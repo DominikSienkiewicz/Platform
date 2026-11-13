@@ -20,7 +20,7 @@ test("every canon version is exact", () => {
 });
 
 test("the canon holds no Platform package", () => {
-  const platform = Object.keys(canon).filter((name) => name.startsWith("@dominiksienkiewicz/"));
+  const platform = Object.keys(canon).filter((name) => name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/"));
   assert.deepEqual(platform, [], "Platform packages are pinned by platform-bump, not by the canon");
 });
 

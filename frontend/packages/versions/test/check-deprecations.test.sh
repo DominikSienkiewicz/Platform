@@ -9,7 +9,7 @@ fail() { echo "FAIL: $*" >&2; echo "$OUT" >&2; exit 1; }
 
 mkdir -p "$tmp/pkg/bin" "$tmp/app"
 cp "$here/../bin/check.mjs" "$tmp/pkg/bin/check.mjs"
-printf '{ "name": "@dominiksienkiewicz/versions", "version": "1.6.0" }\n' > "$tmp/pkg/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "1.6.0" }\n' > "$tmp/pkg/package.json"
 cat > "$tmp/pkg/versions.json" <<'JSON'
 { "versions": { "next": "16.4.0", "old-lib": "1.0.0" },
   "deprecated": { "old-lib": { "since": "1.6.0", "removeIn": "1.7.0", "replacement": "new-lib" } } }

@@ -51,7 +51,7 @@ In scope:
 
 - the published Maven artifacts: the convention plugins, the version catalog, `test-fixtures` and
   `security-starter`;
-- the published npm packages under `@dominiksienkiewicz/`;
+- the published npm packages under `@seniordeveloper-pl-dominik-sienkiewicz/`;
 - the reusable workflows in `.github/workflows/`;
 - the scripts consumers run or copy from this repository (`scripts/`, `templates/`).
 

@@ -3,7 +3,7 @@
 //
 //   import { defineConfig, mergeConfig } from "vitest/config";
 //   import { fileURLToPath } from "node:url";
-//   import { baseConfig } from "@dominiksienkiewicz/vitest-config";
+//   import { baseConfig } from "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config";
 //
 //   export default mergeConfig(
 //     baseConfig,
@@ -30,7 +30,7 @@ export const baseConfig = defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
-    setupFiles: ["@dominiksienkiewicz/vitest-config/setup"],
+    setupFiles: ["@seniordeveloper-pl-dominik-sienkiewicz/vitest-config/setup"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     css: false,
     ...(agentMode ? { maxWorkers: agentMaxWorkers() } : {}),

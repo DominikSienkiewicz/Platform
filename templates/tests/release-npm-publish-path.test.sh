@@ -14,7 +14,7 @@ awk '/# >>> npm-publish$/ {p=1;next} /# <<< npm-publish$/ {p=0} p {sub(/^       
 [[ -s "$tmp/publish.sh" ]] || fail 'the npm-publish block is missing'
 
 mkdir -p "$tmp/bin" "$tmp/frontend/dist"
-: > "$tmp/frontend/dist/dominiksienkiewicz-versions-9.9.9.tgz"
+: > "$tmp/frontend/dist/seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz"
 cat > "$tmp/bin/npm" <<'STUB'
 #!/usr/bin/env bash
 echo "npm $*" >> "$STUB_LOG"
@@ -31,6 +31,6 @@ export STUB_LOG="$tmp/stub.log" PATH="$tmp/bin:$PATH"
 
 (cd "$tmp/frontend" && bash "$tmp/publish.sh") > "$tmp/out.txt" 2>&1 \
   || fail "npm publish must get a path, not a git spec, for every tarball: $(cat "$tmp/out.txt")"
-grep -q '^npm publish .*dominiksienkiewicz-versions-9.9.9.tgz$' "$STUB_LOG" || fail 'the packed tarball was not published'
+grep -q '^npm publish .*seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz$' "$STUB_LOG" || fail 'the packed tarball was not published'
 
 echo 'OK: release.yml publishes each npm tarball by an unambiguous path'

@@ -10,7 +10,7 @@ source "$(dirname "$0")/bump-fixture.sh"
 dir=$(consumer verified)
 bump "$dir" 1.6.0
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail 'a verified tarball must let the bump run'; }
-grep -qF 'Provenance: dominiksienkiewicz-versions-9.9.9.tgz was built by Platform' "$dir.log" || { cat "$dir.log"; fail 'the verification must be reported'; }
+grep -qF 'Provenance: seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz was built by Platform' "$dir.log" || { cat "$dir.log"; fail 'the verification must be reported'; }
 grep -qF -- '--repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform --signer-workflow SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/release.yml' "$FAKE_GH_LOG" \
   || { cat "$FAKE_GH_LOG"; fail 'the attestation must be tied to the repository and release.yml'; }
 
@@ -40,7 +40,7 @@ grep -qF 'no attestation matched' "$dir.log" || fail 'the refusal must show what
 
 FAKE_PROVENANCE=fail bump "$dir" --skip-provenance 'registry outage drill' 1.6.0
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail '--skip-provenance must let the bump run'; }
-grep -qF 'WARNING: the provenance of dominiksienkiewicz-versions-9.9.9.tgz was not verified: registry outage drill' "$dir.log" \
+grep -qF 'WARNING: the provenance of seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz was not verified: registry outage drill' "$dir.log" \
   || fail '--skip-provenance must log its reason'
 
 dir=$(consumer old)
