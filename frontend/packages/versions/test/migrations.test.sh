@@ -95,7 +95,9 @@ fi
 for expected in \
   ".github/workflows/ci.yml:14: still names the personal account: images: '[\"ghcr.io/dominiksienkiewicz/app-backend:latest\"]'" \
   '.github/workflows/ci.yml:19: still names the personal account: infra-repository: DominikSienkiewicz/Infrastructure' \
-  'frontend/README.md:3: still names the personal account: Shared configuration comes from the `@dominiksienkiewicz/*` presets.'; do
+  'frontend/README.md:3: still names the personal account: Shared configuration comes from the `@dominiksienkiewicz/*` presets.' \
+  "backend/settings.gradle.kts:29: dependencyResolutionManagement declares the organization's GitHub Packages repository, which the settings plugin adds itself from 2.0.0 on; delete this one" \
+  'backend/settings.gradle.kts:26: still names the personal account: // Stopgap: DominikSienkiewicz/Platform no longer serves the catalog and the starters.'; do
   grep -qF -- "$expected" "$fixture_work/organization-scope.out" \
     || { cat "$fixture_work/organization-scope.out"; fail "organization-scope: missing note: $expected"; }
   grep -qF -- "$expected" "$fixture_work/organization-scope.again" \
@@ -104,6 +106,19 @@ done
 if grep -qF 'package-lock.json' "$fixture_work/organization-scope.out"; then fail 'organization-scope: the lockfile is the bump''s to regenerate'; fi
 tree=$(migrate organization-scope 1.10.3 1.10.4)
 diff -r "$(fixture organization-scope before)" "$tree" >/dev/null || fail 'a bump below 2.0.0 must not move the scope'
+
+# Udokumentowany bootstrap: najpierw stub 2.0.0 z templates/, potem bump. Stub szablonu zostaje bajt w bajt — także
+# jego detekcja binu spod starego scope (node_modules/@dominiksienkiewicz/versions), bez której nie przejdzie bumpu.
+template_stub="$here/../../../../templates/platform-bump.sh"
+tree="$fixture_work/tree-organization-scope-template-stub"
+rm -rf "$tree" && mv "$(fixture organization-scope before)" "$tree"
+cp "$template_stub" "$tree/scripts/platform-bump.sh"
+mkdir -p "$tree/frontend/node_modules/@dominiksienkiewicz/versions"
+files=$(cd "$tree" && bash "$runner" files 1.10.3 2.0.0)
+if grep -qx 'scripts/platform-bump.sh' <<<"$files"; then fail 'organization-scope: the stub of 2.0.0 is not a file to rewrite'; fi
+(cd "$tree" && bash "$runner" apply 1.10.3 2.0.0) > "$fixture_work/organization-scope-template-stub.out"
+cmp -s "$template_stub" "$tree/scripts/platform-bump.sh" \
+  || { diff "$template_stub" "$tree/scripts/platform-bump.sh"; fail 'organization-scope: the stub of 2.0.0 must stay byte-equal to the template'; }
 
 # Obraz migracji = ostatni FROM szablonu, z którego biorą go konsumenci.
 template_image=$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' "$here/../../../../templates/Dockerfile.backend" | tail -1)
