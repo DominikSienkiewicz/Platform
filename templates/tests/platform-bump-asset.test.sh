@@ -9,14 +9,16 @@ trap 'rm -rf "$tmp"' EXIT
 fail() { echo "FAIL: $*" >&2; echo "$OUT" >&2; exit 1; }
 sha() { (sha256sum "$1" 2>/dev/null || shasum -a 256 "$1") | awk '{ print $1 }'; }
 
-# release <version>: asset paczki versions, której bin zapisuje swoje argumenty i własną ścieżkę.
+# release <version> [scope]: asset paczki versions, której bin zapisuje swoje argumenty i własną ścieżkę. Scope npm
+# wyznacza nazwę tarballa: dominiksienkiewicz do 1.10.3, seniordeveloper-pl-dominik-sienkiewicz po przeniesieniu.
 release() {
-  local version=$1 staging="$tmp/staging-$1"
+  local version=$1 scope=${2:-dominiksienkiewicz} staging="$tmp/staging-$1"
+  local asset="$scope-versions-$version.tgz"
   mkdir -p "$staging/package/bin" "$tmp/releases/v$version"
   printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$0" "$@" > "$BUMP_CALL"\n' > "$staging/package/bin/platform-bump.sh"
-  printf '{ "name": "@dominiksienkiewicz/versions", "version": "%s" }\n' "$version" > "$staging/package/package.json"
-  tar -czf "$tmp/releases/v$version/dominiksienkiewicz-versions-$version.tgz" -C "$staging" package
-  (cd "$tmp/releases/v$version" && printf '%s  %s\n' "$(sha "dominiksienkiewicz-versions-$version.tgz")" "dominiksienkiewicz-versions-$version.tgz" > SHA256SUMS)
+  printf '{ "name": "@%s/versions", "version": "%s" }\n' "$scope" "$version" > "$staging/package/package.json"
+  tar -czf "$tmp/releases/v$version/$asset" -C "$staging" package
+  (cd "$tmp/releases/v$version" && printf '%s  %s\n' "$(sha "$asset")" "$asset" > SHA256SUMS)
 }
 release 1.6.0
 release 1.7.0
@@ -39,6 +41,11 @@ grep -qF 'Running the platform-bump of Platform 1.6.0 from its release assets' <
 rm -f "$tmp/call"
 run --dry-run || fail 'without a version the stub takes the latest release'
 [[ "$(sed -n 1p "$tmp/call")" == "$tmp/cache/1.7.0/package/bin/platform-bump.sh" ]] || fail 'the latest release must run without a version'
+
+release 1.9.0 seniordeveloper-pl-dominik-sienkiewicz
+rm -f "$tmp/call"
+run 1.9.0 --dry-run || fail 'a release under the organization scope must bump through its assets'
+[[ "$(sed -n 1p "$tmp/call")" == "$tmp/cache/1.9.0/package/bin/platform-bump.sh" ]] || fail 'the bin of the 1.9.0 release must run'
 
 release 1.8.0
 printf '0000  dominiksienkiewicz-versions-1.8.0.tgz\n' > "$tmp/releases/v1.8.0/SHA256SUMS"

@@ -270,15 +270,26 @@ verify_provenance() {
 fetch_platform_cli() {
   local version=$1 base="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
   local cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
-  local asset="dominiksienkiewicz-versions-$version.tgz" proto="=https" work expected actual
+  local asset="" name proto="=https" work expected actual
   [[ "$base" == file://* ]] && proto="=file"
   if [[ -f "$cache/package/bin/platform-bump.sh" ]]; then
     printf '%s\n' "$cache/package"
     return 0
   fi
   work="$(mktemp -d)"
-  if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null \
-    || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+  if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+    rm -rf "$work"
+    return 1
+  fi
+  # Nazwa tarballa idzie za scope npm: organizacji od przeniesienia (2026-11-13), konta osobistego do 1.10.3.
+  for name in "seniordeveloper-pl-dominik-sienkiewicz-versions-$version.tgz" "dominiksienkiewicz-versions-$version.tgz"; do
+    if awk -v name="$name" '$2 == name || $2 == "*" name { found = 1 } END { exit !found }' "$work/SHA256SUMS"; then
+      asset=$name
+      break
+    fi
+  done
+  if [[ -z "$asset" ]] \
+    || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null; then
     rm -rf "$work"
     return 1
   fi

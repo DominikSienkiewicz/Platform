@@ -42,12 +42,20 @@ if [[ -z "$version" ]]; then
   [[ -n "$version" ]] || { echo "No frontend bin and no readable latest Platform release ($api)." >&2; exit 1; }
 fi
 cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
-asset="dominiksienkiewicz-versions-$version.tgz"
 if [[ ! -f "$cache/package/bin/platform-bump.sh" ]]; then
   work="$(mktemp -d)"
   trap 'rm -rf "$work"' EXIT
-  if ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/$asset" -o "$work/$asset" 2>/dev/null \
-    || ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+  # Nazwa tarballa idzie za scope npm: organizacji od przeniesienia (2026-11-13), konta osobistego do 1.10.3.
+  asset=""
+  if curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+    for name in "seniordeveloper-pl-dominik-sienkiewicz-versions-$version.tgz" "dominiksienkiewicz-versions-$version.tgz"; do
+      if awk -v name="$name" '$2 == name || $2 == "*" name { found = 1 } END { exit !found }' "$work/SHA256SUMS"; then
+        asset=$name
+        break
+      fi
+    done
+  fi
+  if [[ -z "$asset" ]] || ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/$asset" -o "$work/$asset" 2>/dev/null; then
     echo "No $BIN, and the release assets of Platform $version could not be downloaded from $releases/v$version." >&2
     exit 1
   fi
