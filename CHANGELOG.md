@@ -42,6 +42,8 @@ step in [docs/consuming.md](docs/consuming.md#moving-to-the-organization-200).
   `2.0.0-organization-scope`, which also moves the owner and asset name of `scripts/platform-bump.sh`).
 - Other references to repositories that moved, such as `infra-repository:` of a `promote.yml` caller, name the
   organization; the migration lists each line that still names the personal account (manual).
+- Delete a stopgap repository of the organization's GitHub Packages from `dependencyResolutionManagement` in
+  `settings.gradle.kts`: the settings plugin of 2.0.0 adds it itself; the migration names the line (manual).
 - Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`: images go to the
   organization's namespace from the next deploy, while earlier images stay under `ghcr.io/dominiksienkiewicz/`.
   Admission policies accept both namespaces and both cosign identities of `deploy.yml` until no workload runs an

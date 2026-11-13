@@ -131,24 +131,29 @@ rewrites, without the network:
 - the scope in `frontend/package.json` (dependencies, overrides, the `prettier` key), in `frontend/.npmrc` and in
   every source or configuration file under `frontend/`: tsconfig `extends`, ESLint, Vitest and Prettier configs,
   imports, `.d.ts` declarations, CSS `@import` and `@source`;
-- `DominikSienkiewicz/Platform` in `.github/workflows/` and in `settings.gradle.kts`, which covers the reusable
-  workflow callers and the GitHub Packages URL of `pluginManagement`;
-- the owner, the scope and the release asset name in `scripts/platform-bump.sh`.
+- `DominikSienkiewicz/Platform` in `.github/workflows/`, and outside comments in `settings.gradle.kts`, which covers
+  the reusable workflow callers, the GitHub Packages URL of `pluginManagement` and links in messages;
+- the owner, the scope and the release asset name of an older `scripts/platform-bump.sh`; the stub of 2.0.0 stays
+  as it is.
 
 It leaves `package-lock.json` and `node_modules` alone: the bump regenerates the lockfile from the new names. It
-prints every other line that still names the personal account, because some repositories and images stay there.
-Then, by hand:
+prints every other line that still names the personal account, because some repositories and images stay there,
+and a repository of the organization's GitHub Packages that `dependencyResolutionManagement` in
+`settings.gradle.kts` declares itself. Then, by hand:
 
 1. Reinstall the frontend, `(cd frontend && npm ci)`, so `node_modules` holds the new scope.
-2. Point every other reference to a repository that moved, such as `infra-repository:` of a `promote.yml` caller,
+2. Delete a stopgap repository `https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` from
+   `dependencyResolutionManagement`, added while 1.x read the old URL: the settings plugin of 2.0.0 adds the same
+   repository itself.
+3. Point every other reference to a repository that moved, such as `infra-repository:` of a `promote.yml` caller,
    at the organization. Links to repositories that stay with the personal account keep their owner.
-3. Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`. The preflight of
+4. Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`. The preflight of
    `deploy.yml` requires the variable, and the images go to `ghcr.io/<GHCR_OWNER>/<app-name>…`, so the next deploy
    publishes in the organization's namespace. Images pushed before stay under `ghcr.io/dominiksienkiewicz/`. A
    rollback looks its tag up under `GHCR_OWNER`, so rolling back to such an image needs `GHCR_OWNER=dominiksienkiewicz`
    for that run and pull access to the old package. Let an admission policy accept both namespaces and both signing
    identities ([Security scanning](security-scanning.md)) until no workload runs an old image.
-4. Commit the diff in one commit, then run the gate.
+5. Commit the diff in one commit, then run the gate.
 
 ## Backend
 
