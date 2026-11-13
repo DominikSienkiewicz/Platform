@@ -92,6 +92,11 @@ image, Platform artifacts, workflow references and `platform-bump.yml` caller, w
 only. Its output describes private repositories, so it runs on the maintainer's machine, not in CI.
 The "Adopted by" column is from its run on 2026-10-18; an adoption pull request updates it.
 
+Platform and its consumers moved from the personal account `DominikSienkiewicz` to the organization
+`SeniorDeveloper-pl-Dominik-Sienkiewicz` on 2026-11-13. The npm packages are published under the organization's
+scope from 2.0.0 on, and a consumer on 1.10.3 or older crosses to 2.0.0 once by hand, as
+[docs/consuming.md](docs/consuming.md#moving-to-the-organization-200) shows.
+
 ### Reusable workflows
 
 Consumers call them as `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
@@ -159,7 +164,7 @@ flowchart LR
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
 reusable workflows. `platform-bump` moves all three and prints the notes of every release it
 crosses. Two references float: the
-Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
+Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every 1.x release, which
 is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
 ## Reference consumers

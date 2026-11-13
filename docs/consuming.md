@@ -101,6 +101,55 @@ Frontend:
   gate. In CI, `lint-task: lint` on `backend-ci.yml` runs the same first.
 - Frontend: `(cd frontend && npx platform-versions-check)`.
 
+## Moving to the organization (2.0.0)
+
+On 2026-11-13 Platform moved from the personal account `DominikSienkiewicz` to the organization
+`SeniorDeveloper-pl-Dominik-Sienkiewicz`. GitHub Packages ties an npm scope to the owner of its repository, so the
+npm packages are `@seniordeveloper-pl-dominik-sienkiewicz/*` from 2.0.0 on; releases up to 1.10.3 stay under
+`@dominiksienkiewicz/*`, owned by the personal account. The Maven coordinates are unchanged, but GitHub Packages
+serves them only under the organization: `https://maven.pkg.github.com/DominikSienkiewicz/Platform` answers 404, so a
+backend on 1.10.3 or older resolves the settings plugin, the catalog and the starters only from a warm Gradle cache.
+
+The `platform-bump` of 1.10.3 and older cannot cross to 2.0.0: it looks for the packages, the release asset and the
+attestation under the personal account. Cross once by hand, from the repository root of a clean working tree:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/v2.0.0/templates/platform-bump.sh -o scripts/platform-bump.sh
+```
+
+```bash
+./scripts/platform-bump.sh 2.0.0
+```
+
+The stub of 2.0.0 passes over a `platform-bump` that npm installed from the old scope and runs the bin of the 2.0.0
+release assets, checked against their `SHA256SUMS`, also in a repository without a backend. Without a version the
+bump stays in the current MAJOR, so neither `./scripts/platform-bump.sh` nor a `platform-bump.yml` caller on 1.x moves
+to 2.0.0 on its own; after this bump the caller's `uses:` names 2.0.0 and the scheduled bumps work again. The bin
+of 2.0.0 accepts the old scope, owner and attestation while it crosses, and its migration `2.0.0-organization-scope`
+rewrites, without the network:
+
+- the scope in `frontend/package.json` (dependencies, overrides, the `prettier` key), in `frontend/.npmrc` and in
+  every source or configuration file under `frontend/`: tsconfig `extends`, ESLint, Vitest and Prettier configs,
+  imports, `.d.ts` declarations, CSS `@import` and `@source`;
+- `DominikSienkiewicz/Platform` in `.github/workflows/` and in `settings.gradle.kts`, which covers the reusable
+  workflow callers and the GitHub Packages URL of `pluginManagement`;
+- the owner, the scope and the release asset name in `scripts/platform-bump.sh`.
+
+It leaves `package-lock.json` and `node_modules` alone: the bump regenerates the lockfile from the new names. It
+prints every other line that still names the personal account, because some repositories and images stay there.
+Then, by hand:
+
+1. Reinstall the frontend, `(cd frontend && npm ci)`, so `node_modules` holds the new scope.
+2. Point every other reference to a repository that moved, such as `infra-repository:` of a `promote.yml` caller,
+   at the organization. Links to repositories that stay with the personal account keep their owner.
+3. Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`. The preflight of
+   `deploy.yml` requires the variable, and the images go to `ghcr.io/<GHCR_OWNER>/<app-name>…`, so the next deploy
+   publishes in the organization's namespace. Images pushed before stay under `ghcr.io/dominiksienkiewicz/`. A
+   rollback looks its tag up under `GHCR_OWNER`, so rolling back to such an image needs `GHCR_OWNER=dominiksienkiewicz`
+   for that run and pull access to the old package. Let an admission policy accept both namespaces and both signing
+   identities ([Security scanning](security-scanning.md)) until no workload runs an old image.
+4. Commit the diff in one commit, then run the gate.
+
 ## Backend
 
 Start from [`templates/jvm/java-library`](../templates/jvm/java-library) for a pure

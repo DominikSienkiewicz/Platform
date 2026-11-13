@@ -133,7 +133,9 @@ w `libs.versions.toml` jest celowo nierozwiązywalny.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach przez `scripts/platform-bump.sh` albo reusable `platform-bump.yml` (Decyzja 5; preset Renovate obejmuje tylko GitHub Actions i obrazy Docker).
 
 **Kontrakt wydania: `docs/adr/0002-release-and-versioning-contract.md`.** Akcja konsumenta = MINOR w linii
-1.x, reszta = PATCH, MAJOR zarezerwowany. Notatki = `CHANGELOG.md`: każda wersja ma sekcję
+1.x, reszta = PATCH, MAJOR zarezerwowany na zmianę modelu dystrybucji — pierwszy to 2.0.0: przeniesienie do
+organizacji SeniorDeveloper-pl-Dominik-Sienkiewicz (2026-11-13), nowy scope npm, migracja `2.0.0-organization-scope`
+i jednorazowy ręczny krok konsumenta (`docs/consuming.md`, „Moving to the organization”). Notatki = `CHANGELOG.md`: każda wersja ma sekcję
 `## [X.Y.Z] - YYYY-MM-DD` z obowiązkowym `### Consumer action required` (`None.`, gdy nic). Przed wydaniem
 zmień `## [Unreleased]` na sekcję wersji i zmerguj to zwykłą drogą.
 
@@ -149,7 +151,7 @@ angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG, patch miałby
 `--skip-canary "<powód>"` pomija, powód idzie do trailera `Canary-Skipped`).
 Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
 zielonym CI (`verify` = `ci.yml`) na otagowanym commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do
-przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
+przodu i tylko dla tagów `v1.*`) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
 `templates/tests/release-contract.test.sh`.
 
 ## Czego NIE robić

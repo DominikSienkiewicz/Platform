@@ -16,8 +16,9 @@ until they bump:
 - **Artifacts** are pinned to the exact platform version.
 - **Reusable workflows** are called by the exact tag,
   `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
-  pins. The moving `v1` tag, which `release.yml` moves forward after every successful release, still
-  works for callers that have not migrated, and reaches them on their next CI run.
+  pins. The moving `v1` tag, which `release.yml` moves forward after every successful 1.x release, still
+  works for callers that have not migrated, and reaches them on their next CI run; it stays at the last
+  1.x release once 2.0.0 is out.
 
 Renovate's shared preset covers only GitHub Actions and Docker images; it bumps no Platform pin.
 
@@ -225,7 +226,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    in the registry. Consumers verify them as [docs/consuming.md](docs/consuming.md#verifying-provenance)
    shows.
 4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
-   forward: re-running an older tag never moves it back. Never move `v1` by hand.
+   forward: re-running an older tag never moves it back. It moves `v1` only for a `v1.*` tag, so a
+   release of another MAJOR leaves it on the 1.x line. Never move `v1` by hand.
 5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
    "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
    `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
@@ -357,9 +359,11 @@ In a consumer repository:
 
 Without an argument the script bumps to the newest release of the consumer's current MAJOR
 version; when a newer MAJOR exists it says so and leaves crossing it to an explicit version. Pass
-a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
-`platform-bump` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions`, reads its token from `GPR_TOKEN`,
-`GITHUB_TOKEN` or `gpr.key`, and:
+a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. A consumer on 1.10.3 or older crosses
+to 2.0.0, where Platform moved to the organization, once by hand
+([docs/consuming.md](docs/consuming.md#moving-to-the-organization-200)). It is a stub that calls the
+`platform-bump` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions` (or, when npm installed the bin of the old
+scope, the bin of the release assets), reads its token from `GPR_TOKEN`, `GITHUB_TOKEN` or `gpr.key`, and:
 
 - stops with exit code 2 before writing anything when a tool it needs is missing (`git`, `curl`,
   `python3`, `node` and `npm` for a frontend, a working `backend/gradlew` for a backend), when a

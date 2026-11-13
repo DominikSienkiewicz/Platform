@@ -485,7 +485,9 @@ does not wait for.
   repository-level `SSH_*` secrets an older bootstrap left, with the commands that delete them. Give it
   `SSH_HOST_KEY_SHA256` from a trusted channel, and it refuses a scanned host key with another
   fingerprint instead of trusting it on first use.
-- Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
+- Variables: `GHCR_OWNER`, the lowercase owner of the image namespace (`seniordeveloper-pl-dominik-sienkiewicz` since
+  Platform and its consumers moved to the organization; images pushed before stay under `dominiksienkiewicz`), and
+  `DEPLOY_PATH`.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
   workflow; its default `v1` is transitional.
