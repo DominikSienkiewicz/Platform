@@ -464,6 +464,14 @@ jobs:
         run: |
           # >>> move-v1-forward
           set -euo pipefail
+          # v1 to linia 1.x: wydanie innego MAJOR (2.0.0 = przeniesienie do organizacji, nowy scope npm) go nie rusza.
+          case "$GITHUB_REF" in
+            refs/tags/v1.*) ;;
+            *)
+              echo "::notice::$GITHUB_REF nie należy do linii 1.x, więc v1 zostaje na miejscu"
+              exit 0
+              ;;
+          esac
           target=$(git rev-parse --verify "${GITHUB_SHA}^{commit}")
           lease="refs/tags/v1:"
           if git ls-remote --exit-code --tags origin refs/tags/v1 >/dev/null; then
