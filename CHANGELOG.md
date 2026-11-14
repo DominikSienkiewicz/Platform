@@ -19,6 +19,8 @@ a test of its release gate failed on the GitHub runner, so use 1.10.2, which car
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-14
+
 Platform moved from the personal account `DominikSienkiewicz` to the organization
 `SeniorDeveloper-pl-Dominik-Sienkiewicz` on 2026-11-13. The npm packages change their coordinates, which
 [ADR-0002](docs/adr/0002-release-and-versioning-contract.md) reserves for a MAJOR, so this is 2.0.0, the first
