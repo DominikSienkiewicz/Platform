@@ -1,6 +1,6 @@
 {
   "name": "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig",
-  "version": "1.10.3",
+  "version": "2.0.0",
   "description": "Shared TypeScript configurations, base and Next.js.",
   "license": "MIT",
   "engines": {
