@@ -396,7 +396,10 @@ jobs:
   # main i tag niosą ten sam commit. Gdy pin różni się od pinu rodzica, smoke buduje na pinie rodzica, czyli
   # ostatnim wydaniu; każdy inny commit na własnym pinie. Wersji, której nie ma w rejestrze (wydanie 1.7.0 nic nie
   # opublikowało), smoke nie bierze: schodzi do najnowszej opublikowanej niższej, kluczując po markerze
-  # settings-conventions z gradle/maven-modules.txt jak version-exists w release.yml.
+  # settings-conventions z gradle/maven-modules.txt jak version-exists w release.yml. Najpierw jednak pyta rejestr,
+  # który starter nazywa w pluginManagement, o metadane tego markera: 404 znaczy, że nie ma tam jeszcze żadnej
+  # Platform (organizacja przed pierwszym wydaniem w niej), więc smoke nie ma na czym budować i zostaje pominięty
+  # z notką; każda inna odpowiedź niż 200 i 404 oraz błąd sieci failują job.
   # Blok testuje templates/tests/smoke-platform-version.test.sh.
   smoke-platform-version:
     name: Smoke Platform version
@@ -418,6 +421,28 @@ jobs:
           GPR_OWNER: ${{ github.repository_owner }}
         run: |
           # >>> smoke-platform-version
+          registry=$(grep -o 'https://maven\.pkg\.github\.com/[^"]*' templates/jvm/java-library/settings.gradle.kts | head -n 1)
+          if [ -z "$registry" ]; then
+            echo "::error title=backend-ci-smoke::templates/jvm/java-library/settings.gradle.kts names no GitHub Packages registry."
+            exit 1
+          fi
+          plugin=seniordev.settings-conventions
+          # Token przez stdin (-K -), żeby nie trafił do argumentów procesu.
+          status=$(printf 'user = "%s:%s"\n' "${GITHUB_ACTOR:-x}" "$GH_TOKEN" \
+            | curl -sS -K - -o /dev/null -w '%{http_code}' --max-time 30 \
+              "$registry/${plugin//.//}/$plugin.gradle.plugin/maven-metadata.xml")
+          case "$status" in
+            200) ;;
+            404)
+              echo "::notice title=backend-ci-smoke::$registry holds no Platform yet, so the smoke is skipped until a release is published there."
+              echo "version=" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+            *)
+              echo "::error title=backend-ci-smoke::$registry answered HTTP $status for the metadata of $plugin."
+              exit 1
+              ;;
+          esac
           pin_file=templates/jvm/java-library/gradle.properties
           read_pin() { sed -n 's/^platformVersion=//p' | tr -d ' \r'; }
           pin=$(read_pin < "$pin_file")
@@ -445,9 +470,10 @@ jobs:
   # Reusable backend-ci uruchomiony tu, zanim zrobi to konsument: na starterze java-library z jego wrapperem
   # i opublikowaną wersją Platform z joba wyżej, więc idzie prawdziwą ścieżką konsumenta (dwa setup-java, rejestracja
   # toolchainu 27, GitHub Packages przez GITHUB_TOKEN, upload raportów). Wydanie woła ci.yml jako verify,
-  # więc ten job bramkuje też publikację.
+  # więc ten job bramkuje też publikację. Pusta wersja = rejestr startera nie ma jeszcze żadnej Platform.
   backend-ci-smoke:
     needs: smoke-platform-version
+    if: needs.smoke-platform-version.outputs.version != ''
     permissions:
       contents: read
       packages: read
