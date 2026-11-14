@@ -40,6 +40,17 @@ None.
   `window.screen` and in media queries unless it sets `screen: undefined`, and
   [1.65.0](https://github.com/microsoft/playwright/releases/tag/v1.65.0) loads a `.css`, `.less` or `.scss` import
   of a test file as an empty module, so the imported file must exist.
+- The frontend canon moves `vitest` and `@vitest/coverage-v8` from 4.1.11 to 4.1.12, which fixes
+  GHSA-qxg6-89mg-rqv8 and GHSA-xp26-3454-mjgp in `@vitest/mocker`, which `vitest` pins exactly; `platform-bump`
+  applies it.
+- Platform's own frontend workspace resolves `body-parser` 2.4.0, `hono` 4.13.18, `@hono/node-server` 2.1.8 and
+  `fast-uri` 3.1.9, which fixes GHSA-27r3-jxmh-p828 (high), GHSA-46wx-v44x-9hh2, GHSA-4m76-xfj5-7975,
+  GHSA-3gg2-335m-rxc6, GHSA-h7mg-cq63-vhpq, GHSA-4h7h-rv7c-7m2v, GHSA-jpvv-r467-5p4w, GHSA-qv5m-9pm6-hqp3,
+  GHSA-333x-w4r6-6crp, GHSA-w74x-v6f9-j3xg, GHSA-xhq7-xmqj-769h and GHSA-wjr9-j795-jxcr. They arrive through
+  `shadcn` and `ajv`, development dependencies that no published package carries, so only `pnpm-lock.yaml` changes.
+  `deepmerge` 4.3.1 (GHSA-gcqx-w48m-w2h4, low) has no fixed release, and `minimatch` 10.2.5 under `eslint`
+  (GHSA-g3hv-75wg-m249) is fixed only in 11.0.1, outside the range its parents accept, so both stay until upstream
+  moves.
 
 ## [1.10.3] - 2026-11-12
 
