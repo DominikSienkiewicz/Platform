@@ -42,18 +42,6 @@ bump --dry-run 1.7.0 || fail "the handoff must succeed: $OUT"
 grep -qF 'Platform 1.7.0 runs its own bump logic (this copy is 1.6.0)' <<<"$OUT" || fail "the handoff must be announced: $OUT"
 [[ "$(paste -sd' ' - < "$fixture_work/call")" == "HANDOFF=1.7.0 --dry-run 1.7.0" ]] || fail 'the target bin must get the same arguments'
 
-# Wydanie po przeniesieniu Platform do organizacji (2026-11-13) nosi tarball pod nowym scope npm; 1.7.0 wyżej ma nazwę
-# sprzed przeniesienia. Bin czyta nazwę assetu z SHA256SUMS wydania, więc oddaje sterowanie obu.
-rm -f "$fixture_work/call"
-mkdir -p "$releases/v1.8.0"
-printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "1.8.0" }\n' > "$fixture_work/staging/package/package.json"
-tar -czf "$releases/v1.8.0/seniordeveloper-pl-dominik-sienkiewicz-versions-1.8.0.tgz" -C "$fixture_work/staging" package
-(cd "$releases/v1.8.0" && printf '%s  %s\n' "$(sha seniordeveloper-pl-dominik-sienkiewicz-versions-1.8.0.tgz)" \
-  seniordeveloper-pl-dominik-sienkiewicz-versions-1.8.0.tgz > SHA256SUMS)
-bump --dry-run 1.8.0 || fail "the handoff to a release under the organization scope must succeed: $OUT"
-grep -qF 'Platform 1.8.0 runs its own bump logic (this copy is 1.6.0)' <<<"$OUT" || fail "the handoff must be announced: $OUT"
-[[ "$(paste -sd' ' - < "$fixture_work/call")" == "HANDOFF=1.8.0 --dry-run 1.8.0" ]] || fail 'the 1.8.0 bin must get the same arguments'
-
 rm -rf "$fixture_work/cache" "$fixture_work/call"
 printf '0000  dominiksienkiewicz-versions-1.7.0.tgz\n' > "$releases/v1.7.0/SHA256SUMS"
 if bump --dry-run 1.7.0; then fail 'a checksum mismatch must stop the bump'; fi

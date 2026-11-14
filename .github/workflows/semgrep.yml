@@ -6,7 +6,7 @@ name: Semgrep SAST (reusable)
 #
 # Triggery (push/PR/cron) deklaruje CALLER — tu mieszka wyłącznie logika.
 # Wołane przez repo:
-#   jobs: { semgrep: { uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z } }
+#   jobs: { semgrep: { uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z } }
 # Platform skanuje nim siebie w self-scan.yml (domyślny zestaw reguł, ten sam co u konsumentów).
 #
 # Repo PRYWATNE bez GitHub Advanced Security: zakładka „Code scanning" (upload SARIF) jest

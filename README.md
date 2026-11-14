@@ -12,14 +12,14 @@ are published as versioned artifacts, and are consumed like any other dependency
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
-[![CI](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml)
-[![Latest version](https://img.shields.io/github/v/tag/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/tags)
+[![CI](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml)
+[![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
 solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
 it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform).
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
 
 > Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
 > consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
@@ -49,22 +49,22 @@ own schedule and rolls back by pinning an older version.
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` — RFC 9457 Problem Details for every Spring MVC error, the shape `api-client` reads (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | all five |
-| `frontend/packages/tsconfig/` | `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/eslint-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/tailwind-preset/` | `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth |
-| `frontend/packages/vitest-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/prettier-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) | none |
-| `frontend/packages/versions/` | `@seniordeveloper-pl-dominik-sienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/openapi/` | `@seniordeveloper-pl-dominik-sienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec (*incubating*) | GitHub Packages (npm) | none |
-| `frontend/packages/api-client/` | `@seniordeveloper-pl-dominik-sienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/query/` | `@seniordeveloper-pl-dominik-sienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/ui-registry/` | `@seniordeveloper-pl-dominik-sienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
+| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth |
+| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) | none |
+| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | the four frontends |
+| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec (*incubating*) | GitHub Packages (npm) | none |
+| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
+| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
+| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
 | `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all five; `platform-bump.yml`, `api-contract.yml` and `promote.yml` none |
-| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` | none has a Renovate branch |
+| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit, the GitHub files, the default community health files of a `.github` repository and a devcontainer (*incubating*); each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
-| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform#vX.Y.Z` | none |
+| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add DominikSienkiewicz/Platform#vX.Y.Z` | none |
 | `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included) and `render-example.sh` (the public `platform-example` repository it renders for each release), `adr-index.sh` (the ADR index), `seed-community-health.sh` (copies the default community health files into a local clone of the owner's `.github` repository; no network), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `compare-rebuild.sh` (a rebuilt release against GitHub Packages, run by `reproducibility.yml`), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
@@ -83,8 +83,8 @@ described in [RELEASING.md](RELEASING.md).
 
 | Repository | Layout |
 |---|---|
-| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Azimuth` | backend and frontend |
-| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone` | multi-module backend, no frontend |
+| `DominikSienkiewicz/Azimuth` | backend and frontend |
+| `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
 
 "The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
@@ -92,14 +92,9 @@ image, Platform artifacts, workflow references and `platform-bump.yml` caller, w
 only. Its output describes private repositories, so it runs on the maintainer's machine, not in CI.
 The "Adopted by" column is from its run on 2026-10-18; an adoption pull request updates it.
 
-Platform and its consumers moved from the personal account `DominikSienkiewicz` to the organization
-`SeniorDeveloper-pl-Dominik-Sienkiewicz` on 2026-11-13. The npm packages are published under the organization's
-scope from 2.0.0 on, and a consumer on 1.10.3 or older crosses to 2.0.0 once by hand, as
-[docs/consuming.md](docs/consuming.md#moving-to-the-organization-200) shows.
-
 ### Reusable workflows
 
-Consumers call them as `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
+Consumers call them as `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
 the tag of their Platform pin. Triggers are declared by the calling workflow; the platform keeps only
 the logic. What each caller must grant and pass, with a snippet per workflow, is in
 [docs/reusable-workflows.md](docs/reusable-workflows.md).
@@ -139,7 +134,7 @@ flowchart LR
   release["./release.sh"] -->|annotated tag| tag(("vX.Y.Z"))
   tag --> workflow["release.yml<br/>after green ci.yml"]
   workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog,<br/>test-fixtures, security-starter")]
-  workflow --> npm[("GitHub Packages npm<br/>@seniordeveloper-pl-dominik-sienkiewicz/*")]
+  workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
   workflow --> notes["GitHub Release<br/>CHANGELOG section"]
   workflow -->|move-v1, forward only| v1(("v1"))
 
@@ -164,7 +159,7 @@ flowchart LR
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
 reusable workflows. `platform-bump` moves all three and prints the notes of every release it
 crosses. Two references float: the
-Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every 1.x release, which
+Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
 is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
 ## Reference consumers
@@ -205,7 +200,7 @@ repository is public. Every GitHub Release from 1.6.0 on therefore carries the r
 `SHA256SUMS`, all attested. Build a starter from them without a token:
 
 ```bash
-gh release download vX.Y.Z --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
+gh release download vX.Y.Z --repo DominikSienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
 ```
 
 ```bash

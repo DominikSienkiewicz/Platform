@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kanon frontendu przychodzi z `npm pack @seniordeveloper-pl-dominik-sienkiewicz/versions@<target>`. Brak wydania (E404) to ostrzeżenie,
+# Kanon frontendu przychodzi z `npm pack @dominiksienkiewicz/versions@<target>`. Brak wydania (E404) to ostrzeżenie,
 # każdy inny błąd (401, sieć) kończy bump błędem z komunikatem npm zamiast cichego „stare wydanie platformy?”.
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -14,7 +14,7 @@ cat > "$work/bin/npm" <<'STUB'
 if [[ "$1" == pack ]]; then
   case "$FAKE_PACK" in
     E401) printf 'npm error code E401\nnpm error Unable to authenticate, need: Basic realm="GitHub Package Registry"\n' >&2 ;;
-    E404) printf 'npm error code E404\nnpm error 404 Not Found - GET https://npm.pkg.github.com/@seniordeveloper-pl-dominik-sienkiewicz%%2fversions\n' >&2 ;;
+    E404) printf 'npm error code E404\nnpm error 404 Not Found - GET https://npm.pkg.github.com/@dominiksienkiewicz%%2fversions\n' >&2 ;;
   esac
   exit 1
 fi
@@ -27,7 +27,7 @@ bump() {
   local dir="$work/$1"
   mkdir -p "$dir/frontend"
   git -C "$dir" init -q
-  printf '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.31" } }\n' > "$dir/frontend/package.json"
+  printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.5.31" } }\n' > "$dir/frontend/package.json"
   set +e
   (cd "$dir" && FAKE_PACK="$1" GPR_TOKEN=x PATH="$work/bin:$PATH" bash "$work/tool/platform-bump.sh" 9.9.9) > "$dir.log" 2>&1
   rc=$?

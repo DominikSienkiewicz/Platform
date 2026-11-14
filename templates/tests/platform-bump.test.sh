@@ -2,7 +2,7 @@
 # Test template'u platform-bump.sh (kanon: Platform/templates/platform-bump.sh).
 #
 # Po migracji na model stub+bin: templates/platform-bump.sh to CIENKI STUB, który deleguje
-# do binu `platform-bump` pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions (frontend/node_modules/.bin).
+# do binu `platform-bump` pakietu @dominiksienkiewicz/versions (frontend/node_modules/.bin).
 # Logika bumpu (Maven catalog + gradle.lockfile + npm) żyje w binie — tu testujemy WYŁĄCZNIE
 # kontrakt stuba. Hermetyczny (bez npm/sieci): fake-bin nagrywa argumenty.
 #

@@ -33,9 +33,9 @@ repo() {
   git -C "$dir" init -q
   printf 'plugins { id("seniordev.settings-conventions") version "1.6.0" }\nfrom("pl.seniordeveloper:platform-catalog:1.6.0")\n' > "$dir/backend/settings.gradle.kts"
   printf '#!/usr/bin/env bash\n' > "$dir/backend/gradlew" && chmod +x "$dir/backend/gradlew"
-  printf '@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com\n' > "$dir/frontend/.npmrc"
+  printf '@dominiksienkiewicz:registry=https://npm.pkg.github.com\n' > "$dir/frontend/.npmrc"
   printf 'FROM sapmachine:27-jre\n' > "$dir/backend/Dockerfile"
-  printf '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.6.0", "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "1.6.0" } }\n' > "$dir/frontend/package.json"
+  printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.6.0", "@dominiksienkiewicz/eslint-config": "1.6.0" } }\n' > "$dir/frontend/package.json"
   echo '{}' > "$dir/frontend/package-lock.json"
   printf 'jobs:\n  ci:\n    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0\n' > "$dir/.github/workflows/ci.yml"
   printf '%s\n' "$dir"
@@ -50,7 +50,7 @@ grep -qF 'PASS PD031 the catalog 1.6.0 resolves from GitHub Packages' "$tmp/out"
 if grep -qF 's3cr3t-value' "$tmp/out"; then fail 'the token value must never be printed'; fi
 
 bad=$(repo bad)
-printf '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.30", "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "1.6.0" } }\n' > "$bad/frontend/package.json"
+printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.5.30", "@dominiksienkiewicz/eslint-config": "1.6.0" } }\n' > "$bad/frontend/package.json"
 rm "$bad/frontend/package-lock.json"
 printf 'FROM eclipse-temurin:26-jre\n' > "$bad/backend/Dockerfile"
 printf 'jobs:\n  ci:\n    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1\n' > "$bad/.github/workflows/ci.yml"
@@ -68,13 +68,6 @@ for expected in \
   grep -qF -- "$expected" "$tmp/out" || fail "missing line: $expected"
 done
 grep -qE '^[0-9]+ check\(s\) failed' "$tmp/out" || fail 'the summary must count the failures'
-
-organization=$(repo organization)
-printf 'jobs:\n  ci:\n    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0\n' \
-  > "$organization/.github/workflows/ci.yml"
-doctor "$organization" --offline || fail 'a repository that calls Platform under the organization owner must pass'
-grep -qF 'PASS PD021 every reusable workflow reference is v1.6.0' "$tmp/out" \
-  || fail 'references under the organization owner must be counted'
 
 : > "$FAKE_CURL_LOG"
 doctor "$good" --offline || fail '--offline must still pass a good repository'

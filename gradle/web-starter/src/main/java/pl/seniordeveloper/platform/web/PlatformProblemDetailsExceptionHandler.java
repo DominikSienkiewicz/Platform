@@ -23,8 +23,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 /**
  * Jeden kształt błędu REST w całej Platformie: RFC 9457 {@code application/problem+json}, który
- * czyta {@code @seniordeveloper-pl-dominik-sienkiewicz/api-client} ({@code ApiError.problem});
- * złoty przykład: {@code contracts/problem-detail.json}.
+ * czyta {@code @dominiksienkiewicz/api-client} ({@code ApiError.problem}); złoty przykład: {@code
+ * contracts/problem-detail.json}.
  *
  * <ul>
  *   <li>Wyjątki Spring MVC — jak {@link ResponseEntityExceptionHandler}; walidacja {@code @Valid}

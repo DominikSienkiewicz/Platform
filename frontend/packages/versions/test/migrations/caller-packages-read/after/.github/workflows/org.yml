@@ -1,7 +1,0 @@
-on: [push]
-jobs:
-  backend:
-    permissions:
-      packages: read
-      contents: read
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31

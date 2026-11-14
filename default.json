@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Shared Renovate preset of SeniorDeveloper-pl-Dominik-Sienkiewicz; consumers extend github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform. It covers GitHub Actions and Docker images only. Gradle, npm and the Platform pins come from the Platform catalog and frontend canon and are bumped by platform-bump (reusable platform-bump.yml).",
+  "description": "Shared Renovate preset of DominikSienkiewicz; consumers extend github>DominikSienkiewicz/Platform. It covers GitHub Actions and Docker images only. Gradle, npm and the Platform pins come from the Platform catalog and frontend canon and are bumped by platform-bump (reusable platform-bump.yml).",
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
@@ -39,7 +39,7 @@
     {
       "description": "Platform's own reusable workflows are called by an exact vX.Y.Z that platform-bump moves; Renovate neither updates nor SHA-pins them.",
       "matchManagers": ["github-actions"],
-      "matchDepNames": ["SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform", "DominikSienkiewicz/Platform"],
+      "matchDepNames": ["DominikSienkiewicz/Platform"],
       "enabled": false
     }
   ],

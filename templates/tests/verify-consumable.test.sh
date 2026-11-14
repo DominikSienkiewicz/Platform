@@ -63,9 +63,9 @@ grep -q '/spring-app --no-daemon help dependencies' "$FAKE_LOG" \
 [[ $(grep -c 'help dependencies --configuration testRuntimeClasspath --refresh-dependencies' "$FAKE_LOG") -eq 2 ]] \
   || fail 'both starters must resolve testRuntimeClasspath with --refresh-dependencies'
 # shellcheck disable=SC2016 # literal backticks of the Markdown row
-row='| `@seniordeveloper-pl-dominik-sienkiewicz/versions@9.9.9` | `sha512-fake` |'
+row='| `@dominiksienkiewicz/versions@9.9.9` | `sha512-fake` |'
 grep -qF "$row" "$tmp/summary" || fail 'the summary must list each npm integrity'
-if grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/query' "$tmp/summary"; then fail 'private packages are not installed'; fi
+if grep -qF '@dominiksienkiewicz/query' "$tmp/summary"; then fail 'private packages are not installed'; fi
 
 if FAKE_GRADLE=failed check; then fail 'a FAILED dependency must fail the check'; fi
 grep -qF '::error title=Release not consumable::Gradle: templates/jvm/java-library does not resolve Platform 9.9.9' "$tmp/out" \
@@ -75,8 +75,8 @@ grep -qF 'docs/runbooks/rollback.md' "$tmp/out" || fail 'the failure must point 
 FAKE_GRADLE=flaky check || fail 'one failed first resolution must be retried'
 grep -qF 'Retrying in 0s' "$tmp/out" || fail 'the retry must be reported'
 
-if FAKE_GRADLE=ok FAKE_NPM_MISSING=@seniordeveloper-pl-dominik-sienkiewicz/versions check; then fail 'a tarball without its bin must fail'; fi
-grep -qF 'npm: @seniordeveloper-pl-dominik-sienkiewicz/versions@9.9.9 declares files it does not ship: bin/check.mjs' "$tmp/out" \
+if FAKE_GRADLE=ok FAKE_NPM_MISSING=@dominiksienkiewicz/versions check; then fail 'a tarball without its bin must fail'; fi
+grep -qF 'npm: @dominiksienkiewicz/versions@9.9.9 declares files it does not ship: bin/check.mjs' "$tmp/out" \
   || fail 'the failure must name the package and the missing file'
 
 echo 'OK: verify-consumable resolves both starters and every public npm package the way a consumer does'

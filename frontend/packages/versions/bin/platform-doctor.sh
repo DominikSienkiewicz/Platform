@@ -18,7 +18,7 @@ for arg in "$@"; do
 done
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "FAIL PD001 not inside a git repository"; exit 1; }
 cd "$root" || exit 1
-OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz
+OWNER=DominikSienkiewicz
 failures=0
 report() { # report <PASS|WARN|FAIL> <ID> <message> [fix]
   printf '%-4s %s %s\n' "$1" "$2" "$3"
@@ -46,7 +46,7 @@ if [[ -f frontend/package.json ]]; then
     node -e '
       const m = require(process.argv[1]);
       for (const s of ["dependencies", "devDependencies"])
-        for (const [n, v] of Object.entries(m[s] ?? {})) if (n.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/")) console.log(`${n} ${v}`);
+        for (const [n, v] of Object.entries(m[s] ?? {})) if (n.startsWith("@dominiksienkiewicz/")) console.log(`${n} ${v}`);
     ' "$root/frontend/package.json" 2>/dev/null)
 fi
 values=$(printf '%s\n' "${pins[@]+"${pins[@]}"}" | awk '{print $NF}' | sort -u | grep -v '^$' || true)
@@ -61,8 +61,7 @@ else
   report PASS PD020 "every Platform pin is $PIN (${#pins[@]} pins)"
 fi
 
-# Referencje pod starym ownerem i pod organizacją (od 2026-11-13), dopóki migracja organizacji ich nie przepisze.
-refs=$(grep -rhoE "uses:[[:space:]]*(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@[^[:space:]]+" .github/workflows 2>/dev/null \
+refs=$(grep -rhoE "uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@[^[:space:]]+" .github/workflows 2>/dev/null \
   | sed -E 's/.*@//' | sort | uniq -c | awk '{print $2 " (" $1 ")"}' | tr '\n' ' ')
 if [[ -z "$refs" ]]; then
   report PASS PD021 "no caller of Platform's reusable workflows"
@@ -177,10 +176,10 @@ fi
 
 # --- Frontend side ---------------------------------------------------------------------------------------
 if [[ -f frontend/package.json ]]; then
-  if grep -qxF "@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com" frontend/.npmrc 2>/dev/null; then
-    report PASS PD040 "frontend/.npmrc points @seniordeveloper-pl-dominik-sienkiewicz at GitHub Packages"
+  if grep -qxF "@dominiksienkiewicz:registry=https://npm.pkg.github.com" frontend/.npmrc 2>/dev/null; then
+    report PASS PD040 "frontend/.npmrc points @dominiksienkiewicz at GitHub Packages"
   else
-    report FAIL PD040 "frontend/.npmrc has no @seniordeveloper-pl-dominik-sienkiewicz registry line" "copy templates/npmrc to frontend/.npmrc"
+    report FAIL PD040 "frontend/.npmrc has no @dominiksienkiewicz registry line" "copy templates/npmrc to frontend/.npmrc"
   fi
   node_version=$(node --version 2>/dev/null | tr -d v)
   if [[ -z "$node_version" ]]; then
@@ -196,10 +195,10 @@ if [[ -f frontend/package.json ]]; then
     report FAIL PD042 "frontend/package-lock.json is missing; frontend-ci installs with npm ci" "run npm install in frontend/ and commit package-lock.json"
   fi
   if [[ "$offline" -eq 0 && -n "$PIN" && -n "$token" ]]; then
-    if (cd frontend && GITHUB_TOKEN="$token" npm view "@seniordeveloper-pl-dominik-sienkiewicz/versions@$PIN" version >/dev/null 2>&1); then
-      report PASS PD043 "@seniordeveloper-pl-dominik-sienkiewicz/versions@$PIN resolves through frontend/.npmrc"
+    if (cd frontend && GITHUB_TOKEN="$token" npm view "@dominiksienkiewicz/versions@$PIN" version >/dev/null 2>&1); then
+      report PASS PD043 "@dominiksienkiewicz/versions@$PIN resolves through frontend/.npmrc"
     else
-      report FAIL PD043 "npm cannot read @seniordeveloper-pl-dominik-sienkiewicz/versions@$PIN" "check the token from $source_name and frontend/.npmrc"
+      report FAIL PD043 "npm cannot read @dominiksienkiewicz/versions@$PIN" "check the token from $source_name and frontend/.npmrc"
     fi
   fi
 fi

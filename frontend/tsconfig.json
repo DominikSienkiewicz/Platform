@@ -12,13 +12,13 @@
       "@/registry/*": [
         "./packages/ui-registry/registry/*"
       ],
-      "@seniordeveloper-pl-dominik-sienkiewicz/api-client": [
+      "@dominiksienkiewicz/api-client": [
         "./packages/api-client/index.d.ts"
       ],
-      "@seniordeveloper-pl-dominik-sienkiewicz/query": [
+      "@dominiksienkiewicz/query": [
         "./packages/query/index.d.ts"
       ],
-      "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config": [
+      "@dominiksienkiewicz/vitest-config": [
         "./packages/vitest-config/index.d.ts"
       ]
     }

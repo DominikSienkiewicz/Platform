@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# platform-bump — KANON (jedno źródło): bin pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions, publikowany z Platform.
+# platform-bump — KANON (jedno źródło): bin pakietu @dominiksienkiewicz/versions, publikowany z Platform.
 # Repo konsumenckie NIE trzymają kopii logiki — wołają go przez cienki stub -> node_modules/.../bin.
-# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @seniordeveloper-pl-dominik-sienkiewicz/*) do
+# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @dominiksienkiewicz/*) do
 # NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu z versions.json.
 # Obie operacje obejmują też sekcję `overrides` w package.json (piny CVE paczek transytywnych,
 # np. overrides.next.postcss) — pomijając referencje npm w formie "$nazwa".
@@ -90,7 +90,7 @@ if [[ ! -f backend/settings.gradle.kts ]] && [[ ! -f frontend/package.json ]] &&
   exit 1
 fi
 
-OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
+OWNER="DominikSienkiewicz"
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"
 
 TOKEN="${GPR_TOKEN:-${GITHUB_TOKEN:-}}"
@@ -230,19 +230,6 @@ preflight
 # brak gh tylko ostrzega, bo bump działał dotąd bez niego.
 # platform-bump:provenance
 version_key() { local IFS=.; read -r -a part <<<"$1"; printf '%05d%05d%05d' "${part[0]}" "${part[1]}" "${part[2]}"; }
-# Tożsamość podpisu = release.yml repo Platform: organizacji (wydania po przeniesieniu 2026-11-13) albo konta
-# osobistego (wydania do 1.10.3). Inne repo nie przechodzi; wyjście gh z każdej próby trafia do <plik>.provenance.
-attested_by_platform() {
-  local file=$1 owner
-  : > "$file.provenance"
-  for owner in SeniorDeveloper-pl-Dominik-Sienkiewicz DominikSienkiewicz; do
-    if GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$owner/Platform" \
-      --signer-workflow "$owner/Platform/.github/workflows/release.yml" >/dev/null 2>>"$file.provenance"; then
-      return 0
-    fi
-  done
-  return 1
-}
 verify_provenance() {
   local file=$1 name
   name=$(basename "$file")
@@ -252,7 +239,8 @@ verify_provenance() {
     echo "Provenance: Platform $TARGET predates the release attestations of 1.6.0, so $name is not verified."
   elif ! command -v gh >/dev/null 2>&1; then
     echo "WARNING: gh is not installed, so the provenance of $name was not verified."
-  elif attested_by_platform "$file"; then
+  elif GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$OWNER/Platform" \
+    --signer-workflow "$OWNER/Platform/.github/workflows/release.yml" >/dev/null 2>"$file.provenance"; then
     echo "Provenance: $name was built by Platform's release.yml."
   else
     echo "The provenance of $name does not verify, so platform-bump stops before using it:" >&2
@@ -270,26 +258,15 @@ verify_provenance() {
 fetch_platform_cli() {
   local version=$1 base="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
   local cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
-  local asset="" name proto="=https" work expected actual
+  local asset="dominiksienkiewicz-versions-$version.tgz" proto="=https" work expected actual
   [[ "$base" == file://* ]] && proto="=file"
   if [[ -f "$cache/package/bin/platform-bump.sh" ]]; then
     printf '%s\n' "$cache/package"
     return 0
   fi
   work="$(mktemp -d)"
-  if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
-    rm -rf "$work"
-    return 1
-  fi
-  # Nazwa tarballa idzie za scope npm: organizacji od przeniesienia (2026-11-13), konta osobistego do 1.10.3.
-  for name in "seniordeveloper-pl-dominik-sienkiewicz-versions-$version.tgz" "dominiksienkiewicz-versions-$version.tgz"; do
-    if awk -v name="$name" '$2 == name || $2 == "*" name { found = 1 } END { exit !found }' "$work/SHA256SUMS"; then
-      asset=$name
-      break
-    fi
-  done
-  if [[ -z "$asset" ]] \
-    || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null; then
+  if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null \
+    || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
     rm -rf "$work"
     return 1
   fi
@@ -317,8 +294,7 @@ if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
   CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
-  # Scope organizacji albo sprzed przeniesienia (do 1.10.3): ten drugi przepisuje migracja 2.0.0-organization-scope.
-  CURRENT="$(grep -oE '"@(seniordeveloper-pl-dominik-sienkiewicz|dominiksienkiewicz)/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
 fi
 
 # Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
@@ -532,7 +508,7 @@ if [[ -f backend/settings.gradle.kts ]] && ! grep -qF "$TARGET" backend/settings
   exit 1
 fi
 
-# --- Frontend: piny @seniordeveloper-pl-dominik-sienkiewicz/* + kanon wersji z @seniordeveloper-pl-dominik-sienkiewicz/versions ---
+# --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---
 if [[ -f frontend/package.json ]]; then
   python3 - "$TARGET" <<'PY'
 # platform-bump:pins — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
@@ -547,15 +523,12 @@ def walk(node, path, parent, visit):
         if isinstance(v, dict): walk(v, at, name, visit)
         elif isinstance(v, str) and name and not v.startswith("$"): visit(node, k, name, v, at)
 
-# Piny Platform pod scope organizacji albo sprzed przeniesienia (do 1.10.3): migracja 2.0.0-organization-scope
-# zmienia potem nazwę, a wersja zostaje celem.
-platform=("@seniordeveloper-pl-dominik-sienkiewicz/", "@dominiksienkiewicz/")
 t=sys.argv[1]; p="frontend/package.json"; d=json.load(open(p))
 def to_target(node, key, name, version, at):
-    if name.startswith(platform): node[key]=t
+    if name.startswith("@dominiksienkiewicz/"): node[key]=t
 for sec in ("dependencies","devDependencies"):
     for k in list(d.get(sec,{})):
-        if k.startswith(platform): d[sec][k]=t
+        if k.startswith("@dominiksienkiewicz/"): d[sec][k]=t
 walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
@@ -565,13 +538,9 @@ PY
   TARGET_PACKAGE="$TMPD"
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
-  # Rejestr scope w poleceniu: frontend/.npmrc konsumenta sprzed przeniesienia zna tylko @dominiksienkiewicz, a zmienia
-  # go dopiero migracja 2.0.0-organization-scope; token hosta npm.pkg.github.com z .npmrc działa dla obu scope'ów.
-  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET" \
-    --@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com \
-    --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
-    verify_provenance "$(ls "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz)"
-    tar -xzf "$TMPD"/seniordeveloper-pl-dominik-sienkiewicz-versions-*.tgz -C "$TMPD"
+  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
+    verify_provenance "$(ls "$TMPD"/dominiksienkiewicz-versions-*.tgz)"
+    tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
 # platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
@@ -600,9 +569,9 @@ json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
 PY
   elif grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
-    echo "WARNING: @seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
+    echo "WARNING: @dominiksienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
   else
-    echo "ERROR: npm pack @seniordeveloper-pl-dominik-sienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
+    echo "ERROR: npm pack @dominiksienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
     cat "$TMPD/pack.err" >&2
     echo "Fix the error above and run the bump again." >&2
     rm -rf "$TMPD"
@@ -612,13 +581,12 @@ fi
 
 # --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
 #     callera deploy.yml idą na v$TARGET razem z pinami (Decyzja 3: dokładny tag przesuwany przez bump). Ruchome
-#     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. Owner
-#     stary (DominikSienkiewicz) albo organizacja: konsument trzyma stary, dopóki migracja organizacji go nie przepisze. ---
+#     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. ---
 # platform-bump:workflows
 for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
   [[ -f "$workflow" ]] || continue
   sed -i.bak -E \
-    -e "s#(uses:[[:space:]]*(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\4#" \
+    -e "s#(uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\3#" \
     -e "s#^([[:space:]]*platform-ref:[[:space:]]*)[\"']?v[0-9]+(\.[0-9]+\.[0-9]+)?[\"']?[[:space:]]*\$#\1v$TARGET#" \
     "$workflow" && rm -f "$workflow.bak"
 done

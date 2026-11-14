@@ -18,7 +18,7 @@ Copy the three files from the release the repository pins (replace `vX.Y.Z`):
 
 ```bash
 mkdir -p .devcontainer && for file in Dockerfile devcontainer.json post-create.sh; do
-  curl -fsSL "https://raw.githubusercontent.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/vX.Y.Z/templates/devcontainer/$file" -o ".devcontainer/$file"
+  curl -fsSL "https://raw.githubusercontent.com/DominikSienkiewicz/Platform/vX.Y.Z/templates/devcontainer/$file" -o ".devcontainer/$file"
 done
 ```
 

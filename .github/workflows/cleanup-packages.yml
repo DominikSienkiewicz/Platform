@@ -34,8 +34,8 @@ jobs:
           persist-credentials: false
       - name: Prune (keep the newest N, never a protected version)
         env:
-          # PAT (classic) administratora pakietów organizacji z zakresami: read:packages + delete:packages.
-          # WAŻNE: automatyczny GITHUB_TOKEN nie kasuje wersji pakietów organizacji — potrzebny PAT.
+          # PAT konta (classic) z zakresami: read:packages + delete:packages.
+          # WAŻNE: automatyczny GITHUB_TOKEN NIE zarządza pakietami KONTA użytkownika — potrzebny PAT.
           GH_TOKEN: ${{ secrets.PACKAGES_ADMIN_TOKEN }}
           KEEP: ${{ inputs.keep }}
           PROTECT: ${{ inputs.protect }}

@@ -56,7 +56,7 @@ if [[ "$SKIP_FRONTEND" -eq 0 ]]; then
     ( cd "$ROOT/frontend" && pnpm install --ignore-scripts )
     if [[ "$WITH_REGISTRY" -eq 1 ]]; then
       log "Frontend: shadcn build (public/r/*.json)"
-      ( cd "$ROOT/frontend" && pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/ui build )
+      ( cd "$ROOT/frontend" && pnpm --filter @dominiksienkiewicz/ui build )
     fi
   else
     echo "⚠ pnpm nie znaleziony — pomijam frontend (użyj --skip-frontend lub zainstaluj pnpm)." >&2

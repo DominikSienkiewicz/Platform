@@ -45,7 +45,7 @@ layout() {
 run() {
   local dir="$1"
   : > "$WORK/curl.log"
-  (cd "$dir" && PATH="$WORK/bin:$PATH" CURL_LOG="$WORK/curl.log" OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz TARGET=1.6.0 TOKEN=dummy bash "$WORK/wrapper.sh") \
+  (cd "$dir" && PATH="$WORK/bin:$PATH" CURL_LOG="$WORK/curl.log" OWNER=DominikSienkiewicz TARGET=1.6.0 TOKEN=dummy bash "$WORK/wrapper.sh") \
     > "$WORK/out.log"
 }
 

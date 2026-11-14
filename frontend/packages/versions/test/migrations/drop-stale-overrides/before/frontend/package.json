@@ -8,7 +8,6 @@
     },
     "typescript": "$typescript",
     "@dominiksienkiewicz/versions": "1.5.31",
-    "@seniordeveloper-pl-dominik-sienkiewicz/ui": "2.0.0",
     "openapi-typescript": {
       "js-yaml": "4.3.2"
     }

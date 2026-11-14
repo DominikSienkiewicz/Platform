@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const repo = process.env.PLATFORM_REPO ?? "SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform";
+const repo = process.env.PLATFORM_REPO ?? "DominikSienkiewicz/Platform";
 
 function options(argv) {
   const known = new Set(["--ref", "--root", "--canon-dir"]);

@@ -87,7 +87,7 @@ printf -- '- Bump with `platform-bump`.\n' > "$fixture/templates/agents/platform
 cp "$fixture/templates/agents/platform-block.md" "$fixture/AGENTS.md"
 printf -- '- See `docs/runbooks/cut-release.md`.\n' > "$fixture/docs/consumer-agents.md"
 : > "$fixture/docs/runbooks/cut-release.md"
-printf -- 'Read https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v<version>/docs/runbooks/cut-release.md first.\n' \
+printf -- 'Read https://github.com/DominikSienkiewicz/Platform/blob/v<version>/docs/runbooks/cut-release.md first.\n' \
   > "$fixture/plugins/platform/skills/demo/SKILL.md"
 python3 -I "$root/scripts/check-agent-docs.py" "$fixture" > /dev/null || fail 'the fixture skill must pass while its runbook exists'
 rm "$fixture/docs/runbooks/cut-release.md"

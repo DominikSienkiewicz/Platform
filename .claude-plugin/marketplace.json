@@ -11,7 +11,7 @@
       "source": "./plugins/platform",
       "description": "Four thin skills for a repository that consumes Platform: bump the pin, fix a failed gate, add a library, preview an unreleased change. Each opens the runbook at the pinned tag.",
       "category": "development",
-      "homepage": "https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"
+      "homepage": "https://github.com/DominikSienkiewicz/Platform"
     }
   ]
 }

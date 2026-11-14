@@ -14,7 +14,7 @@
 #   scripts/            platform-bump.sh, merge.sh, agent-gradle.sh, worktree-new.sh and worktree-status.sh;
 #   root files          .gitignore, backend/.gitignore, .editorconfig and .sdkmanrc from templates/;
 #   frontend/           with --frontend next: a Next.js app (src/ layout) whose package.json pins every dependency
-#                       at the canon of frontend/packages/versions and every @seniordeveloper-pl-dominik-sienkiewicz/* package at
+#                       at the canon of frontend/packages/versions and every @dominiksienkiewicz/* package at
 #                       <version>, the strict scripts (lint, typecheck, test, build, format:check), .npmrc, the
 #                       tsconfig/eslint/vitest/prettier/Tailwind configs of the packages, next.config.ts,
 #                       Dockerfile.frontend and the public/ directory it copies, plus a frontend-ci.yml caller
@@ -121,7 +121,7 @@ permissions:
 
 jobs:
   backend:
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
     with:
       working-directory: backend
     secrets:
@@ -148,7 +148,7 @@ const pick = (names) => Object.fromEntries(names.map((dependency) => {
   return [dependency, canon[dependency]];
 }));
 const platform = ["eslint-config", "prettier-config", "tailwind-preset", "tsconfig", "versions", "vitest-config"]
-  .map((packageName) => [`@seniordeveloper-pl-dominik-sienkiewicz/${packageName}`, version]);
+  .map((packageName) => [`@dominiksienkiewicz/${packageName}`, version]);
 const manifest = {
   name: `${name}-frontend`,
   version: "0.1.0",
@@ -164,7 +164,7 @@ const manifest = {
     format: "prettier --write .",
     "format:check": "prettier --check .",
   },
-  prettier: "@seniordeveloper-pl-dominik-sienkiewicz/prettier-config",
+  prettier: "@dominiksienkiewicz/prettier-config",
   dependencies: pick(["next", "react", "react-dom"]),
   devDependencies: Object.fromEntries(
     [
@@ -181,7 +181,7 @@ process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
 NODE
   cat > "$web/tsconfig.json" <<'JSON'
 {
-  "extends": "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json",
+  "extends": "@dominiksienkiewicz/tsconfig/next.json",
   "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
   "include": [
     "next-env.d.ts",
@@ -193,12 +193,12 @@ NODE
   "exclude": ["node_modules"]
 }
 JSON
-  printf 'export { default } from "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config/next";\n' > "$web/eslint.config.mjs"
+  printf 'export { default } from "@dominiksienkiewicz/eslint-config/next";\n' > "$web/eslint.config.mjs"
   printf 'export default { plugins: { "@tailwindcss/postcss": {} } };\n' > "$web/postcss.config.mjs"
   cat > "$web/vitest.config.ts" <<'TS'
 import { defineConfig, mergeConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
-import { baseConfig } from "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config";
+import { baseConfig } from "@dominiksienkiewicz/vitest-config";
 
 export default mergeConfig(
   baseConfig,
@@ -209,7 +209,7 @@ export default mergeConfig(
   }),
 );
 TS
-  printf '@import "@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset/theme.css";\n@import "tailwindcss";\n' > "$web/src/app/globals.css"
+  printf '@import "@dominiksienkiewicz/tailwind-preset/theme.css";\n@import "tailwindcss";\n' > "$web/src/app/globals.css"
   cat > "$web/src/app/layout.tsx" <<'TSX'
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -247,7 +247,7 @@ describe("Home", () => {
 TSX
   cat >> "$out/.github/workflows/ci.yml" <<YML
   frontend:
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
+    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
     with:
       working-directory: frontend
       strict: true

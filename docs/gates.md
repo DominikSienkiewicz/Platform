@@ -20,7 +20,7 @@ python3 scripts/gate-failures.py annotations.json
 
 The table holds counts only, never the messages.
 
-To escalate any of them, open an issue in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform with the code, the full message and
+To escalate any of them, open an issue in DominikSienkiewicz/Platform with the code, the full message and
 the Platform version from the link.
 
 ## Gradle
@@ -132,16 +132,16 @@ buildable on a laptop.
 
 ### PLAT-FE-003
 
-**Cause:** the `@seniordeveloper-pl-dominik-sienkiewicz/*` packages are not all pinned at one exact version, the release of the
-installed `@seniordeveloper-pl-dominik-sienkiewicz/versions`.
+**Cause:** the `@dominiksienkiewicz/*` packages are not all pinned at one exact version, the release of the
+installed `@dominiksienkiewicz/versions`.
 **Fix:** `npx platform-versions-check --fix`, or `scripts/platform-bump.sh <version>`.
 
 ## CI
 
 ### PLAT-CI-001
 
-**Cause:** strict `frontend-ci.yml` is missing something it requires: `@seniordeveloper-pl-dominik-sienkiewicz/versions`, one of
-the scripts `lint`, `typecheck`, `test`, `build` and `format:check`, or `@seniordeveloper-pl-dominik-sienkiewicz/openapi` when
+**Cause:** strict `frontend-ci.yml` is missing something it requires: `@dominiksienkiewicz/versions`, one of
+the scripts `lint`, `typecheck`, `test`, `build` and `format:check`, or `@dominiksienkiewicz/openapi` when
 `package.json` configures `platform.openapi`.
 **Fix:** add what the annotation names ([reusable-workflows.md](reusable-workflows.md#frontend-ciyml)).
 

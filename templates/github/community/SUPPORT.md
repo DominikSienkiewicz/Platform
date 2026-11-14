@@ -8,6 +8,6 @@ time promise.
 3. If you are still stuck, open an issue with the **Question** form. For something that does not work as
    documented, use the **Bug** form instead.
 4. Never report a vulnerability in an issue. Follow the
-   [security policy](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/.github/security/policy).
+   [security policy](https://github.com/DominikSienkiewicz/.github/security/policy).
 
 Everything in a public space is read by other people: leave out tokens, passwords and personal data.

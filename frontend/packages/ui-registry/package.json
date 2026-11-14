@@ -1,6 +1,6 @@
 {
-  "name": "@seniordeveloper-pl-dominik-sienkiewicz/ui",
-  "version": "2.0.0",
+  "name": "@dominiksienkiewicz/ui",
+  "version": "1.10.3",
   "description": "shadcn registry (utils, button).",
   "license": "MIT",
   "engines": {
@@ -31,7 +31,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform.git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
     "directory": "frontend/packages/ui-registry"
   }
 }

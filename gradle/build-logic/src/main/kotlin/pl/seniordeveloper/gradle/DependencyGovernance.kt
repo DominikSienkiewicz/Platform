@@ -92,7 +92,7 @@ object DependencyGovernance {
 					GateFinding(
 						PlatformGates.DEP_NOT_IN_CATALOG,
 						"$declaredAs — not in the Platform catalog and no Platform BOM manages it: add it to " +
-							"gradle/catalog/libs.versions.toml in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform, release, and bump the Platform pin",
+							"gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin",
 					)
 				}
 			}

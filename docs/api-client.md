@@ -2,11 +2,11 @@
 
 ## Response contract
 
-> **Incubating.** `@seniordeveloper-pl-dominik-sienkiewicz/api-client` is private and not published: no consumer has
+> **Incubating.** `@dominiksienkiewicz/api-client` is private and not published: no consumer has
 > adopted it, and 1.5.31 is its last release in GitHub Packages. The contract below holds for that
 > release and for the source, and becomes public again with its first adopter.
 
-`@seniordeveloper-pl-dominik-sienkiewicz/api-client` returns parsed JSON for successful responses.
+`@dominiksienkiewicz/api-client` returns parsed JSON for successful responses.
 `createApiClient<paths>()` types the same client by the `paths` interface that `platform-openapi-gen`
 generates from the committed spec ([api-contracts.md](api-contracts.md#frontend-typed-calls)).
 A response with status 204 returns `null` without reading its body; other empty
@@ -43,8 +43,8 @@ where `document.cookie` exists, and a header the call sets itself wins.
 Run the package tests from `frontend/` when test execution is requested:
 
 ```sh
-pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/api-client test
-pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/vitest-config test
+pnpm --filter @dominiksienkiewicz/api-client test
+pnpm --filter @dominiksienkiewicz/vitest-config test
 ```
 
 The Vitest configuration tests import the public configuration and therefore

@@ -2,7 +2,7 @@
 """agents-stack.py [--check] [root]: the backend stack the platform-agents-backend block names, from the catalog.
 
 Writes frontend/packages/versions/agents/stack.json, a flat map of the `[versions]` entries listed in KEYS, read from
-gradle/catalog/libs.versions.toml. The file ships in @seniordeveloper-pl-dominik-sienkiewicz/versions, so platform-bump fills the block of
+gradle/catalog/libs.versions.toml. The file ships in @dominiksienkiewicz/versions, so platform-bump fills the block of
 the release it goes to without the catalog or the network. With --check nothing is written: the script exits 1 when
 the file differs from the catalog.
 """

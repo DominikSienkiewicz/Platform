@@ -1,5 +1,5 @@
 // Type test of the xsrf option from a consumer's side, checked by `pnpm typecheck` and never run.
-import { createApiClient, type ApiClientOptions } from "@seniordeveloper-pl-dominik-sienkiewicz/api-client";
+import { createApiClient, type ApiClientOptions } from "@dominiksienkiewicz/api-client";
 
 export function xsrfConsumer(): void {
   const springNames: ApiClientOptions = { xsrf: true };

@@ -21,7 +21,7 @@ after(() => consumers.forEach((dir) => rmSync(dir, { recursive: true, force: tru
 
 const vitestConfig = `import { defineConfig, mergeConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
-import { baseConfig } from "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config";
+import { baseConfig } from "@dominiksienkiewicz/vitest-config";
 
 export default mergeConfig(
   baseConfig,
@@ -47,7 +47,7 @@ function link(consumer, name, target) {
 
 function installPublishedPackage(consumer) {
   const [{ filename }] = JSON.parse(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", consumer], { cwd: packageDir }));
-  const target = join(consumer, "node_modules", "@seniordeveloper-pl-dominik-sienkiewicz", "vitest-config");
+  const target = join(consumer, "node_modules", "@dominiksienkiewicz", "vitest-config");
   mkdirSync(target, { recursive: true });
   run("tar", ["-xzf", join(consumer, filename), "-C", target, "--strip-components=1"]);
 }
@@ -56,13 +56,13 @@ function typeCheckConsumer() {
   const consumer = mkdtempSync(join(tmpdir(), "platform-vitest-config-"));
   consumers.push(consumer);
   installPublishedPackage(consumer);
-  link(consumer, "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig", join(packageDir, "..", "tsconfig"));
+  link(consumer, "@dominiksienkiewicz/tsconfig", join(packageDir, "..", "tsconfig"));
   link(consumer, "@types/node", dirname(require.resolve("@types/node/package.json")));
   link(consumer, "vitest", join(packageDir, "node_modules", "vitest"));
   writeFileSync(join(consumer, "vitest.config.ts"), vitestConfig);
   writeFileSync(
     join(consumer, "tsconfig.json"),
-    JSON.stringify({ extends: "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json", include: ["**/*.ts"], exclude: ["node_modules"] }),
+    JSON.stringify({ extends: "@dominiksienkiewicz/tsconfig/next.json", include: ["**/*.ts"], exclude: ["node_modules"] }),
   );
   return spawnSync(process.execPath, [tsc, "--noEmit", "-p", consumer], { encoding: "utf8" });
 }

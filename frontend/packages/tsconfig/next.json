@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig — next",
+  "display": "@dominiksienkiewicz/tsconfig — next",
   "extends": "./base.json",
   "compilerOptions": {
     "plugins": [{ "name": "next" }]

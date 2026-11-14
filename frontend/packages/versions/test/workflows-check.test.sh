@@ -82,15 +82,4 @@ for expected in \
 done
 if grep -qF 'job backend calls backend-ci.yml@v1: grants' "$tmp/out"; then fail 'read-all covers the read permissions of backend-ci'; fi
 
-# Platform moved to the organization on 2026-11-13; a caller under the new owner is held to the same contract.
-repo organization ci.yml 'jobs:
-  backend:
-    permissions:
-      contents: read
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31'
-check organization
-[[ $rc -eq 1 ]] || fail "a caller under the organization owner must be checked, got $rc"
-grep -qF 'ERROR .github/workflows/ci.yml:5 job backend calls backend-ci.yml@v1.5.31: grants packages: none, the workflow needs packages: read' "$tmp/out" \
-  || fail 'the missing packages: read of an organization-owner caller must be named'
-
 echo 'OK: platform-workflows-check holds callers to the permissions, inputs and secrets of the reusable workflow contract'
