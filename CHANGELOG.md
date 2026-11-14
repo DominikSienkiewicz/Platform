@@ -22,9 +22,16 @@ continues.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-14
+
 ### Consumer action required
 
-None.
+- Nothing beyond the bump for a consumer on 1.10.3. This is a MINOR because the history since 1.10.3 holds 14dc01b,
+  whose consumer action (the `@seniordeveloper-pl-dominik-sienkiewicz` scope of 2.0.0) was withdrawn before any
+  release: Platform stays under `DominikSienkiewicz`, so the `@dominiksienkiewicz/*` scope,
+  `https://maven.pkg.github.com/DominikSienkiewicz/Platform` and callers of `DominikSienkiewicz/Platform` stay.
+- Delete a stopgap repository that names `SeniorDeveloper-pl-Dominik-Sienkiewicz` from `settings.gradle.kts` if one
+  was added for the move; the organization holds no Platform packages (manual).
 
 ### Fixed
 
