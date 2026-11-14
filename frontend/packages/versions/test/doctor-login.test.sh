@@ -38,8 +38,8 @@ repo() {
       printf '#!/usr/bin/env bash\n' > "$dir/gradlew" && chmod +x "$dir/gradlew" ;;
     none)
       mkdir -p "$dir/frontend"
-      printf '@dominiksienkiewicz:registry=https://npm.pkg.github.com\n' > "$dir/frontend/.npmrc"
-      printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.6.0" } }\n' > "$dir/frontend/package.json"
+      printf '@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com\n' > "$dir/frontend/.npmrc"
+      printf '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.6.0" } }\n' > "$dir/frontend/package.json"
       echo '{}' > "$dir/frontend/package-lock.json" ;;
   esac
   printf '%s\n' "$dir"

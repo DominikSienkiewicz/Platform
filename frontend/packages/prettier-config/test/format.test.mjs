@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import test from "node:test";
 import * as prettier from "prettier";
 
-const config = createRequire(import.meta.url)("@dominiksienkiewicz/prettier-config");
+const config = createRequire(import.meta.url)("@seniordeveloper-pl-dominik-sienkiewicz/prettier-config");
 
 test("the preset loads the Tailwind plugin, which sorts class lists", async () => {
   const formatted = await prettier.format('export const a = <div className="p-4 flex" />;\n', {

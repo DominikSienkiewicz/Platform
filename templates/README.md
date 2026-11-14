@@ -7,7 +7,7 @@ consumer repositories.
 The files a consumer keeps byte for byte are listed in [`manifest.json`](manifest.json). The
 **Generated** column marks what `scripts/new-consumer.sh` writes into a new repository (frontend files with
 `--frontend next`). The
-`platform-templates-check` bin of `@dominiksienkiewicz/versions` compares a repository's copies with
+`platform-templates-check` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions` compares a repository's copies with
 the canon of its pinned release and prints `DRIFT` or `MISSING` with the `curl` command that restores
 each file; `platform-bump` runs it after every bump. It only reports and always exits 0. Run it by
 hand from the repository root with `frontend/node_modules/.bin/platform-templates-check`.
@@ -23,14 +23,14 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `.editorconfig` | consistent IDE style (Java: 2 spaces like google-java-format; Kotlin/`*.kts`: tabs) | the root of every repository | yes |
 | `.sdkmanrc` | the local JDK that runs Gradle, through SDKMAN (`sdk env`) | the root of every repository | yes |
 | `devcontainer/Dockerfile`, `devcontainer/devcontainer.json`, `devcontainer/post-create.sh`, `devcontainer/README.md` | a **development container** for a repository with `backend/` and optionally `frontend/` (*incubating* until a first consumer adopts it, Decision 7): the JDK that runs Gradle, the catalog's toolchain JDK, and Node with npm, each from the canon and the base image pinned by digest. The GitHub Packages credentials pass through `remoteEnv` from `GITHUB_ACTOR` and `GITHUB_TOKEN`, never into the image or a file ([consuming.md](../docs/consuming.md#devcontainer-incubating)). The three scripts and configs are optional entries of `manifest.json`; guarded by `tests/consumer-devcontainer.test.sh` | `<repo>/.devcontainer/` (the README stays here) | — |
-| `npmrc` | GitHub Packages registry and token lines for `@dominiksienkiewicz/*` | `<repo>/frontend/.npmrc` | yes |
+| `npmrc` | GitHub Packages registry and token lines for `@seniordeveloper-pl-dominik-sienkiewicz/*` | `<repo>/frontend/.npmrc` | yes |
 | `gitignore/root.gitignore` | OS, IDE, env files, `.secrets.local`, logs | `<repo>/.gitignore` | yes |
 | `gitignore/backend.gitignore` | Java and Gradle, IntelliJ (`out/`) and Buildship (`bin/`) output | `<repo>/backend/.gitignore` | yes |
 | `gitignore/frontend.gitignore` | Next.js, Node, Playwright | `<repo>/frontend/.gitignore` | yes |
 | `Dockerfile.backend` | runtime-only image on `sapmachine:27-jre`, built in layers from the `bootJar` (one image layer per Boot layer, optional JDK AOT cache), with a liveness `HEALTHCHECK` that needs no curl and `JAVA_TOOL_OPTIONS` sized from the container limit ([consuming.md](../docs/consuming.md#runtime-image)); why SapMachine, and when to move back to Temurin, is in [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` | — |
 | `Dockerfile.frontend` | Next.js standalone image on `node:24-slim`: `npm ci --ignore-scripts` with the token as the BuildKit secret `github_token` only, a non-root runner and `server.js`; needs the standalone output of `frontend/next.config.ts` | `<repo>/frontend/Dockerfile` | yes |
 | `frontend/next.config.ts` | `output: "standalone"`, which `Dockerfile.frontend` copies | `<repo>/frontend/next.config.ts` | yes |
-| `platform-bump.sh` | **stub** that runs the `platform-bump` bin of `@dominiksienkiewicz/versions` (`frontend/node_modules/.bin`); the bump logic lives in the npm package, so the stub cannot drift. Needs `@dominiksienkiewicz/versions` 1.3.8 or newer | `<repo>/scripts/platform-bump.sh` | yes |
+| `platform-bump.sh` | **stub** that runs the `platform-bump` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions` (`frontend/node_modules/.bin`); the bump logic lives in the npm package, so the stub cannot drift. Needs `@seniordeveloper-pl-dominik-sienkiewicz/versions` 1.3.8 or newer | `<repo>/scripts/platform-bump.sh` | yes |
 | `bump-version.sh` | bumps the application version (`backend`/`frontend`) and creates a Liquibase changeset (`db new-migration`); not the same as `platform-bump.sh` | `<repo>/scripts/bump-version.sh` | — |
 | `db/liquibase/modulith-event-publication.yaml` | the Spring Modulith `event_publication` table for `spring-modulith-starter-jpa` or `spring-modulith-starter-jdbc`, as a Liquibase changeset; Platform's CI validates it against the JPA entity and runs the JDBC registry on it ([consuming.md](../docs/consuming.md#database-migrations)) | `<repo>/backend/src/main/resources/db/changelog/changes/NNNN-modulith-event-publication.yaml`, included in the master | — |
 | `db/flyway/V__modulith_event_publication.sql` | the same table as a Flyway migration | `<repo>/backend/src/main/resources/db/migration/V<n>__modulith_event_publication.sql` | — |

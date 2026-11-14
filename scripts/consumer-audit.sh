@@ -15,7 +15,8 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 consumers="${CONSUMERS_FILE:-$root/scripts/consumers.txt}"
-platform_repo="${PLATFORM_REPO:-DominikSienkiewicz/Platform}"
+# Wzorzec ERE repo Platform w `uses:` konsumentów: stary owner albo organizacja (przeniesienie 2026-11-13).
+platform_repo="${PLATFORM_REPO:-(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform}"
 
 usage() { echo "Usage: $0 [--lag | --adoption] [--from DIR]" >&2; }
 readme="${PLATFORM_README:-$root/README.md}"
@@ -98,7 +99,9 @@ npm_pins() {
     const byVersion = {};
     for (const deps of [manifest.dependencies, manifest.devDependencies]) {
       for (const [name, version] of Object.entries(deps ?? {})) {
-        if (name.startsWith("@dominiksienkiewicz/")) (byVersion[version] ??= []).push(name.slice("@dominiksienkiewicz/".length));
+        // Scope organizacji albo sprzed przeniesienia (2026-11-13): konsument przed migracją ma jeszcze stary.
+        const scoped = /^@(?:seniordeveloper-pl-dominik-sienkiewicz|dominiksienkiewicz)\/(.+)$/.exec(name);
+        if (scoped) (byVersion[version] ??= []).push(scoped[1]);
       }
     }
     const pins = Object.entries(byVersion).map(([version, names]) => `${version}: ${names.sort().join(", ")}`);

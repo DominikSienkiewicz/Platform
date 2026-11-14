@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # verify-provenance of backend-ci.yml (N-REL-16): every Platform jar in the Gradle cache must verify against the
-# attestations of Platform's release.yml; sources and javadoc jars are skipped, an unverified jar or an empty cache
+# attestations of Platform's release.yml, under the organization or, for a release before the transfer of
+# 2026-11-13, under the personal account; sources and javadoc jars are skipped, an unverified jar or an empty cache
 # fails with PLAT-PROV-001. The block is cut out between its markers and run against a stub gh.
 # shellcheck disable=SC2016 # literal GitHub expressions
 set -euo pipefail
@@ -17,10 +18,14 @@ grep -qF 'if: ${{ inputs.verify-provenance }}' <(sed -n '/- name: Verify the pro
   || fail 'the check must be opt-in'
 
 mkdir -p "$tmp/bin"
+# A jar named *-personal-* carries only the attestation of the personal account's release.yml (built before the
+# transfer of 2026-11-13), *-organization-* only that of the organization's; *unattested* carries none.
 cat > "$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$GH_CALLS"
 [[ "$3" == *unattested* ]] && exit 1
+[[ "$3" == *-personal-* && "$5" != DominikSienkiewicz/Platform ]] && exit 1
+[[ "$3" == *-organization-* && "$5" != SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform ]] && exit 1
 exit 0
 GH
 chmod +x "$tmp/bin/gh"
@@ -38,7 +43,15 @@ jar org.example other ""
 run
 [[ $RC -eq 0 ]] || fail 'attested Platform jars must pass'
 [[ $(wc -l < "$tmp/calls") -eq 2 ]] || fail 'only the two Platform main jars are verified'
-grep -qF -- '--signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml' "$tmp/calls" || fail 'the signer must be release.yml'
+grep -qF -- '--signer-workflow SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/release.yml' "$tmp/calls" \
+  || fail 'the signer must be release.yml'
+
+jar pl.seniordeveloper platform-personal-fixtures ""
+jar pl.seniordeveloper platform-organization-fixtures ""
+run
+[[ $RC -eq 0 ]] || fail 'a jar attested by either owner of Platform must pass'
+grep -qF -- 'platform-personal-fixtures-1.6.0.jar --repo DominikSienkiewicz/Platform --signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml' "$tmp/calls" \
+  || fail 'a jar released before the transfer must be checked against the old release.yml'
 
 jar pl.seniordeveloper platform-unattested ""
 run

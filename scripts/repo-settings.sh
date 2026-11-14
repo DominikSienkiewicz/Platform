@@ -14,7 +14,7 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-repo="${PLATFORM_REPO:-DominikSienkiewicz/Platform}"
+repo="${PLATFORM_REPO:-SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform}"
 rulesets_dir="${RULESETS_DIR:-$root/.github/rulesets}"
 consumers_file="${CONSUMERS_FILE:-$root/scripts/consumers.txt}"
 

@@ -4,7 +4,7 @@
 // because index.js is part of this program; test/consumer-types.test.mjs reproduces it from an installed package.
 import { defineConfig, mergeConfig, type ViteUserConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
-import defaultExport, { baseConfig } from "@dominiksienkiewicz/vitest-config";
+import defaultExport, { baseConfig } from "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config";
 
 export const merged: ViteUserConfig = mergeConfig(
   baseConfig,

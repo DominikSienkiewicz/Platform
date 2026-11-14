@@ -179,8 +179,8 @@ set_origin_v1() {
 }
 
 run_move() {
-  local sha="$1"
-  (cd "$work" && GITHUB_SHA="$sha" GITHUB_REF=refs/tags/v9.9.9 bash "$move" >/dev/null 2>&1)
+  local sha="$1" ref="${2:-refs/tags/v1.9.9}"
+  (cd "$work" && GITHUB_SHA="$sha" GITHUB_REF="$ref" bash "$move" >/dev/null 2>&1)
 }
 
 set_origin_v1 ""
@@ -199,5 +199,10 @@ if run_move "$c3"; then
   fail 'move-v1 must refuse when v1 is not an ancestor of the released commit'
 fi
 [[ "$(origin_v1)" == "$side" ]] || fail 'move-v1 must leave a diverged v1 untouched'
+
+# v1 is the 1.x line: a release of another MAJOR (2.0.0 moves Platform to the organization) leaves it where it is.
+set_origin_v1 "$c2"
+run_move "$c3" refs/tags/v2.0.0 || fail 'move-v1 must not fail for a release of another major'
+[[ "$(origin_v1)" == "$c2" ]] || fail 'move-v1 must keep v1 on the 1.x line when 2.0.0 is released'
 
 echo 'OK: Release publishes and moves v1 only after green CI, forward only'

@@ -9,7 +9,7 @@ trap 'rm -rf "$tmp"' EXIT
 fail() { local message="$1"; echo "FAIL: $message" >&2; exit 1; }
 
 cat > "$tmp/versions.json" <<'JSON'
-{ "_comment": "fixture", "versions": { "next": "16.4.0", "react": "19.2.8", "@dominiksienkiewicz/ui": "1.6.0" } }
+{ "_comment": "fixture", "versions": { "next": "16.4.0", "react": "19.2.8", "@seniordeveloper-pl-dominik-sienkiewicz/ui": "1.6.0" } }
 JSON
 node "$root/scripts/canon-package-json.mjs" "$tmp/versions.json" > "$tmp/package.json"
 
@@ -19,7 +19,7 @@ check() {
 }
 check 'm.private === true' 'the probe must be private'
 check 'm.dependencies.next === "16.4.0" && m.dependencies.react === "19.2.8"' 'canon entries must be exact dependencies'
-check '!("@dominiksienkiewicz/ui" in m.dependencies) && !("@dominiksienkiewicz/ui" in m.overrides)' 'Platform pins are not canon entries'
+check '!("@seniordeveloper-pl-dominik-sienkiewicz/ui" in m.dependencies) && !("@seniordeveloper-pl-dominik-sienkiewicz/ui" in m.overrides)' 'Platform pins are not canon entries'
 # shellcheck disable=SC2016 # "$next" is the literal npm override reference, not a shell expansion
 check 'm.overrides.next === "$next" && m.overrides.react === "$react"' 'every canon entry must override its transitive copies'
 

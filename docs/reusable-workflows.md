@@ -8,7 +8,7 @@ types and defaults are described in the workflow files themselves (every input h
 ## Rules that apply to every workflow
 
 - **Reference an exact tag.** Use the tag of your Platform pin, for example
-  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
+  `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
   ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). `platform-bump` moves it together
   with the pins, `@v1` included. The moving `@v1` still works but changes under you on every
   Platform release.
@@ -26,7 +26,7 @@ types and defaults are described in the workflow files themselves (every input h
   when the contract changes without updating its snapshot; copy the snapshot to
   `frontend/packages/versions/workflow-contract.txt` too, which `platform-workflows-check` reads.
 - **Check your callers.** `npx platform-workflows-check` (from `frontend/`, with
-  `@dominiksienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
+  `@seniordeveloper-pl-dominik-sienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
   contract: permissions, inputs, required inputs and secrets. `platform-bump` runs it against the
   release it moves to.
 
@@ -56,7 +56,7 @@ permissions:
   packages: read
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       working-directory: backend # "." for the templates/jvm layout
     secrets:
@@ -108,7 +108,7 @@ green. Name the task of each source set the fix commits touch, such as `red-proo
 ```yaml
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       red-proof: true
     secrets:
@@ -125,7 +125,7 @@ annotation and the job summary name that script. A strict caller whose `package.
 `platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.
-- Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.
+- Secret `gpr_token` (optional): a token that can read `@seniordeveloper-pl-dominik-sienkiewicz/*` from GitHub Packages.
   Without it the caller's automatic `GITHUB_TOKEN` is used, which also needs access to Platform's
   packages.
 - Inputs: [frontend-ci.yml](../.github/workflows/frontend-ci.yml).
@@ -136,7 +136,7 @@ permissions:
   packages: read
 jobs:
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
     with:
       strict: true
     secrets:
@@ -177,7 +177,7 @@ permissions:
   contents: read
 jobs:
   api-contract:
-    uses: DominikSienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z
     with:
       spec-path: contract/openapi.yaml
 ```
@@ -214,7 +214,7 @@ permissions:
   packages: read
 jobs:
   scan:
-    uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
     with:
       only-if-deps-changed: true
     secrets:
@@ -250,7 +250,7 @@ permissions:
   packages: read
 jobs:
   container-scan:
-    uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
     with:
       images: '["ghcr.io/owner/app-backend:latest"]'
     secrets:
@@ -284,7 +284,7 @@ permissions:
   contents: read
 jobs:
   semgrep:
-    uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z
 ```
 
 Inputs:
@@ -315,7 +315,7 @@ jobs:
       contents: read
       security-events: write
       id-token: write
-    uses: DominikSienkiewicz/Platform/.github/workflows/scorecard.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/scorecard.yml@vX.Y.Z
 ```
 
 Inputs:
@@ -347,7 +347,7 @@ permissions:
   packages: read
 jobs:
   sonar:
-    uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       gpr_token: ${{ secrets.GPR_TOKEN }}
@@ -401,7 +401,7 @@ permissions:
   packages: read
 jobs:
   bump:
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@vX.Y.Z
     with:
       version: ${{ inputs.version || '' }}
     secrets:
@@ -441,7 +441,7 @@ permissions:
   contents: read
 jobs:
   unblock:
-    uses: DominikSienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@vX.Y.Z
     secrets:
       ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
 ```
@@ -485,7 +485,9 @@ does not wait for.
   repository-level `SSH_*` secrets an older bootstrap left, with the commands that delete them. Give it
   `SSH_HOST_KEY_SHA256` from a trusted channel, and it refuses a scanned host key with another
   fingerprint instead of trusting it on first use.
-- Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
+- Variables: `GHCR_OWNER`, the lowercase owner of the image namespace (`seniordeveloper-pl-dominik-sienkiewicz` since
+  Platform and its consumers moved to the organization; images pushed before stay under `dominiksienkiewicz`), and
+  `DEPLOY_PATH`.
 - Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
   to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
   workflow; its default `v1` is transitional.
@@ -519,7 +521,7 @@ permissions:
   id-token: write
 jobs:
   deploy:
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
     with:
       app-name: myapp
       platform-ref: vX.Y.Z
@@ -549,7 +551,7 @@ Inputs:
 | `scan-severity` | string | `high` | Fail threshold of the Grype and Trivy gates for scan-images: negligible, low, medium, high or critical. |
 | `compose-file` | string | `docker-compose.prod.yml` | Compose file name in compose-dir. |
 | `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
-| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
+| `platform-ref` | string | `v1` | Ref of SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
 | `ssh-deploy` | boolean | `true` | Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required. |
 | `single-image` | boolean | `false` | Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. Requires ssh-deploy: false. |
 | `rollback-to-backend` | string | empty | Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
@@ -619,7 +621,7 @@ permissions:
 jobs:
   promote:
     if: github.ref == 'refs/heads/release'
-    uses: DominikSienkiewicz/Platform/.github/workflows/promote.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/promote.yml@vX.Y.Z
     with:
       app-name: myapp
       infra-repository: <owner>/<gitops-repo>
@@ -644,7 +646,7 @@ Inputs:
 | `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, or values.yaml with single-image, relative to its root. |
 | `single-image` | boolean | `false` | Promote one image, for an application whose boot jar serves its frontend: deploy.yml builds it with single-image, and its tag goes to values.yaml in values-dir. |
 | `promote-app-id` | string | required | The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository. |
-| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
+| `platform-ref` | string | `v1` | Ref of SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
 | `build-timeout-minutes` | number | `30` | Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360. |
 | `promote-timeout-minutes` | number | `5` | Minutes before the promote job is cancelled; GitHub's default is 360. |
 <!-- /docs-gen -->

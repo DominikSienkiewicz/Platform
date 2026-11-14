@@ -34,7 +34,7 @@ a Dockerfile (`platformRuntimeImageCheck`).
 - **Spring Boot, Spring Modulith, Spring AI**: the BOMs `seniordev.spring-modulith-conventions`
   imports.
 - **Node**: the `engines.node` of the published npm packages. **Next.js**: the canon in
-  `@dominiksienkiewicz/versions`. **pnpm**: what Platform builds its own packages with; consumers
+  `@seniordeveloper-pl-dominik-sienkiewicz/versions`. **pnpm**: what Platform builds its own packages with; consumers
   use npm ([ADR-0006](adr/0006-pnpm-in-platform-npm-in-consumers.md)).
 
 The reusable workflows have no column of their own: a consumer calls them at the tag of its pin, so

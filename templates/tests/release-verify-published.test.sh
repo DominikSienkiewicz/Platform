@@ -20,8 +20,8 @@ checkout="$tmp/checkout"
 mkdir -p "$checkout/gradle/build-logic/src/main/kotlin" "$checkout/frontend/packages/eslint-config" "$checkout/frontend/packages/query"
 touch "$checkout/gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts" \
       "$checkout/gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts"
-printf '{ "name": "@dominiksienkiewicz/eslint-config" }\n' > "$checkout/frontend/packages/eslint-config/package.json"
-printf '{ "name": "@dominiksienkiewicz/query", "private": true }\n' > "$checkout/frontend/packages/query/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config" }\n' > "$checkout/frontend/packages/eslint-config/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/query", "private": true }\n' > "$checkout/frontend/packages/query/package.json"
 
 # Stubs: gh lists 1.6.0 for every Maven package except $MISSING_MAVEN; npm knows 1.6.0 unless $MISSING_NPM.
 mkdir -p "$tmp/bin"
@@ -57,11 +57,11 @@ MISSING_MAVEN=seniordev.settings-conventions.seniordev.settings-conventions.grad
 [[ $RC -ne 0 ]] || fail 'a missing plugin marker must fail the release'
 grep -q 'settings-conventions.gradle.plugin has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing package'
 
-MISSING_NPM=@dominiksienkiewicz/eslint-config run
+MISSING_NPM=@seniordeveloper-pl-dominik-sienkiewicz/eslint-config run
 [[ $RC -ne 0 ]] || fail 'a missing npm package must fail the release'
-grep -q 'npm @dominiksienkiewicz/eslint-config has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing npm package'
+grep -q 'npm @seniordeveloper-pl-dominik-sienkiewicz/eslint-config has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing npm package'
 
-MISSING_NPM=@dominiksienkiewicz/query run
+MISSING_NPM=@seniordeveloper-pl-dominik-sienkiewicz/query run
 [[ $RC -eq 0 ]] || fail 'a private package is not published and must not be required'
 
 echo 'OK: verify-published requires the version on every Maven package and every public npm package'

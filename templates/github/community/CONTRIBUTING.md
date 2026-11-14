@@ -3,7 +3,7 @@
 This project is maintained by one person and run in public. Issues are welcome: a bug, a feature request or a
 question each has a form. Pull requests are welcome **after an issue they implement has been agreed**; an
 unannounced pull request may be closed without review. Report a vulnerability privately, as the
-[security policy](https://github.com/DominikSienkiewicz/.github/security/policy) describes.
+[security policy](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/.github/security/policy) describes.
 
 A repository that has its own `CONTRIBUTING.md` follows that file instead of this one. The repository's README
 says how to build and test it.
@@ -27,4 +27,4 @@ README describes. A pull request that leaves the build red is not reviewed.
 ## Code of conduct
 
 Everyone taking part follows the
-[code of conduct](https://github.com/DominikSienkiewicz/.github/blob/HEAD/CODE_OF_CONDUCT.md).
+[code of conduct](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/.github/blob/HEAD/CODE_OF_CONDUCT.md).

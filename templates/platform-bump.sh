@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# platform-bump.sh — cienki STUB: deleguje do binu `platform-bump` pakietu @dominiksienkiewicz/versions.
+# platform-bump.sh — cienki STUB: deleguje do binu `platform-bump` pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions.
 # KANON LOGIKI bumpu żyje w Platform/frontend/packages/versions/bin/platform-bump.sh i dociera tu
 # przez npm (frontend/node_modules/.bin) albo, w repo bez frontendu, z assetów GitHub Release — NIE wklejaj
 # logiki bumpu do tego pliku ani do kopii per-repo.
@@ -16,7 +16,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 BIN="frontend/node_modules/.bin/platform-bump"
-if [[ -x "$BIN" ]]; then
+# Bin spod scope sprzed przeniesienia Platform do organizacji (@dominiksienkiewicz, do 1.10.3) nie dochodzi do jej
+# wydań, więc wtedy stub bierze bin z assetów wydania, jak w repo bez frontendu.
+legacy_bin=false
+[[ -d frontend/node_modules/@dominiksienkiewicz/versions ]] && legacy_bin=true
+if [[ -x "$BIN" && "$legacy_bin" == false ]]; then
   # Zainstalowany bin sam przekazuje sterowanie binowi wydania docelowego (handoff, N-DX-4).
   exec "$BIN" "$@"
 fi
@@ -24,14 +28,14 @@ fi
 # Repo bez frontendu (N-DX-4): bin z assetów GitHub Release Platform — publiczne, bez npm i bez PAT-a, sprawdzone
 # sumą z SHA256SUMS tego wydania. Wersja: argument X.Y.Z albo najnowsze wydanie; bin sam zostaje w bieżącym MAJOR
 # i, gdy cel jest inny niż on, oddaje sterowanie binowi celu.
-if ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
+if [[ "$legacy_bin" == false ]] && ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
   && ! grep -qs 'pl.seniordeveloper:platform-catalog:' backend/settings.gradle.kts settings.gradle.kts; then
   echo "Brak $BIN — zainstaluj zależności frontendu: (cd frontend && npm install)." >&2
-  echo "Bin istnieje od @dominiksienkiewicz/versions 1.3.8 — starszy pin w frontend/package.json" >&2
+  echo "Bin istnieje w paczce versions od 1.3.8 — starszy pin w frontend/package.json" >&2
   echo "podbij ręcznie do najnowszej wersji platformy i powtórz npm install." >&2
   exit 1
 fi
-OWNER="DominikSienkiewicz"
+OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
 releases="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
 api="${PLATFORM_RELEASES_API:-https://api.github.com/repos/$OWNER/Platform/releases/latest}"
 proto() { [[ "$1" == file://* ]] && printf '=file' || printf '=https'; }
@@ -42,12 +46,20 @@ if [[ -z "$version" ]]; then
   [[ -n "$version" ]] || { echo "No frontend bin and no readable latest Platform release ($api)." >&2; exit 1; }
 fi
 cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
-asset="dominiksienkiewicz-versions-$version.tgz"
 if [[ ! -f "$cache/package/bin/platform-bump.sh" ]]; then
   work="$(mktemp -d)"
   trap 'rm -rf "$work"' EXIT
-  if ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/$asset" -o "$work/$asset" 2>/dev/null \
-    || ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+  # Nazwa tarballa idzie za scope npm: organizacji od przeniesienia (2026-11-13), konta osobistego do 1.10.3.
+  asset=""
+  if curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
+    for name in "seniordeveloper-pl-dominik-sienkiewicz-versions-$version.tgz" "dominiksienkiewicz-versions-$version.tgz"; do
+      if awk -v name="$name" '$2 == name || $2 == "*" name { found = 1 } END { exit !found }' "$work/SHA256SUMS"; then
+        asset=$name
+        break
+      fi
+    done
+  fi
+  if [[ -z "$asset" ]] || ! curl -fsSL --proto "$(proto "$releases")" "$releases/v$version/$asset" -o "$work/$asset" 2>/dev/null; then
     echo "No $BIN, and the release assets of Platform $version could not be downloaded from $releases/v$version." >&2
     exit 1
   fi

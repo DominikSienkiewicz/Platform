@@ -19,12 +19,59 @@ a test of its release gate failed on the GitHub runner, so use 1.10.2, which car
 
 ## [Unreleased]
 
+Platform moved from the personal account `DominikSienkiewicz` to the organization
+`SeniorDeveloper-pl-Dominik-Sienkiewicz` on 2026-11-13. The npm packages change their coordinates, which
+[ADR-0002](docs/adr/0002-release-and-versioning-contract.md) reserves for a MAJOR, so this is 2.0.0, the first
+release of the 2.x line. `platform-bump` without a version stays in the current MAJOR; cross with the one-time
+step in [docs/consuming.md](docs/consuming.md#moving-to-the-organization-200).
+
 ### Consumer action required
 
-None.
+- Cross to 2.0.0 by hand once: replace `scripts/platform-bump.sh` with the stub of 2.0.0 and run
+  `./scripts/platform-bump.sh 2.0.0`. The `platform-bump` of 1.10.3 and older cannot reach the organization's
+  packages, release assets or attestations (manual,
+  [docs/consuming.md](docs/consuming.md#moving-to-the-organization-200)).
+- The npm packages are published as `@seniordeveloper-pl-dominik-sienkiewicz/*`; `@dominiksienkiewicz/*` ends at
+  1.10.3. Dependencies, overrides and the `prettier` key of `frontend/package.json`, `frontend/.npmrc`, and the
+  imports, `extends`, `.d.ts` declarations and CSS `@import`/`@source` under `frontend/` move to the new scope; the
+  bump regenerates `package-lock.json` (migration `2.0.0-organization-scope`). Then run `npm ci` in `frontend/`
+  (manual).
+- Callers of the reusable workflows name `SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`, and the
+  `pluginManagement` repository of `settings.gradle.kts` is
+  `https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`; the old URL answers 404 (migration
+  `2.0.0-organization-scope`, which also moves the owner and asset name of `scripts/platform-bump.sh`).
+- Other references to repositories that moved, such as `infra-repository:` of a `promote.yml` caller, name the
+  organization; the migration lists each line that still names the personal account (manual).
+- Delete a stopgap repository of the organization's GitHub Packages from `dependencyResolutionManagement` in
+  `settings.gradle.kts`: the settings plugin of 2.0.0 adds it itself; the migration names the line (manual).
+- Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`: images go to the
+  organization's namespace from the next deploy, while earlier images stay under `ghcr.io/dominiksienkiewicz/`.
+  Admission policies accept both namespaces and both cosign identities of `deploy.yml` until no workload runs an
+  old image (manual).
+- `@v1` stays at the last 1.x release; a caller that still uses it moves to an exact `@vX.Y.Z` (manual, or the
+  bump above).
+
+### Changed
+
+- The settings plugin resolves the catalog and the starters from
+  `https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`, and every Maven module publishes
+  there. Gate links, the Renovate preset (`github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`), the documentation
+  site, the Claude Code marketplace and the agent blocks name the organization.
+- `platform-bump`, `platform-workflows-check`, `platform-doctor`, `scripts/consumer-audit.sh` and the migrations
+  `1.6.0-caller-packages-read` and `1.8.0-gradle-jdk-27` recognise a reusable workflow caller under either owner;
+  `platform-bump` and `every-drop-stale-overrides` treat a pin under either scope as a Platform pin.
+- The release assets of the npm packages are named `seniordeveloper-pl-dominik-sienkiewicz-<package>-X.Y.Z.tgz`.
+  `platform-bump` and the stub take the versions tarball that a release's `SHA256SUMS` lists, so they still reach the
+  releases up to 1.10.3 under their old name.
+- The stub passes over a `platform-bump` that npm installed from the old scope and runs the bin of the release
+  assets instead, also in a repository with only a frontend.
 
 ### Fixed
 
+- `platform-bump` and the `verify-provenance` step of `backend-ci.yml` accept the attestations of `release.yml` under
+  the organization and, for releases up to 1.10.3, under the personal account, and nothing else. They checked only
+  the personal account, so every release built in the organization would have failed verification.
+- `move-v1` leaves `v1` on the 1.x line when a release of another MAJOR is published.
 - The frontend canon moves `@playwright/test` from 1.60.0 to 1.65.0. GitHub's `ubuntu-latest` runner is now
   Ubuntu 26.04, for which Playwright 1.60.0 has neither a Chromium build nor a list of system packages, so
   `frontend-ci.yml` with `run-e2e: true` failed in `npx --no playwright install --with-deps chromium` with

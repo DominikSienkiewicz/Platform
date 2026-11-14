@@ -194,16 +194,16 @@ Generated from each `package.json` by `scripts/docs-gen.sh`.
 <!-- docs-gen:npm-packages -->
 | Package | Directory | Published | Bins | Description |
 |---|---|---|---|---|
-| `@dominiksienkiewicz/api-client` | `frontend/packages/api-client/` | no (private) | — | Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body. |
-| `@dominiksienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
-| `@dominiksienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
-| `@dominiksienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
-| `@dominiksienkiewicz/query` | `frontend/packages/query/` | no (private) | — | Shared QueryClient (staleTime 60 s, refetchOnWindowFocus off) and a QueryProvider with React Query Devtools. |
-| `@dominiksienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
-| `@dominiksienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
-| `@dominiksienkiewicz/ui` | `frontend/packages/ui-registry/` | yes | — | shadcn registry (utils, button). |
-| `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
-| `@dominiksienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/api-client` | `frontend/packages/api-client/` | no (private) | — | Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
+| `@seniordeveloper-pl-dominik-sienkiewicz/query` | `frontend/packages/query/` | no (private) | — | Shared QueryClient (staleTime 60 s, refetchOnWindowFocus off) and a QueryProvider with React Query Devtools. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/ui` | `frontend/packages/ui-registry/` | yes | — | shadcn registry (utils, button). |
+| `@seniordeveloper-pl-dominik-sienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
 <!-- /docs-gen -->
 
 ## Security starter (*incubating*)
@@ -277,7 +277,7 @@ records from it, and client spans are left as they are. An application turns it 
 ## Web starter (*incubating*)
 
 `pl.seniordeveloper:platform-web-starter` answers every error of a Spring MVC application as RFC 9457
-`application/problem+json` in one shape, the one `@dominiksienkiewicz/api-client` reads into
+`application/problem+json` in one shape, the one `@seniordeveloper-pl-dominik-sienkiewicz/api-client` reads into
 `ApiError.problem` ([api-contracts.md](api-contracts.md#errors-problem-details)). It replaces Spring Boot's
 `ProblemDetailsExceptionHandler` and backs off when the application defines its own
 `ResponseEntityExceptionHandler`. Source: [`PlatformProblemDetailsExceptionHandler`](../gradle/web-starter/src/main/java/pl/seniordeveloper/platform/web/PlatformProblemDetailsExceptionHandler.java).

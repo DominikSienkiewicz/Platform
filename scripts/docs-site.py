@@ -15,7 +15,7 @@ import sys
 ref, out =sys.argv[1], os.path.abspath(sys.argv[2])
 root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 docs = os.path.join(root, "docs")
-repository = "https://github.com/DominikSienkiewicz/Platform"
+repository = "https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"
 LINK = re.compile(r"(\]\()([^)\s]+)(\))")
 
 

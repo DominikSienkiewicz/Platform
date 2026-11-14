@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Platform's own Renovate config: the shared preset plus the rules for the canons that live only here.",
-  "extends": ["github>DominikSienkiewicz/Platform"],
+  "extends": ["github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"],
   "packageRules": [
     {
       "description": "The backend canon: Renovate proposes catalog versions in Platform only. The convention plugins read these versions from the generated PlatformVersions, so the catalog entry is the only edit (docs/versions.md).",

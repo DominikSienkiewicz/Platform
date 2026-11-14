@@ -7,7 +7,7 @@
 # Woła go reproducibility.yml; test: scripts/compare-rebuild.test.sh.
 set -euo pipefail
 bundle=${1:?Usage: compare-rebuild.sh <bundle-dir>}
-registry="${PLATFORM_MAVEN_URL:-https://maven.pkg.github.com/DominikSienkiewicz/Platform}"
+registry="${PLATFORM_MAVEN_URL:-https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform}"
 proto="=https"
 [[ "$registry" == file://* ]] && proto="=file"
 sha() { (sha256sum "$1" 2>/dev/null || shasum -a 256 "$1") | awk '{ print $1 }'; }

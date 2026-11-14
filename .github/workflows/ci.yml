@@ -122,7 +122,7 @@ jobs:
           echo "templates/Dockerfile.backend: layered image healthy"
 
   # Obraz z templates/Dockerfile.frontend naprawdę się buduje i odpowiada na porcie 3000 (N-CAP-6): frontend
-  # z scripts/new-consumer.sh --frontend next przypięty do ostatniego WYDANIA, bo paczek @dominiksienkiewicz/*
+  # z scripts/new-consumer.sh --frontend next przypięty do ostatniego WYDANIA, bo paczek @seniordeveloper-pl-dominik-sienkiewicz/*
   # wersji checkoutu nie ma jeszcze w GitHub Packages. GITHUB_TOKEN (packages: read) czyta je przez .npmrc
   # konsumenta, a do obrazu trafia wyłącznie jako sekret BuildKit github_token, nigdy jako build-arg.
   # Koszt ograniczony: PR i push do main budują obraz tylko, gdy zmieniło się jego wejście (Dockerfile,
@@ -179,7 +179,7 @@ jobs:
           # więc jego paczek jeszcze nie opublikowano. Ruchomy v1 i tagi spoza vX.Y.Z odpadają.
           tags=$(git tag --list 'v*' --no-contains HEAD --sort=-v:refname)
           tag=$(awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ { print; exit }' <<<"$tags")
-          [ -n "$tag" ] || { echo "::error::No release tag vX.Y.Z before HEAD to take the @dominiksienkiewicz/* packages from."; exit 1; }
+          [ -n "$tag" ] || { echo "::error::No release tag vX.Y.Z before HEAD to take the @seniordeveloper-pl-dominik-sienkiewicz/* packages from."; exit 1; }
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
           echo "The frontend pins the packages of Platform $tag."
           # <<< frontend-image-release
@@ -232,7 +232,7 @@ jobs:
             }
           }
           const pinned = Object.keys({ ...manifest.dependencies, ...manifest.devDependencies })
-            .filter((name) => name.startsWith("@dominiksienkiewicz/"));
+            .filter((name) => name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/"));
           const inRegistry = (name) => {
             try {
               const shown = execFileSync("npm", ["view", `${name}@${version}`, "version"],
@@ -560,7 +560,7 @@ jobs:
       - run: pnpm -r --if-present test
       # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
       - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
+        run: pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/ui build
       - name: Record the Node version
         env:
           NODE_LEG: ${{ matrix.node }}

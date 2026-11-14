@@ -4,7 +4,7 @@
 //
 //   node scripts/canon-package-json.mjs <ścieżka/do/versions.json> > package.json
 //
-// Paczki @dominiksienkiewicz/* to piny platformy, nie wpisy kanonu, więc wypadają. `overrides` z referencją
+// Paczki @seniordeveloper-pl-dominik-sienkiewicz/* to piny platformy, nie wpisy kanonu, więc wypadają. `overrides` z referencją
 // "$nazwa" daje każdemu wystąpieniu paczki z kanonu, także tranzytywnemu, wersję kanonu: skan odpowiada
 // na pytanie, czy podatny jest SAM kanon, a nie przypadkowy stary rodzic.
 import { readFileSync } from "node:fs";
@@ -17,7 +17,7 @@ if (!canonPath) {
 
 const { versions } = JSON.parse(readFileSync(canonPath, "utf8"));
 const names = Object.keys(versions)
-  .filter((name) => !name.startsWith("@dominiksienkiewicz/"))
+  .filter((name) => !name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/"))
   .sort();
 const manifest = {
   name: "platform-canon-probe",

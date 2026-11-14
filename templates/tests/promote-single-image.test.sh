@@ -22,7 +22,7 @@ grep -qFx '        default: false' <<< "$input" || fail 'single-image must defau
 # --- build: deploy.yml w tym samym trybie, z wydania, które go ma ---
 build=$(job build)
 grep -qFx '      single-image: ${{ inputs.single-image }}' <<< "$build" || fail 'build must pass inputs.single-image to deploy.yml'
-pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
+pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.8.11\n%s\n' "$pin" | sort -C -V \
   || fail "deploy.yml has the single-image input since v1.8.11: promote.yml must not pin an older one, got v$pin"

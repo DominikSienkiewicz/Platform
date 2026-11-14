@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # setup-gh-deploy.sh — push the GitHub Actions secrets + variables that the reusable
-# deploy workflow (DominikSienkiewicz/Platform/.github/workflows/deploy.yml@v1) needs,
+# deploy workflow (SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@v1) needs,
 # from a LOCAL git-ignored file. Secret VALUES never pass through an agent and are never
 # echoed — you fill `.secrets.local` and run this yourself. Inside a git work tree the script
 # refuses to run unless `git check-ignore` confirms that the file is ignored.

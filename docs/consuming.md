@@ -37,7 +37,7 @@ scripts/new-consumer.sh --name order-service --package pl.example.orders --kind 
 
 Then provide the credentials: `GPR_TOKEN` as a repository secret for CI, and `gpr.user`/`gpr.key` and
 `GITHUB_TOKEN` locally ([Prerequisites](#prerequisites)); run `npm install` once in `frontend/` and commit
-the `package-lock.json` it writes. Once the public `DominikSienkiewicz/platform-example` repository exists,
+the `package-lock.json` it writes. Once the public `SeniorDeveloper-pl-Dominik-Sienkiewicz/platform-example` repository exists,
 every release regenerates it from this command ([RELEASING.md](../RELEASING.md#what-releaseyml-does)).
 
 It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
@@ -45,7 +45,7 @@ It writes `backend/` (the starter with your package, group and name, the Gradle 
 and an explicit `gpr_token`, the scripts of `templates/` and the root files. `--kind java-library` gives
 a plain library, `--platform-version X.Y.Z` another release. `--frontend next` adds `frontend/`: a
 Next.js app in the `src/` layout whose `package.json` pins every dependency at the canon and every
-`@dominiksienkiewicz/*` package at the release, with the strict scripts, `.npmrc`, the configs below, the
+`@seniordeveloper-pl-dominik-sienkiewicz/*` package at the release, with the strict scripts, `.npmrc`, the configs below, the
 [runtime image](#frontend-runtime-image) with the `public/` directory it copies, and a
 `frontend-ci.yml` caller with `strict: true`. It creates no git repository and no GitHub setting. The steps below describe what it renders, and how to add Platform to an existing
 repository.
@@ -62,7 +62,7 @@ Backend, for a new repository started from a template:
    (1.5.31 or newer, the first release that supports `platformRepository`):
 
    ```bash
-   git ls-remote --tags --refs https://github.com/DominikSienkiewicz/Platform 'v*.*.*' | sed 's#.*/v##' | sort -V | tail -1
+   git ls-remote --tags --refs https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform 'v*.*.*' | sed 's#.*/v##' | sort -V | tail -1
    ```
 
 3. Check the wiring, then run the full build:
@@ -83,7 +83,7 @@ Frontend:
 2. Install the version canon at the Platform version you pin:
 
    ```bash
-   cd frontend && npm install --save-dev --save-exact @dominiksienkiewicz/versions@<version>
+   cd frontend && npm install --save-dev --save-exact @seniordeveloper-pl-dominik-sienkiewicz/versions@<version>
    ```
 
 3. Check the dependencies against the canon:
@@ -100,6 +100,60 @@ Frontend:
   and the linters without tests (`./gradlew format` fixes the formatting); `./gradlew check` runs every
   gate. In CI, `lint-task: lint` on `backend-ci.yml` runs the same first.
 - Frontend: `(cd frontend && npx platform-versions-check)`.
+
+## Moving to the organization (2.0.0)
+
+On 2026-11-13 Platform moved from the personal account `DominikSienkiewicz` to the organization
+`SeniorDeveloper-pl-Dominik-Sienkiewicz`. GitHub Packages ties an npm scope to the owner of its repository, so the
+npm packages are `@seniordeveloper-pl-dominik-sienkiewicz/*` from 2.0.0 on; releases up to 1.10.3 stay under
+`@dominiksienkiewicz/*`, owned by the personal account. The Maven coordinates are unchanged, but GitHub Packages
+serves them only under the organization: `https://maven.pkg.github.com/DominikSienkiewicz/Platform` answers 404, so a
+backend on 1.10.3 or older resolves the settings plugin, the catalog and the starters only from a warm Gradle cache.
+
+The `platform-bump` of 1.10.3 and older cannot cross to 2.0.0: it looks for the packages, the release asset and the
+attestation under the personal account. Cross once by hand, from the repository root of a clean working tree:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/v2.0.0/templates/platform-bump.sh -o scripts/platform-bump.sh
+```
+
+```bash
+./scripts/platform-bump.sh 2.0.0
+```
+
+The stub of 2.0.0 passes over a `platform-bump` that npm installed from the old scope and runs the bin of the 2.0.0
+release assets, checked against their `SHA256SUMS`, also in a repository without a backend. Without a version the
+bump stays in the current MAJOR, so neither `./scripts/platform-bump.sh` nor a `platform-bump.yml` caller on 1.x moves
+to 2.0.0 on its own; after this bump the caller's `uses:` names 2.0.0 and the scheduled bumps work again. The bin
+of 2.0.0 accepts the old scope, owner and attestation while it crosses, and its migration `2.0.0-organization-scope`
+rewrites, without the network:
+
+- the scope in `frontend/package.json` (dependencies, overrides, the `prettier` key), in `frontend/.npmrc` and in
+  every source or configuration file under `frontend/`: tsconfig `extends`, ESLint, Vitest and Prettier configs,
+  imports, `.d.ts` declarations, CSS `@import` and `@source`;
+- `DominikSienkiewicz/Platform` in `.github/workflows/`, and outside comments in `settings.gradle.kts`, which covers
+  the reusable workflow callers, the GitHub Packages URL of `pluginManagement` and links in messages;
+- the owner, the scope and the release asset name of an older `scripts/platform-bump.sh`; the stub of 2.0.0 stays
+  as it is.
+
+It leaves `package-lock.json` and `node_modules` alone: the bump regenerates the lockfile from the new names. It
+prints every other line that still names the personal account, because some repositories and images stay there,
+and a repository of the organization's GitHub Packages that `dependencyResolutionManagement` in
+`settings.gradle.kts` declares itself. Then, by hand:
+
+1. Reinstall the frontend, `(cd frontend && npm ci)`, so `node_modules` holds the new scope.
+2. Delete a stopgap repository `https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` from
+   `dependencyResolutionManagement`, added while 1.x read the old URL: the settings plugin of 2.0.0 adds the same
+   repository itself.
+3. Point every other reference to a repository that moved, such as `infra-repository:` of a `promote.yml` caller,
+   at the organization. Links to repositories that stay with the personal account keep their owner.
+4. Set the repository variable `GHCR_OWNER` to `seniordeveloper-pl-dominik-sienkiewicz`. The preflight of
+   `deploy.yml` requires the variable, and the images go to `ghcr.io/<GHCR_OWNER>/<app-name>…`, so the next deploy
+   publishes in the organization's namespace. Images pushed before stay under `ghcr.io/dominiksienkiewicz/`. A
+   rollback looks its tag up under `GHCR_OWNER`, so rolling back to such an image needs `GHCR_OWNER=dominiksienkiewicz`
+   for that run and pull access to the old package. Let an admission policy accept both namespaces and both signing
+   identities ([Security scanning](security-scanning.md)) until no workload runs an old image.
+5. Commit the diff in one commit, then run the gate.
 
 ## Backend
 
@@ -125,7 +179,7 @@ package name, group and project name, then replace the example code. In a produc
 with `backend/` and `frontend/`, `scripts/platform-bump.sh` bumps both the literal pins in
 `backend/settings.gradle.kts` and a `platformVersion=` pin in `backend/gradle.properties`, and fails
 when it finds no pin. A standalone JVM repository without `frontend/` runs the stub too: without
-`frontend/node_modules/.bin/platform-bump` it downloads `@dominiksienkiewicz/versions` of the target (or of
+`frontend/node_modules/.bin/platform-bump` it downloads `@seniordeveloper-pl-dominik-sienkiewicz/versions` of the target (or of
 the latest release) from the Platform release assets, checks it against that release's `SHA256SUMS` and runs
 its bin, so no npm and no token are needed for the logic itself. Whatever copy starts, the bump runs the logic
 of the release it goes to: a copy that is not the target hands over to the target's bin.
@@ -161,7 +215,7 @@ pluginManagement {
 		throw GradleException(
 			"No GitHub Packages credentials, so the Platform plugins cannot resolve. Set gpr.user and gpr.key in " +
 				"~/.gradle/gradle.properties, or GITHUB_ACTOR and GITHUB_TOKEN in the environment, with a classic token that " +
-				"has the read:packages scope (https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
+				"has the read:packages scope (https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
 				"To build against a local Platform instead, pass -PplatformRepository.",
 		)
 	}
@@ -170,7 +224,7 @@ pluginManagement {
 		gradlePluginPortal()
 		mavenCentral()
 		maven {
-			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			url = uri("https://maven.pkg.github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform")
 			credentials {
 				username = gprUser
 				password = gprKey
@@ -298,13 +352,13 @@ permissions:
   packages: read
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       working-directory: . # "backend" for a repository with backend/ and frontend/
     secrets:
       gpr_token: ${{ secrets.GPR_TOKEN }}
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
     with:
       strict: true
     secrets:
@@ -312,7 +366,7 @@ jobs:
 ```
 
 `strict: true` requires nonempty `lint`, `typecheck`, `test`, `build` and `format:check` scripts and
-the `@dominiksienkiewicz/versions` guard, runs `format:check` before lint, and runs
+the `@seniordeveloper-pl-dominik-sienkiewicz/versions` guard, runs `format:check` before lint, and runs
 `platform-openapi-check` when `package.json` configures `platform.openapi`; `run-e2e: true` additionally requires `test:e2e`, and uploads
 `playwright-report/` and `test-results/` (HTML report, traces, screenshots) as the artifact
 `playwright-report-<run id>`, kept for seven days, whether the tests pass or fail. Missing
@@ -421,8 +475,8 @@ dispatching agents are in [agent-profile.md](agent-profile.md).
 Install the packages with npm and commit `package-lock.json`: the reusable `frontend-ci` runs
 `npm ci` and `platform-bump` refreshes the lockfile with npm, so a consumer on pnpm or Yarn fails
 CI even though Platform builds its own packages with pnpm. Pin every other dependency at the
-exact version the canon gives, and every `@dominiksienkiewicz/*` package at one exact version: the
-release of `@dominiksienkiewicz/versions` you install. `platform-versions-check` governs
+exact version the canon gives, and every `@seniordeveloper-pl-dominik-sienkiewicz/*` package at one exact version: the
+release of `@seniordeveloper-pl-dominik-sienkiewicz/versions` you install. `platform-versions-check` governs
 `dependencies`, `devDependencies`, `optionalDependencies` and `overrides`; an application's
 `peerDependencies` are deliberately left out.
 
@@ -430,7 +484,7 @@ release of `@dominiksienkiewicz/versions` you install. `platform-versions-check`
 
 ```json
 {
-  "extends": "@dominiksienkiewicz/tsconfig/next.json",
+  "extends": "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json",
   "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
   "exclude": ["node_modules"]
@@ -439,23 +493,23 @@ release of `@dominiksienkiewicz/versions` you install. `platform-versions-check`
 
 The preset sets compiler options and the `next` plugin only. TypeScript resolves `include`, `exclude`
 and `paths` of an extended config against that config's directory, which is
-`node_modules/@dominiksienkiewicz/tsconfig`, so the consumer declares them.
+`node_modules/@seniordeveloper-pl-dominik-sienkiewicz/tsconfig`, so the consumer declares them.
 
 `eslint.config.mjs`:
 
 ```js
-export { default } from "@dominiksienkiewicz/eslint-config/next";
+export { default } from "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config/next";
 ```
 
 The config package declares `eslint`, `eslint-config-next` and `next` as peer
-dependencies; take their versions from `@dominiksienkiewicz/versions`.
+dependencies; take their versions from `@seniordeveloper-pl-dominik-sienkiewicz/versions`.
 
 Prettier (*incubating*), in `package.json`, with `prettier`, `prettier-plugin-tailwindcss` and
-`@dominiksienkiewicz/prettier-config` in `devDependencies` at the canon versions:
+`@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` in `devDependencies` at the canon versions:
 
 ```json
 {
-  "prettier": "@dominiksienkiewicz/prettier-config",
+  "prettier": "@seniordeveloper-pl-dominik-sienkiewicz/prettier-config",
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -467,7 +521,7 @@ Strict `frontend-ci` requires `format:check`. The plugin sorts Tailwind class li
 `npm run format` in a repository that formatted without it rewrites many `className` values; commit
 that diff on its own.
 
-OpenAPI types (*incubating*): with `@dominiksienkiewicz/openapi` and `openapi-typescript` in
+OpenAPI types (*incubating*): with `@seniordeveloper-pl-dominik-sienkiewicz/openapi` and `openapi-typescript` in
 `devDependencies` at the canon versions, name the committed spec and the generated file, and commit
 what `platform-openapi-gen` writes. Strict `frontend-ci` then fails on stale types. The whole flow,
 backend test and breaking-change gate included, is in [api-contracts.md](api-contracts.md).
@@ -482,15 +536,15 @@ backend test and breaking-change gate included, is in [api-contracts.md](api-con
 `globals.css` (`app/globals.css`, or `src/app/globals.css` in a `src/` layout):
 
 ```css
-@import "@dominiksienkiewicz/tailwind-preset/theme.css";
+@import "@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset/theme.css";
 @import "tailwindcss";
 ```
 
-The component registry `@dominiksienkiewicz/ui` is *incubating*: it has no hosted endpoint, and no
+The component registry `@seniordeveloper-pl-dominik-sienkiewicz/ui` is *incubating*: it has no hosted endpoint, and no
 consumer has adopted it. If you install it, also add an `@source` line that points from
-`globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@dominiksienkiewicz/ui";`
-in `app/globals.css`, or `@source "../../node_modules/@dominiksienkiewicz/ui";` in `src/app/globals.css`.
-Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.22.1 …`), never an
+`globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@seniordeveloper-pl-dominik-sienkiewicz/ui";`
+in `app/globals.css`, or `@source "../../node_modules/@seniordeveloper-pl-dominik-sienkiewicz/ui";` in `src/app/globals.css`.
+Use the `shadcn` version from `@seniordeveloper-pl-dominik-sienkiewicz/versions` (`npx shadcn@4.22.1 …`), never an
 unpinned one.
 
 `vitest.config.ts`:
@@ -498,7 +552,7 @@ unpinned one.
 ```ts
 import { defineConfig, mergeConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
-import { baseConfig } from "@dominiksienkiewicz/vitest-config";
+import { baseConfig } from "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config";
 
 export default mergeConfig(
   baseConfig,
@@ -522,25 +576,30 @@ container answers on port 3000.
 
 Every release from 1.6.0 on carries GitHub artifact attestations: SLSA build provenance that ties
 each published jar, the catalog TOML and each npm tarball to the `release.yml` run and commit that
-built it in `DominikSienkiewicz/Platform`. Verify a file you downloaded before you trust it:
+built it in `SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`. Verify a file you downloaded before you trust it:
 
 ```bash
-npm pack @dominiksienkiewicz/versions@X.Y.Z
+npm pack @seniordeveloper-pl-dominik-sienkiewicz/versions@X.Y.Z
 ```
 
 ```bash
-gh attestation verify dominiksienkiewicz-versions-X.Y.Z.tgz --repo DominikSienkiewicz/Platform
+gh attestation verify seniordeveloper-pl-dominik-sienkiewicz-versions-X.Y.Z.tgz --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
 ```
 
 A Maven artifact works the same way, for example `platform-test-fixtures-X.Y.Z.jar` from the Gradle
 cache (`~/.gradle/caches/modules-2/files-2.1/pl.seniordeveloper/`). A file without an attestation was
 published before 1.6.0 or not by Platform's CI.
 
+Releases up to 1.10.3 were built before Platform moved from the personal account to the organization on
+2026-11-13, so their attestations name `DominikSienkiewicz/Platform` and their npm tarballs the old scope, for
+example `dominiksienkiewicz-versions-1.10.3.tgz`. Verify those with `--repo DominikSienkiewicz/Platform`.
+`platform-bump` and the `verify-provenance` step of `backend-ci.yml` accept either repository and nothing else.
+
 The files attached to a GitHub Release also carry their attestation as
 `platform-X.Y.Z-assets.sigstore.json`, so they can be verified offline, without the attestations API:
 
 ```bash
-gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-assets.sigstore.json --repo DominikSienkiewicz/Platform
+gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-assets.sigstore.json --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
 ```
 
 `platform-bump` checks the package it downloads this way before it uses it, for every target from
@@ -658,15 +717,15 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD001 | the command runs inside a git repository |
 | PD010 | the `java` on PATH is 27 or newer, which Gradle needs to load Platform's plugins |
 | PD011 | the Gradle wrapper exists and is executable |
-| PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@dominiksienkiewicz/*`) is the same release |
+| PD020 | every Platform pin (settings plugin, catalog, `platformVersion=`, `@seniordeveloper-pl-dominik-sienkiewicz/*`) is the same release |
 | PD021 | the reusable workflow references are that exact release (`@v1` warns) |
 | PD030 | where the GitHub Packages credentials come from (never their value); an empty or whitespace-only `GPR_TOKEN`, `GITHUB_TOKEN` or `gpr.key` counts as missing and falls through to the next source |
 | PD031 | the pinned catalog resolves with them: 401, 403 and 404 each name their cause |
 | PD032 | (Gradle builds) a GitHub login for Gradle exists, `gpr.user` in `~/.gradle/gradle.properties` or `GITHUB_ACTOR`; an empty or whitespace-only value counts as missing, so a token alone warns |
-| PD040 | `frontend/.npmrc` points `@dominiksienkiewicz` at GitHub Packages |
+| PD040 | `frontend/.npmrc` points `@seniordeveloper-pl-dominik-sienkiewicz` at GitHub Packages |
 | PD041 | Node is 22.13 or newer |
 | PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
-| PD043 | npm resolves the pinned `@dominiksienkiewicz/versions` |
+| PD043 | npm resolves the pinned `@seniordeveloper-pl-dominik-sienkiewicz/versions` |
 | PD050 | `.secrets.local` is ignored when the repository deploys |
 | PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
 | PD070 | whether `AI_AGENT` is on |
@@ -692,7 +751,7 @@ the release that produced it.
 | `IllegalStateException: Testcontainers used in the unit 'test' task (…): annotate the test class with @IntegrationTest or @PostgresIntegrationTest`, usually behind `Failed to load ApplicationContext` | A test that starts a platform container runs in the unit `test` task; since the first release after 1.6.0 the container guard fails instead of warning | Annotate the test class with `@IntegrationTest` or `@PostgresIntegrationTest`, so it runs in `integrationTest`. To keep the warning while you tag the tests, set `platform.test.guard=warn` in `gradle.properties` ([reference](reference.md#test-fixtures)) |
 | `platform.test.guard=… is not a guard mode` | The guard mode is neither `warn` nor `fail` (the values are case-sensitive), so the guard fails as it does by default | Set `platform.test.guard=warn`, or remove the property to keep the default `fail` |
 | `platform-versions-check: versions that differ from the Platform canon` | A frontend dependency differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |
-| npm `E401` or `E403` for `@dominiksienkiewicz/*` | `.npmrc` lacks the registry lines, or `GITHUB_TOKEN` is missing or lacks `read:packages` | Copy `templates/npmrc` to `frontend/.npmrc` and export the token |
+| npm `E401` or `E403` for `@seniordeveloper-pl-dominik-sienkiewicz/*` | `.npmrc` lacks the registry lines, or `GITHUB_TOKEN` is missing or lacks `read:packages` | Copy `templates/npmrc` to `frontend/.npmrc` and export the token |
 | `No matching variant of pl.seniordeveloper:platform-catalog` | The release is incomplete in GitHub Packages | Pin the previous version and report it; see the idempotency rules in [RELEASING.md](../RELEASING.md) |
 | `Dependency verification failed` after a bump | `gradle/verification-metadata.xml` misses checksums of the new versions | Run `scripts/platform-bump.sh` again; it regenerates the metadata in two passes |
 | CI run ends with `startup_failure`, "is requesting 'packages: read', but is only allowed …" | The caller grants a reusable workflow fewer permissions than it requests | Grant the permissions listed in [reusable-workflows.md](reusable-workflows.md) |

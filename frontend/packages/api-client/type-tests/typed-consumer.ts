@@ -1,6 +1,6 @@
 // Type test of the typed overload, checked by `pnpm typecheck` and never run. pets-schema.d.ts is the
 // openapi-typescript output for pets.yaml (platform-openapi-gen), so the test pins the generated `paths` shape.
-import { createApiClient, type FilledPath } from "@dominiksienkiewicz/api-client";
+import { createApiClient, type FilledPath } from "@seniordeveloper-pl-dominik-sienkiewicz/api-client";
 import type { components, paths } from "./pets-schema";
 
 type Pet = components["schemas"]["Pet"];

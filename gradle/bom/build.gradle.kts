@@ -53,7 +53,7 @@ dependencies {
 	}
 }
 
-val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")
+val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("SeniorDeveloper-pl-Dominik-Sienkiewicz")
 val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentVariable("GPR_REPO")).getOrElse("Platform")
 
 publishing {
@@ -64,7 +64,7 @@ publishing {
 				licenses {
 					license {
 						name.set("MIT License")
-						url.set("https://github.com/DominikSienkiewicz/Platform/blob/main/LICENSE")
+						url.set("https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/LICENSE")
 					}
 				}
 			}

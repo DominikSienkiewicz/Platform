@@ -1,4 +1,4 @@
-// @dominiksienkiewicz/query — współdzielony QueryClient + provider.
+// @seniordeveloper-pl-dominik-sienkiewicz/query — współdzielony QueryClient + provider.
 // Zebrane z powielonego providera w Attestate (app/providers) i Pragmie (providers/QueryProvider):
 // staleTime 60s, refetchOnWindowFocus off, Devtools poza produkcją, klient stabilny per-instancja.
 //

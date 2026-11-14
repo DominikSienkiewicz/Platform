@@ -95,20 +95,30 @@ setup_repo canon-no-overrides '{
 ( cd "$REPO" && python3 "$WORK/canon.py" "$WORK/versions.json" ) >/dev/null
 if grep -q 'overrides' "$REPO/frontend/package.json"; then fail "pusta sekcja overrides została dopisana"; fi
 
-# --- 5) Piny platformy: @dominiksienkiewicz/* w overrides też idą do wersji docelowej ---
+# --- 5) Piny platformy: @seniordeveloper-pl-dominik-sienkiewicz/* w overrides też idą do wersji docelowej ---
 setup_repo pins '{
-  "devDependencies": { "@dominiksienkiewicz/versions": "1.5.4" },
+  "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.4" },
   "overrides": {
-    "next": { "@dominiksienkiewicz/ui": "1.5.4" },
-    "@dominiksienkiewicz/query": "1.5.4",
+    "next": { "@seniordeveloper-pl-dominik-sienkiewicz/ui": "1.5.4" },
+    "@seniordeveloper-pl-dominik-sienkiewicz/query": "1.5.4",
     "react": "19.2.7"
   }
 }'
 ( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 ) >/dev/null
-[[ "$(value_at devDependencies @dominiksienkiewicz/versions)" == "9.9.9" ]] || fail "regresja: pin platformy w devDependencies nie został podbity"
-[[ "$(value_at overrides next @dominiksienkiewicz/ui)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
-[[ "$(value_at overrides @dominiksienkiewicz/query)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
+[[ "$(value_at devDependencies @seniordeveloper-pl-dominik-sienkiewicz/versions)" == "9.9.9" ]] || fail "regresja: pin platformy w devDependencies nie został podbity"
+[[ "$(value_at overrides next @seniordeveloper-pl-dominik-sienkiewicz/ui)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
+[[ "$(value_at overrides @seniordeveloper-pl-dominik-sienkiewicz/query)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
 [[ "$(value_at overrides react)" == "19.2.7" ]] || fail "blok pinów ruszył paczkę spoza scope'u platformy"
+
+# --- 6) Konsument sprzed przeniesienia do organizacji (do 1.10.3): pin pod starym scope też idzie do celu, a nazwę
+#        zmienia potem migracja 2.0.0-organization-scope ---
+setup_repo personal '{
+  "devDependencies": { "@dominiksienkiewicz/versions": "1.10.3" },
+  "overrides": { "next": { "@dominiksienkiewicz/ui": "1.10.3" } }
+}'
+( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 ) >/dev/null
+[[ "$(value_at devDependencies @dominiksienkiewicz/versions)" == "9.9.9" ]] || fail "pin pod starym scope nie został podbity do celu"
+[[ "$(value_at overrides next @dominiksienkiewicz/ui)" == "9.9.9" ]] || fail "pin pod starym scope w override nie został podbity do celu"
 
 [[ $fails -eq 0 ]] || exit 1
 echo "OK: platform-bump nakłada piny platformy i kanon również na overrides (płaskie, zagnieżdżone, klucz \".\"), pomijając referencje \$name"

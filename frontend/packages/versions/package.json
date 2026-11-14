@@ -1,5 +1,5 @@
 {
-  "name": "@dominiksienkiewicz/versions",
+  "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions",
   "version": "1.10.3",
   "description": "The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor.",
   "license": "MIT",
@@ -39,7 +39,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "url": "git+https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform.git",
     "directory": "frontend/packages/versions"
   }
 }

@@ -61,6 +61,65 @@ grep -qx "SDKMAN_JAVA=\"$template_sdkman\"" "$here/../migrations/1.8.0-gradle-jd
 tree=$(migrate gradle-jdk-27 1.6.0 1.7.0)
 diff -r "$(fixture gradle-jdk-27 before)" "$tree" >/dev/null || fail 'a bump to 1.7.0 must not run 1.8.0 migrations'
 
+# 2.0.0: Platform w organizacji SeniorDeveloper-pl-Dominik-Sienkiewicz (2026-11-13). Scope npm w manifeście, .npmrc,
+# importach, extends i CSS frontendu, referencje workflowów Platform, URL GitHub Packages w settings i stub przechodzą
+# automatycznie; lockfile i node_modules zostają dla bumpu, a reszta wzmianek o koncie osobistym to notatki.
+tree="$fixture_work/tree-organization-scope"
+rm -rf "$tree" && mv "$(fixture organization-scope before)" "$tree"
+mkdir -p "$tree/frontend/node_modules/@dominiksienkiewicz/versions"
+printf '{ "name": "@dominiksienkiewicz/versions" }\n' > "$tree/frontend/node_modules/@dominiksienkiewicz/versions/package.json"
+files=$(cd "$tree" && bash "$runner" files 1.10.3 2.0.0)
+expected_files='.github/workflows/ci.yml
+backend/settings.gradle.kts
+frontend/.npmrc
+frontend/eslint.config.mjs
+frontend/package.json
+frontend/src/app/globals.css
+frontend/tsconfig.json
+frontend/vitest-config.d.ts
+frontend/vitest.config.ts
+scripts/platform-bump.sh'
+[[ "$files" == "$expected_files" ]] || fail "organization-scope: run.sh files must list exactly what it rewrites, got: $files"
+(cd "$tree" && bash "$runner" apply 1.10.3 2.0.0) > "$fixture_work/organization-scope.out"
+grep -qF '"@dominiksienkiewicz/versions"' "$tree/frontend/node_modules/@dominiksienkiewicz/versions/package.json" \
+  || fail 'organization-scope: installed node_modules must stay for npm to replace'
+rm -r "$tree/frontend/node_modules"
+diff -r "$(fixture organization-scope after)" "$tree" || { cat "$fixture_work/organization-scope.out"; fail 'organization-scope: before/ must become after/'; }
+grep -q 'applied  2.0.0-organization-scope' "$fixture_work/organization-scope.out" \
+  || { cat "$fixture_work/organization-scope.out"; fail 'organization-scope: the runner must report it applied'; }
+(cd "$tree" && bash "$runner" apply 1.10.3 2.0.0) > "$fixture_work/organization-scope.again"
+diff -r "$(fixture organization-scope after)" "$tree" || fail 'organization-scope: a second run must change nothing'
+if grep -q 'applied  .*organization-scope' "$fixture_work/organization-scope.again"; then
+  cat "$fixture_work/organization-scope.again"; fail 'organization-scope: a second run must not apply it again'
+fi
+for expected in \
+  ".github/workflows/ci.yml:14: still names the personal account: images: '[\"ghcr.io/dominiksienkiewicz/app-backend:latest\"]'" \
+  '.github/workflows/ci.yml:19: still names the personal account: infra-repository: DominikSienkiewicz/Infrastructure' \
+  'frontend/README.md:3: still names the personal account: Shared configuration comes from the `@dominiksienkiewicz/*` presets.' \
+  "backend/settings.gradle.kts:29: dependencyResolutionManagement declares the organization's GitHub Packages repository, which the settings plugin adds itself from 2.0.0 on; delete this one" \
+  'backend/settings.gradle.kts:26: still names the personal account: // Stopgap: DominikSienkiewicz/Platform no longer serves the catalog and the starters.'; do
+  grep -qF -- "$expected" "$fixture_work/organization-scope.out" \
+    || { cat "$fixture_work/organization-scope.out"; fail "organization-scope: missing note: $expected"; }
+  grep -qF -- "$expected" "$fixture_work/organization-scope.again" \
+    || { cat "$fixture_work/organization-scope.again"; fail "organization-scope: a second run must repeat: $expected"; }
+done
+if grep -qF 'package-lock.json' "$fixture_work/organization-scope.out"; then fail 'organization-scope: the lockfile is the bump''s to regenerate'; fi
+tree=$(migrate organization-scope 1.10.3 1.10.4)
+diff -r "$(fixture organization-scope before)" "$tree" >/dev/null || fail 'a bump below 2.0.0 must not move the scope'
+
+# Udokumentowany bootstrap: najpierw stub 2.0.0 z templates/, potem bump. Stub szablonu zostaje bajt w bajt — także
+# jego detekcja binu spod starego scope (node_modules/@dominiksienkiewicz/versions), bez której nie przejdzie bumpu.
+template_stub="$here/../../../../templates/platform-bump.sh"
+tree="$fixture_work/tree-organization-scope-template-stub"
+rm -rf "$tree" && mv "$(fixture organization-scope before)" "$tree"
+cp "$template_stub" "$tree/scripts/platform-bump.sh"
+mkdir -p "$tree/frontend/node_modules/@dominiksienkiewicz/versions"
+files=$(cd "$tree" && bash "$runner" files 1.10.3 2.0.0)
+if grep -qx 'scripts/platform-bump.sh' <<<"$files"; then fail 'organization-scope: the stub of 2.0.0 is not a file to rewrite'; fi
+(cd "$tree" && bash "$runner" apply 1.10.3 2.0.0) > "$fixture_work/organization-scope-template-stub.out"
+cmp -s "$template_stub" "$tree/scripts/platform-bump.sh" \
+  || { diff "$template_stub" "$tree/scripts/platform-bump.sh"; fail 'organization-scope: the stub of 2.0.0 must stay byte-equal to the template'; }
+
 # Obraz migracji = ostatni FROM szablonu, z którego biorą go konsumenci.
 template_image=$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' "$here/../../../../templates/Dockerfile.backend" | tail -1)
 grep -qx "RUNTIME_IMAGE=\"$template_image\"" "$here/../migrations/1.6.0-runtime-image-27.sh" \
@@ -97,5 +156,32 @@ grep -qF 'applied  1.6.0-caller-packages-read' "$dir.log" || { cat "$dir.log"; f
 grep -qF "==> Callers of Platform's reusable workflows against the contract of v1.6.0:" "$dir.log" \
   || { cat "$dir.log"; fail 'the bump must check the callers against the target contract'; }
 if grep -q '^ERROR ' "$dir.log"; then cat "$dir.log"; fail 'after the migrations the callers must meet the contract'; fi
+
+# Pełny bump przez przeniesienie do organizacji: frontend bez backendu na 1.10.3, pod starym scope, ownerem i stubem.
+# Bin wydania docelowego czyta stary pin jako obecny, podbija go do celu, a migracja przenosi scope, workflowy i stub.
+personal_account() {
+  printf '{\n  "devDependencies": {\n    "@dominiksienkiewicz/eslint-config": "1.10.3",\n    "@dominiksienkiewicz/versions": "1.10.3",\n    "react": "19.0.0"\n  }\n}\n' \
+    > "$1/frontend/package.json"
+  printf '@dominiksienkiewicz:registry=https://npm.pkg.github.com\n' > "$1/frontend/.npmrc"
+  mkdir -p "$1/scripts"
+  cp "$here/migrations/organization-scope/before/scripts/platform-bump.sh" "$1/scripts/platform-bump.sh"
+}
+dir=$(FIXTURE_EXTRA=personal_account consumer personal-account 1.10.3)
+bump "$dir" 2.0.0
+[[ $rc -eq 0 ]] || { cat "$dir.log"; fail 'the bump across the organization move must succeed'; }
+grep -qF 'Upgrade migrations from 1.10.3 to 2.0.0:' "$dir.log" || { cat "$dir.log"; fail 'a pin under the old scope must count as the current pin'; }
+grep -qF 'applied  2.0.0-organization-scope' "$dir.log" || { cat "$dir.log"; fail 'the bump must apply the organization migration'; }
+for pin in versions eslint-config; do
+  grep -qF "\"@seniordeveloper-pl-dominik-sienkiewicz/$pin\": \"2.0.0\"" "$dir/frontend/package.json" \
+    || { cat "$dir/frontend/package.json"; fail "the $pin pin must move to the organization scope at the target"; }
+done
+if grep -qF '@dominiksienkiewicz' "$dir/frontend/package.json" "$dir/frontend/.npmrc"; then fail 'no old scope may stay in the manifest or .npmrc'; fi
+grep -qx '    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v2.0.0' "$dir/.github/workflows/ci.yml" \
+  || { cat "$dir/.github/workflows/ci.yml"; fail 'the caller must name the organization at the exact target'; }
+grep -qx 'OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"' "$dir/scripts/platform-bump.sh" || fail 'the stub must point at the organization'
+# frontend/.npmrc zna jeszcze tylko stary scope, gdy bin pobiera kanon celu: rejestr nowego scope idzie w poleceniu.
+grep -F 'npm pack @seniordeveloper-pl-dominik-sienkiewicz/versions@2.0.0' "$FAKE_NPM_LOG" \
+  | grep -qF -- '--@seniordeveloper-pl-dominik-sienkiewicz:registry=https://npm.pkg.github.com' \
+  || { cat "$FAKE_NPM_LOG"; fail 'npm pack of the target canon must name the registry of the organization scope'; }
 
 echo 'OK: upgrade migrations turn before/ into after/, are idempotent, honour SINCE and run from the target release'

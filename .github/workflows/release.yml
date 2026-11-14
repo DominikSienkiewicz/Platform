@@ -82,7 +82,7 @@ jobs:
       # --ignore-scripts: build rejestru nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
+        run: pnpm --filter @seniordeveloper-pl-dominik-sienkiewicz/ui build
 
   gradle:
     needs: [version, verify, registry-build]
@@ -197,7 +197,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       # --ignore-scripts: publikacja nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Ustaw wersję na wszystkich paczkach
@@ -292,7 +292,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Every published artifact carries the version
         run: |
           # >>> verify-published
@@ -354,7 +354,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Resolve the release as a consumer
         run: bash scripts/verify-consumable.sh "$V"
 
@@ -386,7 +386,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Build the credential-free assets
         run: bash scripts/release-assets.sh "$V" "$RUNNER_TEMP/assets"
       - name: Attest the provenance of the assets
@@ -464,6 +464,14 @@ jobs:
         run: |
           # >>> move-v1-forward
           set -euo pipefail
+          # v1 to linia 1.x: wydanie innego MAJOR (2.0.0 = przeniesienie do organizacji, nowy scope npm) go nie rusza.
+          case "$GITHUB_REF" in
+            refs/tags/v1.*) ;;
+            *)
+              echo "::notice::$GITHUB_REF nie należy do linii 1.x, więc v1 zostaje na miejscu"
+              exit 0
+              ;;
+          esac
           target=$(git rev-parse --verify "${GITHUB_SHA}^{commit}")
           lease="refs/tags/v1:"
           if git ls-remote --exit-code --tags origin refs/tags/v1 >/dev/null; then
@@ -558,7 +566,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       # npm biegnie w wygenerowanym frontend/, którego .npmrc (templates/npmrc) czyta ${GITHUB_TOKEN} i wygrywa
       # z plikiem setup-node (${NODE_AUTH_TOKEN}); bez GITHUB_TOKEN npm wysłałby dosłowny placeholder i dostał 401.
       # Odczyt paczek = GITHUB_TOKEN workflowu z packages: read; PLATFORM_EXAMPLE_TOKEN służy tylko do pusha niżej.

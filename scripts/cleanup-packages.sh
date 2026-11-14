@@ -8,7 +8,7 @@
 # Użycie:
 #   scripts/cleanup-packages.sh --protect 1.5.26,1.5.31 [--keep 10] [--execute]
 #
-# Wymaga gh z GH_TOKEN (PAT classic: read:packages + delete:packages) oraz jq.
+# Wymaga gh z GH_TOKEN (PAT classic: read:packages + delete:packages, admin pakietów organizacji) oraz jq.
 set -euo pipefail
 
 KEEP=10
@@ -35,8 +35,12 @@ PROTECT="${PROTECT//[[:space:]]/}"
   exit 1
 }
 
+# Pakiety Platform należą od przeniesienia (2026-11-13) do organizacji, nie do użytkownika tokenu; stare paczki npm
+# pod @dominiksienkiewicz/* zostały na koncie osobistym i ten skrypt ich nie dotyka.
+ORG="${PLATFORM_PACKAGES_ORG:-SeniorDeveloper-pl-Dominik-Sienkiewicz}"
+
 # Filtr bezpieczeństwa: tylko pakiety Platform, nigdy inne pakiety konta.
-PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@dominiksienkiewicz/)'
+PLATFORM_RE='^(pl\.seniordeveloper|seniordev\.|@seniordeveloper-pl-dominik-sienkiewicz/)'
 if [[ "$EXECUTE" == 1 ]]; then
   echo "Mode: execute — planned versions are deleted."
 else
@@ -46,14 +50,14 @@ echo "Keep the $KEEP newest versions of every package; never delete: $PROTECT"
 
 planned=0
 for type in maven npm; do
-  packages=$(gh api --paginate "/user/packages?package_type=$type" --jq '.[].name' | grep -E "$PLATFORM_RE" || true)
+  packages=$(gh api --paginate "/orgs/$ORG/packages?package_type=$type" --jq '.[].name' | grep -E "$PLATFORM_RE" || true)
   if [[ -z "$packages" ]]; then
     echo "$type: no Platform packages"
     continue
   fi
   while IFS= read -r package; do
     encoded=$(printf '%s' "$package" | jq -sRr @uri)
-    plan=$(gh api --paginate "/user/packages/$type/$encoded/versions" --jq '.[]' \
+    plan=$(gh api --paginate "/orgs/$ORG/packages/$type/$encoded/versions" --jq '.[]' \
       | jq -rs --argjson keep "$KEEP" --arg protect "$PROTECT" '
           ($protect | split(",")) as $protected
           | sort_by(.created_at) | reverse | .[$keep:]
@@ -67,7 +71,7 @@ for type in maven npm; do
       planned=$((planned + 1))
       if [[ "$EXECUTE" == 1 ]]; then
         echo "  $type $package: deleting $version (id=$id)"
-        gh api --method DELETE "/user/packages/$type/$encoded/versions/$id" >/dev/null
+        gh api --method DELETE "/orgs/$ORG/packages/$type/$encoded/versions/$id" >/dev/null
       else
         echo "  $type $package: would delete $version (id=$id)"
       fi

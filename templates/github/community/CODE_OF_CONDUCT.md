@@ -1,6 +1,7 @@
 # Code of conduct
 
-Every repository of [DominikSienkiewicz](https://github.com/DominikSienkiewicz) follows the
+Every repository of
+[SeniorDeveloper-pl-Dominik-Sienkiewicz](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz) follows the
 [Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 It applies to every space of a project: issues, pull requests, reviews and discussions.
 

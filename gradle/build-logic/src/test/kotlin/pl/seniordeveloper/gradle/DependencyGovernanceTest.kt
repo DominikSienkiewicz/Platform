@@ -32,7 +32,7 @@ class DependencyGovernanceTest {
 					"at 4.1.1: remove the explicit version. To run another version on purpose, override the BOM property instead, " +
 					"which platformBomOverrideCheck reports",
 				"[PLAT-DEP-001] com.example:unknown:1.0 (testImplementation constraint) — not in the Platform catalog and no Platform " +
-					"BOM manages it: add it to gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin",
+					"BOM manages it: add it to gradle/catalog/libs.versions.toml in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform, release, and bump the Platform pin",
 			),
 			findings.map { it.render() },
 		)

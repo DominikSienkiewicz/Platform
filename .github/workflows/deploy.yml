@@ -18,7 +18,7 @@ name: Deploy (reusable)
 #     dokładnie te digesty, dopiero gdy obie bramki przeszły (łańcuch dostaw, Kyverno verifyImages po stronie klastra)
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
-#   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+#   uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
 #   secrets: { GPR_USER: ${{ secrets.GPR_USER }}, GPR_KEY: ${{ secrets.GPR_KEY }}, … }
 # Różnice między repo idą przez `with:` (app-name, compose-dir, has-worker, migrate-*).
 
@@ -82,7 +82,7 @@ on:
         type: string
         default: ""
       platform-ref:
-        description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
+        description: "Ref of SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
         type: string
         default: "v1"
       ssh-deploy:
@@ -641,7 +641,7 @@ jobs:
       - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          repository: DominikSienkiewicz/Platform
+          repository: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
           ref: ${{ inputs.platform-ref }}
           path: _platform
           persist-credentials: false

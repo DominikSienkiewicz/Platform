@@ -1,6 +1,6 @@
 // Type test from a consumer's side, checked by `pnpm typecheck` and never run: the package is imported
 // by name, so its exports resolve to index.d.ts as they do in a consumer.
-import { ApiError, apiClient, createApiClient, type ApiClient, type ApiClientOptions } from "@dominiksienkiewicz/api-client";
+import { ApiError, apiClient, createApiClient, type ApiClient, type ApiClientOptions } from "@seniordeveloper-pl-dominik-sienkiewicz/api-client";
 
 export function consumerUse(): void {
   const options: ApiClientOptions = { baseUrl: "https://api.example.test", headers: { "X-Trace": "1" } };
