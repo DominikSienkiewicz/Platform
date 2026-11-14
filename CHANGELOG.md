@@ -72,6 +72,18 @@ step in [docs/consuming.md](docs/consuming.md#moving-to-the-organization-200).
   the organization and, for releases up to 1.10.3, under the personal account, and nothing else. They checked only
   the personal account, so every release built in the organization would have failed verification.
 - `move-v1` leaves `v1` on the 1.x line when a release of another MAJOR is published.
+- The frontend canon moves `@playwright/test` from 1.60.0 to 1.65.0. GitHub's `ubuntu-latest` runner is now
+  Ubuntu 26.04, for which Playwright 1.60.0 has neither a Chromium build nor a list of system packages, so
+  `frontend-ci.yml` with `run-e2e: true` failed in `npx --no playwright install --with-deps chromium` with
+  `Playwright does not support chromium on ubuntu26.04-x64`. Playwright supports Ubuntu 26.04 from
+  [1.61.0](https://github.com/microsoft/playwright/releases/tag/v1.61.0); 1.65.0 is the newest release older than the
+  three days of the Renovate preset's `minimumReleaseAge`. Between the two versions
+  [1.63.0](https://github.com/microsoft/playwright/releases/tag/v1.63.0) stops supporting Ubuntu 20.04,
+  [1.64.0](https://github.com/microsoft/playwright/releases/tag/v1.64.0) passes `screen` on from the device
+  descriptors, so a project that spreads `devices['Desktop Chrome']` and the like sees the emulated screen in
+  `window.screen` and in media queries unless it sets `screen: undefined`, and
+  [1.65.0](https://github.com/microsoft/playwright/releases/tag/v1.65.0) loads a `.css`, `.less` or `.scss` import
+  of a test file as an empty module, so the imported file must exist.
 
 ## [1.10.3] - 2026-11-12
 
