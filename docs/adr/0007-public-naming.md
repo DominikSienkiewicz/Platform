@@ -58,10 +58,3 @@ accidental.
 A MAJOR release is planned for another reason. Renaming the frozen keys then costs one more line
 in an upgrade that consumers already have to make, and the old names can be kept as deprecated
 aliases for one MAJOR.
-
-## Update — the organization scope (2026-11-13)
-
-Platform moved to the organization `SeniorDeveloper-pl-Dominik-Sienkiewicz`, so the npm root is now
-`@seniordeveloper-pl-dominik-sienkiewicz/`, as the decision above foresaw; package names after the scope are
-unchanged, and releases up to 1.10.3 stay under `@dominiksienkiewicz/`. The other roots are unchanged. The move
-ships as 2.0.0, the MAJOR this ADR names under "Revisit when"; it renames no frozen key.

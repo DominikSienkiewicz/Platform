@@ -1,4 +1,0 @@
-{
-  "extends": "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json",
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"]
-}

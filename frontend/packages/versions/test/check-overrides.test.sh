@@ -87,9 +87,9 @@ run_case missing '{
 grep -q 'nieznana-paczka' <<<"$OUT" || fail "komunikat nie wymienia paczki spoza kanonu"
 grep -q 'without a Platform canon entry' <<<"$OUT" || fail "override spoza kanonu zgłoszony jako dryf zamiast braku wpisu"
 
-# --- 7) Pin platformy (@seniordeveloper-pl-dominik-sienkiewicz/*) w overrides jest poza governance kanonu ---
+# --- 7) Pin platformy (@dominiksienkiewicz/*) w overrides jest poza governance kanonu ---
 run_case platform-scope '{
-  "overrides": { "@seniordeveloper-pl-dominik-sienkiewicz/ui": "1.5.14" }
+  "overrides": { "@dominiksienkiewicz/ui": "1.5.14" }
 }'
 [[ $RC -eq 0 ]] || fail "pin platformy w overrides nie podlega kanonowi (exit $RC)"
 

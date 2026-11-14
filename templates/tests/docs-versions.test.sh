@@ -102,9 +102,9 @@ for version in 1.6:v1.6.1 1.7:v1.7.0 unreleased:main; do
     || fail "/${version%%:*}/ needs its own subpath as site_url, got $(cat "$site/${version%%:*}/site_url")"
   [[ "$(cat "$site/${version%%:*}/provider")" == mike ]] || fail "/${version%%:*}/ needs the mike version selector"
 done
-grep -qF "](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v1.6.1/RELEASING.md)" "$site/1.6/index.html" \
+grep -qF "](https://github.com/DominikSienkiewicz/Platform/blob/v1.6.1/RELEASING.md)" "$site/1.6/index.html" \
   || fail 'a released version links out of docs/ at its own tag'
-grep -qF "](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/$main_sha/RELEASING.md)" "$site/unreleased/index.html" \
+grep -qF "](https://github.com/DominikSienkiewicz/Platform/blob/$main_sha/RELEASING.md)" "$site/unreleased/index.html" \
   || fail 'the unreleased channel links out of docs/ at the commit of main'
 [[ "$(sort "$tmp/site.log" | paste -sd' ' -)" == 'https://example.test/Platform/1.6/ https://example.test/Platform/1.7/ https://example.test/Platform/unreleased/' ]] \
   || fail "exactly three builds, nothing older than 1.6: $(paste -sd' ' - < "$tmp/site.log")"

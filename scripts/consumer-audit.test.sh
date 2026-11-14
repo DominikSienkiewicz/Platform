@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # consumer-audit.sh na fiksturach, bez sieci: parsowanie (--from) i pobieranie przez atrapę `gh`, która
 # serwuje te same pliki i loguje każde wywołanie — audyt wysyła wyłącznie GET i pobiera tylko pliki, które czyta.
-# acme/alpha woła Platform pod starym ownerem DominikSienkiewicz, acme/beta pod organizacją (od 2026-11-13); alpha
-# pinuje paczki npm pod oboma scope'ami, bo audyt widzi konsumentów przed migracją organizacji i po niej.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 work=$(mktemp -d)
@@ -36,7 +34,7 @@ FROM node:24-alpine
 EOF
 put acme/alpha/frontend/package.json <<'EOF'
 { "dependencies": { "next": "16.4.0" },
-  "devDependencies": { "@dominiksienkiewicz/versions": "1.5.26", "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "1.5.26" } }
+  "devDependencies": { "@dominiksienkiewicz/versions": "1.5.26", "@dominiksienkiewicz/eslint-config": "1.5.26" } }
 EOF
 put acme/alpha/.github/workflows/ci.yml <<'EOF'
 jobs:
@@ -70,12 +68,12 @@ EOF
 put acme/beta/.github/workflows/ci.yml <<'EOF'
 jobs:
   backend:
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
+    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
 EOF
 put acme/beta/.github/workflows/bump.yml <<'EOF'
 jobs:
   bump:
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
+    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
 EOF
 printf 'main\n' | put acme/beta/branches.txt
 

@@ -8,7 +8,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
 
-const config = createRequire(import.meta.url)("@seniordeveloper-pl-dominik-sienkiewicz/prettier-config");
+const config = createRequire(import.meta.url)("@dominiksienkiewicz/prettier-config");
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const versions = join(root, "frontend/packages/versions");
 

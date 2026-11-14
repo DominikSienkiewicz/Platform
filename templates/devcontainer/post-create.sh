@@ -14,7 +14,7 @@ if [[ -z "${GITHUB_TOKEN:-}" ]]; then
   cat <<'HINT'
 GITHUB_TOKEN is not set in this container, so nothing was fetched from GitHub Packages.
 Export GITHUB_ACTOR (your GitHub login) and GITHUB_TOKEN (a classic token with read:packages) in the shell that
-starts the container, then rebuild it. See https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/docs/consuming.md#devcontainer-incubating
+starts the container, then rebuild it. See https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#devcontainer-incubating
 HINT
   if [[ -f "$root/frontend/package-lock.json" ]]; then
     echo "Skipped: npm ci --ignore-scripts in frontend/ (run it by hand once the token is set)."

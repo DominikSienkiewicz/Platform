@@ -1,8 +1,8 @@
 # .github
 
 Default community health files for the public repositories of
-[SeniorDeveloper-pl-Dominik-Sienkiewicz](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz). GitHub uses a
-file from this repository in every public repository of the organization that has no file of its own with that name.
+[DominikSienkiewicz](https://github.com/DominikSienkiewicz). GitHub uses a file from this repository in every public
+repository of the account that has no file of its own with that name.
 
 | File | What a repository without its own file gets |
 |---|---|

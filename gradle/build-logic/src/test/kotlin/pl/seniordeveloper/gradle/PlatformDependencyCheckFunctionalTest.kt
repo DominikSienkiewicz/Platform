@@ -118,6 +118,6 @@ class PlatformDependencyCheckFunctionalTest {
 	private companion object {
 		const val NOT_IN_CATALOG =
 			"not in the Platform catalog and no Platform BOM manages it: add it to gradle/catalog/libs.versions.toml in " +
-				"SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform, release, and bump the Platform pin"
+				"DominikSienkiewicz/Platform, release, and bump the Platform pin"
 	}
 }

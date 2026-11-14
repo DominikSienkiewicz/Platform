@@ -41,7 +41,7 @@ on:
         type: string
         required: true
       platform-ref:
-        description: "Ref of SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:."
+        description: "Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:."
         type: string
         default: "v1"
       build-timeout-minutes:
@@ -104,7 +104,7 @@ jobs:
     needs: preflight
     # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
     # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
-    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@d88288965f4377fbab95db2f850aa70a1d0a2d3f # v1.10.1
+    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@d88288965f4377fbab95db2f850aa70a1d0a2d3f # v1.10.1
     permissions:
       contents: read
       packages: write
@@ -171,7 +171,7 @@ jobs:
       - name: Fetch promote-image.sh from Platform
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
-          repository: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
+          repository: DominikSienkiewicz/Platform
           ref: ${{ inputs.platform-ref }}
           path: _platform
           persist-credentials: false

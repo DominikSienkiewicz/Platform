@@ -22,7 +22,7 @@ object PlatformGates {
 	fun link(
 		code: String,
 		version: String = PlatformVersions.PLATFORM,
-	): String = "https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v$version/docs/gates.md#${code.lowercase()}"
+	): String = "https://github.com/DominikSienkiewicz/Platform/blob/v$version/docs/gates.md#${code.lowercase()}"
 
 	fun line(
 		code: String,

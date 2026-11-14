@@ -2,7 +2,7 @@ name: Backend CI (reusable)
 
 # Reusable workflow dla backendów Spring/Gradle. Kontrakt callera (uprawnienia, sekrety, snippet):
 # docs/reusable-workflows.md. Wołany z jawnym sekretem, nie `inherit`:
-#   jobs: { backend: { uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z,
+#   jobs: { backend: { uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z,
 #                      secrets: { gpr_token: "${{ secrets.GPR_TOKEN }}" } } }
 on:
   workflow_call:
@@ -134,17 +134,9 @@ jobs:
           fi
           failed=0
           for jar in "${jars[@]}"; do
-            # release.yml organizacji (wydania po przeniesieniu 2026-11-13) albo konta osobistego (wydania do 1.10.3).
-            signer=""
-            for owner in SeniorDeveloper-pl-Dominik-Sienkiewicz DominikSienkiewicz; do
-              if gh attestation verify "$jar" --repo "$owner/Platform" \
-                --signer-workflow "$owner/Platform/.github/workflows/release.yml" > /dev/null 2>&1; then
-                signer="$owner/Platform"
-                break
-              fi
-            done
-            if [ -n "$signer" ]; then
-              echo "verified $(basename "$jar") ($signer)"
+            if gh attestation verify "$jar" --repo DominikSienkiewicz/Platform \
+              --signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml > /dev/null 2>&1; then
+              echo "verified $(basename "$jar")"
             else
               echo "::error title=PLAT-PROV-001::[PLAT-PROV-001] $(basename "$jar") carries no attestation from Platform's release.yml"
               failed=1

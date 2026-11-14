@@ -7,7 +7,7 @@ import {
   QueryProvider,
   type CreateQueryClientOptions,
   type QueryProviderProps,
-} from "@seniordeveloper-pl-dominik-sienkiewicz/query";
+} from "@dominiksienkiewicz/query";
 
 export function consumerUse(): void {
   const options: CreateQueryClientOptions = { queries: { staleTime: 0 }, defaultOptions: { mutations: { retry: 1 } } };

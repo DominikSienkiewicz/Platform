@@ -7,7 +7,7 @@ name: OpenAPI breaking-change gate (reusable)
 # Triggery deklaruje CALLER. Etykieta działa dopiero, gdy jej dodanie odpala nowy run, więc caller słucha
 # też `labeled`/`unlabeled`:
 #   on: { pull_request: { types: [opened, synchronize, reopened, labeled, unlabeled] } }
-#   jobs: { api-contract: { uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z,
+#   jobs: { api-contract: { uses: DominikSienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z,
 #                           with: { spec-path: contract/openapi.yaml } } }
 # Platform ćwiczy go w ci.yml na parach z templates/tests/fixtures/openapi/ (base-spec-path).
 on:

@@ -12,7 +12,7 @@ grants() { awk -v head="${2}permissions:" '$0 == head { p = 1; next } p && /^ +[
 
 # --- build: deploy.yml z wydania, które podpisuje, z uprawnieniami joba sign ---
 build=$(job build)
-pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
+pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
   | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.9.0\n%s\n' "$pin" | sort -C -V \

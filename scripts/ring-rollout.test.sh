@@ -20,7 +20,7 @@ run() { : > "$tmp/calls"; RC=0; OUT=$(PATH="$tmp/bin:$PATH" GH_CALLS="$tmp/calls
 
 run 1.6.0
 [[ $RC -eq 0 ]] || fail 'a green ring 1 must reach ring 2'
-[[ "$(sed -n 1p "$tmp/calls")" == "workflow run platform-bump.yml -R SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone -f version=1.6.0" ]] || fail 'Touchstone goes first'
+[[ "$(sed -n 1p "$tmp/calls")" == "workflow run platform-bump.yml -R DominikSienkiewicz/Touchstone -f version=1.6.0" ]] || fail 'Touchstone goes first'
 checks=$(grep -n '^pr checks' "$tmp/calls" | head -1 | cut -d: -f1)
 second=$(grep -n '^workflow run' "$tmp/calls" | sed -n 2p | cut -d: -f1)
 [[ -n "$checks" && -n "$second" && $checks -lt $second ]] || fail 'ring 2 waits for the checks of ring 1'
@@ -35,5 +35,5 @@ grep -qF 'stops there; the other consumers were not bumped' <<<"$OUT" || fail 't
 
 run 1.6.0 --dry-run
 [[ ! -s "$tmp/calls" ]] || fail 'a dry run calls nothing'
-grep -qF 'would run platform-bump.yml in SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone for 1.6.0' <<<"$OUT" || fail 'a dry run prints the plan'
+grep -qF 'would run platform-bump.yml in DominikSienkiewicz/Touchstone for 1.6.0' <<<"$OUT" || fail 'a dry run prints the plan'
 echo 'OK: ring-rollout bumps Touchstone first and the other consumers only after its pull request is green'

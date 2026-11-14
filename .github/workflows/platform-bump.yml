@@ -4,7 +4,7 @@ name: Platform bump (reusable)
 # referencje reusable workflows, lockfile'y, verification-metadata) i otwiera PR z diffem. Caller planuje go
 # cronem; wywołanie i uprawnienia: docs/reusable-workflows.md.
 #
-# Bin idzie z NAJNOWSZEGO opublikowanego @seniordeveloper-pl-dominik-sienkiewicz/versions (npx), nie z node_modules repo: działa też
+# Bin idzie z NAJNOWSZEGO opublikowanego @dominiksienkiewicz/versions (npx), nie z node_modules repo: działa też
 # w repo bez frontendu (Touchstone) i zawsze z aktualną logiką bumpu.
 # Dwa joby: `bump` uruchamia kod zależności (npm, Gradle) z tokenem tylko do odczytu i oddaje diff jako patch;
 # `pull-request` z prawem zapisu nakłada patch, pushuje gałąź i otwiera PR, nie uruchamiając nic z repo.
@@ -77,7 +77,7 @@ jobs:
         with:
           node-version: ${{ inputs.node-version }}
           registry-url: "https://npm.pkg.github.com"
-          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
+          scope: "@dominiksienkiewicz"
 
       - name: Run platform-bump
         id: bump
@@ -92,7 +92,7 @@ jobs:
           read -r -a version <<< "$VERSION"
           # Najnowszy bin ustala cel i oddaje sterowanie binowi wydania docelowego (handoff, N-DX-4), więc logika
           # pochodzi z celu także w repo bez frontendu; --report daje raport wpływu na to repo do opisu PR (N-REL-8).
-          npx --yes --package "@seniordeveloper-pl-dominik-sienkiewicz/versions@latest" -- platform-bump "${version[@]}" \
+          npx --yes --package "@dominiksienkiewicz/versions@latest" -- platform-bump "${version[@]}" \
             --report="$RUNNER_TEMP/platform-bump-report.md" 2>&1 | tee "$RUNNER_TEMP/platform-bump.log"
 
       - name: Save the diff as a patch

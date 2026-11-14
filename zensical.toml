@@ -5,9 +5,9 @@
 [project]
 site_name = "Platform"
 site_description = "The shared build, quality, version and frontend layer of a set of product repositories."
-site_url = "https://seniordeveloper-pl-dominik-sienkiewicz.github.io/Platform/"
-repo_url = "https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"
-repo_name = "SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"
+site_url = "https://dominiksienkiewicz.github.io/Platform/"
+repo_url = "https://github.com/DominikSienkiewicz/Platform"
+repo_name = "DominikSienkiewicz/Platform"
 edit_uri = "edit/main/docs/"
 docs_dir = "docs"
 site_dir = "site"

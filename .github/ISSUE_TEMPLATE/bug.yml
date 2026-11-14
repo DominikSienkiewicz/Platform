@@ -19,7 +19,7 @@ body:
         - Version catalog or platform-bom
         - Test fixtures
         - A starter (security, observability, web)
-        - A frontend package (@seniordeveloper-pl-dominik-sienkiewicz/*)
+        - A frontend package (@dominiksienkiewicz/*)
         - A reusable workflow
         - platform-bump or another bin
         - A template

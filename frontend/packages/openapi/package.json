@@ -1,6 +1,6 @@
 {
-  "name": "@seniordeveloper-pl-dominik-sienkiewicz/openapi",
-  "version": "2.0.0",
+  "name": "@dominiksienkiewicz/openapi",
+  "version": "1.10.3",
   "description": "Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current.",
   "license": "MIT",
   "engines": {
@@ -28,7 +28,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform.git",
+    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
     "directory": "frontend/packages/openapi"
   }
 }
