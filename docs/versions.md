@@ -291,6 +291,15 @@ analysis with the consumer's isolated tool classpath and runs SpotBugs against t
 the parser regression without requiring an EA JDK in the normal suite; it does not establish runtime
 or preview-feature compatibility. The canary remains the check of the actual EA toolchain.
 
+One exception keeps the canary measuring Platform rather than a known Gradle defect: Checkstyle runs on
+the canon toolchain there. Java 28-ea+24 rejects the `ReflectionFactory` call with which Gradle 9.8.2 rebuilds the
+parameters of a process-isolated worker ([gradle/gradle#39837](https://github.com/gradle/gradle/issues/39837)),
+and the `Checkstyle` task neither takes JVM arguments nor passes `JAVA_TOOL_OPTIONS` to its worker. The init script
+[`checkstyle-on-canon-toolchain.init.gradle.kts`](../.github/upstream-canary/checkstyle-on-canon-toolchain.init.gradle.kts)
+moves only the `Checkstyle` tasks; compilation, tests, JaCoCo and SpotBugs stay on the early-access JDK.
+Checkstyle reads sources, not bytecode, so its JVM does not change what the leg measures. Remove the init script
+once the Gradle wrapper of the canon carries the fix.
+
 ## Frontend canon
 
 `frontend/packages/versions/versions.json` is the frontend counterpart of the catalog: every npm
