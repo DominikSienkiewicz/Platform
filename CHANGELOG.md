@@ -22,6 +22,16 @@ continues.
 
 ## [Unreleased]
 
+### Fixed
+
+- The next-JDK leg of `upstream-canary.yml` runs Checkstyle on the canon toolchain. Java 28-ea+24 rejects the
+  `ReflectionFactory` call with which Gradle rebuilds the parameters of a process-isolated worker
+  ([gradle/gradle#39837](https://github.com/gradle/gradle/issues/39837)), so `checkstyleMain` and `checkstyleTest`
+  failed on the early-access JDK although nothing in Platform had changed. The `Checkstyle` task takes no JVM
+  arguments and its worker does not inherit `JAVA_TOOL_OPTIONS`, so the leg's init script moves only those tasks;
+  compilation, tests, JaCoCo and SpotBugs stay on the early-access JDK. The init script goes once the canon's Gradle
+  wrapper carries the fix.
+
 ## [1.11.0] - 2026-11-14
 
 ### Consumer action required
