@@ -62,7 +62,7 @@ for expected in \
   '- catalog `libs.versions.jimfs` removed' \
   '- catalog `libs.jimfs` removed' \
   '- catalog `libs.boot.starter` added' \
-  '- frontend canon `postcss` removed' \
+  '- frontend canon `postcss` removed: the consumer owns its version from now on' \
   '- `backend-ci.yml` input `java-version` added (required)' \
   '- `backend-ci.yml` input `gradle-task` removed' \
   '- `backend-ci.yml` input `working-directory`: required=False default=backend → required=False default=.' \
@@ -70,11 +70,20 @@ for expected in \
   '- `backend-ci.yml` needs `packages: read` (was none)' \
   '- template `templates/editorconfig` changed: repositories that keep a copy re-copy it' \
   '- a build that uses `libs.jimfs` no longer resolves it' \
-  '- `platform-versions-check` fails a frontend that still depends on `postcss`' \
   '- every caller of `backend-ci.yml` must pass the new required input `java-version`' \
   '- every caller of `backend-ci.yml` must grant `packages: read`'; do
   grep -qF -- "$expected" "$tmp/report" || fail "missing line: $expected"
 done
 grep -qx 'consumer_action=true' "$tmp/loud.out" || fail 'the job output must say true'
+if grep -qF 'depends on `postcss`' "$tmp/report"; then fail 'a frontend canon removal is not a consumer action'; fi
+
+# Samo usunięcie paczki z kanonu frontendu: konsument przejmuje jej wersję, więc nie ma akcji.
+write canon-before 4.1.1 '' 16.2.6 ', "postcss": "8.5.6"' "$head_contract" space
+canon_before=$(git -C "$repo" rev-parse HEAD)
+write canon-after 4.1.1 '' 16.2.6 '' "$head_contract" space
+(cd "$repo" && python3 "$root/scripts/canon-diff.py" "$canon_before" HEAD --github-output "$tmp/canon.out") > "$tmp/report"
+grep -qF -- '- frontend canon `postcss` removed: the consumer owns its version from now on' "$tmp/report" || fail 'a canon removal must say the consumer owns the version'
+grep -qx 'None.' "$tmp/report" || fail 'a canon removal alone needs no consumer action'
+grep -qx 'consumer_action=false' "$tmp/canon.out" || fail 'a canon removal alone must not label the pull request'
 
 echo 'OK: canon-diff compares parsed values and flags the changes that need consumer action'
