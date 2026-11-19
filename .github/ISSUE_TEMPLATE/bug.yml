@@ -30,7 +30,7 @@ body:
     id: gate
     attributes:
       label: Gate code
-      description: The code in the failure message, such as PLAT-DEP-001 (docs/gates.md), if there is one.
+      description: The code in the failure message, such as PLAT-DEP-002 (docs/gates.md), if there is one.
   - type: input
     id: environment
     attributes:

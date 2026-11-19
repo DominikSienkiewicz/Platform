@@ -1,7 +1,9 @@
 # Where versions are declared
 
-`gradle/catalog/libs.versions.toml` is the only place a library or plugin version is
-declared. `gradle/build-logic` includes **that same file** through its own
+`gradle/catalog/libs.versions.toml` is the only place the version of a library or plugin of the Platform frame is
+declared ([ADR-0037](adr/0037-platform-governs-the-frame.md)). A library outside the frame belongs to the
+consuming application, which registers it in a catalog of its own
+([Libraries your application owns](consuming.md#libraries-your-application-owns)). `gradle/build-logic` includes **that same file** through its own
 `settings.gradle.kts`:
 
 ```kotlin
@@ -17,7 +19,7 @@ yet exist at the time `build-logic` is compiled. The plugin marker artifacts on 
 Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)):
 
 - `pl.seniordeveloper:platform-catalog`, the version catalog, holds every alias and version. Consumers
-  declare dependencies through it, and `platformDependencyCheck` holds explicit versions to it.
+  declare the frame's dependencies through it, and `platformDependencyCheck` holds explicit versions of them to it.
 - `pl.seniordeveloper:platform-bom`, a `java-platform` built from the same TOML, holds what a catalog
   cannot express: the imports of the Spring Boot, Spring Modulith, Spring AI and JUnit BOMs, the CVE
   floors and compatibility overrides with their `because(...)` reasons (the table in
@@ -151,7 +153,7 @@ Best Practices criterion `release_notes_vulns` asks for exactly this ([self-asse
 
 ## What platformDependencyCheck does not see
 
-`platformDependencyCheck` compares the versions a build *declares* with the canon embedded in the plugin
+`platformDependencyCheck` compares the versions a build *declares* for a library of the frame with the canon embedded in the plugin
 (`platform-canon.tsv`, generated from `gradle/catalog/libs.versions.toml` when build-logic is built), not with
 the consumer's `libs` catalog, which `version(...)` after `from(...)` in `settings.gradle.kts` could override:
 such an override is a failure of its own ([PLAT-DEP-004](gates.md#plat-dep-004)), and so is a build without a
@@ -302,9 +304,11 @@ once the Gradle wrapper of the canon carries the fix.
 
 ## Frontend canon
 
-`frontend/packages/versions/versions.json` is the frontend counterpart of the catalog: every npm
-dependency of a consumer takes its exact version from it, and `platform-versions-check` fails
-`frontend-ci` on anything else. Platform's own workspace follows the same rule, so its packages are
+`frontend/packages/versions/versions.json` is the frontend counterpart of the catalog and holds the frame only:
+every npm package in it takes its exact version from it, and `platform-versions-check` fails `frontend-ci` on any
+other version of such a package. A package the canon lacks belongs to the consumer, as an exact version in
+`package.json`, and so does an `override` for it: `platform-versions-check` and `platform-bump` leave both alone, and
+`--fix` rewrites only packages of the canon. Platform's own workspace follows the same rule, so its packages are
 tested on the versions consumers run:
 
 - every `dependencies`, `devDependencies` and `optionalDependencies` entry of `frontend/package.json`

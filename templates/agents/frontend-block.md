@@ -6,8 +6,9 @@ The stack of Platform {{VERSION}}, taken from its frontend canon `versions.json`
 `platform-versions-check`: Next.js {{next}}, React {{react}}, TypeScript {{typescript}}, Tailwind CSS {{tailwindcss}},
 Vitest {{vitest}}, ESLint {{eslint}}, Prettier {{prettier}}. Read versions from the canon, never from memory.
 
-- Every version in `package.json`, `overrides` included, is exact and equal to the canon; a package the canon
-  lacks is added in Platform first. `npx platform-versions-check --fix` rewrites drift offline.
+- Every version in `package.json`, `overrides` included, is exact. A package in the canon takes the canon
+  version, and `npx platform-versions-check --fix` rewrites drift offline; a package the canon lacks, and an
+  override of one, belongs to this repository.
 - Use npm and commit `package-lock.json`, which `frontend-ci` installs with `npm ci`. Fix a CVE in a transitive
   package with `npm update <package> --package-lock-only` before reaching for an override.
 - Shared configuration comes from the `@dominiksienkiewicz/*` presets (`tsconfig`, `eslint-config`,

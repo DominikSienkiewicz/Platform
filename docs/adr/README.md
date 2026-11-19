@@ -70,3 +70,4 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md) | One JDK 27 runs Gradle, compiles build-logic and is the consumer toolchain | Accepted |
 | [0035](0035-promotion-by-commit-for-argo-cd.md) | Promotion by commit replaces SSH deploy for a cluster managed by Argo CD | Accepted |
 | [0036](0036-images-signed-keyless-after-the-gates.md) | Application images are signed keyless, and only after the scan gates | Accepted |
+| [0037](0037-platform-governs-the-frame.md) | Platform governs the frame, and consumers own the rest | Accepted |

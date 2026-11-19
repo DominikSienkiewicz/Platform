@@ -678,7 +678,7 @@ if [[ "$DRY_RUN" == true ]]; then
 fi
 # platform-bump:dry-run-end
 
-# Lockfile npm po pinach, kanonie i migracjach (drop-stale-overrides zmienia rozwiązywanie).
+# Lockfile npm po pinach, kanonie i migracjach (migracje wydania mogą zmienić rozwiązywanie).
 if [[ -f frontend/package.json ]]; then
   ( cd frontend && GITHUB_TOKEN="$TOKEN" npm install --package-lock-only --ignore-scripts )
 fi

@@ -331,13 +331,45 @@ literally to Gradle; the input does not interpret shell quoting or commands.
 
 `seniordev.java-conventions` wires `platformDependencyCheck` into `check`. A dependency or
 dependency constraint without a version is left to the Platform BOMs. One with an explicit
-version must match the catalog, so declare it through `libs.<alias>`. The check covers every
+version of a library of the Platform frame must match the catalog, so declare it through `libs.<alias>`; a library
+the frame does not know is yours ([below](#libraries-your-application-owns)). The check covers every
 declarable bucket: `api`, `implementation`, `compileOnly`, `compileOnlyApi`, `runtimeOnly`,
 `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly`, and their `test*`,
 `testFixtures*` and custom source set variants. It also covers `pl.seniordeveloper` artifacts,
 whose canon is the Platform version you pin. Each failure line names the fix: the `libs.…` alias
-to use, a BOM-managed version to remove, or a library that must first be added to the Platform
-catalog and released.
+to use, or a BOM-managed version to remove.
+
+### Libraries your application owns
+
+Platform governs the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon
+([ADR-0037](adr/0037-platform-governs-the-frame.md)). A library outside it needs no Platform release. Register a
+second catalog in `settings.gradle.kts`, next to `libs`, and keep its entries in `gradle/app.versions.toml`:
+
+```kotlin
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("appLibs") { from(files("gradle/app.versions.toml")) }
+    }
+}
+```
+
+```toml
+[versions]
+jsoup = "1.23.2"
+
+[libraries]
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+```
+
+Declare it as `implementation(appLibs.jsoup)`. Two rules still apply:
+
+- A library that a Spring or Platform BOM manages takes no version, in `appLibs` as anywhere else
+  ([PLAT-DEP-003](gates.md#plat-dep-003)); declare it without one.
+- An `appLibs` entry for a module of the Platform canon fails like any other version that differs from it
+  ([PLAT-DEP-002](gates.md#plat-dep-002)): use `libs.<alias>`.
+
+When a second repository needs the same library, move it into the frame: a catalog entry and a release
+([add a JVM library](runbooks/add-jvm-library.md)).
 
 A version set through a BOM property (`extra["jackson-bom.version"]`) or a resolution rule
 (`useVersion`, `force`) bypasses that check. `platformBomOverrideCheck` warns about the first,
@@ -420,11 +452,12 @@ dispatching agents are in [agent-profile.md](agent-profile.md).
 
 Install the packages with npm and commit `package-lock.json`: the reusable `frontend-ci` runs
 `npm ci` and `platform-bump` refreshes the lockfile with npm, so a consumer on pnpm or Yarn fails
-CI even though Platform builds its own packages with pnpm. Pin every other dependency at the
-exact version the canon gives, and every `@dominiksienkiewicz/*` package at one exact version: the
-release of `@dominiksienkiewicz/versions` you install. `platform-versions-check` governs
-`dependencies`, `devDependencies`, `optionalDependencies` and `overrides`; an application's
-`peerDependencies` are deliberately left out.
+CI even though Platform builds its own packages with pnpm. Pin every package the canon lists at
+the exact version it gives, any other package at an exact version of your own choice, and every `@dominiksienkiewicz/*` package at one exact version: the
+release of `@dominiksienkiewicz/versions` you install. `platform-versions-check` holds
+`dependencies`, `devDependencies`, `optionalDependencies` and `overrides` entries of a canon package to the
+canon; a package outside the canon, and an override for it, belong to your application and are left alone, as are
+an application's `peerDependencies`.
 
 `tsconfig.json` (`"@/*": ["./*"]` in a layout without `src/`):
 
@@ -675,7 +708,7 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD082 | (`platformDoctor`) `coverageMinimum` is a decimal between 0 and 1; unset warns, because the gate then accepts any coverage |
 | PD083 | (`--gradle`) `./gradlew platformDoctor` ran at all; an older pin has no such task |
 
-Gate failures carry a code, such as `[PLAT-DEP-001]`, and a link to its section of [gates.md](gates.md) at
+Gate failures carry a code, such as `[PLAT-DEP-002]`, and a link to its section of [gates.md](gates.md) at
 the release that produced it.
 
 | Symptom | Cause | Fix |
@@ -685,13 +718,13 @@ the release that produced it.
 | `UnsupportedClassVersionError` … `class file version 70.0` while the plugins load | Gradle runs on a JDK older than 26; Platform supports only 27 | Run Gradle on JDK 27 or newer (`sdk env`, or `JAVA_HOME`) |
 | `Unsupported class file major version 71` from Groovy as Gradle starts | the wrapper is older than Gradle 9.8.1, which cannot run on JDK 27 | Run `scripts/platform-bump.sh`, which moves the wrapper, or `./gradlew wrapper --gradle-version 9.8.1` on an older JDK |
 | `No matching toolchains found for requested specification` with `languageVersion=27` | No JDK 27 is installed or registered | Install a JDK 27 and register it with `org.gradle.java.installations.paths`; on glibc Linux avoid Foojay's Alpine build ([versions](versions.md)) |
-| `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version differs from the catalog, or the library is not in it | Follow the action on each line: use the `libs.…` alias; for "the Platform BOMs manage it at …", drop the version (or override the BOM property, which `platformBomOverrideCheck` reports); for "no Platform BOM manages it", add the library to the catalog first |
+| `Dependency versions outside the Platform canon (platformDependencyCheck)` | An explicit version of a library of the frame differs from the catalog | Follow the action on each line: use the `libs.…` alias; for "the Platform BOMs manage it at …", drop the version (or override the BOM property, which `platformBomOverrideCheck` reports) |
 | `The Platform pins diverge: seniordev.settings-conventions is …, platform-catalog is …` | `settings.gradle.kts` pins the settings plugin and the catalog to different releases | Run `scripts/platform-bump.sh <version>`, or read both pins from `platformVersion` as the [settings snippet](#backend) shows |
 | `platformRuntimeImageCheck` … `Change the final FROM to the image in templates/Dockerfile.backend` | The Dockerfile runs an older Java than the toolchain | Use the final `FROM` of `templates/Dockerfile.backend` |
 | `coverageMinimum=… needs JaCoCo execution data` | A coverage threshold is set, but no test task ran | Add tests to the module, or set `coverageMinimum=0` for it |
 | `IllegalStateException: Testcontainers used in the unit 'test' task (…): annotate the test class with @IntegrationTest or @PostgresIntegrationTest`, usually behind `Failed to load ApplicationContext` | A test that starts a platform container runs in the unit `test` task; since the first release after 1.6.0 the container guard fails instead of warning | Annotate the test class with `@IntegrationTest` or `@PostgresIntegrationTest`, so it runs in `integrationTest`. To keep the warning while you tag the tests, set `platform.test.guard=warn` in `gradle.properties` ([reference](reference.md#test-fixtures)) |
 | `platform.test.guard=… is not a guard mode` | The guard mode is neither `warn` nor `fail` (the values are case-sensitive), so the guard fails as it does by default | Set `platform.test.guard=warn`, or remove the property to keep the default `fail` |
-| `platform-versions-check: versions that differ from the Platform canon` | A frontend dependency differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |
+| `platform-versions-check: versions that differ from the Platform canon` | A frontend package of the canon differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |
 | npm `E401` or `E403` for `@dominiksienkiewicz/*` | `.npmrc` lacks the registry lines, or `GITHUB_TOKEN` is missing or lacks `read:packages` | Copy `templates/npmrc` to `frontend/.npmrc` and export the token |
 | `No matching variant of pl.seniordeveloper:platform-catalog` | The release is incomplete in GitHub Packages | Pin the previous version and report it; see the idempotency rules in [RELEASING.md](../RELEASING.md) |
 | `Dependency verification failed` after a bump | `gradle/verification-metadata.xml` misses checksums of the new versions | Run `scripts/platform-bump.sh` again; it regenerates the metadata in two passes |

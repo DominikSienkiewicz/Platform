@@ -22,11 +22,13 @@ consumer's `AGENTS.md`.
 
 ## Hard rules
 
-1. Every JVM library or plugin version lives in `gradle/catalog/libs.versions.toml`; the convention plugins
-   read it through the generated `PlatformVersions`. A literal version in a convention plugin fails
-   `PlatformVersionsTest`.
-2. Every frontend dependency version lives in `frontend/packages/versions/versions.json`, exact, overrides
-   included; `platform-versions-check` enforces it in consumers and `self-canon.test.mjs` in Platform.
+1. Every JVM library or plugin version of Platform's own modules lives in `gradle/catalog/libs.versions.toml`;
+   the convention plugins read it through the generated `PlatformVersions`. A literal version in a convention
+   plugin fails `PlatformVersionsTest`. A consumer's own libraries are not part of it
+   ([ADR-0037](docs/adr/0037-platform-governs-the-frame.md)).
+2. Every frontend dependency version of Platform's own workspace lives in `frontend/packages/versions/versions.json`,
+   exact, overrides included; `self-canon.test.mjs` enforces it in Platform, and `platform-versions-check` holds
+   the packages of the canon in consumers.
 3. A convention plugin adds no business dependency (security, jOOQ, AI models); consumers declare those.
 4. `seniordev.spring-modulith-conventions` does not apply the Spring Boot plugin.
 5. SpotBugs stays report-only until both criteria of `docs/adr/0005-spotbugs-report-only.md` hold.
@@ -63,11 +65,11 @@ change, and the frontend from `versions.json`.
 For a repository that pins [DominikSienkiewicz/Platform](https://github.com/DominikSienkiewicz/Platform) {{VERSION}}.
 The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
-- Versions come only from the catalog (`libs.<alias>` in Gradle) or the frontend canon (`versions.json`).
-  Never write a version inline: `platformDependencyCheck` and `platform-versions-check` fail the build.
-- A new library starts in Platform: an entry in `gradle/catalog/libs.versions.toml` or
-  `frontend/packages/versions/versions.json`, a release, then `scripts/platform-bump.sh`, then `libs.<alias>`.
-- Gate failures carry a code such as `[PLAT-DEP-001]` with a link; follow the fix it names.
+- Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Never
+  give them another version; `platformDependencyCheck` and `platform-versions-check` fail the build.
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`gradle/app.versions.toml`),
+  frontend an exact version in `package.json`. A library a Spring or Platform BOM manages takes no version.
+- Gate failures carry a code such as `[PLAT-DEP-002]` with a link; follow the fix it names.
 - Run Gradle through `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. The default gate is `lint` and `format`;
   run tests only when asked.
 - Write the test before the code: run only that test (`--tests <Class>`) to see it red in its assertion, then

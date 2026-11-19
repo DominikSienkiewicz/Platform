@@ -21,9 +21,10 @@ written. Guard: `platform-doctor` (PD020) and the pin rewrite of `platform-bump`
 
 `platformDependencyCheck` in
 [`seniordev.java-conventions`](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts)
-fails a consumer's `check` when a declared dependency or constraint carries a version the catalog does not
-give, in every declarable bucket, Platform's own artifacts included, and its message names the `libs.…`
-alias to use. Guard: the TestKit suite in
+fails a consumer's `check` when a declared dependency or constraint of the frame carries a version the catalog does
+not give, in every declarable bucket, Platform's own artifacts included, and its message names the `libs.…`
+alias to use. A library outside the frame is the application's own and passes
+([ADR-0037](adr/0037-platform-governs-the-frame.md)). Guard: the TestKit suite in
 [`PlatformDependencyCheckFunctionalTest`](../gradle/build-logic/src/test/kotlin/pl/seniordeveloper/gradle/PlatformDependencyCheckFunctionalTest.kt).
 
 ## 3. Versions the plugins impose come from the catalog
