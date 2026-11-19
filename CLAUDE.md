@@ -5,8 +5,8 @@ Kontekst dla agentów AI (narzędziowo-neutralny odpowiednik po angielsku: `AGEN
 `platform-agents-backend`/`-frontend` z `templates/agents/` do `backend/AGENTS.md` i `frontend/AGENTS.md` ze stosem
 wydania — backend z `frontend/packages/versions/agents/stack.json`, który `scripts/agents-stack.py` generuje z katalogu,
 więc po zmianie katalogu uruchom go ponownie). To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
-konsumowana przez osobne repo produktowe: Azimuth i Touchstone (oba konsumują convention pluginy + katalog;
-Azimuth z frontendem także kanon frontendu). Attestate_io, BookOfStyling i SkillSprintPlus zostały usunięte
+konsumowana przez osobne repo produktowe: Azimuth, Touchstone i Training (wszystkie konsumują convention pluginy + katalog;
+Azimuth i Training z frontendem także kanon frontendu). Attestate_io, BookOfStyling i SkillSprintPlus zostały usunięte
 (2026-10-20) i nie są już konsumentami. Lista = `scripts/consumers.txt`
 (ta sama co sekcja Consumers w README); adopcję i piny pokazuje lokalny `scripts/consumer-audit.sh` (tylko GET).
 

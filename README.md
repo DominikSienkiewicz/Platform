@@ -85,6 +85,7 @@ described in [RELEASING.md](RELEASING.md).
 |---|---|
 | `DominikSienkiewicz/Azimuth` | backend and frontend |
 | `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
+| `DominikSienkiewicz/Training` | backend and frontend |
 
 "The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
