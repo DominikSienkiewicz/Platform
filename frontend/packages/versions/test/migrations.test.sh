@@ -25,7 +25,7 @@ migrate() {
   printf '%s\n' "$tree"
 }
 
-for slug in caller-packages-read runtime-image-27 drop-stale-overrides; do
+for slug in caller-packages-read runtime-image-27; do
   tree=$(migrate "$slug" 1.5.26 1.6.0)
   after=$(fixture "$slug" after)
   diff -r "$after" "$tree" || fail "$slug: before/ must become after/"
@@ -39,7 +39,6 @@ grep -qF ".github/workflows/flow.yml:2: add packages: read to \`permissions: { c
   || { cat "$fixture_work/caller-packages-read.out"; fail 'a flow-mapping permissions block must be left for a manual fix'; }
 grep -qF "Dockerfile:1: move \`eclipse-temurin:26-jre-alpine\` to a Java 27 runtime" "$fixture_work/runtime-image-27.out" \
   || { cat "$fixture_work/runtime-image-27.out"; fail 'an image variant the migration does not know must be left for a manual fix'; }
-grep -qF 'removed overrides.postcss: 8.4.31' "$fixture_work/drop-stale-overrides.out" || fail 'the removed overrides must be listed'
 
 # 1.8.0: Gradle na JDK 27 (ADR-0034). Callery Platform i .sdkmanrc automatycznie; kryteria demona i setup-java
 # poza callerami Platform tylko jako notatka, bo migracja nie wie, czy ten JDK uruchamia Gradle'a.
@@ -66,13 +65,15 @@ template_image=$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' "$here/..
 grep -qx "RUNTIME_IMAGE=\"$template_image\"" "$here/../migrations/1.6.0-runtime-image-27.sh" \
   || fail "runtime-image-27 must move to $template_image, the final FROM of templates/Dockerfile.backend"
 
+# Override spoza kanonu należy do konsumenta: bump go zostawia (wycofana migracja every-drop-stale-overrides).
+tree=$(migrate consumer-owned-override 1.11.0 1.11.1)
+grep -qF '"postcss": "8.4.31"' "$tree/frontend/package.json" || fail 'a bump must keep the consumer'"'"'s override'
+
 # Bramka SINCE: CUR < SINCE <= TARGET; every-* przy każdym bumpie.
 tree=$(migrate caller-packages-read 1.6.0 1.6.1)
 diff -r "$(fixture caller-packages-read before)" "$tree" >/dev/null || fail 'a bump from 1.6.0 must not run 1.6.0 migrations'
 tree=$(migrate caller-packages-read 1.5.26 1.5.31)
 diff -r "$(fixture caller-packages-read before)" "$tree" >/dev/null || fail 'a bump to 1.5.31 must not run 1.6.0 migrations'
-tree=$(migrate drop-stale-overrides 1.6.0 1.6.1)
-diff -r "$(fixture drop-stale-overrides after)" "$tree" || fail 'every-* migrations run on every bump'
 files=$(cd "$(fixture runtime-image-27 before)" && bash "$runner" files 1.5.26 1.6.0)
 [[ "$files" == $'Dockerfile\nbackend/Dockerfile' ]] || fail "run.sh files must list what the migrations may change, got: $files"
 
