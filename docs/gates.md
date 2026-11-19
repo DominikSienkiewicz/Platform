@@ -25,14 +25,6 @@ the Platform version from the link.
 
 ## Gradle
 
-### PLAT-DEP-001
-
-**Cause:** an explicit version of a library that is not in the Platform catalog, and no Platform BOM manages
-it (`platformDependencyCheck`).
-**Example:** `implementation("com.example:unknown:1.0")`.
-**Fix:** add the library to `gradle/catalog/libs.versions.toml` in Platform, release, bump the pin, then
-declare it as `libs.<alias>` ([versions.md](versions.md)).
-
 ### PLAT-DEP-002
 
 **Cause:** an explicit version that differs from the Platform canon.
@@ -197,3 +189,10 @@ to `red-proof-tasks`.
 `-Pplatform.deprecations.mode=fail` makes the Gradle side fail, as Platform's own TestKit suite does.
 **Fix:** use the replacement the message names before the release it names. Platform deprecates in one
 MINOR and removes no earlier than the next, and the CHANGELOG lists both.
+
+## Retired codes
+
+A retired code is never reused (ADR-0027).
+
+- `PLAT-DEP-001` — retired in 1.11.1: a library outside the Platform catalog that no Platform BOM manages
+  belongs to the consumer, which declares its version (ADR-0037).

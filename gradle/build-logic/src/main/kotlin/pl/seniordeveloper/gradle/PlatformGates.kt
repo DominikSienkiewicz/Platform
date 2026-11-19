@@ -5,7 +5,6 @@ package pl.seniordeveloper.gradle
  * z wydania, które zgłosiło błąd, nie `main`. Kod raz wycofany nie wraca z innym znaczeniem.
  */
 object PlatformGates {
-	const val DEP_NOT_IN_CATALOG = "PLAT-DEP-001"
 	const val DEP_DIFFERS_FROM_CANON = "PLAT-DEP-002"
 	const val DEP_BOM_MANAGED = "PLAT-DEP-003"
 	const val DEP_CATALOG_OVERRIDE = "PLAT-DEP-004"

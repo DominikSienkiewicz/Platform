@@ -370,14 +370,14 @@ tasks.named("check") {
 	dependsOn(tasks.named("jacocoTestCoverageVerification"), tasks.named("jacocoTestReport"), platformCoverageDataCheck)
 }
 
-// === Governance wersji: KAŻDA jawna wersja biblioteki pochodzi z platform-catalog ==============
+// === Governance wersji: jawna wersja biblioteki z kanonu Platform zgadza się z kanonem ==========
 // Reguły:
 //   1. Zależność zadeklarowana BEZ wersji = zarządzana BOM-ami platformy (spring-modulith-conventions) — OK.
-//   2. Zależność albo constraint z JAWNĄ wersją musi mieć wpis w katalogu `libs` (platform-catalog) z wersją
-//      IDENTYCZNĄ — w praktyce: deklaruj wyłącznie przez `libs.<alias>`. Dotyczy też artefaktów
-//      pl.seniordeveloper: ich kanonem jest wstrzyknięta platformVersion. Inline wersja spoza kanonu = czerwony build.
-//   3. Nowa biblioteka w projekcie = najpierw wpis w Platform (gradle/catalog) i wydanie,
-//      potem bump pinu i użycie przez libs.<alias>.
+//   2. Zależność albo constraint z JAWNĄ wersją, która ma wpis w katalogu `libs` (platform-catalog), musi mieć
+//      wersję IDENTYCZNĄ — w praktyce: deklaruj ją przez `libs.<alias>`. Dotyczy też artefaktów
+//      pl.seniordeveloper: ich kanonem jest wstrzyknięta platformVersion. Inna wersja kanonu = czerwony build.
+//   3. Biblioteka spoza ramy (bez wpisu w kanonie i bez zarządzania przez BOM) = wersja u konsumenta,
+//      np. we własnym katalogu; bramka jej nie ocenia. Jawna wersja biblioteki zarządzanej przez BOM nadal jest błędem.
 // Zakres: każdy deklarowalny kubełek — nazwy bazowe niżej i ich warianty z prefiksem source setu (test*,
 // testFixtures*, własne source sety). Konfiguracje narzędzi (checkstyle, pitest, spotbugs*, jacocoAgent,
 // cyclonedx*) zostają poza zakresem z konstrukcji.
