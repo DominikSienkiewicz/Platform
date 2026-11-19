@@ -9,14 +9,14 @@ import java.nio.file.Path
 
 /**
  * Negatywne przypadki platformDependencyCheck — bramki governance wpiętej w `check` u wszystkich konsumentów.
- * Bramka zbiera wszystkie naruszenia w jeden wyjątek, więc przypadki są pogrupowane w trzy przebiegi TestKit.
+ * Bramka zbiera wszystkie naruszenia w jeden wyjątek, więc przypadki są pogrupowane w cztery przebiegi TestKit.
  */
 class PlatformDependencyCheckFunctionalTest {
 	@TempDir
 	lateinit var directory: Path
 
 	@Test
-	fun `explicit versions outside the canon fail with an actionable message`() {
+	fun `explicit versions that differ from the canon fail with an actionable message`() {
 		val consumer = ConsumerFixture(directory, "java-library")
 		consumer.appendToBuildScript(
 			"""
