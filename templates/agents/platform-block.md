@@ -6,8 +6,9 @@ For a repository that pins [DominikSienkiewicz/Platform](https://github.com/Domi
 The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
 - Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Never
-  give them another version; `platformDependencyCheck` and `platform-versions-check` fail the build.
-- A library the frame does not know belongs to this repository: Gradle `appLibs` (`gradle/app.versions.toml`),
+  give a frame library another version; `platformDependencyCheck` and `platform-versions-check` fail the build
+  (Java and Gradle come from the toolchain and the wrapper).
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`backend/gradle/app.versions.toml`),
   frontend an exact version in `package.json`. A library a Spring or Platform BOM manages takes no version.
 - Gate failures carry a code such as `[PLAT-DEP-002]` with a link; follow the fix it names.
 - Run Gradle through `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. The default gate is `lint` and `format`;

@@ -14,7 +14,7 @@ consumer's `AGENTS.md`.
 | `gradle/catalog/` | the published version catalog `pl.seniordeveloper:platform-catalog`, the single source of JVM versions |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom`: the Spring BOM imports, CVE floors and compatibility overrides |
 | `gradle/test-fixtures/`, `gradle/*-starter/` | the test fixtures and the incubating Spring Boot starters |
-| `frontend/packages/` | the npm packages; `versions/versions.json` is the single source of frontend versions |
+| `frontend/packages/` | the npm packages; `versions/versions.json` is the single source of the frame's frontend versions |
 | `.github/workflows/` | the reusable workflows consumers call, and Platform's own CI and release |
 | `.claude-plugin/`, `plugins/platform/` | the Claude Code marketplace and its `platform` plugin: seven skills that open the runbooks at the tag a repository pins |
 | `templates/` | files consumers copy byte for byte, with their tests in `templates/tests/` |
@@ -66,8 +66,9 @@ For a repository that pins [DominikSienkiewicz/Platform](https://github.com/Domi
 The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
 - Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Never
-  give them another version; `platformDependencyCheck` and `platform-versions-check` fail the build.
-- A library the frame does not know belongs to this repository: Gradle `appLibs` (`gradle/app.versions.toml`),
+  give a frame library another version; `platformDependencyCheck` and `platform-versions-check` fail the build
+  (Java and Gradle come from the toolchain and the wrapper).
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`backend/gradle/app.versions.toml`),
   frontend an exact version in `package.json`. A library a Spring or Platform BOM manages takes no version.
 - Gate failures carry a code such as `[PLAT-DEP-002]` with a link; follow the fix it names.
 - Run Gradle through `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. The default gate is `lint` and `format`;

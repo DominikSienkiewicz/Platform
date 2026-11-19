@@ -123,7 +123,8 @@ after taking a platform version that changes an override.
 
 Consumers cannot fix a vulnerable version the platform manages: the version guards reject any other
 version of a canon dependency, and a BOM-managed library follows the BOM Platform imports. A known CVE
-in the canon is therefore Platform's to fix, with a patch release.
+in the canon is therefore Platform's to fix, with a patch release. A CVE in a library the application owns
+(`appLibs`, or a package in its `package.json`) is fixed in the application: it bumps that version itself.
 
 [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml) scans what the platform imposes: a
 lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-probe`, a consumer that

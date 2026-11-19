@@ -8,7 +8,7 @@ needs no catalog entry: declare it without a version).
 
 - Used by one repository: do not touch Platform. Register `appLibs` from `gradle/app.versions.toml` as
   [Libraries your application owns](../consuming.md#libraries-your-application-owns) shows, declare it as
-  `implementation(appLibs.jsoup)`, and run `./gradlew platformDependencyCheck`. A library a BOM manages takes no
+  `implementation(appLibs.own.library)`, and run `./gradlew platformDependencyCheck`. A library a BOM manages takes no
   version.
 - Used by two or more repositories: it belongs to the frame, so follow the steps below.
 

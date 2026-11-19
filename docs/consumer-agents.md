@@ -11,7 +11,7 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
   BOMs manage (Spring Boot starters, Jackson, JUnit) has no version at all. `./gradlew platformDependencyCheck` fails
   on an inline version of either, on a version that differs from the canon and on a `version(...)` override in
   `backend/settings.gradle.kts`.
-- A library the frame does not know belongs to this repository: Gradle `appLibs` (`gradle/app.versions.toml`,
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`backend/gradle/app.versions.toml`,
   [consuming](consuming.md#libraries-your-application-owns)), frontend an exact version in `frontend/package.json`.
   Add it to Platform only when a second repository uses it ([add a JVM library](runbooks/add-jvm-library.md),
   [add a frontend dependency](runbooks/add-frontend-dependency.md)).

@@ -43,7 +43,7 @@ STANDARD_TASKS = {"build", "check", "test", "assemble", "dependencies", "bootJar
 WORKFLOW_NAMES = {"platform-bump", "platform-agents", "platform-agents-backend", "platform-agents-frontend"}
 # Ignorowany katalog lokalny i pliki, które żyją u konsumenta (w Platform leżą per moduł).
 NOT_IN_TREE = {"docs/concepts", "docs/concepts/", "gradle/verification-metadata.xml", "gradle/wrapper/gradle-wrapper.properties",
-                "gradle/app.versions.toml"}
+                "gradle/app.versions.toml", "backend/gradle/app.versions.toml"}
 
 
 def tasks():

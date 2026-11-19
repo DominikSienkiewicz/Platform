@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Shared Renovate preset of DominikSienkiewicz; consumers extend github>DominikSienkiewicz/Platform. It covers GitHub Actions and Docker images only. Gradle, npm and the Platform pins come from the Platform catalog and frontend canon and are bumped by platform-bump (reusable platform-bump.yml).",
+  "description": "Shared Renovate preset of DominikSienkiewicz; consumers extend github>DominikSienkiewicz/Platform. It covers GitHub Actions and Docker images only. Gradle, npm and the Platform pins of the frame come from the Platform catalog and frontend canon and are bumped by platform-bump (reusable platform-bump.yml).",
   "extends": [
     "config:recommended",
     ":dependencyDashboard",

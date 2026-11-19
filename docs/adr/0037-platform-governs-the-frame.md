@@ -27,8 +27,8 @@ different versions across repositories, cannot happen with a library that has a 
   library that a Spring or Platform BOM manages takes no version in either place.
 - A library moves into the frame when two or more repositories use it. The move is a catalog or canon entry and a
   release, as ADR-0001 describes, and from then on the gates hold its version.
-- The frontend canon holds only the frame. A consumer's own packages and its `overrides` for them are its own, and
-  neither `platform-versions-check` nor `platform-bump` rewrites them.
+- The frontend canon holds only the frame once the single-application entries are removed in a later release. A
+  consumer's own packages and its `overrides` for them are its own, and neither `platform-versions-check` nor `platform-bump` rewrites them.
 
 ## Consequences
 
