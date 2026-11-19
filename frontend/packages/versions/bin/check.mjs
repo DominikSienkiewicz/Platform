@@ -3,16 +3,15 @@
 // Porównuje dependencies/devDependencies/optionalDependencies/overrides z package.json (cwd)
 // z versions.json tej paczki. peerDependencies aplikacji są świadomie poza governance.
 // Reguły:
-//   1. KAŻDA zależność (poza @dominiksienkiewicz/* — pin platformy) musi mieć wpis w kanonie.
-//   2. Wersja musi być IDENTYCZNA z kanonem (exact, bez ^/~).
+//   1. Kanon pilnuje wersji paczek, które zna; paczka bez wpisu w kanonie należy do konsumenta i nie jest błędem.
+//   2. Wersja paczki z kanonu musi być IDENTYCZNA z kanonem (exact, bez ^/~).
 //   3. Piny @dominiksienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
 //      kanon z versions@X i preset z eslint-config@Y nie mogą pochodzić z różnych wydań.
-// Nowa biblioteka w repo = najpierw wpis w Platform versions.json + release, potem użycie.
 // `overrides` podlega tym samym regułom co zależność bezpośrednia — to tam żyją piny CVE paczek
 // transytywnych (overrides.next.postcss), które bez tego dryfowały po cichu przy ruchu kanonu.
 // Exit 1 przy naruszeniu — krok w reusable frontend-ci failuje build.
 // --fix (offline): przepisuje rozjechane wersje i piny platformy na kanon zainstalowanej paczki; wpisów nie dodaje
-// ani nie usuwa, więc zależność bez wpisu w kanonie zostaje błędem. W GitHub Actions (GITHUB_ACTIONS=true) każde
+// ani nie usuwa, a paczek spoza kanonu nie rusza. W GitHub Actions (GITHUB_ACTIONS=true) każde
 // naruszenie to adnotacja ::error z plikiem i linią, a tabela trafia do $GITHUB_STEP_SUMMARY.
 import { appendFileSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -69,16 +68,15 @@ function collectOverrides(node, path, parent) {
 collectOverrides(pkg.overrides, "overrides", null);
 
 let drift = [];
-const missing = [];
 let governed = 0;
 for (const entry of declared) {
   const { name, have } = entry;
   if (name.startsWith("@dominiksienkiewicz/")) continue; // pin platformy — poza kanonem
   if (have.startsWith("$")) continue; // referencja npm ("$typescript") — wersję rozwija npm
-  governed += 1;
   const want = canon[name];
-  if (want === undefined) missing.push(entry);
-  else if (have !== want) drift.push({ ...entry, want });
+  if (want === undefined) continue; // paczka spoza kanonu należy do konsumenta
+  governed += 1;
+  if (have !== want) drift.push({ ...entry, want });
 }
 
 // Bez znanej wersji kanonu (kopia testowa) wymagamy przynajmniej jednej wspólnej wartości wszystkich pinów.
@@ -129,7 +127,7 @@ if (typeof canonFile.releasedAt === "string" && process.env.PLATFORM_STALENESS_N
   }
 }
 
-if (drift.length === 0 && missing.length === 0 && looseOrMixedPins.length === 0) {
+if (drift.length === 0 && looseOrMixedPins.length === 0) {
   console.log(
     `platform-versions-check: OK (${governed} governed dependencies, canon ${canonLabel} with ${Object.keys(canon).length} entries)`,
   );
@@ -150,7 +148,6 @@ if (process.env.GITHUB_ACTIONS === "true") {
     return index >= 0 ? index + 1 : 1;
   };
   const rows = [
-    ...missing.map((m) => ({ e: m, text: `${m.name}${where(m)} ${m.have} has no canon entry` })),
     ...drift.map((d) => ({ e: d, text: `${d.name}${where(d)} declared ${d.have}, canon ${d.want}` })),
     ...looseOrMixedPins.map((p) => ({ e: p, text: `${p.name} declared ${p.have}, expected ${expectedPin ?? "one exact version"}` })),
   ];
@@ -165,11 +162,6 @@ if (process.env.GITHUB_ACTIONS === "true") {
   }
 }
 console.error(`platform-versions-check (canon: ${canonLabel})`);
-if (missing.length > 0) {
-  console.error("[PLAT-FE-001] platform-versions-check: dependencies without a Platform canon entry:");
-  for (const m of missing)
-    console.error(`  ${m.name}${where(m)} (${m.have}): add it to ${platformCanon}, release, then bump`);
-}
 if (drift.length > 0) {
   console.error("[PLAT-FE-002] platform-versions-check: versions that differ from the Platform canon:");
   for (const d of drift) console.error(`  ${d.name}${where(d)}: declared "${d.have}", canon "${d.want}"`);
@@ -185,7 +177,6 @@ console.error(
     `scripts/platform-bump.sh ${canonVersion ?? "<version>"} (applies the canon), or change ${platformCanon} and release.`,
 );
 const codes = [
-  ...(missing.length > 0 ? ["PLAT-FE-001"] : []),
   ...(drift.length > 0 ? ["PLAT-FE-002"] : []),
   ...(looseOrMixedPins.length > 0 ? ["PLAT-FE-003"] : []),
 ];

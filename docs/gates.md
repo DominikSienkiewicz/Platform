@@ -112,11 +112,6 @@ buildable on a laptop.
 
 ## Frontend
 
-### PLAT-FE-001
-
-**Cause:** a dependency without an entry in the frontend canon (`platform-versions-check`).
-**Fix:** add it to `frontend/packages/versions/versions.json` in Platform, release, then bump.
-
 ### PLAT-FE-002
 
 **Cause:** a dependency or an `overrides` entry declared at a version other than the canon's.
@@ -196,3 +191,4 @@ A retired code is never reused (ADR-0027).
 
 - `PLAT-DEP-001` — retired in 1.11.1: a library outside the Platform catalog that no Platform BOM manages
   belongs to the consumer, which declares its version (ADR-0037).
+- `PLAT-FE-001` — retired in 1.11.1: a package outside the frontend canon belongs to the consumer (ADR-0037).

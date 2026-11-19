@@ -79,13 +79,12 @@ run_case ref '{
 }'
 [[ $RC -eq 0 ]] || fail "referencja \$typescript nie powinna być zgłaszana (exit $RC)"
 
-# --- 6) Override bez wpisu w kanonie = twardy błąd (jak zależność bezpośrednia) ---
-run_case missing '{
+# --- 6) Override paczki spoza kanonu należy do konsumenta -> zielono ---
+run_case consumer-owned '{
   "overrides": { "next": { "nieznana-paczka": "1.0.0" } }
 }'
-[[ $RC -ne 0 ]] || fail "override spoza kanonu powinien failować build"
-grep -q 'nieznana-paczka' <<<"$OUT" || fail "komunikat nie wymienia paczki spoza kanonu"
-grep -q 'without a Platform canon entry' <<<"$OUT" || fail "override spoza kanonu zgłoszony jako dryf zamiast braku wpisu"
+[[ $RC -eq 0 ]] || fail "override paczki spoza kanonu nie powinien failować (exit $RC)"
+if grep -q 'PLAT-FE' <<<"$OUT"; then fail "override paczki spoza kanonu nie powinien dawać PLAT-FE"; fi
 
 # --- 7) Pin platformy (@dominiksienkiewicz/*) w overrides jest poza governance kanonu ---
 run_case platform-scope '{
