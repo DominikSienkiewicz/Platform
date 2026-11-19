@@ -424,7 +424,7 @@ val declaredDependencies =
 val consumerLibs = extensions.findByType<VersionCatalogsExtension>()?.find("libs")?.orElse(null)
 val platformDependencyCheck =
 	tasks.register<PlatformDependencyCheck>("platformDependencyCheck") {
-		description = "Checks that every explicit dependency version comes from the Platform canon embedded in the plugin."
+		description = "Checks that every explicit version of a frame library matches the Platform canon embedded in the plugin."
 		group = "verification"
 		val canonEntries = platformCanon
 		projectPath.set(project.path)

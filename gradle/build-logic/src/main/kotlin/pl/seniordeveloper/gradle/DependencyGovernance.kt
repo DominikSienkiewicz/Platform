@@ -138,7 +138,7 @@ object DependencyGovernance {
 			appendLine("### platformDependencyCheck — $project")
 			appendLine()
 			if (findings.isEmpty()) {
-				appendLine("Every explicit dependency version matches the Platform canon.")
+				appendLine("Every explicit version of a frame library matches the Platform canon.")
 			} else {
 				appendLine("| Code | Finding |")
 				appendLine("|---|---|")

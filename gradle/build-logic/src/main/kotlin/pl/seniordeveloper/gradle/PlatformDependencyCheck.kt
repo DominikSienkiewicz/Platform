@@ -106,6 +106,6 @@ abstract class PlatformDependencyCheck : DefaultTask() {
 					"and ${report.get().asFile.path}",
 			)
 		}
-		logger.lifecycle("platformDependencyCheck: OK — every explicit version matches platform-catalog")
+		logger.lifecycle("platformDependencyCheck: OK — every explicit version of a frame library matches platform-catalog")
 	}
 }
