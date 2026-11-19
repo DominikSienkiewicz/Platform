@@ -26,8 +26,8 @@ grep -qxF '::warning title=Platform deprecation::old-lib is deprecated since Pla
 
 printf '{ "dependencies": { "next": "16.3.0", "left-pad": "1.3.0" } }\n' > "$tmp/app/package.json"
 if OUT=$(cd "$tmp/app" && node "$tmp/pkg/bin/check.mjs" 2>&1); then fail 'drift must still fail'; fi
-grep -qF '[PLAT-FE-001] platform-versions-check: dependencies without a Platform canon entry' <<<"$OUT" || fail 'missing entries carry PLAT-FE-001'
+if grep -qF 'PLAT-FE-001' <<<"$OUT"; then fail 'a package outside the canon must not emit the retired PLAT-FE-001'; fi
 grep -qF '[PLAT-FE-002] platform-versions-check: versions that differ from the Platform canon' <<<"$OUT" || fail 'drift carries PLAT-FE-002'
 grep -qF '  PLAT-FE-002: https://github.com/DominikSienkiewicz/Platform/blob/v1.6.0/docs/gates.md#plat-fe-002' <<<"$OUT" \
   || fail 'every code must link the docs of the canon release'
-echo 'OK: platform-versions-check warns on deprecated packages and codes every violation'
+echo 'OK: platform-versions-check warns on deprecated packages and codes every violation, not the packages outside the canon'
