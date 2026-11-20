@@ -152,6 +152,9 @@ Before it changes anything, `release.sh` refuses to run when:
 
 - the working tree is not clean (untracked files included), the current branch is not `main`, or
   `HEAD` differs from `origin/main`;
+- the release tags cannot be fetched from `origin`, for example because a local tag differs from the one on
+  `origin` (it fetches them first, so the composed notes and the history check start at the latest release
+  even when its tag was pushed after this clone fetched the commit);
 - the message is not a Conventional Commit or contains Polish characters;
 - the version's tag already exists;
 - a hand-written section for the version has no `### Consumer action required` subsection;

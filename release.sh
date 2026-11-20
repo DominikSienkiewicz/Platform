@@ -69,6 +69,13 @@ if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   exit 1
 fi
 git fetch --quiet origin main
+# Tagi wydań z origin: git describe i bramka historii czytają tagi lokalne, a tag wypchnięty po pobraniu jego commita
+# nie przychodzi z samym "fetch origin main" — sekcja złożyłaby się od starszego taga i powtórzyła wydane commity.
+git fetch --quiet --tags origin || {
+  echo "Could not fetch the release tags from origin (a local tag that differs from origin also stops it)."
+  echo "Fix that, then release: the composed notes and the history check start at the previous release's tag."
+  exit 1
+}
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
   || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
 

@@ -557,6 +557,33 @@ release "$work" "fix: release" 1.2.4
 [[ "$(git -C "$work" show HEAD:CHANGELOG.md | grep '^## ' | cut -c1-12)" == $'## [Unreleas\n## [1.2.4] -\n## [1.2.3] -' ]] \
   || { git -C "$work" show HEAD:CHANGELOG.md; fail 'the composed section must go between [Unreleased] and the released section'; }
 
+# Tag poprzedniego wydania tylko w origin (klon pobrał commit przed tagiem): release.sh pobiera tagi i składa sekcję
+# od niego, a nie od starszego taga lokalnego, więc wydane już commity nie wracają do notatek.
+work=$(seed remote-tag yes 'fix: keep the lockfile' "$unreleased")
+{
+  git -C "$work" commit -q --allow-empty -m 'fix: drop the cache'
+  git -C "$work" tag v1.2.4
+  git -C "$work" push -q origin main v1.2.4
+  git -C "$work" tag -d v1.2.4
+  git -C "$work" commit -q --allow-empty -m 'fix: name the starter'
+  git -C "$work" push -q origin main
+} > /dev/null 2>&1
+release "$work" "fix: release" 1.2.5
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a release after a tag that exists only on origin must compose its section'; }
+grep -qF 'composed from the commits since v1.2.4' "$work.log" || { cat "$work.log"; fail 'the composed range must start at the tag on origin'; }
+composed=$(git -C "$work" show HEAD:CHANGELOG.md)
+grep -q 'name the starter' <<<"$composed" || { echo "$composed"; fail 'the commit after the tag must be listed'; }
+if grep -q 'drop the cache\|keep the lockfile' <<<"$composed"; then echo "$composed"; fail 'commits of earlier releases must not come back'; fi
+
+# Tag lokalny różny od tego w origin zatrzymuje pobranie tagów: release.sh odmawia, zamiast liczyć od złego taga.
+work=$(seed clobbered-tag yes 'fix: keep the lockfile' "$unreleased")
+{
+  git -C "$work" push -q origin v1.2.3
+  git -C "$work" tag -f v1.2.3 HEAD
+} > /dev/null 2>&1
+release "$work" "fix: release" 1.2.4
+refused "$work" 'Could not fetch the release tags from origin'
+
 # Pusty zakres od taga: nie ma czego wydać.
 work=$(seed empty-range no 'chore: prepare the release' "$unreleased")
 git -C "$work" tag v1.2.3
