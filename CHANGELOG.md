@@ -22,6 +22,8 @@ continues.
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-20
+
 ### Consumer action required
 
 - The catalog keeps only the frame ([ADR-0037](docs/adr/0037-platform-governs-the-frame.md)): the aliases below, which
