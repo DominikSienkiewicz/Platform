@@ -4,6 +4,9 @@
 
 Accepted — 2026-10-19
 
+Applied on 2026-11-20 (1.13.0): the security and web starters, `api-client`, `query` and the ui registry named in the
+Context, which no consumer adopted, were removed instead of staying incubating; the observability starter stays.
+
 ## Context
 
 Platform publishes more than its consumers use: starters, private npm packages, catalog bundles, a ui registry.

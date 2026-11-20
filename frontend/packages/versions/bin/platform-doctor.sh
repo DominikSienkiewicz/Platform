@@ -109,7 +109,7 @@ if [[ "$has_gradle" -eq 1 ]]; then
 fi
 
 # Pusty token albo złożony z samych białych znaków liczy się jak brak, jak w settings.gradle.kts (N-DX-18), i przechodzi
-# do następnego źródła; devcontainer przekazuje nieustawioną zmienną hosta jako "".
+# do następnego źródła; nieustawiona zmienna środowiska przekazana dalej bywa pustym ciągiem.
 gpr_key=""
 [[ ! -f "$HOME/.gradle/gradle.properties" ]] || gpr_key=$(grep -E '^gpr\.key=' "$HOME/.gradle/gradle.properties" | cut -d= -f2- | tr -d ' ')
 source_name="" token=""
@@ -136,7 +136,7 @@ if [[ "$offline" -eq 0 && -n "$token" && -n "$PIN" ]]; then
 fi
 
 # Login do Gradle: preflight w settings.gradle.kts i settings plugin chcą gpr.user albo GITHUB_ACTOR, a pusta lub
-# złożona z samych białych znaków wartość liczy się jak brak (N-DX-18). W devcontainerze z tokenem i bez loginu
+# złożona z samych białych znaków wartość liczy się jak brak (N-DX-18). Z tokenem i bez loginu
 # PD030 i PD031 przechodzą, a Gradle staje na „No GitHub Packages credentials”. Tylko pliki i środowisko, bez sieci;
 # drukujemy źródło, nie wartość.
 if [[ "$has_gradle" -eq 1 ]]; then
@@ -163,14 +163,6 @@ if [[ -f backend/Dockerfile ]]; then
     report FAIL PD060 "backend/Dockerfile runs $image, older than the Java 27 toolchain of $PIN" "move the final FROM to the image in templates/Dockerfile.backend"
   elif [[ -n "$image" ]]; then
     report PASS PD060 "backend/Dockerfile runs $image"
-  fi
-fi
-
-if [[ -f .secrets.local ]] || [[ -f scripts/setup-gh-deploy.sh ]]; then
-  if git check-ignore -q .secrets.local; then
-    report PASS PD050 ".secrets.local is ignored"
-  else
-    report FAIL PD050 ".secrets.local is not ignored, so deploy secrets could be committed" "add .secrets.local to .gitignore (templates/gitignore/root.gitignore)"
   fi
 fi
 

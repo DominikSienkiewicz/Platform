@@ -29,7 +29,6 @@ for workflow in "$root"/.github/workflows/*.yml; do
   grep -q '^  workflow_call:' "$workflow" || continue
   case "${workflow##*/}" in
     ci.yml) continue ;;    # Platform's own CI; only release.yml calls it, as verify
-    sonar.yml) continue ;; # fixed limits of its own, older than this guard
   esac
   grep -q 'inputs\.timeout-minutes\|inputs\.[a-z-]*timeout-minutes' "$workflow" \
     || { echo "${workflow##*/} must let callers set the limit with a timeout-minutes input" >&2; exit 1; }

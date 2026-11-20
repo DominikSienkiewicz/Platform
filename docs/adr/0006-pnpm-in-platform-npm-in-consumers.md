@@ -9,7 +9,7 @@ Accepted — 2026-10-18
 Platform builds its frontend packages in a pnpm workspace (`frontend/pnpm-workspace.yaml`,
 `frontend/pnpm-lock.yaml`, pnpm 11.18.0 in `packageManager`), and `ci.yml` and `release.yml` install
 with `pnpm install --frozen-lockfile`. The consumer side was settled differently, one tool at a time:
-the reusable `frontend-ci.yml` runs `npm ci`, `sonar.yml` caches `frontend/package-lock.json`,
+the reusable `frontend-ci.yml` runs `npm ci`, the former `sonar.yml` (removed 2026-11-20) cached `frontend/package-lock.json`,
 `security-scan.yml` scans `package-lock.json`, and `platform-bump` refreshes the consumer's lockfile
 with npm. All four frontend consumers use npm. Nothing recorded why the two sides differ, so the
 mismatch read as an accident, and a reader could not tell which one to change.
@@ -30,7 +30,7 @@ mismatch read as an accident, and a reader could not tell which one to change.
 
 - Two lockfile formats to keep current: `pnpm install` regenerates Platform's, `platform-bump` the
   consumers'.
-- A consumer that wants pnpm needs Platform to support it in `frontend-ci.yml`, `sonar.yml`,
+- A consumer that wants pnpm needs Platform to support it in `frontend-ci.yml`,
   `security-scan.yml` and `platform-bump`, together, in a MINOR release.
 - `docs/consuming.md` states the npm requirement next to the frontend setup.
 

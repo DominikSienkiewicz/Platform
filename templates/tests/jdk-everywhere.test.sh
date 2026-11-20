@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Jeden JDK wszędzie (ADR-0034): JDK, na którym biegnie Gradle, bytecode build-logic i modułów Platform, workflowy,
-# SDKMAN, devcontainery i kryteria demona starterów równają się wpisowi `java` katalogu (toolchain kanonu).
-# Najstarszy Gradle konsumenta musi umieć wystartować na tym JDK (9.6.1 pada na JDK 27: Groovy, class file 71).
+# Jeden JDK wszędzie (ADR-0034), przypadek po przypadku: workflowy, build-logic, moduły, SDKMAN i kryteria demona równają
+# się wpisowi `java` katalogu, a oba startery przypinają JVM demona Gradle'a.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
+# --- one-jdk ---
+# Jeden JDK wszędzie (ADR-0034): JDK, na którym biegnie Gradle, bytecode build-logic i modułów Platform, workflowy,
+# SDKMAN i kryteria demona starterów równają się wpisowi `java` katalogu (toolchain kanonu).
+# Najstarszy Gradle konsumenta musi umieć wystartować na tym JDK (9.6.1 pada na JDK 27: Groovy, class file 71).
+(
 canon=$(sed -n 's/^java = "\([0-9][0-9]*\)".*/\1/p' "$root/gradle/catalog/libs.versions.toml")
 [[ -n "$canon" ]] || fail 'gradle/catalog/libs.versions.toml has no java entry'
 # Pierwszy Gradle, który uruchamia się na JDK z kanonu; podnieś razem z kanonem java.
@@ -36,11 +40,6 @@ while IFS= read -r sdkmanrc; do
   [[ "$java" == "$canon" ]] || fail "${sdkmanrc#"$root"/}: java=$java; SDKMAN must select Java $canon"
 done < <(find "$root/templates" "$root/gradle" -maxdepth 2 -name .sdkmanrc)
 
-for dockerfile in "$root/.devcontainer/Dockerfile" "$root/templates/devcontainer/Dockerfile"; do
-  jdk=$(sed -n 's/^ARG GRADLE_JDK=//p' "$dockerfile")
-  [[ "$jdk" == "$canon" ]] || fail "${dockerfile#"$root"/}: GRADLE_JDK=$jdk; the devcontainer must run Gradle on Java $canon"
-done
-
 for criteria in "$root"/templates/jvm/*/gradle/gradle-daemon-jvm.properties; do
   daemon=$(sed -n 's/^toolchainVersion=//p' "$criteria")
   [[ "$daemon" == "$canon" ]] || fail "${criteria#"$root"/}: toolchainVersion=$daemon; the daemon must run on Java $canon"
@@ -50,4 +49,21 @@ minimum=$(sed -n 's/^minimumConsumerGradle=//p' "$root/gradle/build-logic/gradle
 [[ "$(printf '%s\n%s\n' "$gradle_floor" "$minimum" | sort -V | head -n 1)" == "$gradle_floor" ]] ||
   fail "minimumConsumerGradle=$minimum cannot start on Java $canon; the floor is Gradle $gradle_floor"
 
-echo "OK: Gradle, build-logic, workflows, SDKMAN, devcontainers and daemon criteria all use Java $canon"
+echo "OK: Gradle, build-logic, workflows, SDKMAN and daemon criteria all use Java $canon"
+)
+
+# --- daemon-jvm-criteria ---
+# Kryteria JVM demona Gradle'a w szablonach (N-DX-2): oba startery mają ten sam plik z `updateDaemonJvm`, wersja
+# równa się domyślnemu `java-version` z backend-ci.yml (JDK, na którym biegnie Gradle), a Linux x86-64 ma URL pobrania.
+# Że URL to Temurin z glibc, a nie build Alpine, sprawdza się przy generowaniu (docs/versions.md) — ID Foojay offline nic nie mówi.
+(
+library="$root/templates/jvm/java-library/gradle/gradle-daemon-jvm.properties"
+spring="$root/templates/jvm/spring-app/gradle/gradle-daemon-jvm.properties"
+[[ -f "$library" && -f "$spring" ]] || fail 'both JVM starters need gradle/gradle-daemon-jvm.properties (./gradlew updateDaemonJvm --jvm-version=<N>)'
+cmp -s "$library" "$spring" || fail 'the two starters must carry the same daemon JVM criteria'
+version=$(sed -n 's/^toolchainVersion=//p' "$library")
+ci=$(awk '/^      java-version:/ { inside = 1; next } inside && /default:/ { gsub(/[" ]/, "", $2); print $2; exit }' "$root/.github/workflows/backend-ci.yml")
+[[ -n "$version" && "$version" == "$ci" ]] || fail "toolchainVersion=$version must equal the java-version default of backend-ci.yml ($ci)"
+grep -q '^toolchainUrl\.LINUX\.X86_64=https' "$library" || fail 'Linux x86-64 needs a download URL, or a fresh runner cannot start the daemon'
+echo "OK: both starters pin the Gradle daemon to Java $version, as backend-ci.yml runs it"
+)

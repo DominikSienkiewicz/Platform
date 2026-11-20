@@ -7,7 +7,6 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "build:registry": "pnpm --filter @dominiksienkiewicz/ui build",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json"
   },

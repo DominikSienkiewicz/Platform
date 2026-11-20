@@ -26,7 +26,7 @@ Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-cata
   floors and compatibility overrides with their `because(...)` reasons (the table in
   [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)), and the Platform artifacts.
 
-`platform-test-fixtures`, `platform-security-starter` and `seniordev.spring-modulith-conventions` import
+`platform-test-fixtures`, `platform-observability-starter` and `seniordev.spring-modulith-conventions` import
 `platform-bom` of their own release, so the floors live in one place and reach every classpath those
 builds resolve. `PlatformBomImportFunctionalTest` holds the conventions to it with `dependencyInsight`:
 the BOM's Lombok, Jackson and Tomcat win, also over a consumer's `jackson-bom.version`, because the BOM
@@ -64,7 +64,7 @@ sources contain no version literal.
 | `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | no convention since the conventions import `platform-bom`; `PlatformVersionsTest` still compares them with the catalog | `springBoot`, `springModulith`, `springAi`, `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
 
 Two mirrors live outside Kotlin and stay guarded by tests: the `toolchain-java-version` default of
-`backend-ci.yml`, `deploy.yml`, `platform-bump.yml` and `sonar.yml` (catalog `java`,
+`backend-ci.yml`, `deploy.yml` and `platform-bump.yml` (catalog `java`,
 `PlatformToolVersionMirrorTest`), and the Gradle wrappers and the minimum consumer Gradle
 (`PlatformGradleVersionMirrorTest`).
 
@@ -207,7 +207,7 @@ pins all of it.
 
 ## JDK 27 toolchain on CI
 
-The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
+The reusable `backend-ci.yml` and `deploy.yml` install the toolchain JDK with
 `actions/setup-java` (input `toolchain-java-version`, default `27`) and register it through
 `org.gradle.java.installations.paths` in the Gradle user home. Gradle itself runs on the
 `java-version` JDK, which is the same Java 27 since 1.8.0: Platform builds and tests `build-logic` with Gradle on
@@ -215,7 +215,7 @@ JDK 27 and supports no other JDK for Gradle ([ADR-0034](adr/0034-one-jdk-27-for-
 The Kotlin embedded in Gradle 9.8.2 (2.4.10) targets at most JVM 26, so `build-logic` pins its bytecode to 26 for
 Kotlin and Java until that Kotlin can target 27; both inputs stay, so a
 consumer can try a newer toolchain without moving Gradle. `templates/tests/jdk-everywhere.test.sh` fails
-when any JDK of the workflows, SDKMAN, the devcontainers or the starters' daemon criteria leaves the
+when any JDK of the workflows, SDKMAN or the starters' daemon criteria leaves the
 catalog's `java`.
 
 Foojay is bypassed on CI on purpose. On 2026-09-25 it indexed Temurin 27 for Linux only as the
@@ -228,7 +228,7 @@ compile, and keeps a single JDK.
 
 ## Dependency locking
 
-`gradle/build-logic`, `gradle/test-fixtures` and `gradle/security-starter` each carry a
+`gradle/build-logic`, `gradle/test-fixtures` and `gradle/observability-starter` each carry a
 `gradle.lockfile` for reproducible resolution. After bumping any version in those modules,
 regenerate the lockfile and commit the diff:
 
@@ -260,7 +260,7 @@ It runs two passes per module with `--refresh-dependencies`, as `platform-bump` 
 `build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
 bumps the catalog stays red on verification until you run the script and push its result to that branch.
 `gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows. `test-fixtures` and
-`security-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
+`observability-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
 root's file verifies everything, so their files also hold the checksums of the plugin classpath.
 
 A bump of `java`, `gradle`, `springBoot`, `springModulith`, `springAi` or `junit` also changes the stack the

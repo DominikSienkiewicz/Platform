@@ -13,7 +13,7 @@ keeps the artifact of the original tag.
 ## Decision
 
 Rulesets in `.github/rulesets/`, applied by `scripts/repo-settings.sh --apply` (Decision 9): `main` cannot be
-deleted or force-pushed, release tags `v*.*.*` cannot be moved or deleted, and `v1` cannot be deleted. No pull
+deleted or force-pushed, release tags `v*.*.*` cannot be moved or deleted. No pull
 request and no review are required.
 
 ## Consequences

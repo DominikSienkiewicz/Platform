@@ -26,8 +26,10 @@ done < <(awk '!/^#/ && NF' "$list")
 [[ $(awk '!/^#/ && NF { print $1; exit }' "$list") == build-logic ]] || fail 'build-logic must be published first: every other module applies its plugins'
 
 for reader in .github/workflows/ci.yml .github/workflows/release.yml scripts/release-assets.sh \
-  scripts/preview-on-consumer.sh scripts/write-verification-metadata.sh; do
+  scripts/preview-on-consumer.sh scripts/write-verification-metadata.sh buildAndPublishLocal.sh; do
   grep -qF 'gradle/maven-modules.txt' "$root/$reader" || fail "$reader must read gradle/maven-modules.txt"
-  if grep -qE 'for [a-z]+ in build-logic catalog' "$root/$reader"; then fail "$reader still loops over a literal module list"; fi
+  if grep -qE 'for [a-z]+ in build-logic catalog|publish_gradle "build-logic"' "$root/$reader"; then
+    fail "$reader still loops over a literal module list"
+  fi
 done
 echo 'OK: gradle/maven-modules.txt lists every published Maven module, and every module loop reads it'

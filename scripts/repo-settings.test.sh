@@ -64,7 +64,7 @@ run "$drifted" --check --consumers
 if grep -v '^GET ' "$work/gh.log"; then fail '--check may only send GET requests'; fi
 for setting in "delete head branches on merge" "secret scanning" "secret scanning push protection" \
   "Dependabot security update pull requests" "Dependabot alerts" "private vulnerability reporting" \
-  "actions pinned by commit SHA" "ruleset main" "ruleset release-tags" "ruleset v1-pointer" \
+  "actions pinned by commit SHA" "ruleset main" "ruleset release-tags" \
   "GitHub Actions may create pull requests"; do
   grep -q "^DRIFT   $setting" "$work/out.txt" || fail "--check must report drift of: $setting"
 done
@@ -86,7 +86,6 @@ expect_call 'PUT repos/acme/platform/private-vulnerability-reporting '
 expect_call 'PUT repos/acme/platform/actions/permissions {"enabled":true,"allowed_actions":"selected","sha_pinning_required":true}'
 expect_call "PUT repos/acme/platform/rulesets/7 $(jq -c . "$here/../.github/rulesets/main.json")"
 expect_call "POST repos/acme/platform/rulesets $(jq -c . "$here/../.github/rulesets/release-tags.json")"
-expect_call "POST repos/acme/platform/rulesets $(jq -c . "$here/../.github/rulesets/v1-pointer.json")"
 expect_call 'PUT repos/acme/consumer/actions/permissions/workflow {"default_workflow_permissions":"read","can_approve_pull_request_reviews":true}'
 grep -q '^FIXED   ruleset release-tags' "$work/out.txt" || fail '--apply must report what it fixed'
 
@@ -95,9 +94,9 @@ state "$clean" "$R" '{"default_branch":"main","delete_branch_on_merge":true,"sec
 state "$clean" "$R/vulnerability-alerts" '{}'
 state "$clean" "$R/private-vulnerability-reporting" '{"enabled":true}'
 state "$clean" "$R/actions/permissions" '{"enabled":true,"allowed_actions":"all","sha_pinning_required":true}'
-state "$clean" "$R/rulesets" '[{"id":1,"name":"main"},{"id":2,"name":"release-tags"},{"id":3,"name":"v1-pointer"}]'
+state "$clean" "$R/rulesets" '[{"id":1,"name":"main"},{"id":2,"name":"release-tags"}]'
 # GitHub zwraca rulesety z dodatkowymi polami (id, source, parametry reguł); porównanie ich nie widzi.
-for pair in 1:main 2:release-tags 3:v1-pointer; do
+for pair in 1:main 2:release-tags; do
   state "$clean" "$R/rulesets/${pair%%:*}" "$(jq -c '. + {id: 1, source: "acme/platform", rules: [.rules[] | . + {parameters: {}}] | reverse}' "$here/../.github/rulesets/${pair#*:}.json")"
 done
 state "$clean" "$R/branches" '[{"name":"main"}]'

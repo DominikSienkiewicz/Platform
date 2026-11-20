@@ -14,8 +14,8 @@ change without a commit in the consumer, and `@v1` had already shipped a permiss
 ## Decision
 
 - Every reference is an exact release: `platformVersion` for the Gradle side, exact `@dominiksienkiewicz/*`
-  versions, and `uses: …@vX.Y.Z` for the reusable workflows (Decision 3). The moving `v1` keeps moving only until
-  the consumers have migrated.
+  versions, and `uses: …@vX.Y.Z` for the reusable workflows (Decision 3). The moving `v1` tag was retired once
+  every consumer pinned an exact tag (Update, 2026-11-20).
 - One channel moves them: `platform-bump`, run through `scripts/platform-bump.sh` or the reusable
   `platform-bump.yml` (Decision 5). The Renovate preset covers only GitHub Actions and Docker images.
 - The bump runs the logic of the release it goes to: a copy that is not the target hands over to the target's bin
@@ -29,8 +29,14 @@ change without a commit in the consumer, and `@v1` had already shipped a permiss
   lockfile that moves.
 - A workflow change that needs new permissions reaches a caller only with its bump, where the contract snapshot
   and the report name it.
-- `move-v1` retires once `scripts/consumer-audit.sh --adoption` shows no `@v1` left.
 
 ## Revisit when
 
-Every consumer calls the workflows at an exact tag: then `v1` and `move-v1` go.
+Nothing: the condition was met and `v1`, `move-v1` and the `v1-pointer` ruleset are retired (see Update).
+
+## Update — `v1` retired (2026-11-20)
+
+Every consumer (Azimuth, Touchstone, Training) pinned `@v1.12.0`, so `move-v1` left `release.yml` and
+`.github/rulesets/v1-pointer.json` left the repository. The `v1` tag is no longer moved; the maintainer deletes
+the remote tag and the ruleset after the release. An external caller of `@v1` must pin an exact `vX.Y.Z`
+(`platform-bump` rewrites it).

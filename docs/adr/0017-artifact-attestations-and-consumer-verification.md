@@ -14,8 +14,8 @@ mistaken manual publish could put bytes into the registry that no workflow built
 - `release.yml` attests every file it publishes with `actions/attest` (Decision 25): the jars, the catalog TOML,
   the npm tarballs and the release assets.
 - `platform-bump` verifies the attestation of the package it runs (from 1.6.0 on), `backend-ci.yml` verifies every
-  Platform jar with `verify-provenance: true` (PLAT-PROV-001), and `reproducibility.yml` rebuilds the latest tag
-  every week and compares the digests with the registry (N-REL-16).
+  Platform jar with `verify-provenance: true` (PLAT-PROV-001). A weekly rebuild of the latest tag that compared
+  the digests with the registry ran until 2026-11-20 and was dropped because nothing depended on it.
 
 ## Consequences
 

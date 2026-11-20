@@ -8,7 +8,7 @@
 #
 # Platform: auto-delete head branches, secret scanning i push protection, alerty Dependabota (bez jego PR-ów
 # bezpieczeństwa: wersje przesuwa platform-bump), Private Vulnerability Reporting, wymóg przypinania akcji
-# po SHA i rulesety z .github/rulesets/*.json (main, tagi wydań, wskaźnik v1).
+# po SHA i rulesety z .github/rulesets/*.json (main, tagi wydań).
 # Gałęzi nie usuwa nigdy: zdalne gałęzie scalone do domyślnej wypisuje z komendą do ręcznego uruchomienia.
 # Uruchamia je właściciel repo (`gh auth login` z admin), nie CI. Test: scripts/repo-settings.test.sh.
 set -euo pipefail

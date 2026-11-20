@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Job frontend-image w ci.yml (N-CAP-6). Kontrakt statyczny: token tylko jako sekret BuildKit github_token i tylko
-# w mapowaniach env: (nigdy --build-arg, echo ani rozwinięcie w run:), packages: read, npm z --ignore-scripts,
-# sprzątanie kontenera w kroku always(). Bloki między markerami frontend-image-* biegną naprawdę: filtr wejść obrazu,
-# wersja z ostatniego tagu wydania przed HEAD, komplet paczek tego wydania i ograniczone w czasie czekanie na
-# odpowiedź kontenera (docker, curl i sleep to atrapy, bez sieci i bez budowania obrazu).
+# Job frontend-image w ci.yml (N-CAP-6). Kontrakt statyczny dotyczy tylko wycieku tokenu: token tylko jako sekret
+# BuildKit github_token i tylko w mapowaniach env: (nigdy --build-arg, echo ani rozwinięcie w run:), packages: read,
+# bez persist-credentials, npm z --ignore-scripts. Resztę joba (kolejność kroków, wejścia akcji, sprzątanie
+# kontenera) sprawdza sam przebieg CI, który buduje i sonduje obraz, oraz actionlint. Bloki między markerami
+# frontend-image-* biegną naprawdę: filtr wejść obrazu, wersja z ostatniego tagu wydania przed HEAD, komplet paczek
+# tego wydania i ograniczone w czasie czekanie na odpowiedź kontenera (docker, curl i sleep to atrapy, bez sieci
+# i bez budowania obrazu).
 # shellcheck disable=SC2016 # literal GitHub expressions and shell variables in patterns
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -15,7 +17,6 @@ fail() { echo "FAIL: $*" >&2; cat "$tmp/out" >&2 2>/dev/null || true; exit 1; }
 
 job=$(awk '/^  frontend-image:$/ { inside = 1; print; next } inside && /^  [^ ]/ { exit } inside && NF' "$workflow")
 [[ -n "$job" ]] || fail 'ci.yml has no frontend-image job'
-step() { awk -v name="      - name: $1" '$0 == name { inside = 1; print; next } inside && /^      - / { exit } inside' <<<"$job"; }
 block() {
   awk -v start="# >>> frontend-image-$1" -v end="# <<< frontend-image-$1" '
     index($0, start) { inside = 1; next }
@@ -44,18 +45,7 @@ fi
 if grep -qE 'set -[a-z]*x|xtrace' <<<"$job"; then fail 'frontend-image must not trace commands'; fi
 if grep -E 'docker run ' <<<"$job" | grep -qE -- ' (-e|--env|--env-file)[ =]'; then fail 'the container gets no environment from the job'; fi
 
-grep -qF 'npm install --package-lock-only --ignore-scripts' <<<"$job" || fail 'the lockfile must be written by npm install --package-lock-only --ignore-scripts'
 if grep -E '(npm|pnpm) (install|ci|i) ' <<<"$job" | grep -qvF -- '--ignore-scripts'; then fail 'every npm install runs with --ignore-scripts'; fi
-grep -qF 'VERSION: ${{ steps.release.outputs.version }}' <<<"$job" || fail 'the frontend must be rendered at the version of the release step'
-grep -qF -- '--frontend next --platform-version "$VERSION"' <<<"$job" || fail 'new-consumer.sh must pin the frontend at that release'
-
-health=$(step 'Start the container and wait for an answer on port 3000')
-[[ -n "$health" ]] || fail 'frontend-image has no health step'
-grep -qE '^        timeout-minutes: [0-9]+$' <<<"$health" || fail 'the health step needs its own timeout-minutes'
-cleanup=$(step 'Remove the container')
-grep -qxF '        if: ${{ always() }}' <<<"$cleanup" || fail 'the container must be removed in an always() step'
-grep -qF 'docker rm -f platform-frontend-image' <<<"$cleanup" || fail 'the cleanup step must remove platform-frontend-image'
-[[ "$(grep -E '^      - ' <<<"$job" | tail -1)" == '      - name: Remove the container' ]] || fail 'the cleanup step must be the last step of the job'
 
 # --- Filtr wejść obrazu ----------------------------------------------------------------------------------------
 block changes

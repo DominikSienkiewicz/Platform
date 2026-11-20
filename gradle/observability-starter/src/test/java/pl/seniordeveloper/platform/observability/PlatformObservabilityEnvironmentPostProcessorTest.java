@@ -25,7 +25,6 @@ class PlatformObservabilityEnvironmentPostProcessorTest {
         .isEqualTo("when-authorized");
     assertThat(environment.getProperty("management.metrics.tags.application"))
         .isEqualTo("application");
-    assertThat(environment.getProperty("platform.security.permitted-paths")).isNull();
     assertThat(environment.getProperty("logging.structured.format.console")).isNull();
   }
 
@@ -37,22 +36,11 @@ class PlatformObservabilityEnvironmentPostProcessorTest {
   }
 
   @Test
-  void prometheusIsExposedOnlyOnRequestAndPermittedOnlyWhenPublic() {
+  void prometheusIsExposedOnlyOnRequest() {
     StandardEnvironment exposed = environment(Map.of("platform.observability.prometheus", "true"));
-    StandardEnvironment publicMetrics =
-        environment(
-            Map.of(
-                "platform.observability.prometheus", "true",
-                "platform.observability.public-metrics", "true"));
-    StandardEnvironment publicWithoutPrometheus =
-        environment(Map.of("platform.observability.public-metrics", "true"));
 
     assertThat(exposed.getProperty("management.endpoints.web.exposure.include"))
         .isEqualTo("health,info,prometheus");
-    assertThat(exposed.getProperty("platform.security.permitted-paths")).isNull();
-    assertThat(publicMetrics.getProperty("platform.security.permitted-paths"))
-        .isEqualTo("/actuator/health,/actuator/health/**,/actuator/info,/actuator/prometheus");
-    assertThat(publicWithoutPrometheus.getProperty("platform.security.permitted-paths")).isNull();
   }
 
   @Test
@@ -70,15 +58,12 @@ class PlatformObservabilityEnvironmentPostProcessorTest {
             Map.of(
                 "management.endpoints.web.exposure.include", "health",
                 "management.endpoint.health.probes.enabled", "false",
-                "platform.observability.prometheus", "true",
-                "platform.observability.public-metrics", "true",
-                "platform.security.permitted-paths", "/status"));
+                "platform.observability.prometheus", "true"));
 
     assertThat(environment.getProperty("management.endpoints.web.exposure.include"))
         .isEqualTo("health");
     assertThat(environment.getProperty("management.endpoint.health.probes.enabled"))
         .isEqualTo("false");
-    assertThat(environment.getProperty("platform.security.permitted-paths")).isEqualTo("/status");
     assertThat(environment.getPropertySources().stream().reduce((first, second) -> second))
         .hasValueSatisfying(
             last ->

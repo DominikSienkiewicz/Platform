@@ -6,20 +6,6 @@ reads the rules that release enforces, not those of `main`. A code keeps its mea
 is never reused. `templates/tests/gate-codes.test.sh` fails when a code in the sources has no section here,
 or a section names a code nothing emits.
 
-To see which gate costs consumers the most, collect the annotations of their failed runs locally (the
-consumers are private, so this never runs in Platform's CI) and count them per code, week and pin:
-
-```bash
-gh api "repos/<owner>/<repo>/check-runs/<check-run id>/annotations" \
-  --jq '[.[] | {repo: "<owner>/<repo>", pin: "<pin>", completed_at: "<date>", title, message}]' > annotations.json
-```
-
-```bash
-python3 scripts/gate-failures.py annotations.json
-```
-
-The table holds counts only, never the messages.
-
 To escalate any of them, open an issue in DominikSienkiewicz/Platform with the code, the full message and
 the Platform version from the link.
 

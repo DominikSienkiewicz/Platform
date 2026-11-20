@@ -3,8 +3,8 @@
 #
 # Bumpuje platformVersion we wszystkich miejscach, commituje jako "chore(release): platform X.Y.Z"
 # z TWOIM message w body, taguje annotated vX.Y.Z treścią sekcji CHANGELOG.md i pcha main + tag.
-# Release publikuje Maven+npm dopiero po zielonym CI na tym commicie, tworzy GitHub Release z tej
-# samej sekcji i wtedy sam przesuwa ruchomy tag v1 (job move-v1).
+# Release publikuje Maven+npm dopiero po zielonym CI na tym commicie i tworzy GitHub Release z tej
+# samej sekcji.
 #
 # Odmawia przed jakąkolwiek zmianą, gdy drzewo robocze nie jest czyste, bieżąca gałąź to nie
 # main albo HEAD różni się od origin/main — commit wydania zawiera wyłącznie pliki wersji.
@@ -208,7 +208,7 @@ git push origin "v$VERSION"
 echo ""
 echo "════════════════════════════════════════════════"
 echo "  Platform podbity: $CUR → $VERSION"
-echo "  Tag: v$VERSION (v1 przesunie Release po zielonej publikacji)"
+echo "  Tag: v$VERSION (Release opublikuje po zielonym CI)"
 echo "  Branch: $BR   Commit: \"chore(release): platform $VERSION\" ($MSG)"
 echo "════════════════════════════════════════════════"
 echo "==> Release weryfikuje CI i publikuje z taga: Actions → Release."

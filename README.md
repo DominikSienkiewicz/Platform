@@ -16,10 +16,8 @@ are published as versioned artifacts, and are consumed like any other dependency
 [![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
-solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
-it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
+**Reviewing this repository?** Start with [the tour](docs/tour.md): nine stops, each a problem, the code that
+solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them.
 
 > Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
 > consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
@@ -49,41 +47,25 @@ when a second repository needs it.
 
 ## What it publishes
 
-| Path | Artifact | Published to | Adopted by |
-|---|---|---|---|
-| `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all three; `seniordev.nullness-conventions` Training, `seniordev.sonar-conventions` none |
-| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`) with the libraries and plugins of the frame | GitHub Packages (Maven) | all three |
-| `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) | all three, through `seniordev.spring-modulith-conventions` |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
-| `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) | Azimuth, Training |
-| `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` — RFC 9457 Problem Details for every Spring MVC error, the shape `api-client` reads (*incubating*) | GitHub Packages (Maven) | none |
-| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | Azimuth, Training |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | Azimuth, Training |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | Azimuth, Training |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth, Training |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | Azimuth, Training |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) | Training |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | Azimuth, Training |
-| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) | Training |
-| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
-| `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
-| `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all three; `platform-bump.yml`, `roadmap-unblock.yml` and `sonar.yml` none |
-| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
-| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit, the GitHub files, the default community health files of a `.github` repository and a devcontainer (*incubating*); each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
-| `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
-| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add DominikSienkiewicz/Platform#vX.Y.Z` | none |
-| `scripts/` | scripts Platform's own workflows run: `deploy-remote.sh` (on the deploy host, through `deploy.yml`), `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included) and `render-example.sh` (the public `platform-example` repository it renders for each release), `adr-index.sh` (the ADR index), `seed-community-health.sh` (copies the default community health files into a local clone of the owner's `.github` repository; no network), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `compare-rebuild.sh` (a rebuilt release against GitHub Packages, run by `reproducibility.yml`), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `cleanup-packages.sh` (manual package cleanup), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
-
-*Incubating* artifacts are published and versioned with everything else, but no product
-repository has adopted them yet. Treat their API as provisional until the first one does: that
-repository's adoption pull request removes the label here. How to adopt the security starter is in
-[docs/consuming.md](docs/consuming.md#adopting-the-security-starter-incubating).
-
-`api-client` and `query` are also private: no frontend adopted them, and `api-client` overlaps the
-clients the consumers generate from OpenAPI. Releases skip them, and they stay at 1.5.31 in the
-registry until a first consumer adopts one; that pull request removes `"private": true` too.
+| Path | Artifact | Published to |
+|---|---|---|
+| `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) |
+| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`) with the libraries and plugins of the frame | GitHub Packages (Maven) |
+| `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) |
+| `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) |
+| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) |
+| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
+| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
+| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) |
+| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) |
+| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) |
+| `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
+| `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` |
+| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh` and `agent-gradle.sh`, and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift |
+| `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` |
+| `scripts/` | scripts Platform's own workflows run: `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published |
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
@@ -98,10 +80,8 @@ described in [RELEASING.md](RELEASING.md).
 
 The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
-image, Platform artifacts, workflow references and `platform-bump.yml` caller, with GET requests
+image, Platform artifacts, npm pins, workflow references and `platform-bump.yml` caller, with GET requests
 only. Its output describes private repositories, so it runs on the maintainer's machine, not in CI.
-The "Adopted by" column was checked against the consumers' build files and workflows on 2026-11-20; an
-adoption pull request updates it.
 
 ### Reusable workflows
 
@@ -115,14 +95,12 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 | `backend-ci.yml` | runs the Gradle tasks of a Spring backend (default `build`) on the platform toolchain |
 | `frontend-ci.yml` | installs, lints, type-checks, tests and builds a frontend; `strict: true` makes every standard script and the `platform-versions-check` guard mandatory, and checks the OpenAPI types of a repository that configures `platform.openapi` |
 | `api-contract.yml` | fails a pull request that breaks the committed OpenAPI spec (oasdiff), unless it carries the `api-breaking` label; see [docs/api-contracts.md](docs/api-contracts.md) |
-| `sonar.yml` | **Deprecated:** SonarQube Cloud analysis for a backend + frontend monorepo; no consumer calls it, so run the `sonar` task in your backend job instead |
 | `scorecard.yml` | OpenSSF Scorecard |
 | `security-scan.yml` | dependency CVE scan: CycloneDX SBOM + Grype for the backend, `package-lock.json` for the frontend; CRITICAL and HIGH fail the build |
 | `semgrep.yml` | Semgrep SAST over the source code |
 | `container-scan.yml` | scans published images: Grype is the gate, Snyk a non-blocking second opinion |
-| `deploy.yml` | builds and pushes images to GHCR; with `scan-images`, gates them by digest with Grype and Trivy and signs them with cosign keyless only after both pass; then deploys over SSH (unless `ssh-deploy: false`) with [`scripts/deploy-remote.sh`](scripts/deploy-remote.sh) |
+| `deploy.yml` | builds and pushes images to GHCR; with `scan-images`, gates them by digest with Grype and Trivy and signs them with cosign keyless only after both pass; it deploys nothing, `promote.yml` calls it |
 | `promote.yml` | builds and pushes the images through `deploy.yml` without SSH, gates them with Grype and Trivy and signs them keyless (one image with `single-image`), then commits the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs |
-| `roadmap-unblock.yml` | moves roadmap items to ready once their last prerequisite issue is closed |
 | `platform-bump.yml` | bumps the repository to a Platform release and opens a pull request with the diff, release notes and consumer actions |
 
 ### Convention plugins
@@ -144,10 +122,9 @@ Every task, property and default they add is listed in [docs/reference.md](docs/
 flowchart LR
   release["./release.sh"] -->|annotated tag| tag(("vX.Y.Z"))
   tag --> workflow["release.yml<br/>after green ci.yml"]
-  workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog,<br/>test-fixtures, security-starter")]
+  workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog, BOM,<br/>test-fixtures, observability-starter")]
   workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
   workflow --> notes["GitHub Release<br/>CHANGELOG section"]
-  workflow -->|move-v1, forward only| v1(("v1"))
 
   preset["default.json<br/>on main"]
 
@@ -161,7 +138,6 @@ flowchart LR
   maven -->|pinned| gradlePins
   npm -->|pinned| npmPins
   tag -->|pinned| callers
-  v1 -.->|floating, legacy| callers
   preset -.->|floating| renovate
   bump["scripts/platform-bump.sh"] -->|bumps| gradlePins
   bump -->|bumps| npmPins
@@ -169,22 +145,21 @@ flowchart LR
 
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
 reusable workflows. `platform-bump` moves all three and prints the notes of every release it
-crosses. Two references float: the
-Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
-is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
+crosses. One reference floats: the
+Renovate preset is read from `main` on every Renovate run. There is no floating workflow tag: a caller
+pins the exact tag ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
 ## Reference consumers
 
 [`templates/jvm/`](templates/jvm/) contains a pure Java library and a minimal Spring
 application. Gradle TestKit consumes locally published plugins and catalog artifacts
-using these templates. Main CI includes all seven published Maven modules of `gradle/maven-modules.txt`; a failed
-UI registry build blocks npm publication. Consumers can opt into mandatory frontend
-checks with `strict: true`.
+using these templates. Main CI includes all five published Maven modules of `gradle/maven-modules.txt`.
+Consumers can opt into mandatory frontend checks with `strict: true`.
 
-Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
+Platform's own Java modules, `test-fixtures` and `observability-starter`, apply `seniordev.java-conventions`
 and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
-they compile to the same Java 27 bytecode as consumers' code. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
+they compile to the same Java 27 bytecode as consumers' code.
 
 ### The starter's modules
 
@@ -231,20 +206,15 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
-- **The documentation as a site** → built from `docs/` with Zensical in strict mode (`docs-site.yml`), one version
-  per released MINOR plus `unreleased (main)`, with a version selector; it goes live on GitHub Pages once the
-  maintainer enables Pages ([RELEASING.md](RELEASING.md#the-documentation-site)).
 - **A reviewer's tour, incident notes and how agents build it** → [docs/tour.md](docs/tour.md),
   [docs/notes/](docs/notes/), [docs/engineering-with-agents.md](docs/engineering-with-agents.md).
 - **Guidance for coding agents** → [AGENTS.md](AGENTS.md) for this repository, the
-  [rule sheet](docs/consumer-agents.md) and the [runbooks](docs/runbooks/README.md) for consumer repositories,
-  and the Claude Code plugin `platform` whose seven skills open those runbooks at the tag a repository pins
-  ([install](docs/consumer-agents.md#claude-code-skills)).
+  [rule sheet](docs/consumer-agents.md) and the [runbooks](docs/runbooks/README.md) for consumer repositories.
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
 - **Every task, property and default the plugins add** → **[docs/reference.md](docs/reference.md)** —
-  with the security starter properties and the test fixtures.
+  with the observability starter properties and the test fixtures.
 - **Building and publishing locally** → **[docs/local-development.md](docs/local-development.md)** —
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single
@@ -254,8 +224,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
-- **Canonical files to copy into a repository** → [templates/README.md](templates/README.md); the
-  local development stack (PostgreSQL with pgvector, Ollama) → [infra/README.md](infra/README.md).
+- **Canonical files to copy into a repository** → [templates/README.md](templates/README.md).
 - **Design decisions** → [`docs/adr/`](docs/adr/), including the
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 - **What the security scans gate, how to accept a finding and how images are signed** →
@@ -268,7 +237,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 ### Documentation language
 
 Everything a consumer or an outside reader sees is in English: this README, `docs/**`, RELEASING.md,
-the `templates/**` and `infra/` READMEs, the pull request templates, package descriptions, workflow
+the `templates/**` READMEs, the pull request templates, package descriptions, workflow
 input descriptions and the messages of every gate. Polish appears only in CLAUDE.md and in code and
 workflow comments, which are written for the maintainer.
 
@@ -291,10 +260,8 @@ toolchain; each finding opens or updates one issue, and its next-JDK leg builds 
 toolchain and fails when a tool cannot read its bytecode, report-only SpotBugs included. The catalog pins
 JaCoCo 0.8.16 (Java 27 support and experimental Java 28 support) and SpotBugs 4.10.5 (ASM 9.11).
 `PlatformJava28AnalyzerFunctionalTest` checks instrumentation and analysis of class-file major 72 on
-the regular JDK 27 test host; the canary checks the actual early-access toolchain. Every Tuesday
-`reproducibility.yml` rebuilds the latest tag and compares every jar's digest with GitHub Packages. After every CI run, `ci-budget.yml` compares each job's duration with
-`.github/ci-budgets.json` and warns on an overrun; after every push to `main`, `release-draft.yml` keeps the
-draft release **Next** current.
+the regular JDK 27 test host; the canary checks the actual early-access toolchain. After every push to `main`,
+`release-draft.yml` keeps the draft release **Next** current.
 
 ## License
 

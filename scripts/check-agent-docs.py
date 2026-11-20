@@ -2,14 +2,14 @@
 """check-agent-docs.py [root]: every command, task, bin and path the agent guidance names exists (N-SHOW-1).
 
 Reads the code spans of templates/agents/platform-block.md and the other templates/agents/*-block.md, AGENTS.md,
-docs/consumer-agents.md, docs/runbooks/*.md and the SKILL.md of every skill of the plugins/*/ plugins:
+docs/consumer-agents.md and docs/runbooks/*.md:
 - a path under a Platform root (scripts/, templates/, docs/, gradle/, frontend/packages/, .github/workflows/) or a
   root script (./release.sh) exists in the tree; a consumer path scripts/<x> may be the template templates/<x>, which
   templates/manifest.json must then ship to consumers as scripts/<x>;
 - `./gradlew <task>` names a task the build-logic sources register, or a task of Gradle or of an applied plugin;
 - a platform-<name> word is a bin of one of the frontend/packages/*/package.json;
 - a link at a release tag (…/blob/v<version>/docs/gates.md#<code>) names a file that exists in the tree, whatever
-  the link sits in (a code span, a list item or plain text), because the skills and the managed block name their
+  the link sits in (a code span, a list item or plain text), because the runbooks and the managed block name their
   targets that way.
 Paths with placeholders (<…>, {…}, *) and consumer paths (backend/, frontend/package.json) are not checked.
 """
@@ -29,10 +29,8 @@ DOCS = (
     )
     + ["AGENTS.md", "docs/consumer-agents.md"]
     + sorted(os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "docs/runbooks/*.md")))
-    + sorted(os.path.relpath(path, root) for path in glob.glob(os.path.join(root, "plugins/*/skills/*/SKILL.md")))
 )
-PLATFORM_ROOTS = ("scripts/", "templates/", "docs/", "gradle/", "frontend/packages/", ".github/workflows/",
-                  "plugins/", ".claude-plugin/")
+PLATFORM_ROOTS = ("scripts/", "templates/", "docs/", "gradle/", "frontend/packages/", ".github/workflows/")
 ROOT_SCRIPTS = re.compile(r"^\./([A-Za-z0-9_-]+\.sh)$")
 PATH = re.compile(r"(?<![\w/.-])((?:\./)?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+)")
 GRADLE = re.compile(r"\./gradlew\s+([:A-Za-z0-9_-]+)")

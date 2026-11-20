@@ -27,7 +27,7 @@ slow, while `integrationTest` runs nothing.
 - A change of the tag or of either task name breaks every consumer. It ships only with an alias period
   in which both tags select `integrationTest`, and as a consumer action under the release contract
   (ADR-0002).
-- `platform-test-fixtures` keeps its guard tests, such as `AbstractLiquibaseChangelogTest`,
+- `platform-test-fixtures` keeps its guard tests, such as `AbstractFlywayMigrationTest`,
   Docker-free and untagged, so that they run in `test`.
 
 ## Consequences

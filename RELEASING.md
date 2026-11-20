@@ -16,8 +16,8 @@ until they bump:
 - **Artifacts** are pinned to the exact platform version.
 - **Reusable workflows** are called by the exact tag,
   `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
-  pins. The moving `v1` tag, which `release.yml` moves forward after every successful release, still
-  works for callers that have not migrated, and reaches them on their next CI run.
+  pins. There is no floating `v1` tag any more (retired, [ADR-0014](docs/adr/0014-exact-pins-moved-by-platform-bump.md)):
+  an external caller of `@v1` must pin an exact `vX.Y.Z`.
 
 Renovate's shared preset covers only GitHub Actions and Docker images; it bumps no Platform pin.
 
@@ -41,9 +41,7 @@ Every artifact below is published at the same `platformVersion`.
 | `gradle/catalog/` | `pl.seniordeveloper:platform-catalog` | GitHub Packages (Maven) |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` | GitHub Packages (Maven) |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` | GitHub Packages (Maven) |
-| `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` | GitHub Packages (Maven) |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
@@ -51,12 +49,10 @@ Every artifact below is published at the same `platformVersion`.
 | `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
 | `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` | GitHub Packages (npm) |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
 
 The npm job publishes every workspace package under `frontend/packages/` that is not marked
 `"private": true`, so a new package is released as soon as it exists. Update this table and the
-README in the same change. `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are
-private until a first consumer adopts them; 1.5.31 is their last published release.
+README in the same change.
 
 ## One-time setup
 
@@ -69,9 +65,6 @@ gpr.key=<classic PAT with read:packages>       # add write:packages only to publ
 export GITHUB_TOKEN=<classic PAT with read:packages>
 
 # C) Consumer repositories need a GPR_TOKEN secret (classic PAT with read:packages) for CI.
-
-# D) Optional: the public example repository. Create <owner>/platform-example, then give Platform the
-#    PLATFORM_EXAMPLE_TOKEN secret, a fine-grained PAT with contents: write on that repository only.
 ```
 
 ## Repository settings
@@ -82,28 +75,15 @@ and `scripts/repo-settings.sh --apply` to fix it, with `gh` logged in as an admi
 It keeps:
 
 - the rulesets: `main` cannot be deleted or force-pushed; release tags `v*.*.*` cannot be deleted or
-  moved, so a published version keeps its source; `v1` cannot be deleted, but stays movable, because
-  `move-v1` moves it with every release while consumers call `@v1`. A ruleset therefore does not
-  protect `v1` from a leaked admin token; that is a known cost of the moving tag. Once consumers call
-  exact `vX.Y.Z` (Decision 3), retire `move-v1` and add `update` to `v1-pointer.json`;
+  moved, so a published version keeps its source;
 - secret scanning with push protection, Dependabot alerts without its security-update pull requests
   (`platform-bump` moves versions), private vulnerability reporting, the requirement to pin every
   action by commit SHA, and automatic deletion of merged head branches.
 
-SonarQube Cloud (Decision 28) is set up by hand once. The `sonar` job of `ci.yml` waits for each analysis
-(`sonar.qualitygate.wait`), so every step below that is missing turns it red:
-
-- create the projects `DominikSienkiewicz_platform-test-fixtures` and `DominikSienkiewicz_platform-security-starter`
-  in the `dominiksienkiewicz` organisation as **public** projects. The Free plan caps private code at 50k lines
-  across the organisation, which Azimuth already fills, so the background task of a private project's analysis
-  fails; the repository is public anyway;
-- rename each project's main branch from `master`, the default for a project created by hand, to `main`
-  (Project → Branches, the branch's menu → Rename). CI analyses `main`, which the Free plan would otherwise
-  treat as a secondary branch. If an earlier analysis left a short-lived `main` branch, delete it first;
-- set each project's New code definition (Administration → New code), 30 days like the organisation's other
-  projects. Without one the quality gate is not computed (status `NONE`), which the scanner reports as failed;
-- turn off Automatic Analysis and add a `SONAR_TOKEN` secret. Until the secret exists, the job only leaves a
-  notice.
+Platform does not analyse its own modules in SonarQube Cloud
+([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md), superseded); the Sonar configuration of
+`seniordev.quality-conventions` and `seniordev.sonar-conventions` serves consumers only, so the repository needs
+no `SONAR_TOKEN` secret.
 
 The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
 `scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon
@@ -132,11 +112,7 @@ secret exists (the secret is only reported; its value is yours to set).
    `git diff <pinned-sha> HEAD -- .github/workflows/deploy.yml`; if the change matters to a promotion, move the pin
    to the latest release that has it.
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
-   (`--lag` adds how many releases and days each consumer is behind, whether it pins a yanked release
-   and how many `@v1` references it keeps; `--adoption` compares each artifact's *incubating* label in
-   the README with the consumers that use it, says whether `move-v1` can retire, and names the oldest
-   pinned release, below which GitHub Packages may be cleaned up. Both reports describe private
-   repositories, so they stay local and never run in CI), and who
+   (the report describes private repositories, so it stays local and never runs in CI), and who
    still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
@@ -198,13 +174,12 @@ Before it changes anything, `release.sh` refuses to run when:
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
 commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
-message is the CHANGELOG section. It does not touch `v1`. The tree therefore always carries one
+message is the CHANGELOG section. The tree therefore always carries one
 version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
-falls back to a hard-coded version, and `templates/tests/release-contract.test.sh` pins every
+falls back to a hard-coded version, and `templates/tests/release-script.test.sh` pins every
 refusal above.
 
-The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
-because two publishes of the same version running in parallel once caused a partial release.
+The `vX.Y.Z` tag starts `release.yml`; the trigger only matches `v*.*.*`.
 
 To publish an existing tag again, run **Actions → Release (version tag) → Run workflow** on that
 tag. A dispatch from a branch fails, because a release runs only from the tag that equals
@@ -215,8 +190,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 1. **`version`** reads `platformVersion` from `gradle/build-logic/gradle.properties` and fails
    unless the run started from the tag `v<platformVersion>`, so every published version has its
    tag and every tag has its version.
-2. **`verify`** runs the full CI (`ci.yml`) on the tagged commit, and **`registry-build`** builds
-   the shadcn registry without `packages: write`. Both must be green before anything is published.
+2. **`verify`** runs the full CI (`ci.yml`) on the tagged commit. It must be green before anything
+   is published.
 3. **`gradle`** and **`npm`** then run in parallel. One can fail while the other succeeds, so a
    release can be complete in one registry and missing in the other. Check both jobs before you
    announce a release. Each attests the files it publishes with `actions/attest`: SLSA build
@@ -224,9 +199,7 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    tarball, which the `npm` job packs, attests and then publishes, so the attested digest is the one
    in the registry. Consumers verify them as [docs/consuming.md](docs/consuming.md#verifying-provenance)
    shows.
-4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
-   forward: re-running an older tag never moves it back. Never move `v1` by hand.
-5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
+4. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
    "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
    `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
    leaves an existing Release alone.
@@ -237,8 +210,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 7. **`verify-consumable`**, after `verify-published`, resolves the release the way a consumer does,
    from GitHub Packages with an empty Gradle home and no `-PplatformRepository`
    (`scripts/verify-consumable.sh`). Copies of the `java-library` and `spring-app` starters pinned to
-   the version resolve the settings plugin, every convention plugin marker, the catalog's variant,
-   test-fixtures and security-starter; every public npm package installs at the version and ships the
+   the version resolve the settings plugin, every convention plugin marker, the catalog's variant and
+   test-fixtures; every public npm package installs at the version and ships the
    files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
    lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
 8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release
@@ -249,15 +222,9 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    for. **`verify-bundle`** then builds the `spring-app` starter from the zip
    alone, with an empty Gradle home and no `GITHUB_TOKEN`
    ([README](README.md#try-it-without-credentials)).
-9. **`example`**, after `github-release`, regenerates the public `platform-example` repository from the
-   release with `scripts/render-example.sh` (`--kind spring-app --frontend next`, plus the frontend
-   lockfile) and commits the difference. npm reads the canon packages with the workflow's `GITHUB_TOKEN`
-   (`packages: read`), the variable the rendered `frontend/.npmrc` expects. `PLATFORM_EXAMPLE_TOKEN` reaches
-   only the first step, which turns its presence into an output for the job's conditions, and the step that
-   clones and pushes `platform-example`; npm never sees it. Without that secret the job only leaves a notice.
 
-A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
-where it was and creates no GitHub Release.
+A red job stops every job after it. A tag on a commit with red CI publishes nothing and
+creates no GitHub Release.
 
 ### Idempotency, per registry
 
@@ -308,29 +275,6 @@ then every other repository of `scripts/consumers.txt` once the checks of Touchs
 green (`--dry-run` prints the plan; `RING_ROLLOUT_FIRST` changes the first ring). It dispatches each
 consumer's caller of `platform-bump.yml` with `gh`, so it needs a token that may run their workflows.
 
-## The documentation site
-
-Once Pages is on, a release publishes its docs version. The `vX.Y.Z` tag also starts
-[`docs-site.yml`](.github/workflows/docs-site.yml), which rebuilds the whole site with `scripts/docs-versions.py`:
-`/X.Y/` now holds the docs of that tag, the root redirects to the newest MINOR, and `versions.json` feeds the
-version selector. A patch replaces the version of its MINOR line, because each line shows its newest patch. A push
-to `main` that changes the docs rebuilds `/unreleased/` the same way. Every version is built in strict mode from its
-own tag's tree; when one fails, nothing is deployed and the previous site stays live. Tags before 1.6.0 carry no site
-tooling and get no version ([ADR-0031](docs/adr/0031-docs-site-with-zensical.md#amended-2026-10-20)).
-
-Turning Pages on is a one-time step for the owner: set the Pages source to GitHub Actions, allow the release tags
-`v*.*.*` in the deployment branches and tags of the `github-pages` environment, which otherwise refuses a deploy
-from a tag, and set the repository variable `PAGES_ENABLED=true`. Until then the workflow builds the site and
-uploads it as an artifact without deploying it. To preview the assembled site, install
-`docs/requirements-site.txt` with `pip install --require-hashes` into a virtual environment and run
-`python scripts/docs-versions.py <empty-directory>`; it builds `main` and every release tag of the local clone.
-
-## Reproducibility
-
-Every Tuesday `reproducibility.yml` rebuilds the latest tag, with the commit date of the tag as the release
-date, and compares the SHA-256 of every jar with its copy in GitHub Packages (`scripts/compare-rebuild.sh`).
-Matching digests are logged; a difference or a missing copy opens or updates one issue.
-
 ## Support policy
 
 Platform has one release line, `main`; there are no backport branches. So:
@@ -379,8 +323,8 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
 - moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
-  `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
-  `deploy.yml` caller; a reference by commit SHA stays;
+  `.github/workflows/` to the target tag, a legacy `@v1` included, and so does a `platform-ref:` input of a
+  `promote.yml` caller; a reference by commit SHA stays;
 - verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from
   1.6.0 on) with `gh attestation verify`, tied to Platform's `release.yml`, and stops when it fails;
   `--skip-provenance "<reason>"` overrides it, and a machine without `gh` gets a warning;
@@ -436,19 +380,9 @@ repository with `-PplatformRepository`, as described in
 
 ## Package retention
 
-Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. The
-support rule is: **no version that a consumer still pins may be deleted**, and a consumer stays on
-a deleted version only by accident. Clean up deliberately with
-**Actions → Cleanup old package versions → Run workflow**:
-
-- `protect` (required): every version a consumer still pins, comma-separated, for example
-  `1.5.26,1.5.31`. Read them from the Platform pin column of `scripts/consumer-audit.sh` before the run.
-  Protected versions are never deleted, whatever their age.
-- `keep` (default `10`): how many of the newest versions of each package to keep.
-- `dry_run` (default `true`): print the plan only. Review it, then run again with `dry_run`
-  unticked to delete.
-
-The workflow runs [`scripts/cleanup-packages.sh`](scripts/cleanup-packages.sh), which touches only
-Platform packages and refuses to run without `protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret
-(classic PAT with `read:packages` and `delete:packages`). GitHub can restore a deleted package
+Old versions are never pruned automatically, neither in `release.yml` nor on a schedule, and Platform has no
+cleanup tool. The support rule is: **no version that a consumer still pins may be deleted**, and a consumer
+stays on a deleted version only by accident. When a deletion is needed, do it by hand in the package settings
+on GitHub after reading the Platform pin column of `scripts/consumer-audit.sh`, and keep every version a
+consumer still pins. GitHub can restore a deleted package
 version for 30 days; after that it is gone.

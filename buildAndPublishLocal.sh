@@ -2,8 +2,8 @@
 # buildAndPublishLocal.sh — buduje i publikuje artefakty Platform do LOKALNEGO repo, żeby repo
 # konsumenckie budowały się lokalnie BEZ GitHuba (lista konsumentów: scripts/consumers.txt).
 #
-#   Gradle   -> publishToMavenLocal (~/.m2/repository): build-logic (convention plugins) + catalog
-#               + test-fixtures + security-starter, wszystkie w jednej platformVersion
+#   Gradle   -> publishToMavenLocal (~/.m2/repository): każdy moduł z gradle/maven-modules.txt, w jej kolejności
+#               (build-logic pierwszy), wszystkie w jednej platformVersion
 #   Frontend -> pnpm install (paczki gotowe); konsument instaluje je przez
 #               npm install --no-save <ścieżka>/Platform/frontend/packages/<nazwa>
 #
@@ -12,19 +12,16 @@
 #
 # Użycie:
 #   ./buildAndPublishLocal.sh                 # Gradle + frontend
-#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (build-logic + catalog + test-fixtures + security-starter)
-#   ./buildAndPublishLocal.sh --with-registry # dodatkowo `shadcn build` (public/r/*.json)
+#   ./buildAndPublishLocal.sh --skip-frontend # tylko Gradle (moduły z gradle/maven-modules.txt)
 #   ./buildAndPublishLocal.sh --help
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKIP_FRONTEND=0
-WITH_REGISTRY=0
 
 for arg in "$@"; do
   case "$arg" in
     --skip-frontend) SKIP_FRONTEND=1 ;;
-    --with-registry) WITH_REGISTRY=1 ;;
     -h|--help) awk 'NR>1{ if(/^#/){sub(/^# ?/,"");print} else exit }' "$0"; exit 0 ;;
     *) echo "Nieznany argument: $arg (zobacz --help)" >&2; exit 2 ;;
   esac
@@ -43,10 +40,11 @@ publish_gradle() {
   )
 }
 
-publish_gradle "build-logic"
-publish_gradle "catalog"
-publish_gradle "test-fixtures"
-publish_gradle "security-starter"
+# Lista i kolejność z gradle/maven-modules.txt (pilnuje templates/tests/maven-modules.test.sh), jak w ci.yml i release.yml.
+# stdin z /dev/null: Gradle nie zje reszty listy, którą czyta pętla.
+while read -r module; do
+  publish_gradle "$module" < /dev/null
+done < <(awk '!/^#/ && NF { print $1 }' "$ROOT/gradle/maven-modules.txt")
 
 # --- 2) Frontend (pnpm workspace) ---
 if [[ "$SKIP_FRONTEND" -eq 0 ]]; then
@@ -54,10 +52,6 @@ if [[ "$SKIP_FRONTEND" -eq 0 ]]; then
     log "Frontend: pnpm install (paczki współdzielone)"
     # --ignore-scripts: spójnie z CI — instalacja nie odpala skryptów lifecycle zależności.
     ( cd "$ROOT/frontend" && pnpm install --ignore-scripts )
-    if [[ "$WITH_REGISTRY" -eq 1 ]]; then
-      log "Frontend: shadcn build (public/r/*.json)"
-      ( cd "$ROOT/frontend" && pnpm --filter @dominiksienkiewicz/ui build )
-    fi
   else
     echo "⚠ pnpm nie znaleziony — pomijam frontend (użyj --skip-frontend lub zainstaluj pnpm)." >&2
   fi

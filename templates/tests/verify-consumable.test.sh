@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # scripts/verify-consumable.sh na atrapach: gradlew (VERIFY_GRADLEW) odgrywa drzewo zależności, npm instaluje
 # paczki z plikami z ich prawdziwych manifestów. Sprawdza wynik dla dobrego wydania, FAILED w drzewie, flakę
-# GitHub Packages (jedna powtórka) i tarball bez zadeklarowanego pliku.
+# GitHub Packages (jedna powtórka), tarball bez zadeklarowanego pliku i pominięcie paczki prywatnej. Skrypt biegnie
+# z kopii w atrapie roota: prawdziwe manifesty paczek plus jedna prywatna, bo w repo żadnej prywatnej już nie ma.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 tmp=$(mktemp -d)
@@ -20,7 +21,7 @@ count=$(grep -c . "$FAKE_LOG")
 if [[ "$FAKE_GRADLE" == flaky && "$count" -eq 1 ]]; then echo "Could not resolve: 401"; exit 1; fi
 echo "testRuntimeClasspath"
 echo "+--- pl.seniordeveloper:platform-test-fixtures:9.9.9"
-[[ "$FAKE_GRADLE" == failed ]] && echo "+--- pl.seniordeveloper:platform-security-starter:9.9.9 FAILED"
+[[ "$FAKE_GRADLE" == failed ]] && echo "+--- pl.seniordeveloper:platform-bom:9.9.9 FAILED"
 exit 0
 STUB
 cat > "$tmp/bin/npm" <<'STUB'
@@ -54,8 +55,18 @@ NODE
 esac
 STUB
 chmod +x "$tmp/gradlew" "$tmp/bin/npm"
-export PATH="$tmp/bin:$PATH" VERIFY_GRADLEW="$tmp/gradlew" VERIFY_BACKOFF=0 FAKE_ROOT="$root" FAKE_LOG="$tmp/gradle.log"
-check() { : > "$FAKE_LOG"; : > "$tmp/summary"; GITHUB_STEP_SUMMARY="$tmp/summary" bash "$root/scripts/verify-consumable.sh" 9.9.9 > "$tmp/out" 2>&1; }
+fixture="$tmp/root"
+mkdir -p "$fixture/scripts" "$fixture/frontend/packages/incubating"
+cp "$root/scripts/verify-consumable.sh" "$fixture/scripts/"
+ln -s "$root/templates" "$fixture/templates"
+for manifest in "$root"/frontend/packages/*/package.json; do
+  package=$(basename "$(dirname "$manifest")")
+  mkdir -p "$fixture/frontend/packages/$package"
+  cp "$manifest" "$fixture/frontend/packages/$package/"
+done
+printf '{ "name": "@dominiksienkiewicz/incubating", "private": true }\n' > "$fixture/frontend/packages/incubating/package.json"
+export PATH="$tmp/bin:$PATH" VERIFY_GRADLEW="$tmp/gradlew" VERIFY_BACKOFF=0 FAKE_ROOT="$fixture" FAKE_LOG="$tmp/gradle.log"
+check() { : > "$FAKE_LOG"; : > "$tmp/summary"; GITHUB_STEP_SUMMARY="$tmp/summary" bash "$fixture/scripts/verify-consumable.sh" 9.9.9 > "$tmp/out" 2>&1; }
 
 FAKE_GRADLE=ok check || fail 'a consumable release must pass'
 grep -q '/spring-app --no-daemon help dependencies' "$FAKE_LOG" \
@@ -65,7 +76,7 @@ grep -q '/spring-app --no-daemon help dependencies' "$FAKE_LOG" \
 # shellcheck disable=SC2016 # literal backticks of the Markdown row
 row='| `@dominiksienkiewicz/versions@9.9.9` | `sha512-fake` |'
 grep -qF "$row" "$tmp/summary" || fail 'the summary must list each npm integrity'
-if grep -qF '@dominiksienkiewicz/query' "$tmp/summary"; then fail 'private packages are not installed'; fi
+if grep -qF '@dominiksienkiewicz/incubating' "$tmp/summary"; then fail 'private packages are not installed'; fi
 
 if FAKE_GRADLE=failed check; then fail 'a FAILED dependency must fail the check'; fi
 grep -qF '::error title=Release not consumable::Gradle: templates/jvm/java-library does not resolve Platform 9.9.9' "$tmp/out" \

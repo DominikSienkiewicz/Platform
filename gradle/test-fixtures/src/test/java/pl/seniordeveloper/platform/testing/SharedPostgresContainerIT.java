@@ -1,12 +1,10 @@
 package pl.seniordeveloper.platform.testing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentest4j.AssertionFailedError;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -36,32 +34,10 @@ class SharedPostgresContainerIT {
         firstServer = systemIdentifier(first);
         assertThat(systemIdentifier(second)).isEqualTo(firstServer);
         assertThat(jdbc(first).queryForObject("SHOW fsync", String.class)).isEqualTo("off");
-        assertThat(AbstractTestcontainersFootprintTest.postgresContainersOfThisSession())
-            .hasSize(1);
       }
 
       assertThat(systemIdentifier(second)).isEqualTo(firstServer);
       assertThat(PlatformSharedPostgresContainer.container().isRunning()).isTrue();
-    }
-  }
-
-  @Test
-  void theFootprintGateNamesTheFixWhenMoreContainersRunThanAllowed() {
-    try (var _ = start(FirstApplication.class)) {
-      new AbstractTestcontainersFootprintTest() {}.onePostgresContainerPerJvm();
-
-      AbstractTestcontainersFootprintTest noneAllowed =
-          new AbstractTestcontainersFootprintTest() {
-            @Override
-            protected int maximumPostgresContainers() {
-              return 0;
-            }
-          };
-      assertThatThrownBy(noneAllowed::onePostgresContainerPerJvm)
-          .isInstanceOf(AssertionFailedError.class)
-          .hasMessageStartingWith(
-              "1 Platform PostgreSQL containers run in this JVM, at most 0 expected: import"
-                  + " PlatformSharedPostgresContainer instead of a container bean per context");
     }
   }
 

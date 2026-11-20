@@ -13,12 +13,6 @@ public class PlatformObservabilityProperties {
   /** Exposes /actuator/prometheus; off by default, because metrics leak information. */
   private boolean prometheus = false;
 
-  /**
-   * Lets the security starter serve /actuator/prometheus without authentication, for a scraper
-   * inside the network; needs prometheus=true.
-   */
-  private boolean publicMetrics = false;
-
   /** Writes console logs as ECS JSON (logging.structured.format.console=ecs). */
   private boolean jsonLogs = false;
 
@@ -41,25 +35,6 @@ public class PlatformObservabilityProperties {
    */
   public void setPrometheus(boolean prometheus) {
     this.prometheus = prometheus;
-  }
-
-  /**
-   * Czy security starter przepuszcza {@code /actuator/prometheus} bez uwierzytelnienia.
-   *
-   * @return {@code true}, gdy metryki są publiczne; domyślnie {@code false}
-   */
-  public boolean isPublicMetrics() {
-    return publicMetrics;
-  }
-
-  /**
-   * Ustawia, czy security starter przepuszcza {@code /actuator/prometheus} bez uwierzytelnienia.
-   *
-   * @param publicMetrics {@code true} dla scrapera w sieci wewnętrznej; działa tylko razem z {@link
-   *     #setPrometheus(boolean) prometheus}
-   */
-  public void setPublicMetrics(boolean publicMetrics) {
-    this.publicMetrics = publicMetrics;
   }
 
   /**

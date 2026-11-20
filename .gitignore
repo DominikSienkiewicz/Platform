@@ -32,7 +32,6 @@ gradle/*/bin/
 node_modules/
 **/dist/
 *.tsbuildinfo
-frontend/packages/ui-registry/public/r/
 
 # === Logs ===
 *.log
@@ -41,6 +40,3 @@ frontend/packages/ui-registry/public/r/
 # Local project concepts
 /docs/concepts/
 
-# Wynik i cache Zensical przy budowaniu strony w roocie (CI buduje w katalogu tymczasowym, scripts/docs-site.py).
-/site/
-/.cache/

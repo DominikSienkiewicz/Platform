@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
+# bump-version.sh, przypadek po przypadku: semver backendu, changeset w pustym masterze Liquibase i nazwa repozytorium
+# jako autor oraz numeracja nowych changesetów po najwyższym istniejącym prefiksie.
+set -euo pipefail
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+# --- semver-and-changesets ---
 # bump-version.sh: semver backendu (patch, jawna wersja, nieznana akcja bez zmiany pliku), changeset Liquibase
 # do pustej listy master oraz autor changesetu = nazwa repo, także gdy skrypt biegnie z worktree <repo>/.worktrees/<x>.
-set -euo pipefail
+(
 canon="$(cd "$(dirname "$0")/.." && pwd)/bump-version.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # app <dir>: repo w układzie konsumenta ze skryptem w scripts/.
 app() {
@@ -43,3 +48,35 @@ changeset="$repo/.worktrees/feat-x/backend/src/main/resources/db/changelog/chang
 grep -qx '      author: myapp' "$changeset" || fail "(d) a worktree must write the repository name, got: $(grep author "$changeset")"
 
 echo 'OK: bump-version bumps semver, writes changesets into an empty master and names the repository as author from a worktree'
+)
+
+# --- changeset-numbering ---
+# bump-version.sh db new-migration numeruje nowy changeset Liquibase po najwyższym istniejącym
+# 4-cyfrowym prefiksie i pomija pliki bez niego.
+(
+canon="$(cd "$(dirname "$0")/.." && pwd)/bump-version.sh"
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+
+repo="$tmp/app"
+changes="$repo/backend/src/main/resources/db/changelog/changes"
+mkdir -p "$repo/scripts" "$changes"
+cp "$canon" "$repo/scripts/bump-version.sh"
+printf 'databaseChangeLog: []\n' > "$repo/backend/src/main/resources/db/changelog/db.changelog-master.yaml"
+touch "$changes/0001-baseline.yaml" "$changes/0009-index.yaml" "$changes/0010-users.yaml" "$changes/README.md"
+
+bash "$repo/scripts/bump-version.sh" db new-migration orders > /dev/null
+[[ -f "$changes/0011-orders.yaml" ]] || fail "the next changeset after 0010 must be 0011-orders.yaml: $(ls "$changes")"
+grep -q 'file: db/changelog/changes/0011-orders.yaml' "$repo/backend/src/main/resources/db/changelog/db.changelog-master.yaml" \
+  || fail 'the new changeset must be included in the master changelog'
+
+empty="$tmp/empty"
+mkdir -p "$empty/scripts" "$empty/backend/src/main/resources/db/changelog"
+cp "$canon" "$empty/scripts/bump-version.sh"
+printf 'databaseChangeLog: []\n' > "$empty/backend/src/main/resources/db/changelog/db.changelog-master.yaml"
+bash "$empty/scripts/bump-version.sh" db new-migration first > /dev/null
+[[ -f "$empty/backend/src/main/resources/db/changelog/changes/0001-first.yaml" ]] || fail 'the first changeset must be 0001'
+
+echo 'OK: bump-version numbers new changesets after the highest existing prefix'
+)

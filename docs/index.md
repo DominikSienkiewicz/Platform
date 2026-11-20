@@ -1,7 +1,7 @@
 # Platform
 
 Platform is the shared build, quality, version and frontend layer of a set of product repositories: Gradle
-convention plugins, a version catalog and BOM, test fixtures, incubating Spring Boot starters, npm packages,
+convention plugins, a version catalog and BOM, test fixtures, an observability Spring Boot starter, npm packages,
 reusable GitHub workflows and the templates every repository copies. One release pins all of it, and
 `platform-bump` moves a consumer from one release to the next.
 
@@ -20,14 +20,3 @@ reusable GitHub workflows and the templates every repository copies. One release
 - [Architecture decisions](adr/README.md) and [engineering with agents](engineering-with-agents.md).
 - [A reviewer's tour](tour.md) and the [incident notes](notes/).
 - [OpenSSF Best Practices self-assessment](openssf-best-practices.md): the passing-level criteria, each with its evidence.
-
-This site is built from `docs/` of the repository with [Zensical](https://zensical.org); the source of truth stays
-in the repository, so a page links to the code it describes on GitHub, at the release the page belongs to.
-
-## Versions
-
-The site keeps one version per released MINOR line, built from the newest patch of that line, and
-`unreleased (main)` for what `main` holds today. Pick the version your repository pins with the selector next to
-the site name; it keeps the page you are on when that page exists in the other version. The site's root opens the
-newest release. Versions start with 1.6, the first release that carries this site
-([ADR-0031](adr/0031-docs-site-with-zensical.md#amended-2026-10-20)).

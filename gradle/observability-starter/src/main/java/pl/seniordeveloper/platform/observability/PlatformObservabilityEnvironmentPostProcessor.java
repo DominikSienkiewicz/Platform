@@ -11,15 +11,14 @@ import org.springframework.core.env.MapPropertySource;
 
 /**
  * Wspólna baza observability (N-CAP-4) jako domyślne wartości o NAJNIŻSZYM priorytecie: każda
- * właściwość konsumenta wygrywa. Daje to, czego oczekują security starter i bramka deployu: sondy
- * liveness/readiness pod {@code /actuator/health/**}, {@code health} i {@code info} przez HTTP,
- * szczegóły zdrowia tylko dla uwierzytelnionych i tag {@code application} na każdej metryce.
+ * właściwość konsumenta wygrywa. Daje to, czego oczekuje HEALTHCHECK z {@code Dockerfile.backend}:
+ * sondy liveness/readiness pod {@code /actuator/health/**}, {@code health} i {@code info} przez
+ * HTTP, szczegóły zdrowia tylko dla uwierzytelnionych i tag {@code application} na każdej metryce.
  *
  * <p>Prometheus jest opt-in ({@code platform.observability.prometheus=true}), bo metryki to wyciek
- * informacji w repo bez security startera; {@code public-metrics=true} dopisuje {@code
- * /actuator/prometheus} do domyślnych {@code platform.security.permitted-paths}. Biegnie po {@code
- * ConfigDataEnvironmentPostProcessor}, więc widzi {@code application.yaml}, i przed systemem
- * logowania, więc {@code json-logs} działa od pierwszej linii.
+ * informacji; kto i skąd czyta {@code /actuator/prometheus}, decyduje bezpieczeństwo aplikacji.
+ * Biegnie po {@code ConfigDataEnvironmentPostProcessor}, więc widzi {@code application.yaml}, i
+ * przed systemem logowania, więc {@code json-logs} działa od pierwszej linii.
  */
 public class PlatformObservabilityEnvironmentPostProcessor
     implements EnvironmentPostProcessor, Ordered {
@@ -49,11 +48,6 @@ public class PlatformObservabilityEnvironmentPostProcessor
     defaults.put("management.endpoint.health.probes.enabled", "true");
     defaults.put("management.endpoint.health.show-details", "when-authorized");
     defaults.put("management.metrics.tags.application", "${spring.application.name:application}");
-    if (settings.isPrometheus() && settings.isPublicMetrics()) {
-      defaults.put(
-          "platform.security.permitted-paths",
-          "/actuator/health,/actuator/health/**,/actuator/info,/actuator/prometheus");
-    }
     if (settings.isJsonLogs()) {
       defaults.put("logging.structured.format.console", "ecs");
     }

@@ -1,3 +1,0 @@
-# Lokalny JDK 27 przez SDKMAN: `sdk env` w tym katalogu (instalacja: `sdk env install`).
-# UWAGA: ustaw dokładny zainstalowany build — `sdk env init` wygeneruje właściwą wersję.
-java=27-tem

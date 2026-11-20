@@ -1,10 +1,9 @@
 name: CI
 
-# Walidacja pushy do main i PR-ów: czy build-logic / catalog / test-fixtures kompilują się
-# na JDK 27, czy paczki frontendu instalują się, przechodzą ESLint i tsc (checkJs, deklaracje .d.ts,
-# testy typów, rejestr .tsx), własne testy i budują rejestr shadcn oraz czy przechodzą wszystkie
-# śledzone testy skryptów (*.test.sh poza frontend/).
-# Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
+# Walidacja pushy do main i PR-ów: czy moduły z gradle/maven-modules.txt budują się na JDK 27,
+# czy paczki frontendu instalują się, przechodzą ESLint, tsc (checkJs, deklaracje .d.ts, testy typów)
+# i własne testy oraz czy przechodzą wszystkie śledzone testy skryptów (*.test.sh poza frontend/).
+# Filtr branches jest celowy: bez niego CI odpala się też na tagach (np. v1.3.2).
 # Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
 # (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
 # Cron w poniedziałek 04:00 UTC: dryf środowiska (runner, Foojay, GitHub Packages) widać tu przed
@@ -288,51 +287,6 @@ jobs:
         if: ${{ always() }}
         run: docker rm -f platform-frontend-image > /dev/null 2>&1 || true
 
-  # Decyzja 28: własne moduły Java Platform w SonarQube Cloud, jak konsumenci (zasada 8, quality-conventions).
-  # Bez sekretu SONAR_TOKEN (fork, brak projektu w SonarCloud) krok kończy się notką i nic nie robi.
-  # sonar.qualitygate.wait: scanner tylko wysyła raport, a SonarQube Cloud przetwarza go asynchronicznie, więc bez
-  # czekania odrzucona analiza (gałąź `main` przy gałęzi głównej projektu `master`) albo czerwona bramka zostawiały
-  # zielony job i pusty dashboard. Pilnuje templates/tests/ci-sonar.test.sh.
-  sonar:
-    name: SonarQube Cloud — test-fixtures and security-starter
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          fetch-depth: 0 # blame i nowy kod w SonarCloud potrzebują historii
-          persist-credentials: false
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
-        with:
-          distribution: temurin
-          java-version: "27"
-      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-      - name: Analyse with SonarQube Cloud
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ -z "${SONAR_TOKEN:-}" ]; then
-            echo "::notice::SONAR_TOKEN is not set, so the SonarQube Cloud analysis is skipped."
-            exit 0
-          fi
-          # Każdy moduł dostaje analizę, także po porażce poprzedniego; krok failuje dopiero po pętli.
-          # Blok testuje templates/tests/ci-sonar-modules.test.sh.
-          # >>> sonar-modules
-          failed=0
-          for m in test-fixtures security-starter; do
-            echo "::group::gradle/$m — sonar"
-            if ! ( cd "gradle/$m" && ./gradlew --no-daemon build sonar -Dsonar.qualitygate.wait=true ); then
-              failed=1
-              echo "::error::gradle/$m: the SonarQube Cloud analysis failed or its quality gate is red"
-            fi
-            echo "::endgroup::"
-          done
-          exit "$failed"
-          # <<< sonar-modules
-
   # Jawna walidacja gradle-wrapper.jar każdego modułu wobec sum publikowanych przez Gradle. setup-gradle
   # robi to domyślnie także w innych jobach, ale Scorecard (Binary-Artifacts) uznaje wyłącznie tę akcję.
   # Release woła ci.yml jako `verify`, więc walidacja bramkuje też wydania.
@@ -346,7 +300,7 @@ jobs:
           persist-credentials: false
       - uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
-  # Każdy śledzony skrypt shell, także kopiowane do konsumentów i uruchamiane na hoście deployu (deploy-remote.sh).
+  # Każdy śledzony skrypt shell, także kopiowane do konsumentów.
   # shellcheck jest preinstalowany na ubuntu-latest; --severity=warning: uwagi informacyjne nie bramkują.
   shellcheck:
     name: Shellcheck — every tracked script
@@ -358,6 +312,29 @@ jobs:
           persist-credentials: false
       - name: shellcheck -x --severity=warning
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -x --severity=warning
+
+  # Składnia, wyrażenia, typy wejść i uwagi shellcheck dla każdego workflow. Binarka w przypiętej wersji,
+  # pobrana z wydania i zweryfikowana sumą SHA-256 (suma z actionlint_<wersja>_checksums.txt tego wydania).
+  # shellcheck jest preinstalowany na ubuntu-latest, więc actionlint sprawdza też bloki `run:`.
+  actionlint:
+    name: Actionlint — every workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install actionlint ${{ env.ACTIONLINT_VERSION }}
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$archive"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" actionlint
+      - name: actionlint
+        run: '"$RUNNER_TEMP/actionlint" -color'
 
   # Piny akcji kontra prawdziwy GitHub: SHA = commit taga z komentarza `# vX.Y.Z`, nie obiekt annotated taga,
   # który Scorecard odrzuca przy publikacji jako „imposter commit”. Logikę na atrapie gh pilnuje
@@ -533,7 +510,7 @@ jobs:
   # Dwie nogi: Node 24 (wersja Platform) i 22.13.0 — dolna granica engines.node paczek, którą konsumenci mogą
   # uruchamiać; bez tej nogi deklarowana granica nigdy nie była wykonywana (N-REL-4).
   frontend:
-    name: Frontend (Node ${{ matrix.node }}) — install + lint + typecheck + test + registry build
+    name: Frontend (Node ${{ matrix.node }}) — install + lint + typecheck + test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -558,9 +535,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm -r --if-present test
-      # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
-      - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
       - name: Record the Node version
         env:
           NODE_LEG: ${{ matrix.node }}

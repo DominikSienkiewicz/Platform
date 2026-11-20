@@ -37,8 +37,7 @@ scripts/new-consumer.sh --name order-service --package pl.example.orders --kind 
 
 Then provide the credentials: `GPR_TOKEN` as a repository secret for CI, and `gpr.user`/`gpr.key` and
 `GITHUB_TOKEN` locally ([Prerequisites](#prerequisites)); run `npm install` once in `frontend/` and commit
-the `package-lock.json` it writes. Once the public `DominikSienkiewicz/platform-example` repository exists,
-every release regenerates it from this command ([RELEASING.md](../RELEASING.md#what-releaseyml-does)).
+the `package-lock.json` it writes.
 
 It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
 `platformVersion=` pin), a `ci.yml` caller of `backend-ci.yml` at the exact tag with `packages: read`
@@ -229,8 +228,8 @@ Schemas move forward only: a released changeset or migration is never edited, a 
 `scripts/bump-version.sh db new-migration <slug>` creates the next Liquibase changeset as
 `db/changelog/changes/NNNN-<slug>.yaml` and includes it in the master. The reusable `deploy.yml` tags the
 migrate image with the highest four-digit prefix in that directory, so the name is part of the deploy
-contract: `AbstractLiquibaseChangelogTest` fails on a file outside `NNNN-<slug>.yaml`, on two files with one
-prefix and on a file no changeset of which reaches the master. Flyway applications name migrations
+contract: keep every file in that directory named `NNNN-<slug>.yaml`, with no two files sharing a prefix and
+every file included from the master. Flyway applications name migrations
 `V<n>__<description>.sql`, which `AbstractFlywayMigrationTest` checks ([reference](reference.md#test-fixtures)).
 
 `spring-modulith-starter-jpa` and `spring-modulith-starter-jdbc` (group `org.springframework.modulith`, declared
@@ -405,11 +404,9 @@ The template also declares how the container reports health and sizes its heap:
   neither curl nor wget, and treats only HTTP 200 as healthy. When the liveness group does not exist
   (404, `management.endpoint.health.probes.enabled` is off) it falls back to `/actuator/health`. The port
   is `MANAGEMENT_SERVER_PORT`, then `SERVER_PORT`, then 8080; the endpoint must answer without
-  authentication, as the security starter's default `permitted-paths` allow. The application gets 60 s
-  to start; after that, six failed probes 10 s apart mark the container unhealthy.
-  [`deploy-remote.sh`](../scripts/deploy-remote.sh) waits for `healthy` only when a container has a
-  healthcheck, and a `healthcheck:` in the compose file replaces this one, so delete the compose-level
-  check of the backend service.
+  authentication, so the application's security permits it. The application gets 60 s
+  to start; after that, six failed probes 10 s apart mark the container unhealthy. A `healthcheck:` in a
+  compose file replaces this one, so delete the compose-level check of the backend service.
 - `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"` sizes the heap from the
   container's memory limit and ends the process on `OutOfMemoryError`, so the restart policy starts a
   fresh one. A compose `environment:` entry replaces the whole variable, not one flag.
@@ -523,13 +520,6 @@ backend test and breaking-change gate included, is in [api-contracts.md](api-con
 @import "tailwindcss";
 ```
 
-The component registry `@dominiksienkiewicz/ui` is *incubating*: it has no hosted endpoint, and no
-consumer has adopted it. If you install it, also add an `@source` line that points from
-`globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@dominiksienkiewicz/ui";`
-in `app/globals.css`, or `@source "../../node_modules/@dominiksienkiewicz/ui";` in `src/app/globals.css`.
-Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.22.1 …`), never an
-unpinned one.
-
 `vitest.config.ts`:
 
 ```ts
@@ -584,30 +574,7 @@ gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-asse
 1.6.0 on: an attestation that does not verify stops the bump with nothing changed. Without `gh`
 installed it only warns; `--skip-provenance "<reason>"` bumps anyway and logs the reason.
 
-## Development environment
-
-Copy [`infra/`](../infra) from Platform to the repository root; it runs Postgres with pgvector,
-and optionally Ollama:
-
-```bash
-cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
-```
-
-### Devcontainer (*incubating*)
-
-[`templates/devcontainer/`](../templates/devcontainer/README.md) is a development container for a repository with
-`backend/` and, optionally, `frontend/`: the JDK that runs Gradle, the catalog's toolchain JDK, and Node with npm, all
-from the canon. Copy its `Dockerfile`, `devcontainer.json` and `post-create.sh` to `.devcontainer/` (the command is in
-its README). It stays *incubating* until a first repository adopts it; that pull request removes the label.
-
-The container needs the credentials of the [prerequisites](#prerequisites) and never stores them: export
-`GITHUB_ACTOR` (your login) and `GITHUB_TOKEN` (a classic token with `read:packages`) in the environment that starts
-the container, and `devcontainer.json` passes them through `remoteEnv`. They are the names `settings.gradle.kts` and
-`frontend/.npmrc` already read. A variable the host does not set arrives empty, which Gradle counts as missing, so a
-build stops with "No GitHub Packages credentials". Without a token the container still builds and registers the
-toolchain JDK, but it prints a hint and does not run `npm ci --ignore-scripts`.
-
-## Adopting the observability and web starters (*incubating*)
+## Adopting the observability starter
 
 `implementation(libs.platform.observability.starter)` replaces the `management:` block most backends
 write by hand: probes on, `health` and `info` exposed, details only when authorized, and an `application`
@@ -616,49 +583,6 @@ scraper reads `/actuator/prometheus` (BookOfStyling, Azimuth), and drop a separa
 `micrometer-registry-prometheus` line, which the starter brings. For the Spring Modulith actuator and
 observability modules, declare `spring-modulith-actuator` and `spring-modulith-observability` (group
 `org.springframework.modulith`) without a version: the Spring Modulith BOM manages them.
-
-`implementation(libs.platform.web.starter)` replaces a hand-written `@ControllerAdvice` for errors; the
-shapes it answers with are in the [reference](reference.md#web-starter-incubating). An application with its
-own `ResponseEntityExceptionHandler` keeps it, because the starter backs off. Both starters stay
-*incubating* until the first application adopts them; that pull request removes the label in README.md.
-
-## Adopting the security starter (*incubating*)
-
-Add `implementation(libs.platform.security.starter)`, delete the application's own `SecurityConfig`, and
-express its behaviour as properties. The two configurations the
-starter was written from map like this:
-
-| Application | Properties | Then |
-|---|---|---|
-| permit-all, stateless API with CORS (BookOfStyling) | `platform.security.mode=permit-all`, `platform.security.stateless=true`, `platform.security.csrf=false`, `platform.cors.allowed-origins=${app.cors.allowed-origins}` | delete `SecurityConfig` |
-| authenticated with HTTP Basic (SkillSprintPlus) | none: these are the defaults | delete `SecurityConfig` |
-| a JWT resource server, as the `TODO(identity module)` of both plans | `platform.security.mode=jwt`, `spring.security.oauth2.resourceserver.jwt.issuer-uri=…`, optionally `platform.security.jwt.authorities-claim=roles` | add `implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")`, delete `SecurityConfig`, keep the scope rules in `@PreAuthorize` |
-| a browser client with a cookie session | `platform.security.csrf=spa` | create the frontend client with `createApiClient({ xsrf: true })` ([api-client.md](api-client.md#csrf-for-a-single-page-application)) |
-
-Every 401 and 403 is `application/problem+json`, which the api-client turns into `ApiError.problem`
-([reference](reference.md#security-starter-incubating)).
-
-Both variants are covered by `PlatformSecurityAutoConfigurationTest`, and the starter's chain takes
-precedence over Spring Boot's default web security (`PlatformSecurityBootAutoConfigurationTest`). The
-starter stays *incubating* until the first application adopts it; that pull request removes the label.
-
-## Security starter CORS
-
-`platform.cors.allowed-origins` opts into the Platform CORS source. The security
-chain preserves Spring Security’s precedence for a user `CorsFilter` named `corsFilter`.
-Otherwise it uses an explicit application source in preference to MVC infrastructure,
-regardless of its bean name. Without an explicit source, MVC's existing CORS mapping
-remains the fallback; without MVC or CORS configuration, the starter does not add a
-CORS filter. An application-provided `SecurityFilterChain` still replaces the
-Platform chain. Multiple explicit sources require an unambiguous primary source
-or an application-owned chain; the starter does not silently choose one, and the context fails
-to start without a `@Primary` one. `platform.cors.allowed-origins=*` fails at startup while
-`allow-credentials` is `true`, the default: Spring rejects that pair, and before it did so only
-on the first CORS request.
-
-`platform.security.permitted-paths` replaces the default list instead of adding to it. Repeat
-`/actuator/health`, `/actuator/health/**` and `/actuator/info` when you set it, or the deploy health
-gate gets 401.
 
 ## Troubleshooting
 
@@ -682,7 +606,6 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD041 | Node is 22.13 or newer |
 | PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
 | PD043 | npm resolves the pinned `@dominiksienkiewicz/versions` |
-| PD050 | `.secrets.local` is ignored when the repository deploys |
 | PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
 | PD070 | whether `AI_AGENT` is on |
 | PD080 | (`platformDoctor`) the settings plugin, the catalog's `platform` version and `platformVersion` are the same release |
@@ -695,7 +618,7 @@ the release that produced it.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a devcontainer forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
+| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a container forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `UnsupportedClassVersionError` … `class file version 70.0` while the plugins load | Gradle runs on a JDK older than 26; Platform supports only 27 | Run Gradle on JDK 27 or newer (`sdk env`, or `JAVA_HOME`) |
 | `Unsupported class file major version 71` from Groovy as Gradle starts | the wrapper is older than Gradle 9.8.1, which cannot run on JDK 27 | Run `scripts/platform-bump.sh`, which moves the wrapper, or `./gradlew wrapper --gradle-version 9.8.1` on an older JDK |

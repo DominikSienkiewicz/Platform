@@ -78,6 +78,11 @@ forced: these artifacts stay *incubating*, still published, until a first consum
 that adoption pull request removes the label in README.md. `api-client` and `query` are additionally
 marked private, so they are not published until then. `docs/consuming.md` shows the adoption path.
 
+**Update (2026-11-20, 1.13.0).** No consumer adopted them, so Platform removed `platform-security-starter`,
+`platform-web-starter`, `@dominiksienkiewicz/api-client`, `@dominiksienkiewicz/query` and the ui registry
+(`@dominiksienkiewicz/ui`), with the canon entries only they needed; a consumer that still uses one of those
+libraries owns its version from now on. The catalog bundles had already been removed in 1.12.0.
+
 ## Copied templates (2026-10-18)
 
 Point 1 says a template is consumed, never copied, but scripts and the `.editorconfig` can only reach

@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — 2026-10-19
+Superseded — 2026-11-20: no consumer deploys over SSH. Platform 1.13.0 removes the `deploy` job of `deploy.yml`
+with its `production` environment, SSH secrets and rollback dispatch; consumers promote through `promote.yml`
+instead ([ADR-0035](0035-promotion-by-commit-for-argo-cd.md)). Accepted 2026-10-19.
 
 ## Context
 

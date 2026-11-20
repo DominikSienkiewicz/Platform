@@ -26,7 +26,7 @@ on jackson-databind). Platform's own libraries each re-imported the Boot BOM.
 
 Every version in it comes from `gradle/catalog/libs.versions.toml` (hard rule 1); the catalog stays the
 single source of versions and the only place consumers declare aliases. `platform-test-fixtures` and
-`platform-security-starter` import `platform-bom` instead of the separate BOMs.
+`platform-security-starter` (removed in 1.13.0) import `platform-bom` instead of the separate BOMs.
 
 `seniordev.spring-modulith-conventions` keeps its direct BOM imports and `ext` overrides for now. Moving
 it to `mavenBom("pl.seniordeveloper:platform-bom:…")` changes how `io.spring.dependency-management`

@@ -1,11 +1,10 @@
 # Promote an incubating artifact
 
-**Preconditions:** an incubating artifact (a starter or a private npm package; Decision 7) is
+**Preconditions:** an incubating artifact (a Maven module, a private npm package or a template; Decision 7) is
 ready for a first consumer.
 
 1. In the consumer, adopt it against the unreleased change ([test an unreleased change](test-unreleased-change.md)),
-   for example `implementation(libs.platform.security.starter)` with the application's own configuration
-   replaced by properties ([consuming.md](../consuming.md)).
+   replacing the application's own configuration with what the artifact provides ([consuming.md](../consuming.md)).
 2. In Platform, open the pull request that removes the *incubating* label from `docs/reference.md`,
    `docs/consuming.md` and `README.md`; for a private npm package also remove `"private": true` from its
    `package.json`.

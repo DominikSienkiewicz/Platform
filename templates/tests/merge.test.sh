@@ -592,6 +592,92 @@ test_no_colour_wins_over_forced_colour() {
   return $?
 }
 
+# merge.sh ostrzega, gdy gałąź źródłowa nakłada commity, których zmiany już są na celu (ten sam patch-id,
+# np. cherry-pick wpięty dwiema drogami), i mimo to merguje: hotfix wybrany na main, a potem merge gałęzi
+# to legalny wzorzec. Hermetyczne repo, bez origin (--offline).
+test_duplicate_commits_warn_and_still_merge() {
+  local work="$WORK/duplicates" repo out=""
+  mkdir -p "$work"
+  # Runner CI nie ma globalnej tożsamości gita; bez globalnego configu lokalny przebieg widzi to samo.
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  fail() { echo "FAIL: $*" >&2; echo "$out" >&2; exit 1; }
+
+  repo="$work/repo"
+  git init -q -b main "$repo"
+  # Tożsamość w configu repo, nie w `-c`: commit merge'a robi git wołany przez merge.sh.
+  git -C "$repo" config user.name t
+  git -C "$repo" config user.email t@example.invalid
+  g() { git -C "$repo" "$@"; }
+  g commit -q --allow-empty -m initial
+  g switch -q -c feature
+  echo hotfix > "$repo/hotfix.txt"; g add hotfix.txt; g commit -q -m "fix: hotfix shipped twice"
+  echo work > "$repo/work.txt"; g add work.txt; g commit -q -m "feat: real feature work"
+  g switch -q main
+  g cherry-pick -x feature~1 > /dev/null
+  g worktree add -q "$work/feature-wt" feature
+
+  out=$(cd "$repo" && GIT_MERGE_AUTOEDIT=no bash "$CANON" feature "chore: merge feature" --offline --dry-run 2>&1) || fail 'a dry run must succeed'
+  grep -qF 'feature re-applies 1 commit(s) whose changes are already on main' <<<"$out" || fail 'the dry run must warn about the duplicate'
+
+  out=$(cd "$repo" && GIT_MERGE_AUTOEDIT=no bash "$CANON" feature "chore: merge feature" --offline 2>&1) || fail 'a duplicate must not stop the merge'
+  grep -qF 'feature re-applies 1 commit(s) whose changes are already on main' <<<"$out" || fail 'the merge must warn about the duplicate'
+  grep -qF 'fix: hotfix shipped twice' <<<"$out" || fail 'the warning must list the duplicated commit'
+  if grep -qF 'feat: real feature work' <<<"$(grep -A3 're-applies' <<<"$out")"; then fail 'a commit new to main is not a duplicate'; fi
+  grep -qF 'rebase main' <<<"$out" || fail 'the warning must give the rebase that drops the copy'
+  [[ "$(git -C "$repo" log -1 --format=%s main)" == "chore: merge feature" ]] || fail 'main must carry the merge commit'
+
+  g switch -q -c clean
+  echo more > "$repo/more.txt"; g add more.txt; g commit -q -m "feat: more"
+  g switch -q main
+  out=$(cd "$repo" && GIT_MERGE_AUTOEDIT=no bash "$CANON" clean "chore: merge clean" --offline 2>&1) || fail 'a clean merge must succeed'
+  if grep -qF 're-applies' <<<"$out"; then fail 'a branch without duplicates must not warn'; fi
+  return $?
+}
+
+# merge.sh traktuje `.kotlin/` jak `build/`: to cache pluginu Kotlina dla Gradle (sessions/, errors/), który zostaje
+# w każdym module kompilującym Kotlina (gradle/build-logic, buildSrc konsumenta) i odtwarza się przy następnym buildzie.
+# 2026-10-19 sam pusty `gradle/build-logic/.kotlin/sessions/` zablokował merge gałęzi Platform komunikatem
+# "has local or ignored files: !! gradle/build-logic/.kotlin/". Podobna nazwa, która nie jest tym cache'em,
+# nadal blokuje. Hermetyczne repo, bez origin (--offline).
+test_kotlin_cache_is_build_output_but_look_alikes_block() {
+  local work="$WORK/kotlin-cache" repo out=""
+  mkdir -p "$work"
+  export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+  fail() { echo "FAIL: $*" >&2; echo "$out" >&2; exit 1; }
+
+  kotlin_cache_repo() {
+    local repo="$work/$1"
+    git init -q -b main "$repo"
+    # Tożsamość w configu repo, nie w `-c`: commit merge'a robi git wołany przez merge.sh.
+    git -C "$repo" config user.name t
+    git -C "$repo" config user.email t@example.invalid
+    printf '%s\n' "$2" > "$repo/.gitignore"
+    git -C "$repo" add .gitignore
+    git -C "$repo" commit -q -m "chore: ignore local output"
+    git -C "$repo" worktree add -q -b feature "$work/$1-wt"
+    git -C "$work/$1-wt" commit -q --allow-empty -m "feat: work"
+    printf '%s\n' "$repo"
+  }
+  kotlin_cache_merge() { (cd "$1" && GIT_MERGE_AUTOEDIT=no bash "$CANON" feature "chore: merge feature" --offline 2>&1); }
+
+  repo=$(kotlin_cache_repo kotlin-cache '.kotlin/')
+  mkdir -p "$work/kotlin-cache-wt/gradle/build-logic/.kotlin/sessions" "$work/kotlin-cache-wt/gradle/build-logic/.kotlin/errors"
+  : > "$work/kotlin-cache-wt/gradle/build-logic/.kotlin/sessions/kotlin-compiler-4242.salive"
+  out=$(kotlin_cache_merge "$repo") || fail 'a worktree whose only leftover is the Kotlin cache must merge'
+  grep -qF 'holds only regenerable build output' <<<"$out" || fail 'the Kotlin cache must be reported as regenerable output'
+  grep -qF 'gradle/build-logic/.kotlin/' <<<"$out" || fail 'the report must name the .kotlin/ directory'
+  [[ "$(git -C "$repo" log -1 --format=%s main)" == "chore: merge feature" ]] || fail 'main must carry the merge commit'
+  [[ ! -d "$work/kotlin-cache-wt" ]] || fail 'the worktree goes, together with its Kotlin cache'
+  if git -C "$repo" show-ref --verify --quiet refs/heads/feature; then fail 'the merged branch must be deleted'; fi
+
+  repo=$(kotlin_cache_repo look-alike '.kotlin-notes')
+  printf 'my notes\n' > "$work/look-alike-wt/.kotlin-notes"
+  if out=$(kotlin_cache_merge "$repo"); then fail 'an ignored file that only looks like the Kotlin cache must still block'; fi
+  grep -qF '.kotlin-notes' <<<"$out" || fail 'the refusal must name the preserved file'
+  [[ -f "$work/look-alike-wt/.kotlin-notes" ]] || fail 'the preserved file must survive the refusal'
+  return $?
+}
+
 run_test() {
   local name="$1"
   local function_name="$2"
@@ -634,6 +720,8 @@ run_test conflict-glyph test_conflict_is_marked_with_a_cross
 run_test plain-glyph test_marks_are_plain_when_output_is_captured
 run_test forced-colour test_forced_colour_reaches_both_marks
 run_test no-colour-precedence test_no_colour_wins_over_forced_colour
+run_test duplicate-commits test_duplicate_commits_warn_and_still_merge
+run_test kotlin-cache test_kotlin_cache_is_build_output_but_look_alikes_block
 
 if [[ -n "$FILTER" && $FAILURES -eq 0 ]]; then
   echo "OK: selected merge.sh test passed"

@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — 2026-10-19
+Superseded — 2026-11-20: Platform no longer ships the roadmap toolkit. Platform 1.13.0 removes `templates/roadmap/`
+and the reusable `roadmap-unblock.yml`, because no consumer copies the toolkit or calls the workflow. Accepted
+2026-10-19.
 
 ## Context
 

@@ -29,10 +29,10 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `license_location` | MUST | **Met** | [LICENSE](../LICENSE) at the repository root; the licence is also in the metadata of every Maven POM and npm package ([README](../README.md#license)). |
 | `documentation_basics` | MUST | **Met** | [README](../README.md), [consuming Platform](consuming.md) and [local development](local-development.md). |
 | `documentation_interface` | MUST | **Met** | [Reference](reference.md) lists every task, property and default; [reusable workflows](reusable-workflows.md) lists their inputs, secrets and permissions; [gate codes](gates.md) lists the failures. |
-| `sites_https` | MUST | **Met** | The repository, GitHub Releases and GitHub Packages (Maven and npm) are served over HTTPS; the documentation site is built for GitHub Pages ([`docs-site.yml`](../.github/workflows/docs-site.yml)), which serves HTTPS once the maintainer enables it. |
+| `sites_https` | MUST | **Met** | The repository, GitHub Releases and GitHub Packages (Maven and npm) are served over HTTPS; the documentation is rendered by GitHub from `docs/`. |
 | `discussion` | MUST | **Met** | GitHub issues and pull requests: searchable, one URL per topic, no proprietary client. |
 | `english` | SHOULD | **Met** | README, `docs/`, the issue forms and the release notes are in English ([README](../README.md#documentation-language)), and reports are accepted in English. `CLAUDE.md` and code comments are Polish, and are maintainer-facing. |
-| `maintained` | MUST | **Met** | Active history on `main`, a [changelog](../CHANGELOG.md) with an `[Unreleased]` section, and weekly scheduled workflows ([`ci.yml`](../.github/workflows/ci.yml), [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml), [`reproducibility.yml`](../.github/workflows/reproducibility.yml)). |
+| `maintained` | MUST | **Met** | Active history on `main`, a [changelog](../CHANGELOG.md) with an `[Unreleased]` section, and weekly scheduled workflows ([`ci.yml`](../.github/workflows/ci.yml), [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml)).  |
 
 ## Change control
 
@@ -65,7 +65,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 | Criterion | Level | Status | Evidence |
 |---|---|---|---|
-| `build` | MUST | **Met** | Gradle wrappers and pnpm build everything from source ([local development](local-development.md)); [`ci.yml`](../.github/workflows/ci.yml) rebuilds on every push and pull request, and [`reproducibility.yml`](../.github/workflows/reproducibility.yml) rebuilds the latest tag and compares jar digests. |
+| `build` | MUST | **Met** | Gradle wrappers and pnpm build everything from source ([local development](local-development.md)); [`ci.yml`](../.github/workflows/ci.yml) rebuilds on every push and pull request. |
 | `build_common_tools` | SUGGESTED | **Met** | Gradle and pnpm. |
 | `build_floss_tools` | SHOULD | **Met** | JDK, Gradle, Node and pnpm are all FLOSS. |
 | `test` | MUST | **Met** | JUnit suites in the Java modules, Vitest in `frontend/`, and shell tests in [`templates/tests/`](../templates/tests/); how to run them is in [CONTRIBUTING](../CONTRIBUTING.md#the-gate). |
@@ -73,7 +73,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `test_most` | SUGGESTED | **Owner action** | The four published Java modules gate JaCoCo coverage at 0.88 to 0.95 (`coverageMinimum` in each `gradle.properties`) and every script has a test, but frontend and workflow coverage is not measured. Answer Met only if that counts as most. |
 | `test_continuous_integration` | SUGGESTED | **Met** | [`ci.yml`](../.github/workflows/ci.yml) runs the test suites on each push to `main`, each pull request and every Monday. |
 | `test_policy` | MUST | **Met** | [CONTRIBUTING](../CONTRIBUTING.md) "Rules a change must follow": new functionality comes with tests that cover it, and a bug fix starts with a regression test. The coverage thresholds (`coverageMinimum` 0.88 to 0.95) enforce it in the four published Java modules. |
-| `tests_are_added` | MUST | **Met** | Recent features carry their guard, for example [`platform-plugin.test.sh`](../templates/tests/platform-plugin.test.sh) with the Claude Code plugin and [`ci-frontend-image.test.sh`](../templates/tests/ci-frontend-image.test.sh) with the frontend image build. |
+| `tests_are_added` | MUST | **Met** | Recent features carry their guard, for example [`ci-frontend-image.test.sh`](../templates/tests/ci-frontend-image.test.sh) with the frontend image build. |
 | `tests_documented_added` | SUGGESTED | **Met** | The rule is in the change instructions: [CONTRIBUTING](../CONTRIBUTING.md) and the checklist of Platform's [pull request template](../.github/pull_request_template.md). |
 | `warnings` | MUST | **Met** | Checkstyle and Spotless in the Java modules, ESLint and Prettier in the frontend, ShellCheck over every tracked script (the `shellcheck` job of [`ci.yml`](../.github/workflows/ci.yml)). |
 | `warnings_fixed` | MUST | **Met** | Checkstyle runs with `maxWarnings=0`, so a warning fails `check`; a ShellCheck finding fails its CI job. |
@@ -85,7 +85,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 |---|---|---|---|
 | `know_secure_design` | MUST | **Owner action** | A statement about the maintainer's knowledge. Supporting material: [SECURITY.md](../SECURITY.md) "Security mechanisms", [security scanning](security-scanning.md), actions pinned by SHA, `permissions:` set per workflow, and the [rulesets](../.github/rulesets/main.json). |
 | `know_common_errors` | MUST | **Owner action** | The same statement, for common error types and their mitigations. |
-| `crypto_published` | MUST | **N/A** | Platform contains no cryptographic code. The security starter configures Spring Security and delegates TLS and token handling to it. |
+| `crypto_published` | MUST | **N/A** | Platform contains no cryptographic code. |
 | `crypto_call` | SHOULD | **N/A** | Nothing is re-implemented; see `crypto_published`. |
 | `crypto_floss` | MUST | **N/A** | No cryptographic functionality of its own. |
 | `crypto_keylength` | MUST | **N/A** | No keys are generated or configured by default. |
@@ -104,7 +104,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 | Criterion | Level | Status | Evidence |
 |---|---|---|---|
-| `static_analysis` | MUST | **Met** | Semgrep ([`semgrep.yml`](../.github/workflows/semgrep.yml), run on Platform by [`self-scan.yml`](../.github/workflows/self-scan.yml)), Checkstyle, SpotBugs (report-only, [ADR-0005](adr/0005-spotbugs-report-only.md)) and SonarCloud (the `sonar` job of [`ci.yml`](../.github/workflows/ci.yml), while the `SONAR_TOKEN` secret exists). |
+| `static_analysis` | MUST | **Met** | Semgrep ([`semgrep.yml`](../.github/workflows/semgrep.yml), run on Platform by [`self-scan.yml`](../.github/workflows/self-scan.yml)), Checkstyle and SpotBugs (report-only, [ADR-0005](adr/0005-spotbugs-report-only.md)). |
 | `static_analysis_common_vulnerabilities` | SUGGESTED | **Met** | Semgrep's `p/default`, `p/secrets`, `p/java`, `p/javascript`, `p/typescript`, `p/dockerfile` and `p/github-actions` rulesets. |
 | `static_analysis_fixed` | MUST | **Met** | A Semgrep finding of severity CRITICAL, HIGH or ERROR fails the job, so it blocks the change until it is fixed or explicitly accepted with `# nosemgrep` ([security scanning](security-scanning.md)). |
 | `static_analysis_often` | SUGGESTED | **Met** | [`self-scan.yml`](../.github/workflows/self-scan.yml) runs on every push to `main`, every pull request and every Monday. |

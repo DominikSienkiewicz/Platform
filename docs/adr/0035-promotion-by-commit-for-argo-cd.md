@@ -4,6 +4,10 @@
 
 Accepted — 2026-11-05
 
+Partly superseded (2026-11-20): `deploy.yml` lost its SSH deploy in 1.13.0, so the `ssh-deploy` input, the SSH path
+and the callers that still deployed over SSH described below no longer exist. The decision to promote by commit holds.
+Until 1.13.1 `promote.yml` keeps calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false`.
+
 ## Context
 
 `deploy.yml` builds and pushes images, then deploys them to one host over SSH

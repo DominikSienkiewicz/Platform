@@ -7,16 +7,6 @@
     { "source": "worktree-new.sh", "target": "scripts/worktree-new.sh", "optional": true },
     { "source": "worktree-status.sh", "target": "scripts/worktree-status.sh", "optional": true },
     { "source": "bump-version.sh", "target": "scripts/bump-version.sh" },
-    { "source": ".editorconfig", "target": ".editorconfig" },
-    { "source": "setup-gh-deploy.sh", "target": "scripts/setup-gh-deploy.sh", "optional": true },
-    { "source": "devcontainer/Dockerfile", "target": ".devcontainer/Dockerfile", "optional": true },
-    { "source": "devcontainer/devcontainer.json", "target": ".devcontainer/devcontainer.json", "optional": true },
-    { "source": "devcontainer/post-create.sh", "target": ".devcontainer/post-create.sh", "optional": true },
-    { "source": "roadmap/scripts/roadmap-to-issues.sh", "target": "scripts/roadmap-to-issues.sh", "optional": true },
-    { "source": "roadmap/scripts/roadmap-unblock.sh", "target": "scripts/roadmap-unblock.sh", "optional": true },
-    { "source": "roadmap/scripts/roadmap-project-setup.sh", "target": "scripts/roadmap-project-setup.sh", "optional": true },
-    { "source": "roadmap/scripts/lib/roadmap-lib.sh", "target": "scripts/lib/roadmap-lib.sh", "optional": true },
-    { "source": "roadmap/scripts/lib/roadmap-parse.sh", "target": "scripts/lib/roadmap-parse.sh", "optional": true },
-    { "source": "roadmap/.github/ISSUE_TEMPLATE/roadmap-item.yml", "target": ".github/ISSUE_TEMPLATE/roadmap-item.yml", "optional": true }
+    { "source": ".editorconfig", "target": ".editorconfig" }
   ]
 }
