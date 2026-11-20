@@ -313,6 +313,29 @@ jobs:
       - name: shellcheck -x --severity=warning
         run: git ls-files -z '*.sh' | xargs -0 shellcheck -x --severity=warning
 
+  # Składnia, wyrażenia, typy wejść i uwagi shellcheck dla każdego workflow. Binarka w przypiętej wersji,
+  # pobrana z wydania i zweryfikowana sumą SHA-256 (suma z actionlint_<wersja>_checksums.txt tego wydania).
+  # shellcheck jest preinstalowany na ubuntu-latest, więc actionlint sprawdza też bloki `run:`.
+  actionlint:
+    name: Actionlint — every workflow
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install actionlint ${{ env.ACTIONLINT_VERSION }}
+        run: |
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$archive"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$archive" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" actionlint
+      - name: actionlint
+        run: '"$RUNNER_TEMP/actionlint" -color'
+
   # Piny akcji kontra prawdziwy GitHub: SHA = commit taga z komentarza `# vX.Y.Z`, nie obiekt annotated taga,
   # który Scorecard odrzuca przy publikacji jako „imposter commit”. Logikę na atrapie gh pilnuje
   # scripts/check-action-pins.test.sh (job templates).
