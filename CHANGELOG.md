@@ -22,6 +22,8 @@ continues.
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-20
+
 Platform 1.13.0 slims Platform to the frame: what no consumer used is removed. A promotion through `promote.yml` keeps
 calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false` until 1.13.1 moves that pin to the commit of the v1.13.0
 tag, so the `deploy.yml` removals below reach only direct callers of that file.
