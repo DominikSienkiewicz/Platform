@@ -39,6 +39,7 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `manifest.json` | the copies `platform-templates-check` compares, each `source` here with its `target` in a consumer; `optional` files are compared only where the repository has them | not copied | — |
 | `github/CODEOWNERS` | the default owner of the whole repository | `<repo>/.github/CODEOWNERS` | — |
 | `github/pull_request_template.md` | pull request description template (purpose and checklist) | `<repo>/.github/pull_request_template.md` | — |
+| `github/workflows/platform-bump.yml` | the weekly caller of the reusable `platform-bump.yml` (Mondays at 06:00 UTC and `workflow_dispatch`); set its tag to the repository's Platform pin once, and every bump moves it ([docs/reusable-workflows.md](../docs/reusable-workflows.md#platform-bumpyml)) | `<repo>/.github/workflows/platform-bump.yml` | — |
 
 Tests of the template scripts live in `templates/tests/` and run in CI (the "Templates" job).
 Platform uses the canonical `templates/merge.sh`, `worktree-new.sh` and `worktree-status.sh` through thin

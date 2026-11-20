@@ -57,7 +57,8 @@ backlog). This ADR records them as one contract.
    The moving `v1` tag and its `move-v1` job were retired in 1.13.0 ([ADR-0014](0014-exact-pins-moved-by-platform-bump.md), Update).
 7. **Bump channel.** Consumers bump with `platform-bump` (a stub that runs the bin of
    `@dominiksienkiewicz/versions`); a reusable `platform-bump.yml` workflow will open the bump
-   pull request. The Renovate preset is narrowed to GitHub Actions and Docker images.
+   pull request. The Renovate preset leaves the frame to it and updates what the application owns
+   (Update, 2026-11-20: until then it covered GitHub Actions and Docker images only).
 
 | Class of change | Convention plugins | Catalog | Test fixtures, starters | npm packages | Reusable workflows | Templates |
 |---|---|---|---|---|---|---|

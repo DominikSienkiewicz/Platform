@@ -347,23 +347,37 @@ crossed releases affects this repository, what it does not use, and what needs a
   repository in `scripts/consumers.txt`, and `--apply --consumers` turns the setting on.
 - Inputs: [platform-bump.yml](../.github/workflows/platform-bump.yml); `version` empty takes the newest
   release of the current MAJOR.
+- Caller: copy [`templates/github/workflows/platform-bump.yml`](../templates/github/workflows/platform-bump.yml) to
+  `.github/workflows/platform-bump.yml`. It runs every Monday at 06:00 UTC and on `workflow_dispatch`, optionally with
+  a `version`. Set its tag to your Platform pin once; from then on every bump moves it with the other workflow
+  references, so the caller needs no placeholder. Create the repository secrets `PLATFORM_BUMP_TOKEN` (see
+  `bump_token`) and `GPR_TOKEN` (see `gpr_token`). `templates/tests/platform-bump-caller.test.sh` holds the template
+  to the contract below.
 
+<!-- include: templates/github/workflows/platform-bump.yml#L5-L31 -->
 ```yaml
+name: Platform bump
+
 on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       version:
+        description: "Platform version to bump to; empty takes the newest release of the current MAJOR."
         type: string
         default: ""
+
 permissions:
-  contents: write
-  pull-requests: write
-  packages: read
+  contents: read
+
 jobs:
   bump:
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@vX.Y.Z
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: read
+    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.12.0
     with:
       version: ${{ inputs.version || '' }}
     secrets:

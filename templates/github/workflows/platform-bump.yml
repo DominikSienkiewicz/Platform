@@ -1,0 +1,31 @@
+# Cotygodniowy bump Platform: w poniedziałek o 6:00 UTC (albo ręcznie) reusable platform-bump.yml otwiera PR
+# z bumpem do najnowszego wydania bieżącego MAJOR-a. Ustaw tag w `uses:` na pin repo; potem platform-bump
+# przesuwa go przy każdym bumpie razem z resztą referencji. Sekret PLATFORM_BUMP_TOKEN (classic PAT, zakresy
+# repo i workflow) zakłada właściciel; bez niego PR nie uruchamia CI i nie przesuwa referencji workflowów.
+name: Platform bump
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Platform version to bump to; empty takes the newest release of the current MAJOR."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: read
+    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.12.0
+    with:
+      version: ${{ inputs.version || '' }}
+    secrets:
+      gpr_token: ${{ secrets.GPR_TOKEN }}
+      bump_token: ${{ secrets.PLATFORM_BUMP_TOKEN }}
