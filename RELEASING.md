@@ -143,9 +143,10 @@ The notes are the version's section of CHANGELOG.md. A hand-written `## [X.Y.Z] 
 used as it is. Without one, `release.sh` composes it with `scripts/release-notes.sh` from the commits since
 the previous `vX.Y.Z` tag and inserts it under an empty `## [Unreleased]`, dated today: the first-parent
 subjects grouped as **Added** (`feat`), **Fixed** (`fix`) and **Changed** (every other type), and under
-`### Consumer action required` the `Consumer-Action:` trailers of every commit in the range, plus a
-`Breaking change: …` line for a commit without a trailer that has a `!` in its subject or a
-`BREAKING CHANGE:` footer; `None.` when there are none. The release commit then carries CHANGELOG.md too.
+`### Consumer action required` the `Consumer-Action:` trailers of every commit in the range, the merge
+commits of `./merge.sh` included, plus a `Breaking change: …` line for a commit without a trailer that has a
+`!` in its subject or a `BREAKING CHANGE:` footer; the same text from several commits (a trailer repeated in the
+merge message) is listed once, and `None.` stands when there are none. The release commit then carries CHANGELOG.md too.
 
 Before it changes anything, `release.sh` refuses to run when:
 
@@ -160,10 +161,12 @@ Before it changes anything, `release.sh` refuses to run when:
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
 - the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;
-- a commit since the previous release's tag carries a `Consumer-Action: <what to do>` trailer, a `!`
-  in its subject or a `BREAKING CHANGE:` footer, and the release would be a patch or its section
-  says `None.`; the error lists those commits. Record a consumer action in the commit that causes
-  it, as the pull request template asks.
+- a commit since the previous release's tag, a merge commit included, carries a
+  `Consumer-Action: <what to do>` trailer, a `!` in its subject or a `BREAKING CHANGE:` footer, and the
+  release would be a patch or its section says `None.`; the error lists those commits. Record a consumer
+  action in the commit that causes it, as the pull request template asks, or in the `./merge.sh` message.
+  This check and the composed section read the markers from one place,
+  `scripts/release-notes.sh --markers`.
 
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,

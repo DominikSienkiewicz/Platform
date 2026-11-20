@@ -141,20 +141,14 @@ if [[ "$AUTO_VERSION" == 1 ]] && { grep -Eq '^[a-z]+(\([a-z0-9-]+\))?!:|^feat' <
   exit 1
 fi
 # Akcja konsumenta zapisana w historii od poprzedniego wydania (N-REL-7): trailer "Consumer-Action: …", "!"
-# w temacie albo stopka "BREAKING CHANGE:"/"BREAKING-CHANGE:". Bez taga poprzedniego wydania nie ma zakresu.
+# w temacie albo stopka "BREAKING CHANGE:"/"BREAKING-CHANGE:" na dowolnym commicie, także merge commicie merge.sh.
+# Znaczniki czyta scripts/release-notes.sh --markers, to samo źródło co złożona sekcja. Bez taga poprzedniego
+# wydania nie ma zakresu.
 history_reasons() {
-  git log --no-merges --format='%h %s%x1f%b%x1e' "$1" | awk -v RS=$'\036' -v FS=$'\037' '
-    {
-      sub(/^\n+/, "", $1)
-      if ($1 == "") next
-      if ($1 ~ /^[0-9a-f]+ [a-z]+(\([a-z0-9-]+\))?!:/) print "  " $1 " (\"!\" marks a breaking change)"
-      if ($2 ~ /(^|\n)BREAKING[ -]CHANGE: /) print "  " $1 " (BREAKING CHANGE footer)"
-      if (match($2, /(^|\n)Consumer-Action: [^\n]+/)) {
-        trailer = substr($2, RSTART, RLENGTH)
-        sub(/^\n/, "", trailer)
-        print "  " $1 " (" trailer ")"
-      }
-    }'
+  bash scripts/release-notes.sh --markers "$1" | awk -v FS=$'\037' '
+    $3 == "trailer" { print "  " $1 " " $2 " (Consumer-Action: " $4 ")" }
+    $3 == "footer" { print "  " $1 " " $2 " (BREAKING CHANGE footer)" }
+    $3 == "bang" { print "  " $1 " " $2 " (\"!\" marks a breaking change)" }'
 }
 if git rev-parse -q --verify "refs/tags/v$CUR" >/dev/null; then
   REASONS="$(history_reasons "v$CUR..HEAD")"

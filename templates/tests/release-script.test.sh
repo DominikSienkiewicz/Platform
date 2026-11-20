@@ -378,6 +378,21 @@ seed() {
   printf '%s\n' "$work"
 }
 
+# seed_merge <nazwa> <komunikat commita gałęzi> <komunikat merge commita> <sekcja changelogu>: po tagu v1.2.3 zmiana
+# wchodzi do main przez --no-ff, jak w merge.sh, więc akcja konsumenta może stać tylko w merge commicie.
+seed_merge() {
+  local work
+  work=$(seed "$1" yes 'chore: prepare the branch' "$4")
+  {
+    git -C "$work" switch -q -c feature
+    git -C "$work" commit -q --allow-empty -m "$2"
+    git -C "$work" switch -q main
+    git -C "$work" merge -q --no-ff -m "$3" feature
+    git -C "$work" push -q origin main
+  } > /dev/null 2>&1
+  printf '%s\n' "$work"
+}
+
 release() {
   local work="$1"
   shift
@@ -464,6 +479,37 @@ git -C "$work" show HEAD:CHANGELOG.md > "$tmp/composed.md"
 [[ "$(bash "$root/scripts/changelog-section.sh" --consumer-action 1.2.4 "$tmp/composed.md")" == None. ]] \
   || fail 'a composed section without trailers or "!" says None.'
 
+# Akcja konsumenta zapisana tylko w merge commicie (merge.sh pisze go z --no-ff) liczy się jak na commicie gałęzi:
+# "!" w temacie i trailer Consumer-Action wymuszają MINOR i trafiają do złożonej sekcji.
+bang_merge='refactor(ci)!: rename the deploy input'
+trailer_merge=$'feat: add the knob\n\nConsumer-Action: set platform.knob in gradle.properties'
+
+work=$(seed_merge merge-bang-patch 'refactor(ci): rename input' "$bang_merge" "$unreleased")
+release "$work" "fix: release" 1.2.4
+refused "$work" 'Commits since v1.2.3 record consumer action, so this must be a MINOR release (1.3.0):'
+grep -qF '"!" marks a breaking change' "$work.log" || { cat "$work.log"; fail 'the refusal must name the "!" merge commit'; }
+
+work=$(seed_merge merge-bang-minor 'refactor(ci): rename input' "$bang_merge" "$unreleased")
+release "$work" "feat: release" 1.3.0
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a MINOR release after a "!" merge commit must compose its section'; }
+merge=$(git -C "$work" rev-parse --short HEAD~1)
+git -C "$work" show HEAD:CHANGELOG.md > "$tmp/composed.md"
+[[ "$(bash "$root/scripts/changelog-section.sh" --consumer-action 1.3.0 "$tmp/composed.md")" == "- Breaking change: rename the deploy input ($merge)" ]] \
+  || { cat "$tmp/composed.md"; fail 'a "!" merge commit must become the consumer action'; }
+
+work=$(seed_merge merge-trailer-patch 'feat: add a knob' "$trailer_merge" "$unreleased")
+release "$work" "fix: release" 1.2.4
+refused "$work" 'Commits since v1.2.3 record consumer action, so this must be a MINOR release (1.3.0):'
+grep -qF 'Consumer-Action: set platform.knob in gradle.properties' "$work.log" || { cat "$work.log"; fail 'the refusal must quote the merge trailer'; }
+
+work=$(seed_merge merge-trailer-minor 'feat: add a knob' "$trailer_merge" "$unreleased")
+release "$work" "feat: release" 1.3.0
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a MINOR release after a merge trailer must compose its section'; }
+merge=$(git -C "$work" rev-parse --short HEAD~1)
+git -C "$work" show HEAD:CHANGELOG.md > "$tmp/composed.md"
+[[ "$(bash "$root/scripts/changelog-section.sh" --consumer-action 1.3.0 "$tmp/composed.md")" == "- set platform.knob in gradle.properties ($merge)" ]] \
+  || { cat "$tmp/composed.md"; fail 'a trailer only in the merge commit must become the consumer action'; }
+
 # Ręcznie napisana sekcja wersji wygrywa ze składaniem: release.sh bierze ją bez zmian i nie dotyka CHANGELOG.md.
 work=$(seed hand-written-patch yes 'fix: keep the lockfile' "$unreleased"$'\n'"$(section 1.2.4 'None.')")
 before=$(git -C "$work" show HEAD:CHANGELOG.md)
@@ -518,6 +564,12 @@ grep -qE '^- Breaking change: drop the legacy flag \([0-9a-f]+\)$' <<<"$breaking
 grep -qE '^- Breaking change: platform.x is gone \([0-9a-f]+\)$' <<<"$breaking" || { echo "$breaking"; fail 'a BREAKING CHANGE footer must become a consumer action'; }
 grep -qE '^- rename flag x to y \([0-9a-f]+\)$' <<<"$breaking" || { echo "$breaking"; fail 'the trailer of a "!" commit must become its consumer action'; }
 if grep -q 'Breaking change: rename the flag' <<<"$breaking"; then echo "$breaking"; fail 'a "!" commit with a trailer is listed once, by its trailer'; fi
+git -C "$notes" switch -q -c second
+git -C "$notes" commit -q --allow-empty -m $'feat: add the knob\n\nConsumer-Action: set platform.knob'
+git -C "$notes" switch -q main
+git -C "$notes" merge -q --no-ff -m $'feat: add the knob\n\nConsumer-Action: set platform.knob' second
+twice=$(cd "$notes" && bash "$root/scripts/release-notes.sh" HEAD~1..HEAD)
+[[ "$(grep -c 'set platform.knob' <<<"$twice")" == 1 ]] || { echo "$twice"; fail 'a trailer repeated in the merge commit is listed once'; }
 
 echo 'OK: release.sh reads consumer action from history and composes a missing section with release-notes.sh'
 )
