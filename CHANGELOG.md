@@ -56,6 +56,12 @@ None.
 
 ### Fixed
 
+- The frontend canon moves `next` and `eslint-config-next` from 16.4.2 to 16.4.6, the newest 16.4 patch
+  (2026-11-09), which fixes GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8, GHSA-vvgp-ww4w-46vf, GHSA-7qx7-33qx-rqx2,
+  GHSA-f3mh-rxg3-f5g2, GHSA-pc58-hwjq-p385 and GHSA-rhh4-g77r-r9qj (moderate, fixed in 16.4.5); `platform-bump`
+  applies it. `eslint-config` follows the canon. `minimatch` 10.2.5 under `eslint` (GHSA-g3hv-75wg-m249) in
+  Platform's own workspace is still fixed only in 11.0.1, outside the range its parents accept, so it stays until
+  upstream moves.
 - The next-JDK leg of `upstream-canary.yml` runs Checkstyle on the canon toolchain. Java 28-ea+24 rejects the
   `ReflectionFactory` call with which Gradle rebuilds the parameters of a process-isolated worker
   ([gradle/gradle#39837](https://github.com/gradle/gradle/issues/39837)), so `checkstyleMain` and `checkstyleTest`
