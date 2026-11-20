@@ -639,6 +639,22 @@ git -C "$notes" switch -q main
 git -C "$notes" merge -q --no-ff -m $'feat: add the knob\n\nConsumer-Action: set platform.knob' second
 twice=$(cd "$notes" && bash "$root/scripts/release-notes.sh" HEAD~1..HEAD)
 [[ "$(grep -c 'set platform.knob' <<<"$twice")" == 1 ]] || { echo "$twice"; fail 'a trailer repeated in the merge commit is listed once'; }
+# Merge commit i commity, które wnosi, to jedna zmiana: trailer po jednej stronie zastępuje linię "Breaking change:"
+# po drugiej, w obu kierunkach.
+git -C "$notes" switch -q -c third
+git -C "$notes" commit -q --allow-empty -m $'feat!: drop the old input\n\nConsumer-Action: replace input x with y'
+git -C "$notes" switch -q main
+git -C "$notes" merge -q --no-ff -m 'feat!: drop the old input' third
+git -C "$notes" switch -q -c fourth
+git -C "$notes" commit -q --allow-empty -m 'refactor!: rename the input'
+git -C "$notes" switch -q main
+git -C "$notes" merge -q --no-ff -m $'refactor!: rename the input\n\nConsumer-Action: rename input a to b' fourth
+grouped=$(cd "$notes" && bash "$root/scripts/release-notes.sh" HEAD~2..HEAD)
+[[ "$(sed -n '/^### Consumer action required/,/^### Added/p' <<<"$grouped" | grep -c '^- ')" == 2 ]] \
+  || { echo "$grouped"; fail 'a merge and the commits it brings in give one line per trailer'; }
+grep -qE '^- replace input x with y \([0-9a-f]+\)$' <<<"$grouped" || { echo "$grouped"; fail 'the trailer of the branch commit must be listed'; }
+grep -qE '^- rename input a to b \([0-9a-f]+\)$' <<<"$grouped" || { echo "$grouped"; fail 'the trailer of the merge commit must be listed'; }
+if grep -q 'Breaking change:' <<<"$grouped"; then echo "$grouped"; fail 'a "!" covered by a trailer on the other side of the merge adds no Breaking change line'; fi
 
 echo 'OK: release.sh reads consumer action from history and composes a missing section with release-notes.sh'
 )

@@ -3,9 +3,10 @@
 # wersji, gdy CHANGELOG.md jej nie ma. Tematy idą z historii first-parent (merge.sh scala z --no-ff, więc commity
 # gałęzi się nie dublują), pogrupowane według typu Conventional Commit. "Consumer action required" zbiera ze
 # wszystkich commitów zakresu, także z merge commitów merge.sh, trailery Consumer-Action, a commit bez trailera ze
-# stopką BREAKING CHANGE albo "!" w temacie jako "Breaking change: …"; ten sam tekst z kilku commitów (trailer
-# powtórzony w merge commicie) idzie raz, a gdy nic nie ma — "None.". Temat spoza Conventional Commits trafia do
-# "Unclassified" do przeredagowania (release.sh takiej sekcji nie składa).
+# stopką BREAKING CHANGE albo "!" w temacie jako "Breaking change: …" (pominięte, gdy trailer ma druga strona tego
+# samego merge'a); ten sam tekst z kilku commitów (trailer powtórzony w merge commicie) idzie raz, a gdy nic nie ma —
+# "None.". Temat spoza Conventional Commits trafia do "Unclassified" do przeredagowania (release.sh takiej sekcji
+# nie składa).
 #   ./scripts/release-notes.sh v1.6.0..HEAD
 #
 # release-notes.sh --markers <from>..<to> — jedno źródło znaczników akcji konsumenta dla tej sekcji i dla bramki
@@ -46,10 +47,33 @@ if [[ "${1:-}" == --markers ]]; then
 fi
 range=${1:?$usage}
 
-actions=$(markers "$range" | awk -v FS=$'\037' '
-  $3 == "trailer" { listed[$1] = 1; text = $4 }
-  $3 != "trailer" { if ($1 in listed) next; listed[$1] = 1; text = "Breaking change: " $4 }
-  !(text in seen) { seen[text] = 1; print "- " text " (" $1 ")" }')
+# Grupy merge.sh: "<merge> <wniesiony commit>…" na linię. Merge commit i to, co wnosi, opisują jedną zmianę, więc
+# trailer po jednej stronie zastępuje linię "Breaking change:" po drugiej (np. "!" powtórzony w komunikacie merge.sh).
+groups=$(git log --merges --format='%h' "$range" | while read -r merge; do
+  printf '%s %s\n' "$merge" "$(git log --format='%h' "$merge^1..$merge^2" | tr '\n' ' ')"
+done)
+actions=$(awk -v FS=$'\037' '
+  NR == FNR { group[++groups] = $0; next }
+  { record[++records] = $0; if ($3 == "trailer") with_trailer[$1] = 1 }
+  END {
+    for (g = 1; g <= groups; g++) {
+      n = split(group[g], member, " ")
+      for (i = 2; i <= n; i++) {
+        if (member[i] in with_trailer) covered[member[1]] = 1
+        if (member[1] in with_trailer) covered[member[i]] = 1
+      }
+    }
+    for (r = 1; r <= records; r++) {
+      split(record[r], field, "\037")
+      if (field[3] == "trailer") { listed[field[1]] = 1; text = field[4] }
+      else {
+        if ((field[1] in listed) || (field[1] in covered)) continue
+        listed[field[1]] = 1
+        text = "Breaking change: " field[4]
+      }
+      if (!(text in seen)) { seen[text] = 1; print "- " text " (" field[1] ")" }
+    }
+  }' <(printf '%s\n' "$groups") <(markers "$range"))
 
 added="" changed="" fixed="" unclassified=""
 while IFS=$'\037' read -r sha subject; do

@@ -145,8 +145,10 @@ the previous `vX.Y.Z` tag and inserts it under an empty `## [Unreleased]`, dated
 subjects grouped as **Added** (`feat`), **Fixed** (`fix`) and **Changed** (every other type), and under
 `### Consumer action required` the `Consumer-Action:` trailers of every commit in the range, the merge
 commits of `./merge.sh` included, plus a `Breaking change: …` line for a commit without a trailer that has a
-`!` in its subject or a `BREAKING CHANGE:` footer; the same text from several commits (a trailer repeated in the
-merge message) is listed once, and `None.` stands when there are none. The release commit then carries CHANGELOG.md too.
+`!` in its subject or a `BREAKING CHANGE:` footer. A merge commit and the commits it brings in count as one change: a
+trailer on either side replaces the `Breaking change:` line of the other, so a `!` repeated in the merge message
+adds nothing. The same text from several commits (a trailer repeated in the merge message) is listed once, and
+`None.` stands when there are none. The release commit then carries CHANGELOG.md too.
 
 Before it changes anything, `release.sh` refuses to run when:
 
