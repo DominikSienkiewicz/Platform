@@ -5,7 +5,7 @@
 // JAVA_TOOL_OPTIONS, więc flagi -Djdk.reflect.allowNonSerializableConstruction=true nie da się podać. Checkstyle czyta
 // źródła, nie bajtkod, więc JVM jego workera nie zmienia tego, co noga mierzy.
 // Zdejmij ten plik i jego użycie w upstream-canary.yml, gdy wrapper Gradle kanonu będzie miał poprawkę
-// gradle/gradle#39837. Pilnuje templates/tests/upstream-canary-checkstyle-toolchain.test.sh.
+// gradle/gradle#39837. Pilnuje templates/tests/upstream-canary.test.sh.
 val canaryCheckstyleJava =
 	providers.gradleProperty("canaryCheckstyleJava").orNull?.trim()?.toInt()
 		?: error("checkstyle-on-canon-toolchain.init.gradle.kts needs -PcanaryCheckstyleJava=<the Java version of the canon>")

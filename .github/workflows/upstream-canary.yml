@@ -92,7 +92,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
-      # Blok testuje templates/tests/upstream-canary-checkstyle-toolchain.test.sh.
+      # Blok testuje templates/tests/upstream-canary.test.sh.
       - name: Name the next toolchain
         id: next
         run: |
@@ -119,7 +119,7 @@ jobs:
           java-version: "27"
       # Checkstyle biegnie na toolchainie kanonu (init script), bo worker procesowy Gradle nie odtwarza parametrów na
       # JDK 28-ea+24 (gradle/gradle#39837). Checkstyle czyta źródła, więc kompilacja, testy, JaCoCo i SpotBugs zostają
-      # na następnym JDK. Blok testuje templates/tests/upstream-canary-checkstyle-toolchain.test.sh.
+      # na następnym JDK. Blok testuje templates/tests/upstream-canary.test.sh.
       - name: Build the java-library starter on the next toolchain
         id: build
         if: ${{ steps.next-jdk.outcome == 'success' }}
@@ -147,7 +147,7 @@ jobs:
           # <<< next-jdk-starter-build
       # SpotBugs jest report-only (ADR-0005), więc bajtkod, którego nie czyta, kończy się "exit code 4" przy zielonym
       # buildzie. Ten sam warunek co PlatformConsumerFunctionalTest.assertAnalyzersReadTheBytecode dla toolchainu kanonu;
-      # nieznany pakiet w ramkach stosu też failuje. Blok testuje templates/tests/upstream-canary-bytecode.test.sh.
+      # nieznany pakiet w ramkach stosu też failuje. Blok testuje templates/tests/upstream-canary.test.sh.
       - name: Check that every tool reads the next toolchain's bytecode
         id: bytecode
         if: ${{ !cancelled() && (steps.build.outcome == 'success' || steps.build.outcome == 'failure') }}
