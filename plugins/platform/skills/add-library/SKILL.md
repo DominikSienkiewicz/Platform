@@ -1,6 +1,6 @@
 ---
 name: add-library
-description: "Add a new library or dependency to a repository that consumes Platform. Use when the user wants to add, introduce or upgrade a JVM library (a Gradle dependency, libs.versions.toml, a libs alias) or an npm package of the frontend, or when platformDependencyCheck or platform-versions-check rejects a version that is not in the canon."
+description: "Add a new library or dependency to a repository that consumes Platform. Use when the user wants to add, introduce or upgrade a JVM library (a Gradle dependency, libs.versions.toml, a libs alias) or an npm package of the frontend, or when platformDependencyCheck or platform-versions-check rejects a version that differs from the canon."
 ---
 
 # Add a library to a consumer

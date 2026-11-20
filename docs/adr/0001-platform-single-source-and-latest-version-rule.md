@@ -4,6 +4,10 @@
 
 Accepted — 2026-07-05
 
+Partly superseded by [ADR-0037](0037-platform-governs-the-frame.md) (2026-11-19): a library outside the frame
+belongs to the application, so a new library no longer needs a catalog entry and a release first. Everything else
+here holds for the frame.
+
 ## Context
 
 Several product repositories consume this platform, which already publishes Gradle

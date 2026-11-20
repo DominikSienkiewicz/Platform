@@ -25,14 +25,6 @@ the Platform version from the link.
 
 ## Gradle
 
-### PLAT-DEP-001
-
-**Cause:** an explicit version of a library that is not in the Platform catalog, and no Platform BOM manages
-it (`platformDependencyCheck`).
-**Example:** `implementation("com.example:unknown:1.0")`.
-**Fix:** add the library to `gradle/catalog/libs.versions.toml` in Platform, release, bump the pin, then
-declare it as `libs.<alias>` ([versions.md](versions.md)).
-
 ### PLAT-DEP-002
 
 **Cause:** an explicit version that differs from the Platform canon.
@@ -46,6 +38,9 @@ or a Spring starter.
 **Example:** `implementation("org.springframework.boot:spring-boot-starter-webmvc:4.0.0")`.
 **Fix:** remove the version. To run another version on purpose, override the BOM property instead;
 `platformBomOverrideCheck` reports it as a warning (Decision 18).
+**Limit:** seen only in modules that apply `io.spring.dependency-management`, i.e.
+`seniordev.spring-modulith-conventions`. Elsewhere a BOM-managed library with an explicit version passes; in a
+Spring application the Boot BOM still aligns the version at runtime.
 
 ### PLAT-DEP-004
 
@@ -60,6 +55,14 @@ override cannot redefine what is canonical.
 **Cause:** a project that applies `seniordev.java-conventions` has no version catalog named `libs`.
 **Example:** `create("platformLibs") { from("pl.seniordeveloper:platform-catalog:…") }`.
 **Fix:** name the catalog `libs`, as [consuming.md](consuming.md#backend) shows.
+
+### PLAT-DEP-006
+
+**Cause:** the build imports a BOM that is not in the Platform canon with `platform(...)` or `enforcedPlatform(...)`.
+Its versions can override the frame; `enforcedPlatform` can push them down. It warns only ([ADR-0019](adr/0019-new-failure-modes-warn-first.md)):
+the build passes. A canon BOM at another version still fails PLAT-DEP-002.
+**Example:** `implementation(platform("io.netty:netty-bom:4.2.0.Final"))`.
+**Fix:** remove the BOM, or propose it for the frame ([ADR-0037](adr/0037-platform-governs-the-frame.md)).
 
 ### PLAT-PIN-001
 
@@ -119,11 +122,6 @@ buildable on a laptop.
 **Fix:** fix the test and remove the tag, or move the date with a reason in the issue.
 
 ## Frontend
-
-### PLAT-FE-001
-
-**Cause:** a dependency without an entry in the frontend canon (`platform-versions-check`).
-**Fix:** add it to `frontend/packages/versions/versions.json` in Platform, release, then bump.
 
 ### PLAT-FE-002
 
@@ -197,3 +195,11 @@ to `red-proof-tasks`.
 `-Pplatform.deprecations.mode=fail` makes the Gradle side fail, as Platform's own TestKit suite does.
 **Fix:** use the replacement the message names before the release it names. Platform deprecates in one
 MINOR and removes no earlier than the next, and the CHANGELOG lists both.
+
+## Retired codes
+
+A retired code is never reused (ADR-0027).
+
+- `PLAT-DEP-001` — retired in 1.11.1: a library outside the Platform catalog that no Platform BOM manages
+  belongs to the consumer, which declares its version (ADR-0037).
+- `PLAT-FE-001` — retired in 1.11.1: a package outside the frontend canon belongs to the consumer (ADR-0037).

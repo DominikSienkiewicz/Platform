@@ -31,8 +31,6 @@ class DependencyGovernanceTest {
 				"[PLAT-DEP-003] org.springframework.boot:spring-boot-starter-mail:4.0.0 (implementation) — the Platform BOMs manage it " +
 					"at 4.1.1: remove the explicit version. To run another version on purpose, override the BOM property instead, " +
 					"which platformBomOverrideCheck reports",
-				"[PLAT-DEP-001] com.example:unknown:1.0 (testImplementation constraint) — not in the Platform catalog and no Platform " +
-					"BOM manages it: add it to gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin",
 			),
 			findings.map { it.render() },
 		)
@@ -43,16 +41,29 @@ class DependencyGovernanceTest {
 	}
 
 	@Test
+	fun `a library outside the canon that no Platform BOM manages belongs to the consumer`() {
+		val declared = listOf(DeclaredDependency("com.example:own-library", "2.3.4", "implementation"))
+		assertEquals(emptyList<GateFinding>(), DependencyGovernance.violations(declared, canon, emptyMap()))
+	}
+
+	@Test
+	fun `a library a Platform BOM manages still may not carry its own version`() {
+		val declared = listOf(DeclaredDependency("org.hibernate.orm:hibernate-core", "7.0.0", "implementation"))
+		val findings = DependencyGovernance.violations(declared, canon, mapOf("org.hibernate.orm:hibernate-core" to "7.2.1"))
+		assertEquals(listOf(PlatformGates.DEP_BOM_MANAGED), findings.map { it.code })
+	}
+
+	@Test
 	fun `the launcher Gradle injects with a version of its choosing is exempt`() {
 		val declared =
 			listOf(
 				DeclaredDependency("org.junit.platform:junit-platform-launcher", "1.14.4", "testRuntimeOnly"),
-				DeclaredDependency("com.example:unknown", "1.0", "testRuntimeOnly"),
+				DeclaredDependency("org.jsoup:jsoup", "1.0.0", "testRuntimeOnly"),
 			)
 
 		val findings = DependencyGovernance.violations(declared, canon, emptyMap(), DependencyGovernance.GRADLE_INJECTED)
 
-		assertEquals(listOf("com.example:unknown:1.0 (testRuntimeOnly)"), findings.map { it.text.substringBefore(" —") })
+		assertEquals(listOf("org.jsoup:jsoup:1.0.0 (testRuntimeOnly)"), findings.map { it.text.substringBefore(" —") })
 	}
 
 	@Test
@@ -81,13 +92,43 @@ class DependencyGovernanceTest {
 		val report =
 			DependencyGovernance.report(
 				":app",
-				listOf(GateFinding(PlatformGates.DEP_NOT_IN_CATALOG, "a | b")),
+				listOf(GateFinding(PlatformGates.DEP_DIFFERS_FROM_CANON, "a | b")),
 				listOf(GateFinding(PlatformGates.DEPRECATED, "dependency x is deprecated")),
 			)
 
 		assertTrue(report.contains("### platformDependencyCheck — :app"))
-		assertTrue(report.contains("| [PLAT-DEP-001](${PlatformGates.link("PLAT-DEP-001")}) | a \\| b |"))
+		assertTrue(report.contains("| [PLAT-DEP-002](${PlatformGates.link("PLAT-DEP-002")}) | a \\| b |"))
 		assertTrue(report.contains("- [PLAT-DEPR-001](${PlatformGates.link("PLAT-DEPR-001")}) dependency x is deprecated"))
-		assertTrue(PlatformGates.link("PLAT-DEP-001", "1.6.0").endsWith("/blob/v1.6.0/docs/gates.md#plat-dep-001"))
+		assertTrue(PlatformGates.link("PLAT-DEP-002", "1.6.0").endsWith("/blob/v1.6.0/docs/gates.md#plat-dep-002"))
+	}
+
+	@Test
+	fun `a BOM import outside the canon is reported as a foreign BOM`() {
+		val declared = listOf(DeclaredDependency("io.netty:netty-bom", "4.2.0.Final", "implementation", platform = true))
+
+		assertEquals(listOf(PlatformGates.DEP_FOREIGN_BOM), DependencyGovernance.foreignBoms(declared, canon).map { it.code })
+	}
+
+	@Test
+	fun `a canon BOM and a regular library outside the canon are not foreign BOMs`() {
+		val declared =
+			listOf(
+				DeclaredDependency("pl.seniordeveloper:platform-test-fixtures", "1.6.0", "implementation", platform = true),
+				DeclaredDependency("com.example:own-library", "2.3.4", "implementation"),
+			)
+
+		assertEquals(emptyList<GateFinding>(), DependencyGovernance.foreignBoms(declared, canon))
+	}
+
+	@Test
+	fun `the report lists warnings in their own section and omits it without warnings`() {
+		val warning = GateFinding(PlatformGates.DEP_FOREIGN_BOM, "io.netty:netty-bom:4.2.0.Final (implementation) — a foreign BOM")
+
+		val withWarning = DependencyGovernance.report(":app", emptyList(), emptyList(), listOf(warning))
+		val without = DependencyGovernance.report(":app", emptyList(), emptyList())
+
+		assertTrue(withWarning.contains("Warnings, the build still passes:"))
+		assertTrue(withWarning.contains("- [PLAT-DEP-006](${PlatformGates.link("PLAT-DEP-006")}) io.netty:netty-bom:4.2.0.Final"))
+		assertTrue(!without.contains("Warnings, the build still passes:"))
 	}
 }

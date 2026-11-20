@@ -53,10 +53,10 @@ run_case dev-drift '{ "devDependencies": { "typescript": "6.0.2" } }'
 grep -qF '6.0.2' <<<"$OUT" || fail "the report must show the declared 6.0.2"
 grep -qF '6.0.3' <<<"$OUT" || fail "the report must show the canon 6.0.3"
 
-# (c) a dependency without a canon entry fails
-run_case missing '{ "dependencies": { "left-pad": "1.3.0" } }'
-[[ $RC -ne 0 ]] || fail "a dependency without a canon entry must fail the guard"
-grep -q 'left-pad.*1.3.0' <<<"$OUT" || fail "the report must name left-pad and its 1.3.0"
+# (c) a package outside the canon belongs to the consumer: no finding
+run_case consumer-owned '{ "dependencies": { "left-pad": "^1.3.0" } }'
+[[ $RC -eq 0 ]] || fail "a package outside the canon must pass the guard (exit $RC)"
+if grep -qF 'PLAT-FE' <<<"$OUT"; then fail "a package outside the canon must not produce a PLAT-FE finding"; fi
 
 # (d) an npm: alias is not the canon version, so the guard fails closed
 run_case alias '{ "dependencies": { "react": "npm:react@19.2.7" } }'
@@ -64,7 +64,7 @@ run_case alias '{ "dependencies": { "react": "npm:react@19.2.7" } }'
 
 # (e) the report names the canon release and a fix that exists in consumers: the stub lives in
 #     <repo>/scripts/, and the guard runs from frontend/
-run_case hint '{ "dependencies": { "next": "16.2.11", "left-pad": "1.3.0" } }'
+run_case hint '{ "dependencies": { "next": "16.2.11" } }'
 grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "the report must name the canon release"
 grep -qF 'from the repository root run scripts/platform-bump.sh 1.6.0' <<<"$OUT" \
   || fail "the fix must name scripts/platform-bump.sh, where to run it from and the canon version"
@@ -97,4 +97,4 @@ run_case platform-ok '{ "devDependencies": { "@dominiksienkiewicz/eslint-config"
 [[ $RC -eq 0 ]] || fail "Platform pins on the canon release must pass (exit $RC)"
 
 [[ $fails -eq 0 ]] || exit 1
-echo "OK: the guard fails on drift, carets, missing canon entries and npm: aliases in dependencies and devDependencies"
+echo "OK: the guard fails on drift, carets and npm: aliases in dependencies and devDependencies"

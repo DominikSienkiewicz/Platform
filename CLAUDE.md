@@ -5,8 +5,8 @@ Kontekst dla agentów AI (narzędziowo-neutralny odpowiednik po angielsku: `AGEN
 `platform-agents-backend`/`-frontend` z `templates/agents/` do `backend/AGENTS.md` i `frontend/AGENTS.md` ze stosem
 wydania — backend z `frontend/packages/versions/agents/stack.json`, który `scripts/agents-stack.py` generuje z katalogu,
 więc po zmianie katalogu uruchom go ponownie). To repo to **współdzielona platforma** (build/jakość/wersje/frontend)
-konsumowana przez osobne repo produktowe: Azimuth i Touchstone (oba konsumują convention pluginy + katalog;
-Azimuth z frontendem także kanon frontendu). Attestate_io, BookOfStyling i SkillSprintPlus zostały usunięte
+konsumowana przez osobne repo produktowe: Azimuth, Touchstone i Training (wszystkie konsumują convention pluginy + katalog;
+Azimuth i Training z frontendem także kanon frontendu). Attestate_io, BookOfStyling i SkillSprintPlus zostały usunięte
 (2026-10-20) i nie są już konsumentami. Lista = `scripts/consumers.txt`
 (ta sama co sekcja Consumers w README); adopcję i piny pokazuje lokalny `scripts/consumer-audit.sh` (tylko GET).
 
@@ -46,20 +46,23 @@ opublikuj, podbij pin w repo konsumenta.
    Literał wersji w źródle convention pluginu wywala `PlatformVersionsTest`. Lustra spoza Kotlina zostają:
    domyślny `toolchain-java-version` workflowów (`PlatformToolVersionMirrorTest`) i wrappery Gradle
    (`PlatformGradleVersionMirrorTest`).
+   Platform ustala wersje ramy (Java, Gradle, BOM-y Spring, biblioteki z `libs`, kanon frontendu) i zakazuje ich
+   nadpisywania; biblioteka spoza ramy należy do aplikacji (ADR-0037), a do ramy trafia, gdy używają jej ≥ 2 repo.
    **Egzekwowane**: task `platformDependencyCheck` (w `java-conventions`, wpięty w `check`) failuje
-   build konsumenta, gdy zadeklarowana zależność albo constraint ma jawną wersję spoza katalogu lub inną
-   niż katalog — w każdym deklarowalnym kubełku (`api`/`implementation`/`compileOnly(Api)`/`runtimeOnly`/
+   build konsumenta, gdy zadeklarowana zależność albo constraint biblioteki z ramy ma jawną wersję inną
+   niż katalog albo gdy biblioteka zarządzana BOM-em ma jawną wersję — w każdym deklarowalnym kubełku (`api`/`implementation`/`compileOnly(Api)`/`runtimeOnly`/
    `annotationProcessor`, `developmentOnly`, `testAndDevelopmentOnly` i ich warianty `test*`/`testFixtures*`/
    własnych source setów), także dla artefaktów `pl.seniordeveloper`. Bez wersji = zarządzane BOM-ami
-   platformy (OK). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
+   platformy (OK). Biblioteka spoza ramy (np. z katalogu `appLibs` z `gradle/app.versions.toml`) przechodzi,
+   ale wpis `appLibs` o module z kanonu dalej failuje (PLAT-DEP-002). Komunikaty bramki są po angielsku i podają alias `libs.…` albo konkretną akcję.
    Kanonem jest plik `platform-canon.tsv` osadzony w pluginie (generowany z katalogu, E1-6), nie katalog `libs`
    konsumenta: nadpisanie `version(...)` w settings i brak katalogu `libs` też failują. Task jest typowany
    (`PlatformDependencyCheck`, bez `afterEvaluate`) i pisze `build/reports/platform/dependency-check.md`.
-   **Kody bramek** `PLAT-…` (np. `[PLAT-DEP-001]`) z linkiem do `docs/gates.md` na tagu wydania — każdy kod ma
+   **Kody bramek** `PLAT-…` (np. `[PLAT-DEP-002]`) z linkiem do `docs/gates.md` na tagu wydania — każdy kod ma
    sekcję, pilnuje `templates/tests/gate-codes.test.sh`; ID doctora `PD0xx` zostają osobnym kontraktem.
    **Deprecacje** (N-REL-9): `platform-deprecations.tsv` w pluginie i mapa `deprecated` w `versions.json` —
    ostrzeżenie `PLAT-DEPR-001`, `-Pplatform.deprecations.mode=fail` failuje (tak biegnie TestKit Platform).
-   Nowa biblioteka = najpierw wpis tu + `./release.sh`. Po każdej zmianie tego, co moduły Platform pobierają
+   Biblioteka używana w ≥ 2 repo = najpierw wpis tu + `./release.sh`. Po każdej zmianie tego, co moduły Platform pobierają
    (bump katalogu, nowa biblioteka, plugin): `scripts/write-verification-metadata.sh` — build-logic, test-fixtures
    i security-starter mają `gradle/verification-metadata.xml`, weryfikowane strict (docs/versions.md).
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
@@ -71,16 +74,17 @@ opublikuj, podbij pin w repo konsumenta.
    TestKit w build-logic, spełnione 2026-10-18 dla JDK 27; (2) `spotbugsMain` każdego konsumenta
    przechodzi z `ignoreFailures=false`. Nie przełączaj `ignoreFailures=false` globalnie przed (2).
 5. **GitHub Packages npm:** scope = nazwa ownera repo (lowercase). Zmiana ownera = zmiana scope + `.npmrc`.
-6. **Wersje WSZYSTKICH zależności frontendu → `frontend/packages/versions/versions.json`**
-   (frameworki, toolchain i zależności domenowe — tanstack, radix itd.). Konsumenci pinują EXACT
-   (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: zależność bez wpisu
-   w kanonie albo z inną wersją = czerwony build. `platform-bump` (bin pakietu `versions`) nakłada kanon.
-   Governance obejmuje `dependencies`, `devDependencies`, `optionalDependencies` **oraz `overrides`**
+6. **Wersje zależności ramy frontendu → `frontend/packages/versions/versions.json`**
+   (frameworki, toolchain i wspólne zależności — tanstack, radix itd.). Konsumenci pinują EXACT
+   (bez `^`/`~`); guard `platform-versions-check` w `frontend-ci` działa STRICT: pakiet z kanonu z inną
+   wersją = czerwony build. Pakiet bez wpisu w kanonie należy do konsumenta (dokładna wersja w `package.json`)
+   i guard go nie rusza (ADR-0037). `platform-bump` (bin pakietu `versions`) nakłada kanon.
+   Governance pakietów z kanonu obejmuje `dependencies`, `devDependencies`, `optionalDependencies` **oraz `overrides`**
    (płaskie i zagnieżdżone, np. `overrides.openapi-typescript.js-yaml` — tam żyją piny CVE paczek
    transytywnych); `peerDependencies` aplikacji świadomie poza nią. Piny `@dominiksienkiewicz/*` poza
    `overrides` muszą być EXACT i równe wydaniu zainstalowanej paczki `versions`. Wyjątek:
    referencje npm w formie `"$nazwa"` (np. `"typescript": "$typescript"`) — rozwija je npm, guard
-   i bump ich nie ruszają. Nowa biblioteka w repo = najpierw wpis w kanonie + `./release.sh`. Uwaga:
+   i bump ich nie ruszają. Biblioteka używana w ≥ 2 repo = najpierw wpis w kanonie + `./release.sh`. Uwaga:
    kanon trzyma WERSJE — o tym, CZY repo używa danej biblioteki, decyduje repo (zasada 2 bez zmian).
    Własny workspace `frontend/` podlega tej samej zasadzie: `dependencies`/`devDependencies` każdej paczki
    = kanon, `eslint-config` i `ui` mają też dokładne peery, pozostałe peery to zakresy dopuszczające kanon
@@ -92,9 +96,8 @@ opublikuj, podbij pin w repo konsumenta.
    w manifeście. Domyślna naprawa to `npm update <paczka> --package-lock-only` + commit lockfile'a.
    Override zakładaj tylko wtedy, gdy rodzic pinuje DOKŁADNĄ podatną wersję (`@redocly/openapi-core`
    → `js-yaml@4.3.0`), i zdejmuj go, gdy upstream się naprawi — piny `postcss`/`sharp` przeżyły
-   w czterech repo o wydanie dłużej, niż były potrzebne. Override, który wypadł z kanonu, usuwa u konsumenta
-   migracja `every-drop-stale-overrides` przy każdym `platform-bump` (od wydania z migracjami, zob. niżej);
-   wcześniej zostawał nietknięty, a guard zgłaszał „paczka bez wpisu w kanonie".
+   w czterech repo o wydanie dłużej, niż były potrzebne. Override pakietu spoza kanonu należy do konsumenta: `platform-bump` go zachowuje,
+   a `canon-diff` nie liczy usunięcia wpisu z kanonu frontendu jako akcji konsumenta.
    **Migracje wydania** (`frontend/packages/versions/migrations/`): akcja konsumenta, którą da się wykonać
    automatycznie, dostaje idempotentną migrację `<SINCE>-<slug>.sh` (bez sieci, z testem before/after
    w `test/migrations/`), a jej wpis w CHANGELOG podaje slug albo „manual". `platform-bump` odpala runner

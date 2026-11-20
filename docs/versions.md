@@ -1,7 +1,9 @@
 # Where versions are declared
 
-`gradle/catalog/libs.versions.toml` is the only place a library or plugin version is
-declared. `gradle/build-logic` includes **that same file** through its own
+`gradle/catalog/libs.versions.toml` is the only place the version of a library or plugin of the Platform frame is
+declared ([ADR-0037](adr/0037-platform-governs-the-frame.md)). A library outside the frame belongs to the
+consuming application, which registers it in a catalog of its own
+([Libraries your application owns](consuming.md#libraries-your-application-owns)). `gradle/build-logic` includes **that same file** through its own
 `settings.gradle.kts`:
 
 ```kotlin
@@ -17,7 +19,7 @@ yet exist at the time `build-logic` is compiled. The plugin marker artifacts on 
 Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)):
 
 - `pl.seniordeveloper:platform-catalog`, the version catalog, holds every alias and version. Consumers
-  declare dependencies through it, and `platformDependencyCheck` holds explicit versions to it.
+  declare the frame's dependencies through it, and `platformDependencyCheck` holds explicit versions of them to it.
 - `pl.seniordeveloper:platform-bom`, a `java-platform` built from the same TOML, holds what a catalog
   cannot express: the imports of the Spring Boot, Spring Modulith, Spring AI and JUnit BOMs, the CVE
   floors and compatibility overrides with their `because(...)` reasons (the table in
@@ -121,7 +123,8 @@ after taking a platform version that changes an override.
 
 Consumers cannot fix a vulnerable version the platform manages: the version guards reject any other
 version of a canon dependency, and a BOM-managed library follows the BOM Platform imports. A known CVE
-in the canon is therefore Platform's to fix, with a patch release.
+in the canon is therefore Platform's to fix, with a patch release. A CVE in a library the application owns
+(`appLibs`, or a package in its `package.json`) is fixed in the application: it bumps that version itself.
 
 [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml) scans what the platform imposes: a
 lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-probe`, a consumer that
@@ -151,7 +154,7 @@ Best Practices criterion `release_notes_vulns` asks for exactly this ([self-asse
 
 ## What platformDependencyCheck does not see
 
-`platformDependencyCheck` compares the versions a build *declares* with the canon embedded in the plugin
+`platformDependencyCheck` compares the versions a build *declares* for a library of the frame with the canon embedded in the plugin
 (`platform-canon.tsv`, generated from `gradle/catalog/libs.versions.toml` when build-logic is built), not with
 the consumer's `libs` catalog, which `version(...)` after `from(...)` in `settings.gradle.kts` could override:
 such an override is a failure of its own ([PLAT-DEP-004](gates.md#plat-dep-004)), and so is a build without a
@@ -163,6 +166,9 @@ the check cannot see:
 | A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); it cannot lower a floor `platform-bom` imports before Boot |
 | A resolution rule | `resolutionStrategy.eachDependency { useVersion("42.7.12") }` | `platform-bump`, which lists each one with its file and line |
 | A forced or strict version | `force("…")`, `strictly("…")` | `platform-bump`, the same way |
+| A BOM-managed library with an explicit version, in a module without `io.spring.dependency-management` | `implementation("io.netty:netty-codec:4.2.0.Final")` in a plain `seniordev.java-conventions` module | Nothing: [PLAT-DEP-003](gates.md#plat-dep-003) sees BOM management only where that plugin is applied; in a Spring application the Boot BOM still aligns the version at runtime |
+| A BOM import outside the frame | `implementation(platform("io.netty:netty-bom:4.2.0.Final"))`, `enforcedPlatform(...)` | `platformDependencyCheck`, as a warning ([PLAT-DEP-006](gates.md#plat-dep-006)) |
+| A BOM import in the dependency-management DSL | `dependencyManagement { imports { mavenBom("io.netty:netty-bom:4.2.0.Final") } }` | Nothing: PLAT-DEP-006 sees only `platform(...)` and `enforcedPlatform(...)` |
 
 Resolution rules cannot be detected from the build model, because dependency-management itself is
 built on `eachDependency`. A rule beats the BOM, so after a bump it can pin a version older than the
@@ -302,9 +308,11 @@ once the Gradle wrapper of the canon carries the fix.
 
 ## Frontend canon
 
-`frontend/packages/versions/versions.json` is the frontend counterpart of the catalog: every npm
-dependency of a consumer takes its exact version from it, and `platform-versions-check` fails
-`frontend-ci` on anything else. Platform's own workspace follows the same rule, so its packages are
+`frontend/packages/versions/versions.json` is the frontend counterpart of the catalog and holds the frame only:
+every npm package in it takes its exact version from it, and `platform-versions-check` fails `frontend-ci` on any
+other version of such a package. A package the canon lacks belongs to the consumer, as an exact version in
+`package.json`, and so does an `override` for it: `platform-versions-check` and `platform-bump` leave both alone, and
+`--fix` rewrites only packages of the canon. Platform's own workspace follows the same rule, so its packages are
 tested on the versions consumers run:
 
 - every `dependencies`, `devDependencies` and `optionalDependencies` entry of `frontend/package.json`

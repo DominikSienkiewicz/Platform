@@ -5,14 +5,19 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
 
 ## Versions
 
-- JVM: declare every dependency through the catalog, `implementation(libs.jsoup)`. A dependency the Platform BOMs
-  manage (Spring Boot starters, Jackson, JUnit) has no version at all. `./gradlew platformDependencyCheck` fails
-  on an inline version, on a version that differs from the canon and on a `version(...)` override in
-  `backend/settings.gradle.kts` ([gates](gates.md)).
-- Frontend: every version in `frontend/package.json`, `overrides` included, is exact and equal to the canon of
-  the installed `@dominiksienkiewicz/versions`; `npx platform-versions-check --fix` rewrites drift offline.
-- A library the canon lacks is added in Platform first ([add a JVM library](runbooks/add-jvm-library.md),
-  [add a frontend dependency](runbooks/add-frontend-dependency.md)), never inline in the consumer.
+- Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Their
+  versions are never overridden ([gates](gates.md)).
+- JVM: declare a library of the frame through the catalog, `implementation(libs.jsoup)`. A dependency the Platform
+  BOMs manage (Spring Boot starters, Jackson, JUnit) has no version at all. `./gradlew platformDependencyCheck` fails
+  on an inline version of either, on a version that differs from the canon and on a `version(...)` override in
+  `backend/settings.gradle.kts`.
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`backend/gradle/app.versions.toml`,
+  [consuming](consuming.md#libraries-your-application-owns)), frontend an exact version in `frontend/package.json`.
+  Add it to Platform only when a second repository uses it ([add a JVM library](runbooks/add-jvm-library.md),
+  [add a frontend dependency](runbooks/add-frontend-dependency.md)).
+- Frontend: a package of the canon is exact and equal to the canon of the installed `@dominiksienkiewicz/versions`,
+  `overrides` included; `npx platform-versions-check --fix` rewrites that drift offline and leaves your own packages
+  alone.
 - An override above a BOM or a transitive pin is a last resort with its removal condition
   ([ADR-0008](adr/0008-overrides-are-a-last-resort.md)); a CVE in a transitive npm package is fixed first with
   `npm update <package> --package-lock-only`.
@@ -28,7 +33,7 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
 | Hand a branch off | `scripts/merge.sh <branch> '<conventional commit message>'` |
 
 Run whole suites only when asked; `lint` and `format` are the default gate. A failure carries a code such as
-`[PLAT-DEP-001]`; its section in [gates.md](gates.md) names the fix.
+`[PLAT-DEP-002]`; its section in [gates.md](gates.md) names the fix.
 
 ## Rules
 

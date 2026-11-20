@@ -5,11 +5,12 @@
 For a repository that pins [DominikSienkiewicz/Platform](https://github.com/DominikSienkiewicz/Platform) {{VERSION}}.
 The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
-- Versions come only from the catalog (`libs.<alias>` in Gradle) or the frontend canon (`versions.json`).
-  Never write a version inline: `platformDependencyCheck` and `platform-versions-check` fail the build.
-- A new library starts in Platform: an entry in `gradle/catalog/libs.versions.toml` or
-  `frontend/packages/versions/versions.json`, a release, then `scripts/platform-bump.sh`, then `libs.<alias>`.
-- Gate failures carry a code such as `[PLAT-DEP-001]` with a link; follow the fix it names.
+- Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Never
+  give a frame library another version; `platformDependencyCheck` and `platform-versions-check` fail the build
+  (Java and Gradle come from the toolchain and the wrapper).
+- A library the frame does not know belongs to this repository: Gradle `appLibs` (`backend/gradle/app.versions.toml`),
+  frontend an exact version in `package.json`. A library a Spring or Platform BOM manages takes no version.
+- Gate failures carry a code such as `[PLAT-DEP-002]` with a link; follow the fix it names.
 - Run Gradle through `AI_AGENT=1 bash scripts/agent-gradle.sh <tasks>`. The default gate is `lint` and `format`;
   run tests only when asked.
 - Write the test before the code: run only that test (`--tests <Class>`) to see it red in its assertion, then

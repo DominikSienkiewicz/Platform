@@ -5,11 +5,13 @@ data class DeclaredDependency(
 	val key: String,
 	val version: String,
 	val bucket: String,
+	val platform: Boolean = false,
 ) {
-	fun encode(): String = "$key|$version|$bucket"
+	fun encode(): String = "$key|$version|$bucket|$platform"
 
 	companion object {
-		fun decode(value: String): DeclaredDependency = value.split('|', limit = 3).let { DeclaredDependency(it[0], it[1], it[2]) }
+		fun decode(value: String): DeclaredDependency =
+			value.split('|', limit = 4).let { DeclaredDependency(it[0], it[1], it[2], it.getOrNull(3).toBoolean()) }
 	}
 }
 
@@ -39,7 +41,10 @@ object DependencyGovernance {
 			.map { it.split('\t') }
 			.associate { (key, version, accessor) -> key to CanonEntry(version, accessor) }
 
-	/** Klucze bez wpisu w kanonie: tylko dla nich akcja taska pyta BOM-y o zarządzaną wersję. */
+	/**
+	 * Klucze bez wpisu w kanonie: sprawdza się je już tylko pod kątem zarządzania przez BOM-y (akcja taska pyta BOM-y
+	 * o zarządzaną wersję). Biblioteka spoza kanonu, której żaden BOM nie zarządza, należy do konsumenta.
+	 */
 	fun uncataloged(
 		declared: List<DeclaredDependency>,
 		canon: Map<String, CanonEntry>,
@@ -89,13 +94,25 @@ object DependencyGovernance {
 				}
 
 				else -> {
-					GateFinding(
-						PlatformGates.DEP_NOT_IN_CATALOG,
-						"$declaredAs — not in the Platform catalog and no Platform BOM manages it: add it to " +
-							"gradle/catalog/libs.versions.toml in DominikSienkiewicz/Platform, release, and bump the Platform pin",
-					)
+					null
 				}
 			}
+		}
+
+	/**
+	 * Import BOM-u spoza kanonu przez `platform(...)` albo `enforcedPlatform(...)`: jego wersje mogą nadpisać ramę
+	 * (enforcedPlatform wprost). Tylko ostrzega (ADR-0019). BOM z kanonu w innej wersji łapie violations (PLAT-DEP-002).
+	 */
+	fun foreignBoms(
+		declared: List<DeclaredDependency>,
+		canon: Map<String, CanonEntry>,
+	): List<GateFinding> =
+		declared.filter { it.platform && it.key !in canon }.map { dependency ->
+			GateFinding(
+				PlatformGates.DEP_FOREIGN_BOM,
+				"${dependency.key}:${dependency.version} (${dependency.bucket}) — a BOM outside the Platform frame: its versions can " +
+					"override the frame. Remove it, or propose the BOM for the frame (ADR-0037)",
+			)
 		}
 
 	/**
@@ -134,16 +151,23 @@ object DependencyGovernance {
 		project: String,
 		findings: List<GateFinding>,
 		deprecations: List<GateFinding>,
+		warnings: List<GateFinding> = emptyList(),
 	): String =
 		buildString {
 			appendLine("### platformDependencyCheck — $project")
 			appendLine()
 			if (findings.isEmpty()) {
-				appendLine("Every explicit dependency version matches the Platform canon.")
+				appendLine("Every explicit version of a frame library matches the Platform canon.")
 			} else {
 				appendLine("| Code | Finding |")
 				appendLine("|---|---|")
 				findings.forEach { appendLine("| [${it.code}](${PlatformGates.link(it.code)}) | ${it.text.replace("|", "\\|")} |") }
+			}
+			if (warnings.isNotEmpty()) {
+				appendLine()
+				appendLine("Warnings, the build still passes:")
+				appendLine()
+				warnings.forEach { appendLine("- [${it.code}](${PlatformGates.link(it.code)}) ${it.text}") }
 			}
 			if (deprecations.isNotEmpty()) {
 				appendLine()

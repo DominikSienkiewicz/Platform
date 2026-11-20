@@ -245,9 +245,8 @@ def canon_changes(old, new):
         if before is None:
             changes.append(Change("canon", name, f"frontend canon `{name}` added: {after}"))
         elif after is None:
-            changes.append(
-                Change("canon", name, f"frontend canon `{name}` removed", f"`platform-versions-check` fails a frontend that still depends on `{name}`")
-            )
+            # Paczka poza kanonem należy do konsumenta, więc to nie jest akcja konsumenta.
+            changes.append(Change("canon", name, f"frontend canon `{name}` removed: the consumer owns its version from now on"))
         elif before != after:
             changes.append(Change("canon", name, f"frontend canon `{name}`: {before} → {after}"))
     return changes

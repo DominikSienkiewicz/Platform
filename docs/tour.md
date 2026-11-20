@@ -13,17 +13,18 @@ the settings plugin and the version catalog. The settings plugin
 ([`seniordev.settings-conventions`](../gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts))
 adds the repositories in a fixed order (an explicit `-PplatformRepository` first, then Maven Central, then
 GitHub Packages) and refuses a Gradle older than the one TestKit proves. The catalog
-([`libs.versions.toml`](../gradle/catalog/libs.versions.toml)) is the only place a library version is
-written. Guard: `platform-doctor` (PD020) and the pin rewrite of `platform-bump` keep the two pins equal;
+([`libs.versions.toml`](../gradle/catalog/libs.versions.toml)) is the only place the version of a frame library
+is written. Guard: `platform-doctor` (PD020) and the pin rewrite of `platform-bump` keep the two pins equal;
 [versions.md](versions.md) explains why a catalog and not a BOM.
 
 ## 2. A gate against stray versions
 
 `platformDependencyCheck` in
 [`seniordev.java-conventions`](../gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts)
-fails a consumer's `check` when a declared dependency or constraint carries a version the catalog does not
-give, in every declarable bucket, Platform's own artifacts included, and its message names the `libs.…`
-alias to use. Guard: the TestKit suite in
+fails a consumer's `check` when a declared dependency or constraint of the frame carries a version the catalog does
+not give, in every declarable bucket, Platform's own artifacts included, and its message names the `libs.…`
+alias to use. A library outside the frame is the application's own and passes
+([ADR-0037](adr/0037-platform-governs-the-frame.md)). Guard: the TestKit suite in
 [`PlatformDependencyCheckFunctionalTest`](../gradle/build-logic/src/test/kotlin/pl/seniordeveloper/gradle/PlatformDependencyCheckFunctionalTest.kt).
 
 ## 3. Versions the plugins impose come from the catalog

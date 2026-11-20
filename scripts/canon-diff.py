@@ -8,8 +8,9 @@ change nothing here. Prints a Markdown report and, with --github-output <file>, 
 consumer_action=true|false for the job that labels the pull request.
 
 Consumer action (ADR-0002, a MINOR in the 1.x line) is: a removed catalog alias (version, library, bundle,
-plugin), a package removed from the frontend canon, and in the workflow contract a removed input or secret,
-a new required input, a new or raised permission, or a changed default. A changed version is not, because
+plugin), and in the workflow contract a removed input or secret, a new required input, a new or raised
+permission, or a changed default. A package removed from the frontend canon is not: the consumer owns its
+version from now on. A changed version is not, because
 platform-bump moves it and regenerates the lockfiles; a changed template is reported for re-copying.
 """
 import os

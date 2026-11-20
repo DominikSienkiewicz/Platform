@@ -90,7 +90,7 @@ default tasks are `compileJava compileTestJava platformDependencyCheck`. The con
 never touched, and the worktree is removed afterwards unless `--keep` is passed. `--frontend` also
 checks the consumer's `frontend/`: it applies the canon of the working tree with
 `platform-versions-check --fix` in the worktree and runs the check again, so what remains is what a bump
-would not fix, such as a dependency without a canon entry.
+would not fix, such as a frame package pinned to a version that differs from the canon.
 
 `scripts/canary.sh` runs that preview with `--frontend` on every consumer of `scripts/consumers.txt`
 and records the result for `HEAD`, which `release.sh` requires ([RELEASING.md](../RELEASING.md#cutting-a-release)).

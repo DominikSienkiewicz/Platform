@@ -1,0 +1,6 @@
+{
+  "name": "consumer",
+  "overrides": {
+    "postcss": "8.4.31"
+  }
+}

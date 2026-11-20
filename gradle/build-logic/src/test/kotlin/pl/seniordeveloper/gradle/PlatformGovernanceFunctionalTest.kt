@@ -42,17 +42,40 @@ class PlatformGovernanceFunctionalTest {
 	@Test
 	fun `a dependency a late afterEvaluate adds is governed and reported in Markdown`() {
 		val consumer = ConsumerFixture(directory, "java-library")
-		consumer.appendToBuildScript("afterEvaluate { dependencies { \"implementation\"(\"com.example:late:1.0\") } }")
+		consumer.appendToBuildScript("afterEvaluate { dependencies { \"implementation\"(\"org.jsoup:jsoup:1.0.0\") } }")
 		val summary = directory.resolve("summary.md").toFile()
 		val environment = System.getenv().toMutableMap().apply { put("GITHUB_STEP_SUMMARY", summary.path) }
 
 		val result = consumer.runner("platformDependencyCheck").withEnvironment(environment).buildAndFail()
 
 		assertEquals(TaskOutcome.FAILED, result.task(":platformDependencyCheck")?.outcome)
-		assertTrue(result.output.contains("[PLAT-DEP-001] com.example:late:1.0 (implementation)"), result.output)
+		assertTrue(result.output.contains("[PLAT-DEP-002] org.jsoup:jsoup:1.0.0 (implementation)"), result.output)
 		val report = consumer.file("build/reports/platform/dependency-check.md").readText()
-		assertTrue(report.contains("| [PLAT-DEP-001]("), report)
+		assertTrue(report.contains("| [PLAT-DEP-002]("), report)
 		assertTrue(summary.readText().contains("### platformDependencyCheck — :"), "the report must reach the job summary")
+	}
+
+	@Test
+	fun `a consumer catalog appLibs with its own library passes and cannot override the canon`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+		consumer.file("gradle/app.versions.toml").writeText(
+			"""
+			[libraries]
+			own-library = "com.example:own-library:2.3.4"
+			jsoup-other = "org.jsoup:jsoup:1.0.0"
+			""".trimIndent(),
+		)
+		editSettings(consumer) { line ->
+			if (line.trim() == "create(\"libs\") {") "\t\tcreate(\"appLibs\") { from(files(\"gradle/app.versions.toml\")) }\n$line" else line
+		}
+		consumer.appendToBuildScript("dependencies { implementation(appLibs.own.library) }")
+
+		val passed = consumer.runner("platformDependencyCheck").build()
+		consumer.appendToBuildScript("dependencies { implementation(appLibs.jsoup.other) }")
+		val failed = consumer.runner("platformDependencyCheck").buildAndFail()
+
+		assertEquals(TaskOutcome.SUCCESS, passed.task(":platformDependencyCheck")?.outcome)
+		assertTrue(failed.output.contains("[PLAT-DEP-002] org.jsoup:jsoup:1.0.0 (implementation)"), failed.output)
 	}
 
 	@Test
@@ -69,6 +92,18 @@ class PlatformGovernanceFunctionalTest {
 		)
 		assertEquals(TaskOutcome.FAILED, failed.task(":platformDependencyCheck")?.outcome)
 		assertTrue(failed.output.contains("platform.deprecations.mode=fail and 1 deprecated item(s) remain"), failed.output)
+	}
+
+	@Test
+	fun `a BOM import outside the frame warns and the build passes`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+		consumer.appendToBuildScript("dependencies { implementation(platform(\"io.netty:netty-bom:4.2.0.Final\")) }")
+
+		val result = consumer.runner("platformDependencyCheck").build()
+
+		assertEquals(TaskOutcome.SUCCESS, result.task(":platformDependencyCheck")?.outcome)
+		assertTrue(result.output.contains("BOM imports outside the Platform frame in : (1)"), result.output)
+		assertTrue(result.output.contains("[PLAT-DEP-006] io.netty:netty-bom:4.2.0.Final (implementation)"), result.output)
 	}
 
 	private fun editSettings(

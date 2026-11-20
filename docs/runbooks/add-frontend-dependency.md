@@ -2,6 +2,14 @@
 
 **Preconditions:** the package is needed by a consumer frontend and has no entry in the canon.
 
+**Decide first: frame or application.** The canon holds the frame only; a package outside it belongs to the
+application ([ADR-0037](../adr/0037-platform-governs-the-frame.md)).
+
+- Used by one repository: do not touch Platform. Add the package to `frontend/package.json` at an exact version,
+  run `npm install --package-lock-only` and `npx platform-versions-check`. It leaves the package, and an override
+  for it, alone.
+- Used by two or more repositories: it belongs to the frame, so follow the steps below.
+
 In Platform:
 
 1. Add `"<package>": "<exact version>"` to `frontend/packages/versions/versions.json`.

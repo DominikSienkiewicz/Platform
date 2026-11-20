@@ -63,7 +63,7 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | `checkstyleMain`, `checkstyleTest` | yes | `@SuppressWarnings("checkstyle:<checkname>")` on a declaration, with the check name in lower case | Platform rules, `maxWarnings = 0` |
 | `jacocoTestReport`, `jacocoTestCoverageVerification` | yes | `coverageMinimum` | 0.00, coverage of `test` and `integrationTest` together |
 | `platformCoverageDataCheck` | yes | `coverageMinimum` | fails when the threshold is above 0 and no test produced JaCoCo data |
-| `platformDependencyCheck` | yes | `platform.deprecations.mode` | every explicit dependency version must match the canon embedded in the plugin, the consumer's `libs` catalog must not override it and must exist; a library outside the canon is told apart by whether a Platform BOM manages it. It sees dependencies added in a late `afterEvaluate` too, writes `build/reports/platform/dependency-check.md` (and the job summary in GitHub Actions) and lists deprecated items |
+| `platformDependencyCheck` | yes | `platform.deprecations.mode` | every explicit version of a library of the canon embedded in the plugin must match it, an explicit version of a BOM-managed library fails, the consumer's `libs` catalog must not override the canon and must exist; a library outside the canon is the application's own and passes (for example from an `appLibs` catalog). It sees dependencies added in a late `afterEvaluate` too, writes `build/reports/platform/dependency-check.md` (and the job summary in GitHub Actions) and lists deprecated items |
 | `platformPinCheck` | yes | none | the settings plugin and `platform-catalog` are the same release; a mismatch also warns at configuration time |
 | `platformQuarantineCheck` | yes | `CI`, `platform.quarantine.today` | every test tagged `quarantine` needs `// quarantine: <issue-url> until YYYY-MM-DD` in the three lines above the tag ([PLAT-QUA-001](gates.md#plat-qua-001)); an expired date fails on CI and warns locally ([PLAT-QUA-002](gates.md#plat-qua-002)); writes `build/reports/platform/quarantine.txt` |
 | `quarantineTest` | no | `@Tag("quarantine")` | runs only the quarantined tests, with `ignoreFailures`, so they keep reporting; every other test task excludes the tag |
@@ -72,7 +72,7 @@ Source: [`seniordev.java-conventions.gradle.kts`](../gradle/build-logic/src/main
 | `platformRuntimeImageCheck` | yes | none | the final `FROM` of `Dockerfile` (project or root) must run Java 27 or newer; skipped when there is no Dockerfile or the image is not a JVM image |
 | test tasks | — | `AI_AGENT`, `platform.agent.test*`, `springContextCacheSize`, `platform.junit.baseline`, `platform.test.retry`, `platform.test.guard` | JUnit Platform with the JUnit BOM, Jupiter and the launcher of the canon; each task passes its name in the system property `platform.test.task`, and `platform.test.guard` when the build sets it ([container guard](#test-fixtures)) |
 
-Every failure carries a code such as `[PLAT-DEP-001]` and a link to its section of [gates.md](gates.md) in the
+Every failure carries a code such as `[PLAT-DEP-002]` and a link to its section of [gates.md](gates.md) in the
 docs of that release; the fixes are also in [consuming.md](consuming.md#troubleshooting). The tasks are
 compatible with the configuration cache, which Platform's TestKit suite runs with every Gradle deprecation
 the conventions cause as a failure (Decision 10); consumers opt in with `org.gradle.configuration-cache=true`.
@@ -202,7 +202,7 @@ Generated from each `package.json` by `scripts/docs-gen.sh`.
 | `@dominiksienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
 | `@dominiksienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
 | `@dominiksienkiewicz/ui` | `frontend/packages/ui-registry/` | yes | — | shadcn registry (utils, button). |
-| `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend dependency. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
+| `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
 | `@dominiksienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
 <!-- /docs-gen -->
 

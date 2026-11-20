@@ -9,20 +9,19 @@ import java.nio.file.Path
 
 /**
  * Negatywne przypadki platformDependencyCheck — bramki governance wpiętej w `check` u wszystkich konsumentów.
- * Bramka zbiera wszystkie naruszenia w jeden wyjątek, więc przypadki są pogrupowane w trzy przebiegi TestKit.
+ * Bramka zbiera wszystkie naruszenia w jeden wyjątek, więc przypadki są pogrupowane w cztery przebiegi TestKit.
  */
 class PlatformDependencyCheckFunctionalTest {
 	@TempDir
 	lateinit var directory: Path
 
 	@Test
-	fun `explicit versions outside the canon fail with an actionable message`() {
+	fun `explicit versions that differ from the canon fail with an actionable message`() {
 		val consumer = ConsumerFixture(directory, "java-library")
 		consumer.appendToBuildScript(
 			"""
 			dependencies {
 			    implementation("org.jsoup:jsoup:1.0.0")
-			    implementation("com.example:unknown:1.0")
 			    implementation(platform("org.springframework.boot:spring-boot-dependencies:4.0.0"))
 			    testImplementation("org.jsoup:jsoup") { version { strictly("1.0.1") } }
 			}
@@ -39,7 +38,16 @@ class PlatformDependencyCheckFunctionalTest {
 				"springBoot",
 			)}: declare it as libs.spring.boot.bom",
 		)
-		assertViolation(output, "com.example:unknown:1.0 (implementation) — $NOT_IN_CATALOG")
+	}
+
+	@Test
+	fun `an explicit version outside the canon passes`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+		consumer.appendToBuildScript("""dependencies { implementation("com.example:unknown:1.0") }""")
+
+		val result = consumer.runner("platformDependencyCheck").build()
+
+		assertEquals(TaskOutcome.SUCCESS, result.task(":platformDependencyCheck")?.outcome)
 	}
 
 	@Test
@@ -114,10 +122,4 @@ class PlatformDependencyCheckFunctionalTest {
 	}
 
 	private fun canon(name: String): String = System.getProperty("platform.canon.$name")
-
-	private companion object {
-		const val NOT_IN_CATALOG =
-			"not in the Platform catalog and no Platform BOM manages it: add it to gradle/catalog/libs.versions.toml in " +
-				"DominikSienkiewicz/Platform, release, and bump the Platform pin"
-	}
 }
