@@ -113,15 +113,15 @@ secret exists (the secret is only reported; its value is yours to set).
    to the latest release that has it.
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
    (the report describes private repositories, so it stays local and never runs in CI), and who
-   still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
-   `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
-   have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick
-   the number by the [contract](docs/adr/0002-release-and-versioning-contract.md): consumer
-   action means a MINOR, anything else a PATCH. `scripts/release-notes.sh v<previous>..HEAD` drafts
-   the section from history: the first-parent subjects grouped by Conventional Commit type, and the
-   consumer actions from the `Consumer-Action:` trailers of every commit since the previous tag
-   (`None.` when there are none). In [docs/compatibility.md](docs/compatibility.md),
-   give the top row that version and the release date when it reads `unreleased`.
+   still calls a workflow it changes. Then decide on the notes. Pick the number by the
+   [contract](docs/adr/0002-release-and-versioning-contract.md): consumer action means a MINOR, anything
+   else a PATCH. `release.sh` composes the `## [X.Y.Z] - YYYY-MM-DD` section of [CHANGELOG.md](CHANGELOG.md)
+   from the commits since the previous tag unless you wrote it yourself (see step 4);
+   `scripts/release-notes.sh v<previous>..HEAD` prints what it would compose. To write the notes by hand
+   instead, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]`
+   above it; the section must have a `### Consumer action required` subsection, `None.` when nothing is
+   required. In [docs/compatibility.md](docs/compatibility.md), give the top row that version and the
+   release date when it reads `unreleased`.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
 4. Release:
@@ -139,14 +139,24 @@ The first form releases a patch (current version + 0.0.1), the second an explici
 required: an English Conventional Commit, which becomes the body of the release commit
 `chore(release): platform X.Y.Z`.
 
+The notes are the version's section of CHANGELOG.md. A hand-written `## [X.Y.Z] - YYYY-MM-DD` section is
+used as it is. Without one, `release.sh` composes it with `scripts/release-notes.sh` from the commits since
+the previous `vX.Y.Z` tag and inserts it under an empty `## [Unreleased]`, dated today: the first-parent
+subjects grouped as **Added** (`feat`), **Fixed** (`fix`) and **Changed** (every other type), and under
+`### Consumer action required` the `Consumer-Action:` trailers of every commit in the range, plus a
+`Breaking change: …` line for a commit without a trailer that has a `!` in its subject or a
+`BREAKING CHANGE:` footer; `None.` when there are none. The release commit then carries CHANGELOG.md too.
+
 Before it changes anything, `release.sh` refuses to run when:
 
 - the working tree is not clean (untracked files included), the current branch is not `main`, or
   `HEAD` differs from `origin/main`;
 - the message is not a Conventional Commit or contains Polish characters;
 - the version's tag already exists;
-- CHANGELOG.md has no section for the version, or the section has no
-  `### Consumer action required` subsection;
+- a hand-written section for the version has no `### Consumer action required` subsection;
+- the section has to be composed, but CHANGELOG.md has no `## [Unreleased]` heading, has entries under
+  it, or a first-parent subject since the previous tag is not a Conventional Commit (write the section
+  by hand in those cases);
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
 - the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;
@@ -157,8 +167,8 @@ Before it changes anything, `release.sh` refuses to run when:
 
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
-commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
-message is the CHANGELOG section. The tree therefore always carries one
+commits only those files (and CHANGELOG.md when it composed the section), pushes `main`, and creates
+and pushes the annotated `vX.Y.Z` tag, whose message is the CHANGELOG section. The tree therefore always carries one
 version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
 falls back to a hard-coded version, and `templates/tests/release-script.test.sh` pins every
 refusal above.
@@ -244,13 +254,14 @@ that version of the affected package on GitHub Packages, or release a higher ver
 An npm package is published in a single request, so re-running the job after a partial failure is
 safe: it publishes only the packages that are still missing.
 
-## Merge messages and the draft release
+## Merge messages and pull request titles
 
 `scripts/merge.sh` (`./merge.sh` in Platform) refuses a merge message that is not a Conventional Commit, as
 `release.sh` does: the merge commits on `main` are what `scripts/release-notes.sh` turns into the next
-section. After every push to `main`, `release-draft.yml` replaces the draft GitHub Release **Next** with those
-notes since the last tag, so the next section and any `Consumer-Action:` trailer are visible before
-`./release.sh`. The draft creates no tag.
+section. A pull request title is held to the same pattern by the `pr-title` job of `ci.yml`, a required check
+of the `main` ruleset (`.github/rulesets/main.json`, applied with `scripts/repo-settings.sh --apply`).
+`scripts/release-notes.sh v<previous>..HEAD` shows the next section and any `Consumer-Action:` trailer before
+`./release.sh`.
 
 ## Support policy
 

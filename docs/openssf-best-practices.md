@@ -40,7 +40,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 |---|---|---|---|
 | `repo_public` | MUST | **Met** | The public repository `DominikSienkiewicz/Platform` on GitHub. |
 | `repo_track` | MUST | **Met** | Git records what changed, who changed it and when. |
-| `repo_interim` | MUST | **Met** | Work lands on the public `main` before any release; [`release-draft.yml`](../.github/workflows/release-draft.yml) keeps a draft release of the unreleased state. |
+| `repo_interim` | MUST | **Met** | Work lands on the public `main` before any release; `scripts/release-notes.sh` shows the unreleased changes since the last tag. |
 | `repo_distributed` | SUGGESTED | **Met** | Git. |
 | `version_unique` | MUST | **Met** | One `platformVersion` per release, tagged `vX.Y.Z`; a version is never republished ([ADR-0002](adr/0002-release-and-versioning-contract.md)). |
 | `version_semver` | SUGGESTED | **Owner action** | The format is `MAJOR.MINOR.PATCH`, but ADR-0002 makes a MINOR carry consumer action and says it deviates from strict SemVer on purpose. Recommended answer: Met, with that sentence as the justification. |

@@ -260,8 +260,7 @@ toolchain; each finding opens or updates one issue, and its next-JDK leg builds 
 toolchain and fails when a tool cannot read its bytecode, report-only SpotBugs included. The catalog pins
 JaCoCo 0.8.16 (Java 27 support and experimental Java 28 support) and SpotBugs 4.10.5 (ASM 9.11).
 `PlatformJava28AnalyzerFunctionalTest` checks instrumentation and analysis of class-file major 72 on
-the regular JDK 27 test host; the canary checks the actual early-access toolchain. After every push to `main`,
-`release-draft.yml` keeps the draft release **Next** current.
+the regular JDK 27 test host; the canary checks the actual early-access toolchain.
 
 ## License
 

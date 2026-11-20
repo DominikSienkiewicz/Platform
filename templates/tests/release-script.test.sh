@@ -53,6 +53,7 @@ seed_repo() {
   printf '# Changelog\n\n## [%s] - 2026-10-18\n\n### Consumer action required\n\nNone.\n' "$NEXT" > "$work/CHANGELOG.md"
   cp "$root/release.sh" "$work/release.sh"
   cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
+  cp "$root/scripts/release-notes.sh" "$work/scripts/release-notes.sh"
   echo '# fixture' > "$work/README.md"
   git -C "$work" add -A
   git -C "$work" commit -q -m initial
@@ -181,6 +182,7 @@ seed_repo() {
   printf '# Changelog\n\n## [Unreleased]\n\n%s\n' "$changelog" > "$work/CHANGELOG.md"
   cp "$root/release.sh" "$work/release.sh"
   cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
+  cp "$root/scripts/release-notes.sh" "$work/scripts/release-notes.sh"
   git -C "$work" add -A
   git -C "$work" commit -q -m initial
   git -C "$work" remote add origin "$origin"
@@ -242,9 +244,6 @@ assert_refused "$work" 'an automatic patch for a feat message' 'needs an explici
 work=$(seed_repo breaking-patch "$(section 1.2.4 'None.')")
 assert_refused "$work" 'an automatic patch for a breaking message' 'needs an explicit version' 'fix!: drop a knob'
 
-work=$(seed_repo no-section "$(section 1.2.9 'None.')")
-assert_refused "$work" 'a version without a CHANGELOG section' 'has no "## [1.2.4]' 'fix: patch it'
-
 work=$(seed_repo no-action "$(printf '## [1.2.4] - 2026-10-18\n\n### Fixed\n\n- Something.\n')")
 assert_refused "$work" 'a section without Consumer action required' 'Consumer action required' 'fix: patch it'
 
@@ -298,6 +297,7 @@ seed_repo() {
   printf '# Changelog\n\n## [1.2.4] - 2026-10-18\n\n### Consumer action required\n\nNone.\n' > "$work/CHANGELOG.md"
   cp "$root/release.sh" "$work/release.sh"
   cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
+  cp "$root/scripts/release-notes.sh" "$work/scripts/release-notes.sh"
   git -C "$work" add -A
   git -C "$work" commit -q -m initial
   git -C "$work" remote add origin "$origin"
@@ -365,6 +365,7 @@ seed() {
   printf '# Changelog\n\n' > "$work/CHANGELOG.md"
   cp "$root/release.sh" "$work/release.sh"
   cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
+  cp "$root/scripts/release-notes.sh" "$work/scripts/release-notes.sh"
   git -C "$work" add -A
   git -C "$work" commit -q -m initial
   [[ "$2" == no ]] || git -C "$work" tag v1.2.3
@@ -422,6 +423,69 @@ work=$(seed untagged no "$trailer" "$(section 1.2.4 'None.')")
 release "$work" "fix: release" 1.2.4
 [[ $rc -eq 0 ]] || { cat "$work.log"; fail 'without the previous tag there is no history to check'; }
 
+# --- Sekcja złożona z commitów, gdy CHANGELOG.md nie ma sekcji wersji ---------------------
+# release.sh składa ją scripts/release-notes.sh od taga poprzedniego wydania, wstawia pod "## [Unreleased]"
+# i commituje CHANGELOG.md razem z plikami wersji; reguły MINOR/PATCH działają na złożonej sekcji.
+unreleased=$'## [Unreleased]\n'
+
+work=$(seed composed-patch yes "$trailer" "$unreleased")
+release "$work" "fix: release" 1.2.4
+refused "$work" 'Commits since v1.2.3 record consumer action, so this must be a MINOR release (1.3.0):'
+
+work=$(seed composed-minor yes "$trailer" "$unreleased")
+release "$work" "feat: release" 1.3.0
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a MINOR release must compose its section from the commits'; }
+change=$(git -C "$work" rev-parse --short HEAD~1)
+composed=$(git -C "$work" show HEAD:CHANGELOG.md)
+printf '%s\n' "$composed" > "$tmp/composed.md"
+grep -qE '^## \[1\.3\.0\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$' <<<"$composed" || { echo "$composed"; fail 'the composed section must have a dated version heading'; }
+[[ "$(grep -m2 '^## ' <<<"$composed")" == "## [Unreleased]"$'\n'"## [1.3.0] - "* ]] \
+  || { echo "$composed"; fail 'the composed section must go right under ## [Unreleased]'; }
+action=$(bash "$root/scripts/changelog-section.sh" --consumer-action 1.3.0 "$tmp/composed.md")
+[[ "$action" == "- rename platform.x to platform.y in application.yml ($change)" ]] \
+  || { echo "$composed"; fail 'the Consumer-Action trailer must become the consumer action of the composed section'; }
+grep -qx -- "- rename the knob ($change)" <<<"$composed" || { echo "$composed"; fail 'the feat commit must be listed'; }
+[[ "$(git -C "$work" diff --name-only HEAD~1 HEAD)" == *CHANGELOG.md* ]] || fail 'the release commit must carry the composed CHANGELOG.md'
+[[ -z "$(git -C "$work" status --porcelain)" ]] || fail 'a composed release must leave a clean tree'
+git -C "$work" tag -l --format='%(contents)' v1.3.0 | grep -qxF -- "- rename platform.x to platform.y in application.yml ($change)" \
+  || fail 'the tag message must carry the composed consumer action'
+
+work=$(seed composed-bang yes 'refactor!: drop the knob' "$unreleased")
+release "$work" "feat: release" 1.3.0
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a MINOR release after a "!" commit must compose its section'; }
+git -C "$work" show HEAD:CHANGELOG.md > "$tmp/composed.md"
+bash "$root/scripts/changelog-section.sh" --consumer-action 1.3.0 "$tmp/composed.md" \
+  | grep -qE '^- Breaking change: drop the knob \([0-9a-f]+\)$' || fail 'a "!" commit must become a consumer action'
+
+work=$(seed composed-none yes 'fix: keep the lockfile' "$unreleased")
+release "$work" "fix: release" 1.2.4
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a PATCH without consumer action must compose its section'; }
+git -C "$work" show HEAD:CHANGELOG.md > "$tmp/composed.md"
+[[ "$(bash "$root/scripts/changelog-section.sh" --consumer-action 1.2.4 "$tmp/composed.md")" == None. ]] \
+  || fail 'a composed section without trailers or "!" says None.'
+
+# Ręcznie napisana sekcja wersji wygrywa ze składaniem: release.sh bierze ją bez zmian i nie dotyka CHANGELOG.md.
+work=$(seed hand-written-patch yes 'fix: keep the lockfile' "$unreleased"$'\n'"$(section 1.2.4 'None.')")
+before=$(git -C "$work" show HEAD:CHANGELOG.md)
+release "$work" "fix: release" 1.2.4
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a hand-written section must release'; }
+[[ "$(git -C "$work" show HEAD:CHANGELOG.md)" == "$before" ]] || fail 'a hand-written section must leave CHANGELOG.md as it is'
+[[ "$(git -C "$work" diff --name-only HEAD~1 HEAD)" != *CHANGELOG.md* ]] || fail 'a hand-written release commits only the version files'
+notes=$(git -C "$work" tag -l --format='%(contents)' v1.2.4)
+grep -qx -- '- Something.' <<<"$notes" || fail 'the tag must carry the hand-written section'
+if grep -q 'keep the lockfile' <<<"$notes"; then fail 'a hand-written section must not be composed from the commits'; fi
+
+# Składanie odmawia, gdy nie wiadomo, gdzie wstawić sekcję albo co z niej opublikować.
+work=$(seed no-unreleased yes 'fix: keep the lockfile' '')
+release "$work" "fix: release" 1.2.4
+refused "$work" 'no "## [Unreleased]" heading'
+work=$(seed unreleased-entries yes 'fix: keep the lockfile' "$unreleased"$'\n### Fixed\n\n- An entry.\n')
+release "$work" "fix: release" 1.2.4
+refused "$work" 'has entries under "## [Unreleased]"'
+work=$(seed unclassified yes 'update libs' "$unreleased")
+release "$work" "fix: release" 1.2.4
+refused "$work" 'not Conventional Commits'
+
 # release-notes.sh: first-parent tematy po typie, trailery ze wszystkich commitów, bez dubli po --no-ff.
 notes="$tmp/notes"
 git init -q -b main "$notes"
@@ -446,6 +510,14 @@ grep -qE '^- update libs \([0-9a-f]+\)$' <<<"$out" || fail 'a non-conventional s
 [[ "$(head -3 <<<"$out")" == $'### Consumer action required\n\n- run platform-bump twice'* ]] || { echo "$out"; fail 'the section starts with the consumer action'; }
 none=$(cd "$notes" && bash "$root/scripts/release-notes.sh" HEAD~1..HEAD)
 grep -qx 'None.' <<<"$none" || { echo "$none"; fail 'a range without trailers says None.'; }
+git -C "$notes" commit -q --allow-empty -m 'refactor(versions)!: drop the legacy flag'
+git -C "$notes" commit -q --allow-empty -m $'fix: drop the knob\n\nBREAKING CHANGE: platform.x is gone'
+git -C "$notes" commit -q --allow-empty -m $'feat!: rename the flag\n\nConsumer-Action: rename flag x to y'
+breaking=$(cd "$notes" && bash "$root/scripts/release-notes.sh" HEAD~3..HEAD)
+grep -qE '^- Breaking change: drop the legacy flag \([0-9a-f]+\)$' <<<"$breaking" || { echo "$breaking"; fail 'a "!" commit must become a consumer action'; }
+grep -qE '^- Breaking change: platform.x is gone \([0-9a-f]+\)$' <<<"$breaking" || { echo "$breaking"; fail 'a BREAKING CHANGE footer must become a consumer action'; }
+grep -qE '^- rename flag x to y \([0-9a-f]+\)$' <<<"$breaking" || { echo "$breaking"; fail 'the trailer of a "!" commit must become its consumer action'; }
+if grep -q 'Breaking change: rename the flag' <<<"$breaking"; then echo "$breaking"; fail 'a "!" commit with a trailer is listed once, by its trailer'; fi
 
-echo 'OK: release.sh reads consumer action from history, and release-notes.sh drafts the section from it'
+echo 'OK: release.sh reads consumer action from history and composes a missing section with release-notes.sh'
 )

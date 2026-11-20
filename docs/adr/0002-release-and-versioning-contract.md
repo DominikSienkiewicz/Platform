@@ -89,3 +89,13 @@ Classified under this rule, 1.5.29 (toolchain 27, runtime image ≥ 27) and 1.5.
 `scripts/merge.sh` refuses a merge message that is not a Conventional Commit, the rule `release.sh` already applies
 to its message, because the merge commits on `main` are what `scripts/release-notes.sh` drafts the next section from.
 `release-draft.yml` keeps a draft GitHub Release **Next** with those notes after every push to `main` (N-REL-7).
+
+## Update — the version section composed from commits (2026-11-20)
+
+A hand-written `## [X.Y.Z] - YYYY-MM-DD` section is no longer required. When CHANGELOG.md has none for the
+version, `release.sh` composes it with `scripts/release-notes.sh` from the commits since the previous tag, inserts
+it under `## [Unreleased]` and commits CHANGELOG.md with the version files; a hand-written section still wins.
+`### Consumer action required` lists the `Consumer-Action:` trailers, and a `Breaking change:` line for a `!` commit
+or a `BREAKING CHANGE:` footer without one, so the MINOR rule of item 4 applies to a composed section unchanged.
+Whether a change needs consumer action is still a human judgement, recorded in the commit that causes it.
+`release-draft.yml` is removed, and the `pr-title` check is required on `main`.

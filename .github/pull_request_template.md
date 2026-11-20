@@ -26,7 +26,8 @@ None.
 - [ ] New functionality has tests that cover it, and a bug fix has a regression test that fails without the fix
 - [ ] A new library or version is declared in `gradle/catalog/libs.versions.toml` or
       `frontend/packages/versions/versions.json` first
-- [ ] `CHANGELOG.md` `[Unreleased]` entry for every published change, consumer action included
+- [ ] Consumer action recorded as a `Consumer-Action:` trailer: `release.sh` composes the `CHANGELOG.md`
+      section from the commits unless the version's section is written by hand
 - [ ] README, `RELEASING.md` or `docs/` updated when published artifacts, workflows or consumer
       behaviour change
 - [ ] Architectural decision → new ADR in `docs/adr/`
