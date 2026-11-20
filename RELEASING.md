@@ -124,18 +124,7 @@ secret exists (the secret is only reported; its value is yours to set).
    give the top row that version and the release date when it reads `unreleased`.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
-4. Run the consumer canary on that commit:
-
-```bash
-scripts/canary.sh
-```
-
-   It previews the unreleased Platform on every repository of `scripts/consumers.txt` from its checkout
-   next to Platform (`--consumers-dir` or `PLATFORM_CONSUMERS_DIR` point elsewhere): the backend fast lane
-   and the frontend's `platform-versions-check` on the new canon
-   ([local development](docs/local-development.md#previewing-a-change-on-a-real-consumer)). The result for
-   the commit is recorded under `.git/platform-canary/`, locally, because the consumers are private.
-5. Release:
+4. Release:
 
 ```bash
 ./release.sh "fix: short description"
@@ -146,9 +135,7 @@ scripts/canary.sh
 ```
 
 The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
-`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. `--skip-canary
-"<reason>"` releases without a green canary; the reason becomes the `Canary-Skipped:` trailer of the
-release commit. The message is
+`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The message is
 required: an English Conventional Commit, which becomes the body of the release commit
 `chore(release): platform X.Y.Z`.
 
@@ -163,9 +150,6 @@ Before it changes anything, `release.sh` refuses to run when:
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
 - the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;
-- `scripts/canary.sh` has not recorded `PASS` for `HEAD` on every consumer of `scripts/consumers.txt`,
-  and `--skip-canary` was not given; the error lists each consumer that failed, has no checkout or was
-  not run (`templates/tests/release-canary.test.sh`);
 - a commit since the previous release's tag carries a `Consumer-Action: <what to do>` trailer, a `!`
   in its subject or a `BREAKING CHANGE:` footer, and the release would be a patch or its section
   says `None.`; the error lists those commits. Record a consumer action in the commit that causes
@@ -267,13 +251,6 @@ safe: it publishes only the packages that are still missing.
 section. After every push to `main`, `release-draft.yml` replaces the draft GitHub Release **Next** with those
 notes since the last tag, so the next section and any `Consumer-Action:` trailer are visible before
 `./release.sh`. The draft creates no tag.
-
-## Rolling a release out
-
-`scripts/ring-rollout.sh <version>` bumps the consumers in rings, run by the maintainer: Touchstone first,
-then every other repository of `scripts/consumers.txt` once the checks of Touchstone's bump pull request are
-green (`--dry-run` prints the plan; `RING_ROLLOUT_FIRST` changes the first ring). It dispatches each
-consumer's caller of `platform-bump.yml` with `gh`, so it needs a token that may run their workflows.
 
 ## Support policy
 

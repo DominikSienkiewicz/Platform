@@ -4,6 +4,7 @@
 # i podbicie wersji, kontrakt wydań i wersjonowania, pozostałe odmowy oraz akcja konsumenta zapisana w historii.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
+fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # --- refuse-and-bump ---
 # Hermetyczne testy release.sh: każdy przypadek uruchamia kopię skryptu we własnym repozytorium tymczasowym,
@@ -125,6 +126,17 @@ done <<<"$VERSION_FILES"
 [[ "$(git -C "$work" log -1 --format=%s)" == "chore(release): platform $NEXT" ]] \
   || fail 'the release commit subject must name the version'
 [[ "$(git -C "$work" cat-file -t "v$NEXT")" == tag ]] || fail 'the version tag must be annotated'
+
+# Wydanie nie czeka na canary konsumentów: lista konsumentów bez zapisanego wyniku nie blokuje wydania.
+work=$(seed_repo consumers)
+printf '# consumers\nacme/one\n' > "$work/scripts/consumers.txt"
+git -C "$work" add -A
+git -C "$work" commit -q -m 'chore: list the consumers'
+git -C "$work" push -q origin main
+if ! run_release "$work"; then
+  cat "$work.log" >&2
+  fail 'release.sh must release without a consumer canary record'
+fi
 
 echo 'OK: release.sh refuses unsafe trees and commits only the version bump'
 )
