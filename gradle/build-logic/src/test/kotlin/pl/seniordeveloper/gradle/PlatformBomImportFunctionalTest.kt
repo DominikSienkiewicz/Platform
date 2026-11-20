@@ -41,7 +41,9 @@ class PlatformBomImportFunctionalTest {
 	@Test
 	fun `the platform BOM raises the Guava that Javers brings to the CVE floor`() {
 		val consumer = ConsumerFixture(directory, "spring-app")
-		consumer.appendToBuildScript("dependencies { implementation(libs.javers.spring.boot.starter.sql) }")
+		// Javers jest poza ramą (ADR-0037): aplikacja deklaruje go z własną wersją, a podłoga Guavy z platform-bom
+		// i tak podnosi Guavę, którą on ciągnie.
+		consumer.appendToBuildScript("dependencies { implementation(\"org.javers:javers-spring-boot-starter-sql:7.11.7\") }")
 
 		val guava = insight(consumer, "com.google.guava:guava", "runtimeClasspath")
 

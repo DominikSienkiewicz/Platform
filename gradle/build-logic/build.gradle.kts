@@ -252,7 +252,7 @@ tasks.withType<Test>().configureEach {
 		"springModulith" to libs.versions.springModulith,
 		"springAi" to libs.versions.springAi,
 		"junit" to libs.versions.junit,
-		"jsoup" to libs.versions.jsoup,
+		"jspecify" to libs.versions.jspecify,
 		"jooq" to libs.versions.jooq,
 		"errorprone" to libs.versions.errorprone,
 		"nullaway" to libs.versions.nullaway,
