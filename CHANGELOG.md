@@ -22,6 +22,16 @@ continues.
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-11-21
+
+### Consumer action required
+
+None.
+
+### Changed
+
+- bump the pinned actions to their latest releases (2365557)
+
 ## [1.13.0] - 2026-11-20
 
 Platform 1.13.0 slims Platform to the frame: what no consumer used is removed. A promotion through `promote.yml` keeps
