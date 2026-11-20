@@ -23,9 +23,11 @@ Desktop.ini
 .gradle/
 **/build/
 .kotlin/
-out/
-# Pakiety adapter.out heksagonu w źródłach (próbki testów arch w test-fixtures) to kod, nie wyjście IntelliJ.
-!**/src/**/out/
+# Wyjście IntelliJ: out/ w roocie, out/production i out/test w modułach. Bez kotwicy „out/” chowało też pakiety
+# heksagonu adapter/out i port/out w src/ (jak kanon templates/gitignore/backend.gitignore).
+/out/
+**/out/production/
+**/out/test/
 *.class
 # Wyjście Buildship/Eclipse (bin/main, bin/test) — kopia src/, generowana przy imporcie do IDE.
 gradle/*/bin/

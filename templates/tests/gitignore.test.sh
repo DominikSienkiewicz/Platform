@@ -44,10 +44,14 @@ for starter in java-library spring-app; do
     || fail "$starter/.gitignore rozjechał się z root.gitignore + backend.gitignore"
   cp "$gitignore" "$WORK/.gitignore"
   for path in .env .env.local .idea/workspace.xml bin/main/App.class \
-    build/libs/app.jar .gradle/caches out/production; do
+    build/libs/app.jar .gradle/caches out/production modules/orders/out/production/classes/App.class \
+    modules/orders/out/test/classes/AppTest.class; do
     git -C "$WORK" check-ignore -q --no-index -- "$path" || fail "$starter/.gitignore nie ignoruje $path"
   done
-  for path in .env.example gradle/wrapper/gradle-wrapper.jar src/main/java/App.java; do
+  # Pakiety heksagonu adapter/out i port/out (ADR-0038) to źródła, nie wyjście IntelliJ.
+  for path in .env.example gradle/wrapper/gradle-wrapper.jar src/main/java/App.java \
+    src/main/java/x/adapter/out/Foo.java src/main/java/x/application/port/out/Bar.java \
+    modules/orders/src/test/java/x/adapter/out/FooTest.java; do
     git -C "$WORK" check-ignore -q --no-index -- "$path" && fail "$starter/.gitignore ignoruje $path"
   done
 done
