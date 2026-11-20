@@ -88,9 +88,6 @@ promote.yml job build permissions contents: read
 promote.yml job build permissions packages: write
 promote.yml job build permissions id-token: write
 promote.yml job promote permissions contents: read
-roadmap-unblock.yml input timeout-minutes type=number default=5
-roadmap-unblock.yml secret ROADMAP_PROJECT_TOKEN required=false
-roadmap-unblock.yml permissions contents: read
 scorecard.yml input timeout-minutes type=number default=10
 scorecard.yml permissions contents: read
 scorecard.yml job analysis permissions security-events: write

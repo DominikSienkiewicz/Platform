@@ -57,7 +57,7 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0021](0021-public-showcase-and-incubating-artifacts.md) | A public showcase, with artifacts incubating until a consumer adopts them | Accepted |
 | [0022](0022-english-except-claude-md-and-comments.md) | English everywhere, Polish only in CLAUDE.md and in code comments | Accepted |
 | [0023](0023-configuration-cache-is-supported.md) | The configuration cache is supported and gated in TestKit | Accepted |
-| [0024](0024-roadmap-toolkit-is-experimental.md) | The roadmap toolkit is experimental; only its marker contract is stable | Accepted |
+| [0024](0024-roadmap-toolkit-is-experimental.md) | The roadmap toolkit is experimental; only its marker contract is stable | Superseded |
 | [0025](0025-platform-scans-itself.md) | Platform scans itself with the scanners it offers | Accepted |
 | [0026](0026-platform-follows-its-frontend-canon.md) | Platform's own npm dependencies follow its frontend canon | Accepted |
 | [0027](0027-gate-codes-are-a-contract.md) | Gate codes are a public contract | Accepted |

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Jeden JDK wszędzie (ADR-0034): JDK, na którym biegnie Gradle, bytecode build-logic i modułów Platform, workflowy,
-# SDKMAN, devcontainery i kryteria demona starterów równają się wpisowi `java` katalogu (toolchain kanonu).
+# SDKMAN i kryteria demona starterów równają się wpisowi `java` katalogu (toolchain kanonu).
 # Najstarszy Gradle konsumenta musi umieć wystartować na tym JDK (9.6.1 pada na JDK 27: Groovy, class file 71).
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -36,11 +36,6 @@ while IFS= read -r sdkmanrc; do
   [[ "$java" == "$canon" ]] || fail "${sdkmanrc#"$root"/}: java=$java; SDKMAN must select Java $canon"
 done < <(find "$root/templates" "$root/gradle" -maxdepth 2 -name .sdkmanrc)
 
-for dockerfile in "$root/.devcontainer/Dockerfile" "$root/templates/devcontainer/Dockerfile"; do
-  jdk=$(sed -n 's/^ARG GRADLE_JDK=//p' "$dockerfile")
-  [[ "$jdk" == "$canon" ]] || fail "${dockerfile#"$root"/}: GRADLE_JDK=$jdk; the devcontainer must run Gradle on Java $canon"
-done
-
 for criteria in "$root"/templates/jvm/*/gradle/gradle-daemon-jvm.properties; do
   daemon=$(sed -n 's/^toolchainVersion=//p' "$criteria")
   [[ "$daemon" == "$canon" ]] || fail "${criteria#"$root"/}: toolchainVersion=$daemon; the daemon must run on Java $canon"
@@ -50,4 +45,4 @@ minimum=$(sed -n 's/^minimumConsumerGradle=//p' "$root/gradle/build-logic/gradle
 [[ "$(printf '%s\n%s\n' "$gradle_floor" "$minimum" | sort -V | head -n 1)" == "$gradle_floor" ]] ||
   fail "minimumConsumerGradle=$minimum cannot start on Java $canon; the floor is Gradle $gradle_floor"
 
-echo "OK: Gradle, build-logic, workflows, SDKMAN, devcontainers and daemon criteria all use Java $canon"
+echo "OK: Gradle, build-logic, workflows, SDKMAN and daemon criteria all use Java $canon"

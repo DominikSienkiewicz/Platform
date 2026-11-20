@@ -16,10 +16,8 @@ are published as versioned artifacts, and are consumed like any other dependency
 [![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Reviewing this repository?** Start with [the tour](docs/tour.md): ten stops, each a problem, the code that
-solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them. To build
-it without installing anything, open it in the [devcontainer](.devcontainer/devcontainer.json):
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/DominikSienkiewicz/Platform).
+**Reviewing this repository?** Start with [the tour](docs/tour.md): nine stops, each a problem, the code that
+solves it and the guard that keeps it solved, with [incident notes](docs/notes/) behind several of them.
 
 > Registry: **GitHub Packages** (Maven + npm). Frontend workspaces: **pnpm** in this repository;
 > consumers use **npm** with a committed `package-lock.json`, because `frontend-ci` runs `npm ci`
@@ -63,13 +61,12 @@ when a second repository needs it.
 | `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) | Training |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | Azimuth, Training |
 | `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) | Training |
-| `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
-| `.github/workflows/` | eleven reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all three; `platform-bump.yml` and `roadmap-unblock.yml` none |
+| `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all three; `platform-bump.yml` none |
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
-| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh` and `agent-gradle.sh`, the roadmap toolkit, the GitHub files, the default community health files of a `.github` repository and a devcontainer (*incubating*); each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
+| `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh` and `agent-gradle.sh`, and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
 | `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add DominikSienkiewicz/Platform#vX.Y.Z` | none |
-| `scripts/` | scripts Platform's own workflows run: `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included), `adr-index.sh` (the ADR index), `seed-community-health.sh` (copies the default community health files into a local clone of the owner's `.github` repository; no network), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
+| `scripts/` | scripts Platform's own workflows run: `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included), `adr-index.sh` (the ADR index), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does: that
@@ -111,7 +108,6 @@ the logic. What each caller must grant and pass, with a snippet per workflow, is
 | `container-scan.yml` | scans published images: Grype is the gate, Snyk a non-blocking second opinion |
 | `deploy.yml` | builds and pushes images to GHCR; with `scan-images`, gates them by digest with Grype and Trivy and signs them with cosign keyless only after both pass; it deploys nothing, `promote.yml` calls it |
 | `promote.yml` | builds and pushes the images through `deploy.yml` without SSH, gates them with Grype and Trivy and signs them keyless (one image with `single-image`), then commits the new image tags to a GitOps repository with a GitHub App token, for a cluster that Argo CD syncs |
-| `roadmap-unblock.yml` | moves roadmap items to ready once their last prerequisite issue is closed |
 | `platform-bump.yml` | bumps the repository to a Platform release and opens a pull request with the diff, release notes and consumer actions |
 
 ### Convention plugins
@@ -240,8 +236,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 - **Releasing a new version** → **[RELEASING.md](RELEASING.md)** — what a release publishes,
   idempotency per registry, and how consumers adopt the new version.
 - **What changed and what consumers must do** → **[CHANGELOG.md](CHANGELOG.md)**.
-- **Canonical files to copy into a repository** → [templates/README.md](templates/README.md); the
-  local development stack (PostgreSQL with pgvector, Ollama) → [infra/README.md](infra/README.md).
+- **Canonical files to copy into a repository** → [templates/README.md](templates/README.md).
 - **Design decisions** → [`docs/adr/`](docs/adr/), including the
   [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 - **What the security scans gate, how to accept a finding and how images are signed** →
@@ -254,7 +249,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 ### Documentation language
 
 Everything a consumer or an outside reader sees is in English: this README, `docs/**`, RELEASING.md,
-the `templates/**` and `infra/` READMEs, the pull request templates, package descriptions, workflow
+the `templates/**` READMEs, the pull request templates, package descriptions, workflow
 input descriptions and the messages of every gate. Polish appears only in CLAUDE.md and in code and
 workflow comments, which are written for the maintainer.
 

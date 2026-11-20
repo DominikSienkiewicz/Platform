@@ -21,13 +21,12 @@ for workflow in "$root"/.github/workflows/*.yml; do
   grep -qF "\`$name\`" "$root/README.md" || missing+=("README.md: reusable workflow $name")
 done
 
-# Canonical files: a file under jvm/ or roadmap/ is covered by its directory row, the rest by their own row.
+# Canonical files: a file under jvm/ is covered by its directory row, the rest by their own row.
 while IFS= read -r path; do
   relative="${path#templates/}"
   case "$relative" in
     tests/* | README.md) continue ;;
     jvm/*) entry="jvm/$(cut -d/ -f2 <<<"$relative")/" ;;
-    roadmap/*) entry="roadmap/" ;;
     *) entry="$relative" ;;
   esac
   grep -qF "\`$entry\`" "$root/templates/README.md" || missing+=("templates/README.md: $entry")

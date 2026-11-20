@@ -574,29 +574,6 @@ gh attestation verify platform-maven-repo-X.Y.Z.zip --bundle platform-X.Y.Z-asse
 1.6.0 on: an attestation that does not verify stops the bump with nothing changed. Without `gh`
 installed it only warns; `--skip-provenance "<reason>"` bumps anyway and logs the reason.
 
-## Development environment
-
-Copy [`infra/`](../infra) from Platform to the repository root; it runs Postgres with pgvector,
-and optionally Ollama:
-
-```bash
-cp infra/.env.example infra/.env && (cd infra && docker compose up -d)
-```
-
-### Devcontainer (*incubating*)
-
-[`templates/devcontainer/`](../templates/devcontainer/README.md) is a development container for a repository with
-`backend/` and, optionally, `frontend/`: the JDK that runs Gradle, the catalog's toolchain JDK, and Node with npm, all
-from the canon. Copy its `Dockerfile`, `devcontainer.json` and `post-create.sh` to `.devcontainer/` (the command is in
-its README). It stays *incubating* until a first repository adopts it; that pull request removes the label.
-
-The container needs the credentials of the [prerequisites](#prerequisites) and never stores them: export
-`GITHUB_ACTOR` (your login) and `GITHUB_TOKEN` (a classic token with `read:packages`) in the environment that starts
-the container, and `devcontainer.json` passes them through `remoteEnv`. They are the names `settings.gradle.kts` and
-`frontend/.npmrc` already read. A variable the host does not set arrives empty, which Gradle counts as missing, so a
-build stops with "No GitHub Packages credentials". Without a token the container still builds and registers the
-toolchain JDK, but it prints a hint and does not run `npm ci --ignore-scripts`.
-
 ## Adopting the observability starter
 
 `implementation(libs.platform.observability.starter)` replaces the `management:` block most backends
@@ -641,7 +618,7 @@ the release that produced it.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a devcontainer forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
+| `No GitHub Packages credentials, so the Platform plugins cannot resolve` | Neither `gpr.user`/`gpr.key` nor `GITHUB_ACTOR`/`GITHUB_TOKEN` is set to a non-blank value (an empty one, as a container forwards an unset host variable, counts as missing), and there is no `-PplatformRepository` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `Received status code 401 from server: Unauthorized` for `maven.pkg.github.com` | Gradle has no token, or the token lacks `read:packages` | Set `gpr.user` and `gpr.key` in `~/.gradle/gradle.properties` ([Prerequisites](#prerequisites)) |
 | `UnsupportedClassVersionError` … `class file version 70.0` while the plugins load | Gradle runs on a JDK older than 26; Platform supports only 27 | Run Gradle on JDK 27 or newer (`sdk env`, or `JAVA_HOME`) |
 | `Unsupported class file major version 71` from Groovy as Gradle starts | the wrapper is older than Gradle 9.8.1, which cannot run on JDK 27 | Run `scripts/platform-bump.sh`, which moves the wrapper, or `./gradlew wrapper --gradle-version 9.8.1` on an older JDK |

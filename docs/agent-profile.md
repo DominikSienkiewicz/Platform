@@ -39,13 +39,6 @@ once. Slots live under `$TMPDIR`, so agents in separate containers are not coord
 `AI_AGENT_MAX_WORKERS` that is not a positive integer exits with 2. Without `AI_AGENT` the launcher passes
 the arguments through unchanged.
 
-## Before dispatching agents
-
-[`templates/agent-preflight.sh`](../templates/agent-preflight.sh) answers how many agents the machine
-holds right now, from free memory and swap on macOS or Linux. It exits 0 to go, 1 to reduce concurrency to
-the number it prints and 2 to stop. Its defaults (4.3 GB per agent, a 6 GB reserve, at most 3) were measured
-on one host; set `AGENT_COST_GB`, `AGENT_RESERVE_GB` and `AGENT_MAX` for yours.
-
 ## Vitest
 
 `@dominiksienkiewicz/vitest-config` sets `test.maxWorkers` to `AI_AGENT_MAX_WORKERS` (default 2) in agent

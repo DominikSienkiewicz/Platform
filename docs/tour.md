@@ -1,6 +1,6 @@
 # A reviewer's tour of Platform
 
-Ten stops, each a problem a shared platform has to solve, the code that solves it here and the guard
+Nine stops, each a problem a shared platform has to solve, the code that solves it here and the guard
 that keeps it solved. Read it at a release tag (`https://github.com/DominikSienkiewicz/Platform/tree/vX.Y.Z/docs/tour.md`):
 every link below is relative, so it then points at that release's code. The incidents behind several
 stops are written up in [`notes/`](notes/); how the repository is built with coding agents is in
@@ -85,13 +85,4 @@ did not move. [`worktree-new.sh`](../templates/worktree-new.sh) and
 Every layer of the stack sizes itself for a machine it owns. With `AI_AGENT=1`, the conventions give Java
 tests one fork, a capped heap and at most four cached Spring contexts,
 [`agent-gradle.sh`](../templates/agent-gradle.sh) limits workers and takes one of a few machine-wide test
-slots across separate Gradle runs, and [`agent-preflight.sh`](../templates/agent-preflight.sh) says from
-free memory and swap whether more agents may start. ADR: [0010](adr/0010-agent-resource-profile.md).
-
-## 10. Roadmap to issues
-
-[`templates/roadmap/`](../templates/roadmap/) turns a roadmap document into GitHub issues and a Projects
-board, keeps them in sync through a marker contract, and moves an item to ready once its last prerequisite
-closes (`roadmap-unblock.yml`). It is *experimental*: only the marker contract is stable (Decision 11).
-Guard: the tests next to the scripts in [`templates/roadmap/scripts/lib`](../templates/roadmap/scripts/lib/),
-which run them against a stubbed `gh`.
+slots across separate Gradle runs. ADR: [0010](adr/0010-agent-resource-profile.md).

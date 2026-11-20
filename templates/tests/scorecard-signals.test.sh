@@ -2,8 +2,7 @@
 # Sygnały, po których OpenSSF Scorecard rozpoznaje praktyki Platform (triaż 2026-10-19):
 #   Binary-Artifacts — workflow z gradle/actions/wrapper-validation, szybszy niż ci.yml, na każdym pushu do main;
 #   SAST — workflow z github/codeql-action/analyze (Semgrepa Scorecard nie widzi);
-#   Signed-Releases — bundle atestacji assetów jako *.sigstore.json wśród assetów GitHub Release;
-#   Pinned-Dependencies — obraz devcontainera po digeście.
+#   Signed-Releases — bundle atestacji assetów jako *.sigstore.json wśród assetów GitHub Release.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 workflows="$root/.github/workflows"
@@ -26,6 +25,4 @@ upload=$(grep -n 'gh release upload "v$V" "$RUNNER_TEMP"/assets/\*' "$release" |
 grep -qF 'cp "$BUNDLE" "$RUNNER_TEMP/assets/platform-$V-assets.sigstore.json"' "$release" \
   || fail 'the bundle must be uploaded as a *.sigstore.json asset, the name Scorecard looks for'
 
-grep -qE '^FROM [^ ]+:[^ @]+@sha256:[0-9a-f]{64}$' "$root/.devcontainer/Dockerfile" || fail '.devcontainer/Dockerfile must pin its base image by digest, keeping the tag'
-
-echo 'OK: wrapper validation, CodeQL, the signed release bundle and the devcontainer digest are where Scorecard looks'
+echo 'OK: wrapper validation, CodeQL and the signed release bundle are where Scorecard looks'

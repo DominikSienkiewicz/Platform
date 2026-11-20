@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 11 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 10 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -381,39 +381,6 @@ Inputs:
 | `java-version` | string | `27` | JDK that runs Gradle for the lockfile regeneration. Platform supports Gradle on Java 27 only (ADR-0034). |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
 | `node-version` | string | `24` | Node.js version that runs the platform-bump bin and npm. |
-<!-- /docs-gen -->
-
-## roadmap-unblock.yml
-
-Moves dependent roadmap items to ready when their prerequisite issues are closed. The caller's
-repository provides `scripts/roadmap-unblock.sh`.
-
-- Permissions: `contents: read`.
-- Secret `ROADMAP_PROJECT_TOKEN` (optional): Projects v2 of a user account accept only a classic PAT
-  with the `project` and `repo` scopes. `repo` grants write access to every private repository of the
-  owner, so give the token 90 days at most. A fine-grained PAT is not verified for user-owned
-  Projects v2. Without the token the job warns and does nothing.
-- Variable `ROADMAP_PROJECT_NUMBER`: the number of the Projects v2 board.
-
-```yaml
-on:
-  issues:
-    types: [closed]
-permissions:
-  contents: read
-jobs:
-  unblock:
-    uses: DominikSienkiewicz/Platform/.github/workflows/roadmap-unblock.yml@vX.Y.Z
-    secrets:
-      ROADMAP_PROJECT_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
-```
-
-Inputs:
-
-<!-- docs-gen:inputs roadmap-unblock.yml -->
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `timeout-minutes` | number | `5` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
 <!-- /docs-gen -->
 
 ## deploy.yml

@@ -32,7 +32,7 @@ That split put two JDKs on every developer machine and every CI job, and in prac
 - Every Platform workflow installs that JDK, and the `java-version` input of the reusable workflows
   defaults to it. The separate `toolchain-java-version` input stays, so a consumer or a canary can try a
   newer toolchain without moving Gradle.
-- The SDKMAN files, both devcontainers and the daemon JVM criteria of the JVM starters name the same JDK.
+- The SDKMAN files and the daemon JVM criteria of the JVM starters name the same JDK.
 - The oldest consumer Gradle (`minimumConsumerGradle`) is 9.8.1, the first Gradle that starts on JDK 27.
 - `templates/tests/jdk-everywhere.test.sh` fails when any of these leaves the catalog's `java`, or the
   minimum falls below the first Gradle that starts on it.
@@ -46,7 +46,7 @@ That split put two JDKs on every developer machine and every CI job, and in prac
 
 ## Consequences
 
-- (+) One JDK to install, cache and patch on developer machines, in the devcontainers and on CI.
+- (+) One JDK to install, cache and patch on developer machines, and on CI.
 - (+) A consumer whose machine has only the current JDK can build without a second one.
 - (+) The published jars target the bytecode their consumers already require; the plugins are one
   major behind until Gradle's Kotlin catches up, which no consumer notices on JDK 27.

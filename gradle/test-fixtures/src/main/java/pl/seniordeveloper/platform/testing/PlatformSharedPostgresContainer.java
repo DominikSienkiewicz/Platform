@@ -22,9 +22,8 @@ import org.testcontainers.utility.DockerImageName;
  *
  * <p>Działa bez trwałości: {@code fsync}, {@code synchronous_commit} i {@code full_page_writes}
  * wyłączone, dane na tmpfs — bezpieczne wyłącznie dlatego, że to kontener Testcontainers (nigdy w
- * {@code infra/docker-compose.yml}). Z {@code testcontainers.reuse.enable=true} w {@code
- * ~/.testcontainers.properties} kontener przeżywa też kolejne uruchomienia lokalne; CI tego nie
- * ustawia.
+ * trwałej bazie). Z {@code testcontainers.reuse.enable=true} w {@code ~/.testcontainers.properties}
+ * kontener przeżywa też kolejne uruchomienia lokalne; CI tego nie ustawia.
  *
  * <p>Konteksty dzielą bazę: test, który zakładał świeżą bazę, musi sprzątać po sobie albo używać
  * własnego schematu. Drugi kontekst uruchamia migracje na zmigrowanej już bazie, co zwykle nic nie
