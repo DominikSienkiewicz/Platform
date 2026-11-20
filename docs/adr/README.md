@@ -72,4 +72,5 @@ The table below is generated from the ADR headers by `scripts/docs-gen.sh`; CI f
 | [0035](0035-promotion-by-commit-for-argo-cd.md) | Promotion by commit replaces SSH deploy for a cluster managed by Argo CD | Accepted |
 | [0036](0036-images-signed-keyless-after-the-gates.md) | Application images are signed keyless, and only after the scan gates | Accepted |
 | [0037](0037-platform-governs-the-frame.md) | Platform governs the frame, and consumers own the rest | Accepted |
+| [0038](0038-shared-architecture-test.md) | One shared architecture test with a hexagonal canon | Accepted |
 <!-- /docs-gen -->

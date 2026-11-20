@@ -23,7 +23,7 @@ hand from the repository root with `frontend/node_modules/.bin/platform-template
 | `.sdkmanrc` | the local JDK that runs Gradle, through SDKMAN (`sdk env`) | the root of every repository | yes |
 | `npmrc` | GitHub Packages registry and token lines for `@dominiksienkiewicz/*` | `<repo>/frontend/.npmrc` | yes |
 | `gitignore/root.gitignore` | OS, IDE, env files, logs | `<repo>/.gitignore` | yes |
-| `gitignore/backend.gitignore` | Java and Gradle, IntelliJ (`out/`) and Buildship (`bin/`) output | `<repo>/backend/.gitignore` | yes |
+| `gitignore/backend.gitignore` | Java and Gradle, IntelliJ (`/out/`, `out/production`, `out/test`; never a hexagonal `adapter/out` package) and Buildship (`bin/`) output | `<repo>/backend/.gitignore` | yes |
 | `gitignore/frontend.gitignore` | Next.js, Node, Playwright | `<repo>/frontend/.gitignore` | yes |
 | `Dockerfile.backend` | runtime-only image on `sapmachine:27-jre`, built in layers from the `bootJar` (one image layer per Boot layer, optional JDK AOT cache), with a liveness `HEALTHCHECK` that needs no curl and `JAVA_TOOL_OPTIONS` sized from the container limit ([consuming.md](../docs/consuming.md#runtime-image)); why SapMachine, and when to move back to Temurin, is in [`../docs/versions.md`](../docs/versions.md) | `<repo>/backend/Dockerfile` | — |
 | `Dockerfile.frontend` | Next.js standalone image on `node:24-slim`: `npm ci --ignore-scripts` with the token as the BuildKit secret `github_token` only, a non-root runner and `server.js`; needs the standalone output of `frontend/next.config.ts` | `<repo>/frontend/Dockerfile` | yes |

@@ -405,6 +405,42 @@ class ArchitectureTest {
 }
 ```
 
+`AbstractArchitectureTest` is that test ready-made ([ADR-0038](adr/0038-shared-architecture-test.md)): a
+subclass with `@AnalyzeClasses` runs every `PlatformArchRules` rule, the three `HexagonalRules.of(...)` rules
+and `HexagonalRules.outboundAdaptersDoNotDependOnInboundAdapters`, each as its own test. The package canon is
+`..domain..`, `..application..` (ports under `application.port..`, for example `port.in`, `port.out` and
+`port.query` for the read side), `..adapter..`, `..adapter.in..` and `..adapter.out..`; override
+`domainPackages()`, `applicationPackages()`, `adapterPackages()`, `inboundAdapterPackages()` or
+`outboundAdapterPackages()` for other names. The five methods are independent: overriding `adapterPackages()`
+does not move the `..adapter.in..` and `..adapter.out..` defaults, so override all three together. An empty layer
+passes, so a module without adapters is not a violation, and a mistyped pattern that matches nothing passes
+silently too. The import options decide what the platform rules see: with the test classes imported, as below,
+`NO_FIELD_INJECTION` and `NO_GENERIC_EXCEPTIONS` check the tests too, while `DoNotIncludeTests`, as in the
+example above, leaves `CONTAINER_TESTS_ARE_TAGGED_INTEGRATION` with nothing to check. For a modular application
+with layers inside its modules:
+
+```java
+@AnalyzeClasses(packagesOf = Application.class, importOptions = ImportOption.DoNotIncludeJars.class)
+class ArchitectureTest extends AbstractArchitectureTest {}
+```
+
+For flat modules without layers, switch the hexagon off; its four tests end as skipped and the
+`PlatformArchRules` tests still run. When the modules are separate Gradle projects, they reach the application's
+test classpath as jars, so leave out `DoNotIncludeJars` and let the package select the classes:
+
+```java
+@AnalyzeClasses(packagesOf = Application.class)
+class ArchitectureTest extends AbstractArchitectureTest {
+  @Override
+  protected boolean hexagonal() {
+    return false;
+  }
+}
+```
+
+The class cannot leave out or freeze a single inherited rule; compose `PlatformArchRules` and `HexagonalRules`
+as above when you need that.
+
 `AbstractModulithDocumentationTest` writes the Spring Modulith component diagrams (PlantUML) and module
 canvases (AsciiDoc) of the same modules to `build/spring-modulith-docs`, which `backend-ci.yml` uploads as
 the `module-docs-<run id>` artifact; `spring-modulith-starter-test` already brings the documenter:

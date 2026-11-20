@@ -8,6 +8,7 @@ import java.util.List;
 /**
  * Preset architektury heksagonalnej (porty i adaptery), uogólniony z reguł Azimutha: domena nie zna
  * frameworków ani pozostałych warstw, a aplikacja nie zna adapterów — rozmawia z nimi przez porty.
+ * Gotowy zestaw z regułami Platform i kanonem pakietów daje {@link AbstractArchitectureTest}.
  *
  * <pre>{@code
  * @ArchTest
@@ -32,27 +33,59 @@ public final class HexagonalRules {
    */
   public static List<ArchRule> of(String domain, String application, String adapter) {
     return List.of(
-        noClasses()
-            .that()
-            .resideInAPackage(domain)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage(
-                "org.springframework..", "jakarta.persistence..", "jakarta.servlet..")
-            .because("the domain stays free of frameworks"),
-        noClasses()
-            .that()
-            .resideInAPackage(domain)
-            .should()
-            .dependOnClassesThat()
-            .resideInAnyPackage(application, adapter)
-            .because("the domain depends on nothing outside itself"),
-        noClasses()
-            .that()
-            .resideInAPackage(application)
-            .should()
-            .dependOnClassesThat()
-            .resideInAPackage(adapter)
-            .because("the application reaches adapters only through its ports"));
+        domainIsFreeOfFrameworks(domain),
+        domainDependsOnNothingOutsideItself(domain, application, adapter),
+        applicationReachesAdaptersThroughPorts(application, adapter));
+  }
+
+  /**
+   * Adapter wyjściowy (np. {@code adapter.out}) implementuje port i nie woła adaptera wejściowego
+   * (np. {@code adapter.in}); poza {@link #of(String, String, String)}, żeby ta lista zachowała
+   * swoje trzy reguły.
+   *
+   * @param outboundAdapter pakiety adapterów wyjściowych, np. {@code ..adapter.out..}
+   * @param inboundAdapter pakiety adapterów wejściowych, np. {@code ..adapter.in..}
+   * @return reguła: adaptery wyjściowe nie zależą od wejściowych
+   */
+  public static ArchRule outboundAdaptersDoNotDependOnInboundAdapters(
+      String outboundAdapter, String inboundAdapter) {
+    return noClasses()
+        .that()
+        .resideInAPackage(outboundAdapter)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(inboundAdapter)
+        .because("an outbound adapter never calls an inbound adapter");
+  }
+
+  static ArchRule domainIsFreeOfFrameworks(String domain) {
+    return noClasses()
+        .that()
+        .resideInAPackage(domain)
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage("org.springframework..", "jakarta.persistence..", "jakarta.servlet..")
+        .because("the domain stays free of frameworks");
+  }
+
+  static ArchRule domainDependsOnNothingOutsideItself(
+      String domain, String application, String adapter) {
+    return noClasses()
+        .that()
+        .resideInAPackage(domain)
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(application, adapter)
+        .because("the domain depends on nothing outside itself");
+  }
+
+  static ArchRule applicationReachesAdaptersThroughPorts(String application, String adapter) {
+    return noClasses()
+        .that()
+        .resideInAPackage(application)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(adapter)
+        .because("the application reaches adapters only through its ports");
   }
 }

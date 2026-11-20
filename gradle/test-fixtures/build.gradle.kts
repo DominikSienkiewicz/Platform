@@ -56,6 +56,8 @@ dependencies {
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
+	// AbstractArchitectureTestTest uruchamia podklasy AbstractArchitectureTest przez Launcher JUnit Platform.
+	testImplementation("org.junit.platform:junit-platform-launcher")
 	testImplementation("org.springframework:spring-webmvc")
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("tools.jackson.core:jackson-databind")
@@ -76,7 +78,6 @@ dependencies {
 	// Sterownik PostgreSQL dla SharedPostgresContainerIT, dialekt Flyway dla AbstractSchemaValidationIT.
 	testRuntimeOnly("org.postgresql:postgresql")
 	testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }
@@ -100,6 +101,9 @@ tasks.test {
 	// Ten moduł nie dzieli testów na zadania: jego testy kontenerów świadomie biegną w `test`, więc strażnik
 	// PlatformTestTaskGuard (failuje na kontenerze w szybkim `test` konsumenta) dostaje inną nazwę zadania.
 	systemProperty("platform.test.task", "platformModuleTest")
+	// Podklasy AbstractArchitectureTest z naruszeniami odpala AbstractArchitectureTestTest przez Launcher i sprawdza
+	// ich wynik; wykryte przez zadanie `test` failowałyby z definicji.
+	exclude("**/AbstractArchitectureTestTest$*")
 }
 
 // Rejestr zdarzeń Spring Modulith na JDBC (spring-modulith-starter-jdbc) kontra szablony templates/db

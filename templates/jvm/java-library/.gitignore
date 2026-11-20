@@ -45,7 +45,11 @@ hs_err_pid*
 replay_pid*
 
 # === IntelliJ build output ===
-out/
+# Anchored: IntelliJ writes out/ at the project root and out/production, out/test in each module.
+# An unanchored out/ would also hide every hexagonal adapter/out/ and port/out/ source package.
+/out/
+**/out/production/
+**/out/test/
 
 # === Eclipse / Buildship build output (bin/main, bin/test — a copy of src/) ===
 bin/
