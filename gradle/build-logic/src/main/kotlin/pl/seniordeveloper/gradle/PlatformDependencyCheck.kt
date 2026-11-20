@@ -71,6 +71,7 @@ abstract class PlatformDependencyCheck : DefaultTask() {
 				DependencyGovernance.catalogOverrides(consumerCatalog.get(), canonEntries) +
 					DependencyGovernance.violations(dependencies, canonEntries, bomManaged.get(), exempt.get())
 			}
+		val foreignBoms = DependencyGovernance.foreignBoms(dependencies, canonEntries)
 		val deprecated =
 			PlatformDeprecations.findings(
 				deprecations.get().map(PlatformDeprecations::decode),
@@ -78,19 +79,30 @@ abstract class PlatformDependencyCheck : DefaultTask() {
 				propertiesSet.get(),
 				pluginsApplied.get(),
 			)
-		val markdown = DependencyGovernance.report(projectPath.get(), findings, deprecated)
+		val markdown = DependencyGovernance.report(projectPath.get(), findings, deprecated, foreignBoms)
 		report.get().asFile.apply {
 			parentFile.mkdirs()
 			writeText(markdown)
 		}
 		// Odczyt w akcji, nie w konfiguracji: configuration cache nie śledzi wtedy tej zmiennej środowiskowej.
-		System.getenv("GITHUB_STEP_SUMMARY")?.takeIf { it.isNotBlank() && (findings.isNotEmpty() || deprecated.isNotEmpty()) }?.let {
-			java.io.File(it).appendText(markdown + "\n")
-		}
+		System
+			.getenv("GITHUB_STEP_SUMMARY")
+			?.takeIf {
+				it.isNotBlank() &&
+					(findings.isNotEmpty() || deprecated.isNotEmpty() || foreignBoms.isNotEmpty())
+			}?.let {
+				java.io.File(it).appendText(markdown + "\n")
+			}
 		if (deprecated.isNotEmpty()) {
 			logger.warn(
 				"Platform deprecations in ${projectPath.get()} (${deprecated.size}):\n  " + deprecated.joinToString("\n  ") { it.render() } +
 					"\n" + PlatformGates.footer(deprecated.map { it.code }),
+			)
+		}
+		if (foreignBoms.isNotEmpty()) {
+			logger.warn(
+				"BOM imports outside the Platform frame in ${projectPath.get()} (${foreignBoms.size}):\n  " +
+					foreignBoms.joinToString("\n  ") { it.render() } + "\n" + PlatformGates.footer(foreignBoms.map { it.code }),
 			)
 		}
 		if (findings.isNotEmpty()) {

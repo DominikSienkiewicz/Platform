@@ -101,4 +101,22 @@ class DependencyGovernanceTest {
 		assertTrue(report.contains("- [PLAT-DEPR-001](${PlatformGates.link("PLAT-DEPR-001")}) dependency x is deprecated"))
 		assertTrue(PlatformGates.link("PLAT-DEP-002", "1.6.0").endsWith("/blob/v1.6.0/docs/gates.md#plat-dep-002"))
 	}
+
+	@Test
+	fun `a BOM import outside the canon is reported as a foreign BOM`() {
+		val declared = listOf(DeclaredDependency("io.netty:netty-bom", "4.2.0.Final", "implementation", platform = true))
+
+		assertEquals(listOf(PlatformGates.DEP_FOREIGN_BOM), DependencyGovernance.foreignBoms(declared, canon).map { it.code })
+	}
+
+	@Test
+	fun `a canon BOM and a regular library outside the canon are not foreign BOMs`() {
+		val declared =
+			listOf(
+				DeclaredDependency("pl.seniordeveloper:platform-test-fixtures", "1.6.0", "implementation", platform = true),
+				DeclaredDependency("com.example:own-library", "2.3.4", "implementation"),
+			)
+
+		assertEquals(emptyList<GateFinding>(), DependencyGovernance.foreignBoms(declared, canon))
+	}
 }

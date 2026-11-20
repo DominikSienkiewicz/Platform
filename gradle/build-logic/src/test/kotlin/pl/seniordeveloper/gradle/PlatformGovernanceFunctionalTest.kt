@@ -94,6 +94,17 @@ class PlatformGovernanceFunctionalTest {
 		assertTrue(failed.output.contains("platform.deprecations.mode=fail and 1 deprecated item(s) remain"), failed.output)
 	}
 
+	@Test
+	fun `a BOM import outside the frame warns and the build passes`() {
+		val consumer = ConsumerFixture(directory, "java-library")
+		consumer.appendToBuildScript("dependencies { implementation(platform(\"io.netty:netty-bom:4.2.0.Final\")) }")
+
+		val result = consumer.runner("platformDependencyCheck").build()
+
+		assertEquals(TaskOutcome.SUCCESS, result.task(":platformDependencyCheck")?.outcome)
+		assertTrue(result.output.contains("[PLAT-DEP-006] io.netty:netty-bom:4.2.0.Final (implementation)"), result.output)
+	}
+
 	private fun editSettings(
 		consumer: ConsumerFixture,
 		transform: (String) -> String,

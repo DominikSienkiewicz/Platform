@@ -9,6 +9,7 @@ object PlatformGates {
 	const val DEP_BOM_MANAGED = "PLAT-DEP-003"
 	const val DEP_CATALOG_OVERRIDE = "PLAT-DEP-004"
 	const val DEP_NO_CATALOG = "PLAT-DEP-005"
+	const val DEP_FOREIGN_BOM = "PLAT-DEP-006"
 	const val PIN_DIVERGE = "PLAT-PIN-001"
 	const val IMAGE_OLDER_JAVA = "PLAT-IMG-001"
 	const val COVERAGE_NO_DATA = "PLAT-COV-001"

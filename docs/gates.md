@@ -38,6 +38,9 @@ or a Spring starter.
 **Example:** `implementation("org.springframework.boot:spring-boot-starter-webmvc:4.0.0")`.
 **Fix:** remove the version. To run another version on purpose, override the BOM property instead;
 `platformBomOverrideCheck` reports it as a warning (Decision 18).
+**Limit:** seen only in modules that apply `io.spring.dependency-management`, i.e.
+`seniordev.spring-modulith-conventions`. Elsewhere a BOM-managed library with an explicit version passes; in a
+Spring application the Boot BOM still aligns the version at runtime.
 
 ### PLAT-DEP-004
 
@@ -52,6 +55,14 @@ override cannot redefine what is canonical.
 **Cause:** a project that applies `seniordev.java-conventions` has no version catalog named `libs`.
 **Example:** `create("platformLibs") { from("pl.seniordeveloper:platform-catalog:…") }`.
 **Fix:** name the catalog `libs`, as [consuming.md](consuming.md#backend) shows.
+
+### PLAT-DEP-006
+
+**Cause:** the build imports a BOM that is not in the Platform canon with `platform(...)` or `enforcedPlatform(...)`.
+Its versions can override the frame; `enforcedPlatform` can push them down. It warns only ([ADR-0019](adr/0019-new-failure-modes-warn-first.md)):
+the build passes. A canon BOM at another version still fails PLAT-DEP-002.
+**Example:** `implementation(platform("io.netty:netty-bom:4.2.0.Final"))`.
+**Fix:** remove the BOM, or propose it for the frame ([ADR-0037](adr/0037-platform-governs-the-frame.md)).
 
 ### PLAT-PIN-001
 

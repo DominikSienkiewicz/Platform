@@ -1,6 +1,8 @@
 import io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension
 import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.attributes.Category
 import org.gradle.api.plugins.quality.Checkstyle
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
@@ -407,6 +409,13 @@ val platformCanon =
 			?: error("Brak zasobu platform-canon.tsv w pluginie seniordev.java-conventions")
 	).bufferedReader()
 		.use { DependencyGovernance.parseCanon(it.readText()) }
+
+// BOM zadeklarowany przez platform(...) albo enforcedPlatform(...) ma atrybut Category równy platform / enforced-platform.
+fun isPlatform(dependency: ModuleDependency): Boolean =
+	dependency.attributes.getAttribute(Category.CATEGORY_ATTRIBUTE)?.name.let {
+		it == Category.REGULAR_PLATFORM || it == Category.ENFORCED_PLATFORM
+	}
+
 val platformDeprecationEntries = PlatformDeprecations.load()
 val declaredDependencies =
 	provider {
@@ -414,7 +423,7 @@ val declaredDependencies =
 			.filter { isGovernedBucket(it.name) }
 			.flatMap { conf ->
 				conf.dependencies.withType(ExternalModuleDependency::class.java).mapNotNull { d ->
-					d.version?.takeIf { it.isNotBlank() }?.let { DeclaredDependency("${d.group}:${d.name}", it, conf.name) }
+					d.version?.takeIf { it.isNotBlank() }?.let { DeclaredDependency("${d.group}:${d.name}", it, conf.name, isPlatform(d)) }
 				} +
 					conf.dependencyConstraints.mapNotNull { c ->
 						c.version?.takeIf { it.isNotBlank() }?.let { DeclaredDependency("${c.group}:${c.name}", it, "${conf.name} constraint") }

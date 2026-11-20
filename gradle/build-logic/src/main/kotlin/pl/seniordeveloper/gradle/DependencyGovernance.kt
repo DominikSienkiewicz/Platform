@@ -5,11 +5,13 @@ data class DeclaredDependency(
 	val key: String,
 	val version: String,
 	val bucket: String,
+	val platform: Boolean = false,
 ) {
-	fun encode(): String = "$key|$version|$bucket"
+	fun encode(): String = "$key|$version|$bucket|$platform"
 
 	companion object {
-		fun decode(value: String): DeclaredDependency = value.split('|', limit = 3).let { DeclaredDependency(it[0], it[1], it[2]) }
+		fun decode(value: String): DeclaredDependency =
+			value.split('|', limit = 4).let { DeclaredDependency(it[0], it[1], it[2], it.getOrNull(3).toBoolean()) }
 	}
 }
 
@@ -98,6 +100,22 @@ object DependencyGovernance {
 		}
 
 	/**
+	 * Import BOM-u spoza kanonu przez `platform(...)` albo `enforcedPlatform(...)`: jego wersje mogą nadpisać ramę
+	 * (enforcedPlatform wprost). Tylko ostrzega (ADR-0019). BOM z kanonu w innej wersji łapie violations (PLAT-DEP-002).
+	 */
+	fun foreignBoms(
+		declared: List<DeclaredDependency>,
+		canon: Map<String, CanonEntry>,
+	): List<GateFinding> =
+		declared.filter { it.platform && it.key !in canon }.map { dependency ->
+			GateFinding(
+				PlatformGates.DEP_FOREIGN_BOM,
+				"${dependency.key}:${dependency.version} (${dependency.bucket}) — a BOM outside the Platform frame: its versions can " +
+					"override the frame. Remove it, or propose the BOM for the frame (ADR-0037)",
+			)
+		}
+
+	/**
 	 * Wersje, które katalog `libs` konsumenta podaje inaczej niż kanon osadzony w pluginie — `version(...)` po
 	 * `from(...)` w settings. Artefakty pl.seniordeveloper pomija: ich rozjazd zgłasza platformPinCheck.
 	 */
@@ -133,6 +151,7 @@ object DependencyGovernance {
 		project: String,
 		findings: List<GateFinding>,
 		deprecations: List<GateFinding>,
+		warnings: List<GateFinding> = emptyList(),
 	): String =
 		buildString {
 			appendLine("### platformDependencyCheck — $project")
@@ -143,6 +162,12 @@ object DependencyGovernance {
 				appendLine("| Code | Finding |")
 				appendLine("|---|---|")
 				findings.forEach { appendLine("| [${it.code}](${PlatformGates.link(it.code)}) | ${it.text.replace("|", "\\|")} |") }
+			}
+			if (warnings.isNotEmpty()) {
+				appendLine()
+				appendLine("Warnings, the build still passes:")
+				appendLine()
+				warnings.forEach { appendLine("- [${it.code}](${PlatformGates.link(it.code)}) ${it.text}") }
 			}
 			if (deprecations.isNotEmpty()) {
 				appendLine()
