@@ -229,8 +229,8 @@ Schemas move forward only: a released changeset or migration is never edited, a 
 `scripts/bump-version.sh db new-migration <slug>` creates the next Liquibase changeset as
 `db/changelog/changes/NNNN-<slug>.yaml` and includes it in the master. The reusable `deploy.yml` tags the
 migrate image with the highest four-digit prefix in that directory, so the name is part of the deploy
-contract: `AbstractLiquibaseChangelogTest` fails on a file outside `NNNN-<slug>.yaml`, on two files with one
-prefix and on a file no changeset of which reaches the master. Flyway applications name migrations
+contract: keep every file in that directory named `NNNN-<slug>.yaml`, with no two files sharing a prefix and
+every file included from the master. Flyway applications name migrations
 `V<n>__<description>.sql`, which `AbstractFlywayMigrationTest` checks ([reference](reference.md#test-fixtures)).
 
 `spring-modulith-starter-jpa` and `spring-modulith-starter-jdbc` (group `org.springframework.modulith`, declared

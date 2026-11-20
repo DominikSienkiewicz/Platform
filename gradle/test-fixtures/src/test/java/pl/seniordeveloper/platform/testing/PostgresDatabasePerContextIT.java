@@ -33,7 +33,6 @@ class PostgresDatabasePerContextIT {
     try (ConfigurableApplicationContext first = start(FirstApplication.class);
         ConfigurableApplicationContext second = start(SecondApplication.class)) {
       assertThat(systemIdentifier(second)).isEqualTo(systemIdentifier(first));
-      assertThat(AbstractTestcontainersFootprintTest.postgresContainersOfThisSession()).hasSize(1);
 
       String sharedDatabase = PlatformSharedPostgresContainer.container().getDatabaseName();
       String firstDatabase = currentDatabase(first);

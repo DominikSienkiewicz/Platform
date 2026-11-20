@@ -261,17 +261,6 @@ that needs the address. The contexts share one database: a test that expects an 
 after itself, uses its own schema, or opts into a database per context with
 `@PlatformPostgresDatabasePerContext` (below). `@PostgresIntegrationTest` below imports it.
 
-`AbstractTestcontainersFootprintTest` fails when more than `maximumPostgresContainers()` (1 by default)
-Platform PostgreSQL containers of this Testcontainers session run at once, naming the fix. It counts the
-containers running when it runs, so order it after the tests that build contexts, with
-`junit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$OrderAnnotation` in
-`src/test/resources/junit-platform.properties`:
-
-```java
-@Order(Integer.MAX_VALUE)
-class TestcontainersFootprintIT extends AbstractTestcontainersFootprintTest { }
-```
-
 `PlatformPostgresContainer` is deprecated: it is a `@ServiceConnection` bean, so each context signature in
 the cache starts its own container. It keeps working unchanged. In a dev-time launcher with Spring Boot
 DevTools, a restart closes the context and that container with it, so the database starts empty after
@@ -341,14 +330,7 @@ public class TestApplication {
 }
 ```
 
-`PlatformOllamaContainer` adds Ollama; the consumer also needs `org.testcontainers:testcontainers-ollama`:
-
-```java
-@Import({PlatformSharedPostgresContainer.class, PlatformOllamaContainer.class})
-```
-
-`PlatformImages` holds the image tags those containers use (`PGVECTOR`, `OLLAMA`). The same tags run
-in `infra/docker-compose.yml`, and `templates/tests/image-tags-sync.test.sh` fails when they differ.
+`PlatformImages` holds the image tag those containers use (`PGVECTOR`).
 
 `AbstractModulithVerificationTest` verifies the Spring Modulith structure without Docker:
 
@@ -361,20 +343,13 @@ class ModulithVerificationTest extends AbstractModulithVerificationTest {
 }
 ```
 
-Two Docker-free guards fail the fast `test` when Spring Boot would start without migrations.
-`AbstractLiquibaseChangelogTest` parses `db/changelog/db.changelog-master.yaml` with Liquibase, no
-database needed, and fails when it is missing, is not valid YAML, or includes a file that does not exist;
-the test classpath needs `org.liquibase:liquibase-core`, which every Liquibase application has. Its second
-test holds `db/changelog/changes/` to the naming `deploy.yml` tags the migrate image with: every file is
-`NNNN-<slug>.yaml`, no two share a prefix, and a changeset of every file reaches the master
-([Database migrations](consuming.md#database-migrations)). `AbstractFlywayMigrationTest` checks every
-`db/migration` root on the classpath, main, test and jars, with subdirectories, as Flyway scans them: it
-fails when there is none or no `.sql` file, on a file not named `V<n>__<description>.sql` or
-`R__<description>.sql`, and on two migrations with one version (`V3__a` and `V3__b`, `V1.1` and `V1_1`):
+`AbstractFlywayMigrationTest` fails the fast `test` when Spring Boot would start without migrations, with no
+database needed. It checks every `db/migration` root on the classpath, main, test and jars, with
+subdirectories, as Flyway scans them: it fails when there is none or no `.sql` file, on a file not named
+`V<n>__<description>.sql` or `R__<description>.sql`, and on two migrations with one version (`V3__a` and
+`V3__b`, `V1.1` and `V1_1`):
 
 ```java
-class LiquibaseChangelogTest extends AbstractLiquibaseChangelogTest { }
-
 class FlywayMigrationTest extends AbstractFlywayMigrationTest { }
 ```
 

@@ -27,11 +27,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Wspólny strażnik migracji Flyway — analog {@link AbstractLiquibaseChangelogTest} dla repo na
- * Flyway (np. Azimuth). Spring Boot auto-uruchamia migracje z {@code classpath:/db/migration} przy
- * każdym starcie kontekstu; pusty albo źle nazwany katalog = migracje CICHO się nie wykonują, a
- * start aplikacji staje się niedeterministyczny. Test jest Docker-free (szybki, bez tagu
- * integration).
+ * Wspólny strażnik migracji Flyway dla repo na Flyway (np. Azimuth). Spring Boot auto-uruchamia
+ * migracje z {@code classpath:/db/migration} przy każdym starcie kontekstu; pusty albo źle nazwany
+ * katalog = migracje CICHO się nie wykonują, a start aplikacji staje się niedeterministyczny. Test
+ * jest Docker-free (szybki, bez tagu integration).
  *
  * <p>Zakres skanu jak u Flyway: KAŻDY root {@code db/migration} na classpath (main i test, także w
  * jarach), rekurencyjnie z podkatalogami. Zgłasza plik {@code .sql} o nazwie, której Flyway nie

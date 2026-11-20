@@ -41,10 +41,6 @@ dependencies {
 	api("org.testcontainers:testcontainers-postgresql")
 	api("org.springframework.modulith:spring-modulith-core")       // ApplicationModules
 	api("org.junit.jupiter:junit-jupiter-api")
-	// Ollama tylko dla PlatformOllamaContainer — konsument (np. Attestate) dostarcza artefakt sam.
-	compileOnly("org.testcontainers:testcontainers-ollama")
-	// Parser Liquibase dla AbstractLiquibaseChangelogTest — konsument na Liquibase ma go z własnego startera.
-	compileOnly("org.liquibase:liquibase-core")
 	// AbstractOpenApiContractTest: mappingi Spring MVC i spec JSON/YAML. Konsument z REST API ma je z własnych
 	// starterów (webmvc, Jackson); YAML tylko, gdy jego spec jest w YAML-u.
 	compileOnly("org.springframework:spring-webmvc")
@@ -60,7 +56,6 @@ dependencies {
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
-	testImplementation("org.liquibase:liquibase-core")
 	testImplementation("org.springframework:spring-webmvc")
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("tools.jackson.core:jackson-databind")
