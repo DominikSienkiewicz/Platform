@@ -22,6 +22,106 @@ continues.
 
 ## [Unreleased]
 
+Platform 1.13.0 slims Platform to the frame: what no consumer used is removed. A promotion through `promote.yml` keeps
+calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false` until 1.13.1 moves that pin to the commit of the v1.13.0
+tag, so the `deploy.yml` removals below reach only direct callers of that file.
+
+### Consumer action required
+
+None for Azimuth, Touchstone and Training: none of them uses an artifact, input or file listed under **Removed**. Their
+`AGENTS.md` changes on the next bump without any action: the managed `platform-agents` block lost its
+"Skills: /platform:…" line, because the Claude Code plugin it named is gone.
+
+External callers and users of the removed items (manual):
+
+- Callers of `deploy.yml` stop passing `ssh-deploy`, `compose-dir`, `compose-file`, `base-env`, `platform-ref`,
+  `rollback-to-backend`, `rollback-to-frontend` and `deploy-timeout-minutes`, and the secrets `SSH_HOST`, `SSH_USER`,
+  `SSH_KEY` and `SSH_KNOWN_HOSTS`; the workflow has no `deploy` job and no `production` environment any more. Deploy
+  with your own means: the file keeps building, scanning and signing the images.
+- Callers of `promote.yml` pass `platform-ref` (an exact Platform tag, for example `v1.13.0`): it no longer defaults to
+  the `v1` tag.
+- Callers that reference a workflow at `@v1` pin an exact `@vX.Y.Z`; the `v1` tag is no longer moved
+  (`platform-bump` rewrites such a reference to the exact tag).
+- Callers of the reusable `sonar.yml` or `roadmap-unblock.yml` stop calling them.
+- A build that declares `platform-security-starter` or `platform-web-starter`, or the catalog aliases of the same
+  names, takes those libraries from its own sources. `@dominiksienkiewicz/ui`, `@dominiksienkiewicz/api-client` and
+  `@dominiksienkiewicz/query` are neither published nor built.
+- A test that extends `AbstractLiquibaseChangelogTest` or `AbstractTestcontainersFootprintTest`, or uses
+  `PlatformOllamaContainer` or `PlatformImages.OLLAMA`, copies that code.
+- A repository that copied `templates/devcontainer`, `templates/roadmap`, `templates/github/community`,
+  `templates/agent-preflight.sh`, `templates/setup-gh-deploy.sh` or `templates/secrets.local.example` keeps its copy
+  as its own; `platform-templates-check` stops reporting drift for them.
+- Delete a leftover `.secrets.local` before you synchronise the canonical `.gitignore`: the canon no longer ignores
+  that file, so it would show up as untracked and could be committed.
+- A configuration that sets `platform.observability.public-metrics` drops it; Spring ignores the unknown property, and
+  `platform.observability.prometheus` stays opt-in ([ADR-0033](docs/adr/0033-prometheus-is-opt-in.md)).
+- A script that reads `platform-doctor` output no longer meets PD050; the check went with the SSH deploy.
+
+### Added
+
+- CI lints every workflow with actionlint (pinned version).
+
+### Changed
+
+- Template tests merged by component; structural YAML greps replaced by actionlint.
+- `deploy.yml` is named "Build, scan and sign images (reusable)". The file name, the `sign` job, the remaining inputs,
+  the image names and tags, the `backend-tag` and `frontend-tag` outputs and the signing are unchanged, so the
+  `deploy.yml@<commit>` identity that cluster policies verify stays valid. The `versions` job no longer asks for
+  `packages: read`, which only the rollback check used, and has no `worker` output.
+- `promote.yml` requires `platform-ref`. ADR-0035 and ADR-0036 carry a dated "Partly superseded" note.
+- The managed `platform-agents` block (`templates/agents/platform-block.md` and `AGENTS.md`) no longer has the
+  "Skills: /platform:…" line.
+- `buildAndPublishLocal.sh` publishes every module of `gradle/maven-modules.txt`, so `bom` and `observability-starter`
+  are published locally too; `--with-registry` is gone.
+- `consumer-audit.sh` keeps the plain matrix, whose `security-starter` column is now `observability-starter`.
+- `ci.yml` no longer builds the shadcn registry, and in `release.yml` the `gradle` and `npm` jobs need `version` and
+  `verify` only.
+- The ADRs of removed parts carry a status or a dated note: ADR-0012, ADR-0016, ADR-0024 and ADR-0031 are superseded;
+  ADR-0001, ADR-0025, ADR-0035 and ADR-0036 are partly superseded; ADR-0021 and ADR-0033 have an update.
+- The README has no "Adopted by" column and no Codespaces button, and the reviewer tour has nine stops.
+
+### Removed
+
+- **`deploy.yml`:** the SSH deployment ([ADR-0016](docs/adr/0016-production-deploys-from-the-release-branch.md) is
+  superseded): the `deploy` job and its `production` environment, `scripts/deploy-remote.sh`,
+  `templates/setup-gh-deploy.sh`, `templates/secrets.local.example`, the inputs `ssh-deploy`, `compose-dir`,
+  `compose-file`, `base-env`, `platform-ref`, `rollback-to-backend`, `rollback-to-frontend` and
+  `deploy-timeout-minutes`, the secrets `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS`, and the rollback
+  logic. The `.secrets.local` rule left the canonical `.gitignore` and the two JVM starters, and the doctor ID PD050
+  is retired.
+- **Release:** the moving `v1` tag with the `move-v1` job and the `v1-pointer` ruleset, the reusable `sonar.yml`,
+  `reproducibility.yml` with `scripts/compare-rebuild.sh`, `ci-budget.yml` with `.github/ci-budgets.json` and
+  `scripts/ci-budget.py`, the `example` job of `release.yml` with `scripts/render-example.sh`, `cleanup-packages.yml`
+  with `scripts/cleanup-packages.sh`, and the `registry-build` job.
+- **CI:** Platform's own `sonar` job of `ci.yml` ([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md)
+  is superseded). The plugins `seniordev.quality-conventions` and `seniordev.sonar-conventions` keep configuring
+  SonarQube Cloud for consumers.
+- **Maven artifacts:** `platform-security-starter` and `platform-web-starter`, with `contracts/problem-detail.json`,
+  `contracts/problem-detail.openapi.yaml`, their catalog aliases and their `platform-bom` constraints, and the
+  property `platform.observability.public-metrics` of the observability starter.
+- **npm packages:** `@dominiksienkiewicz/api-client`, `@dominiksienkiewicz/query` and the ui registry
+  (`@dominiksienkiewicz/ui`), with the `build:registry` script and the nine canon entries only they needed:
+  `@tanstack/react-query`, `@tanstack/react-query-devtools`, `fast-check`, `class-variance-authority`, `clsx`,
+  `@radix-ui/react-slot`, `lucide-react`, `shadcn` and `tailwind-merge`.
+- **Test fixtures:** `AbstractLiquibaseChangelogTest`, `PlatformOllamaContainer` with `PlatformImages.OLLAMA`, and
+  `AbstractTestcontainersFootprintTest`; the `liquibase-core` and `testcontainers-ollama` dependencies went with them.
+- **Templates and tools:** `templates/roadmap` with the reusable `roadmap-unblock.yml`, `templates/devcontainer`,
+  Platform's own `.devcontainer` with `devcontainer.yml`, `templates/github/community` with
+  `scripts/seed-community-health.sh`, `templates/agent-preflight.sh` and the `infra/` docker-compose stack.
+- **Documentation site and plugin:** the Zensical site (`zensical.toml`, `docs-site.yml`, `scripts/docs-site.py`,
+  `scripts/docs-versions.py`) and the `seniordev-platform` Claude Code marketplace with its `platform` plugin of seven
+  skills ([ADR-0031](docs/adr/0031-docs-site-with-zensical.md) is superseded).
+- **Maintainer tools:** `scripts/gate-failures.py` and `consumer-audit.sh --lag` and `--adoption`.
+
+### Maintainer notes
+
+Not consumer actions. The owner does these in GitHub after the release:
+
+- delete the `v1-pointer` ruleset and the remote `v1` tag (`git push origin :refs/tags/v1`);
+- delete the secrets `SONAR_TOKEN`, `PLATFORM_EXAMPLE_TOKEN` and `PACKAGES_ADMIN_TOKEN`;
+- delete the two SonarQube Cloud projects of `platform-test-fixtures` and `platform-security-starter`;
+- archive the `platform-example` repository.
+
 ## [1.12.0] - 2026-11-20
 
 ### Consumer action required
@@ -1102,7 +1202,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   the repository pins and opens the runbook, or the `docs/gates.md` section of the `[PLAT-…]` code, at that tag, and
   holds no procedure of its own. A repository adds the marketplace at a release tag
   (`claude plugin marketplace add DominikSienkiewicz/Platform#v<version>`); the install and the skills are in
-  [docs/consumer-agents.md](docs/consumer-agents.md#claude-code-skills). `scripts/check-agent-docs.py` now also checks
+  `docs/consumer-agents.md`, section "Claude Code skills". `scripts/check-agent-docs.py` now also checks
   the commands, paths and tag links the skills name, and `templates/tests/platform-plugin.test.sh` the manifests and
   that each skill points at its own runbook only.
 - Community defaults for every public repository of the owner (N-SHOW-13): `templates/github/community/` holds a
@@ -1123,7 +1223,7 @@ the frontend, and last the experimental roadmap toolkit and the incubating secur
   daemon criteria of the starters, the catalog and `frontend/.nvmrc`, checks the credential wiring, and runs
   `post-create.sh` against a stub `npm`; the three files are optional entries of `templates/manifest.json`, so
   `platform-templates-check` reports drift where a repository adopts them. Nothing changes for a repository that does
-  not (see [docs/consuming.md](docs/consuming.md#devcontainer-incubating)).
+  not (see `docs/consuming.md`, section "Devcontainer (incubating)").
 - `platform-doctor` PD032 warns when a Gradle build has no GitHub login, `gpr.user` in `~/.gradle/gradle.properties`
   or `GITHUB_ACTOR`, counting an empty or whitespace-only value as missing like the starters' preflight. With
   `GITHUB_TOKEN` set and an empty `GITHUB_ACTOR`, as in the consumer devcontainer on a host without the

@@ -18,7 +18,7 @@ body:
         - Convention plugins (seniordev.*-conventions)
         - Version catalog or platform-bom
         - Test fixtures
-        - A starter (security, observability, web)
+        - The observability starter
         - A frontend package (@dominiksienkiewicz/*)
         - A reusable workflow
         - platform-bump or another bin

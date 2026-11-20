@@ -4,6 +4,9 @@
 
 Accepted — 2026-11-09
 
+Partly superseded (2026-11-20): the SSH deploy that this decision names (the `deploy` job and its use of the migrate
+and `eval-worker` images) was removed from `deploy.yml` in 1.13.0. Signing the scanned application images holds.
+
 ## Context
 
 A cluster that Argo CD keeps in sync ([ADR-0035](0035-promotion-by-commit-for-argo-cd.md)) should admit only images

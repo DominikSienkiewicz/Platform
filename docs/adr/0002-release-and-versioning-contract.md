@@ -59,7 +59,7 @@ backlog). This ADR records them as one contract.
    `@dominiksienkiewicz/versions`); a reusable `platform-bump.yml` workflow will open the bump
    pull request. The Renovate preset is narrowed to GitHub Actions and Docker images.
 
-| Class of change | Convention plugins | Catalog | Test fixtures, security starter | npm packages | Reusable workflows | Templates |
+| Class of change | Convention plugins | Catalog | Test fixtures, starters | npm packages | Reusable workflows | Templates |
 |---|---|---|---|---|---|---|
 | Consumer action (item 4) | MINOR | MINOR | MINOR | MINOR | MINOR | MINOR |
 | New opt-in capability, fix, dependency bump without action | PATCH | PATCH | PATCH | PATCH | PATCH | PATCH |
