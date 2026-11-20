@@ -17,8 +17,6 @@ plugins {
 EOF
 put acme/alpha/backend/build.gradle.kts <<'EOF'
 dependencies {
-    implementation(libs.bundles.modulith.web)
-    testImplementation(libs.bundles.modulith.web.tests)
     testImplementation(libs.platform.test.fixtures)
 }
 EOF
@@ -80,10 +78,10 @@ printf 'main\n' | put acme/beta/branches.txt
 printf '# fixtures\nacme/alpha\n\nacme/beta\n' > "$work/consumers.txt"
 
 expected=$(cat <<'EOF'
-| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | observability-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |
-|---|---|---|---|---|---|---|---|---|---|---|
-| acme/alpha | 1.5.26 | 9.6.1 | `sapmachine:27-jre` | yes | no | modulith.web, modulith.web.tests | 1.5.26: eslint-config, versions | v1 | no | 2 |
-| acme/beta | 1.5.31 | 9.8.1 | `eclipse-temurin:27-jre` | no | yes | — | no frontend | v1.5.31 | yes | 0 |
+| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | observability-starter | npm packages | Workflow refs | platform-bump.yml | Renovate branches |
+|---|---|---|---|---|---|---|---|---|---|
+| acme/alpha | 1.5.26 | 9.6.1 | `sapmachine:27-jre` | yes | no | 1.5.26: eslint-config, versions | v1 | no | 2 |
+| acme/beta | 1.5.31 | 9.8.1 | `eclipse-temurin:27-jre` | no | yes | no frontend | v1.5.31 | yes | 0 |
 EOF
 )
 

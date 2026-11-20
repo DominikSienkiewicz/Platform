@@ -112,11 +112,7 @@ secret exists (the secret is only reported; its value is yours to set).
    `git diff <pinned-sha> HEAD -- .github/workflows/deploy.yml`; if the change matters to a promotion, move the pin
    to the latest release that has it.
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
-   (`--lag` adds how many releases and days each consumer is behind, whether it pins a yanked release
-   and how many `@v1` references it keeps; `--adoption` compares each artifact's *incubating* label in
-   the README with the consumers that use it, and names the oldest
-   pinned release, below which GitHub Packages may be cleaned up. Both reports describe private
-   repositories, so they stay local and never run in CI), and who
+   (the report describes private repositories, so it stays local and never runs in CI), and who
    still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
    `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]` above it. The section must
    have a `### Consumer action required` subsection; write `None.` when nothing is required. Pick

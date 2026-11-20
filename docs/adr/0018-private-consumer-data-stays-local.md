@@ -11,7 +11,8 @@ consumers' code, pins and CI results; in a public workflow their logs would publ
 
 ## Decision
 
-- The adoption and lag report runs locally: `scripts/consumer-audit.sh --lag` and `--adoption` (Decision 32).
+- The adoption report runs locally: `scripts/consumer-audit.sh` (Decision 32); its `--lag` and `--adoption` modes were
+  removed on 2026-11-20.
 - The pre-release canary runs locally: `scripts/canary.sh` records the result for `HEAD` under
   `.git/platform-canary/`, and `release.sh` requires it or `--skip-canary "<reason>"` (Decision 35).
 - The ring rollout runs locally: `scripts/ring-rollout.sh` bumps Touchstone first and the rest after its pull
