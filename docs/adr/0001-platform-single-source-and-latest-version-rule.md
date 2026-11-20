@@ -102,3 +102,9 @@ metadata or the frontend canon. Pin lag is therefore closed by `platform-bump`, 
 schedule through the reusable `platform-bump.yml`, which opens the bump pull request. The shared
 Renovate preset now covers GitHub Actions and Docker images only; Platform's own `renovate.json`
 manages its catalog and frontend canon ([ADR-0002](0002-release-and-versioning-contract.md), item 6).
+
+**Update (2026-11-20, 1.13.0).** The preset also updates what the application owns: its Gradle and npm
+dependencies, pinned exactly, besides GitHub Actions and Docker images. Platform pins and the rest of the frame
+stay with `platform-bump`: `scripts/renovate-preset.py` generates the `Frame:` rules that disable Renovate for the
+Gradle wrapper, the catalog, the frontend canon, Platform's artifacts and its reusable workflows
+([ADR-0002](0002-release-and-versioning-contract.md), item 7).
