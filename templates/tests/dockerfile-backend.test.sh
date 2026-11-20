@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
+# templates/Dockerfile.backend, case by case: the healthcheck, JVM flags and non-root user (the probe runs against a stub
+# HTTP server), and the Boot layers with the opt-in AOT cache.
+set -euo pipefail
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+# --- healthcheck-and-user ---
 # dockerfile-backend.test.sh — kontrakt obrazu z templates/Dockerfile.backend: HEALTHCHECK, flagi JVM i użytkownik
 # bez roota, a sonda HEALTHCHECK uruchomiona naprawdę przeciw stubowi HTTP (bez Dockera, bez obrazu).
-set -euo pipefail
+(
 here=$(cd "$(dirname "$0")" && pwd)
 dockerfile="$here/../Dockerfile.backend"
 work=$(mktemp -d)
@@ -11,7 +17,6 @@ cleanup() {
   rm -rf "$work"
 }
 trap cleanup EXIT
-fail() { echo "FAIL: $*" >&2; exit 1; }
 
 grep -qE '^HEALTHCHECK --start-period=60s --interval=10s --timeout=3s --retries=6 ' "$dockerfile" \
   || fail "HEALTHCHECK must give the application 60 s to start and probe every 10 s, 6 times"
@@ -88,3 +93,26 @@ status=0; env -i PATH="$PATH" SERVER_PORT="$port" bash -c "$(cat "$work/probe")"
 [[ $status -eq 1 ]] || fail "no server: the probe must exit 1 (Docker reserves 2), got $status"
 
 echo "OK: Dockerfile.backend declares the healthcheck, JVM flags and a non-root user, and its probe answers as expected"
+)
+
+# --- layers ---
+# Warstwy obrazu z templates/Dockerfile.backend (N-CAP-5): ekstrakcja jara Boota w etapie `layers`, jeden COPY na
+# warstwę w kolejności od najrzadziej zmienianej, launcher Boota zamiast `java -jar`, a opcjonalny cache AOT przez
+# plik argumentów, pusty domyślnie. Ostatni FROM zostaje obrazem JRE (platformRuntimeImageCheck, PD060).
+(
+dockerfile="$(cd "$(dirname "$0")/.." && pwd)/Dockerfile.backend"
+grep -qE '^FROM sapmachine:[0-9]+-jre AS layers$' "$dockerfile" || fail 'the layers stage extracts on the runtime JRE'
+grep -qF 'RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted' "$dockerfile" \
+  || fail 'the jar is extracted into its Boot layers with the launcher'
+copies=$(sed -n -E 's#^COPY --from=layers /build/extracted/([a-z-]+)/ \./$#\1#p' "$dockerfile" | paste -sd' ' -)
+[[ "$copies" == "dependencies spring-boot-loader snapshot-dependencies application" ]] \
+  || fail "one COPY per Boot layer, least changing first (got: $copies)"
+grep -qxF 'ARG AOT_CACHE=false' "$dockerfile" || fail 'the AOT cache is opt-in'
+grep -qF 'java -XX:AOTCacheOutput=/app/app.aot -Dspring.context.exit=onRefresh' "$dockerfile" || fail 'the AOT cache is trained by one context refresh'
+grep -qF 'else : > /app/jvm.args; fi' "$dockerfile" || fail 'without the AOT cache the argument file is empty'
+grep -qxF 'ENTRYPOINT ["java", "@/app/jvm.args", "org.springframework.boot.loader.launch.JarLauncher"]' "$dockerfile" \
+  || fail 'the entrypoint starts the Boot launcher with the argument file'
+[[ "$(sed -n -E 's/^FROM[[:space:]]+([^[:space:]]+).*/\1/p' "$dockerfile" | tail -1)" =~ ^sapmachine:[0-9]+-jre$ ]] \
+  || fail 'the final FROM stays the JRE image the runtime image gate reads'
+echo 'OK: Dockerfile.backend copies each Boot layer once and makes the AOT cache opt-in'
+)

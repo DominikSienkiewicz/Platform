@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
+# Renovate, case by case: the shared preset covers actions and Docker only and Platform's own config manages the canons,
+# and the preset delays fresh releases while security fixes pass at once.
+set -euo pipefail
+root=$(cd "$(dirname "$0")/../.." && pwd)
+fail() { echo "FAIL: $*" >&2; exit 1; }
+
+# --- config ---
 # The shared Renovate preset covers GitHub Actions and Docker only (Decision 5): Gradle, npm and the
 # Platform pins belong to platform-bump. Platform's own renovate.json manages the two canons, and its
 # regexes match every entry of versions.json and both lines of the digest-pinned Snyk image.
-set -euo pipefail
-root=$(cd "$(dirname "$0")/../.." && pwd)
-
+(
 node --input-type=module - "$root" <<'NODE'
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -58,3 +63,21 @@ if (failures.length) {
 }
 console.log("OK: the shared preset covers actions and Docker only, and Platform's config manages both canons");
 NODE
+)
+
+# --- security ---
+# Preset Renovate czeka 3 dni na świeże wydania akcji i obrazów (internalChecksFilter strict), a poprawki
+# bezpieczeństwa omijają i ten okres, i poniedziałkowe okno (G-16).
+(
+preset="$(cd "$(dirname "$0")/../.." && pwd)/default.json"
+
+[[ "$(jq -r '.minimumReleaseAge' "$preset")" == "3 days" ]] || fail 'updates wait three days after a release'
+[[ "$(jq -r '.internalChecksFilter' "$preset")" == strict ]] || fail 'a pending release age holds the pull request back'
+[[ "$(jq -r '.osvVulnerabilityAlerts' "$preset")" == true ]] || fail 'OSV vulnerability alerts are on'
+[[ "$(jq -r '.vulnerabilityAlerts | has("minimumReleaseAge") and .minimumReleaseAge == null' "$preset")" == true ]] \
+  || fail 'security fixes skip the cooling-off period'
+[[ "$(jq -c '.vulnerabilityAlerts.schedule' "$preset")" == '["at any time"]' ]] || fail 'security fixes skip the Monday window'
+jq -e '.vulnerabilityAlerts.labels | index("security")' "$preset" > /dev/null || fail 'security fixes carry the security label'
+
+echo 'OK: the Renovate preset delays fresh releases and lets security fixes through at once'
+)

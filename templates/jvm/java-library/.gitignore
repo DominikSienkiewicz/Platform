@@ -1,6 +1,6 @@
 # Single-layer JVM repository: the rules of templates/gitignore/root.gitignore followed by
 # templates/gitignore/backend.gitignore, in the same order. Change the canon files first and
-# mirror the change here (guarded by templates/tests/jvm-starter-gitignore.test.sh).
+# mirror the change here (guarded by templates/tests/gitignore.test.sh).
 
 # === OS junk ===
 .DS_Store
