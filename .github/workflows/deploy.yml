@@ -138,7 +138,7 @@ jobs:
       frontend: ${{ steps.v.outputs.frontend }}
       migrate: ${{ steps.v.outputs.migrate }}
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - id: v
@@ -185,7 +185,7 @@ jobs:
       MIGRATE_VER: ${{ needs.versions.outputs.migrate }}
     steps:
       # Bez zapisanego tokenu: ten job trzyma packages: write, a dalej buduje kod repo.
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       # Kanał deprecacji (N-REL-9): id sekretu BuildKit gh_token zostaje tylko do migracji na github_token,
@@ -204,12 +204,12 @@ jobs:
       # Toolchain JDK z setup-java (API Adoptium), nie z Foojay: 2026-09-25 Foojay indeksował Temurin 27
       # dla linuksa tylko jako build Alpine (musl), resolver wybierał go na runnerze glibc i Gradle
       # odrzucał rozpakowane archiwum. Jawna ścieżka w installations.paths omija provisioning.
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         id: toolchain-jdk
         with:
           distribution: temurin
           java-version: ${{ inputs.toolchain-java-version }}
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: ${{ inputs.java-version }}
@@ -242,7 +242,7 @@ jobs:
       # powstaje przed nim. Token tylko w npm ci, jak w frontend-ci: npm run build to już kod zależności.
       - name: Set up Node for the frontend export
         if: ${{ inputs.single-image && steps.exists.outputs.backend == 'false' }}
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: npm

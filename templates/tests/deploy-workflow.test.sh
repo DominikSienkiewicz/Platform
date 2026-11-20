@@ -271,7 +271,7 @@ for name in 'Set up Node for the frontend export' 'Install the frontend for the 
     || fail "'$name' must run exactly when single-image is set and the backend image is not in GHCR yet"
 done
 node_step=$(step build-push 'Set up Node for the frontend export')
-grep -qFx '        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0' <<< "$node_step" \
+grep -qFx '        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0' <<< "$node_step" \
   || fail 'the Node setup must use the setup-node pin of the other workflows'
 grep -qFx '          node-version: "24"' <<< "$node_step" || fail 'the export must build on Node 24, as the other workflows do'
 install_step=$(step build-push 'Install the frontend for the export')
