@@ -56,8 +56,16 @@ at all. Copying the test into every repository brings back the drift that Platfo
   launcher, and the engine reports 11 tests for a subclass that declares none. Inheritance was therefore kept
   over the alternatives, plain JUnit `@Test` methods over a `ClassFileImporter` result or rules that a
   consumer lists itself, which would lose the per-rule report or put the list back into every repository.
+- The class has no switch to freeze violations or leave out a single inherited rule. The owner rejected an opt-in
+  `FreezingArchRule` switch on 2026-11-20: it would add API that every later release has to keep, and the
+  adopting repositories fix what the rules find instead.
+- The five package methods are independent. Overriding `adapterPackages()` does not move the defaults of
+  `inboundAdapterPackages()` and `outboundAdapterPackages()`, so a consumer with other adapter names overrides
+  all three. Because empty layers pass, a pattern that matches nothing passes silently.
 - Adoption at the bump to the release that contains this class:
-  - Azimuth replaces `HexagonalArchitectureTest` with a subclass on `AzimuthApplication`.
+  - Azimuth replaces `HexagonalArchitectureTest` with a subclass on `AzimuthApplication` and fixes the
+    violations first. It imports its test classes, like Training, so the field-injection and generic-exception
+    rules check them too.
   - Training replaces the body of `ArchitectureTest` with a subclass on `TrainingApplication`.
   - Touchstone adds a subclass in `:app` with `hexagonal()` returning `false` and keeps its classes where they
     are. It analyses the package `pl.seniordeveloper.touchstone` without `DoNotIncludeJars`, because its
@@ -66,12 +74,19 @@ at all. Copying the test into every repository brings back the drift that Platfo
 ## Consequences
 
 - One class holds the architecture rules of every consumer, and a new rule reaches them all with a bump.
-- A consumer cannot leave out a single inherited rule or freeze its violations with `FreezingArchRule`.
-  A repository that needs that keeps composing `PlatformArchRules` and `HexagonalRules` itself, as before.
+- A consumer cannot leave out a single inherited rule or freeze its violations. Azimuth, Training and Touchstone
+  adopt the class as it is. A future consumer that needs a freeze or a partial set composes `PlatformArchRules`
+  and `HexagonalRules` in its own test, as the [reference](../reference.md#test-fixtures) shows, until this decision is revisited.
 - Azimuth gains rules it did not check before: the `PlatformArchRules` rules and
-  `applicationReachesAdaptersThroughPorts`. Its adoption has to fix or exclude what they find first.
+  `applicationReachesAdaptersThroughPorts`. Its adoption fixes the violations these rules report. Excluding the
+  test classes with `ImportOption.DoNotIncludeTests` is not the way out: it also leaves
+  `CONTAINER_TESTS_ARE_TAGGED_INTEGRATION` with nothing to check.
+- The import options decide what the platform rules see. With the test classes imported, `NO_FIELD_INJECTION` and
+  `NO_GENERIC_EXCEPTIONS` also check the tests, and only then does `CONTAINER_TESTS_ARE_TAGGED_INTEGRATION` have
+  classes to check.
 - The tests of `platform-test-fixtures` run deliberately violating subclasses through the launcher. The
-  `test` task excludes those nested classes, because it would otherwise run them directly and fail.
+  `test` task excludes those nested classes, because it would otherwise run them directly and fail; a
+  consumer-style subclass in another package, `archconsumer.CanonArchitectureTest`, runs in `test` directly.
 - `junit-platform-launcher` moves from `testRuntimeOnly` to `testImplementation` in `platform-test-fixtures`;
   no artifact is added.
 

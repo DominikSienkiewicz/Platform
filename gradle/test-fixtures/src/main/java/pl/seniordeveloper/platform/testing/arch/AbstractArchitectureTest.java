@@ -22,10 +22,12 @@ import org.junit.jupiter.api.Assumptions;
  * }</pre>
  *
  * <p>Moduły płaskie, bez warstw, wyłączają heksagon i zostają przy regułach Platform: reguły
- * heksagonu kończą się wtedy jako pominięte (aborted), a nie zaliczone.
+ * heksagonu kończą się wtedy jako pominięte (aborted), a nie zaliczone. Moduły jako osobne projekty
+ * Gradle trafiają na classpath testów aplikacji jako jary, więc bez {@code DoNotIncludeJars} —
+ * klasy wybiera pakiet.
  *
  * <pre>{@code
- * @AnalyzeClasses(packages = "com.example", importOptions = ImportOption.DoNotIncludeJars.class)
+ * @AnalyzeClasses(packagesOf = MyApplication.class)
  * class ArchitectureTest extends AbstractArchitectureTest {
  *   @Override protected boolean hexagonal() { return false; }
  * }
@@ -58,7 +60,10 @@ public abstract class AbstractArchitectureTest {
   }
 
   /**
-   * Wszystkie adaptery, wejściowe i wyjściowe.
+   * Wszystkie adaptery, wejściowe i wyjściowe. Wzorce pakietów są niezależne: nadpisanie tej metody
+   * nie przesuwa domyślnych {@link #inboundAdapterPackages()} ani {@link
+   * #outboundAdapterPackages()}, więc przy innych nazwach adapterów nadpisz wszystkie trzy. Pusta
+   * warstwa przechodzi, więc wzorzec, który niczego nie trafia, przechodzi po cichu.
    *
    * @return domyślnie {@code ..adapter..}
    */

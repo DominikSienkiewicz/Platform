@@ -33,8 +33,10 @@ first; each behaviour of it is then built with [build a feature test-first](tdd-
    not yet chosen; an ADR whose reason no longer holds is superseded by a new one, not edited.
 6. **Verify the boundaries with a test.** With Spring Modulith, extend `AbstractModulithVerificationTest` of
    `pl.seniordeveloper:platform-test-fixtures`, which runs `ApplicationModules.of(<Application>.class).verify()`,
-   and `AbstractModulithDocumentationTest` of the same artifact renders the module diagram. Without Spring Modulith,
-   write ArchUnit rules; `PlatformArchRules` and `HexagonalRules` hold the shared ones. Write this test first and
+   and `AbstractModulithDocumentationTest` of the same artifact renders the module diagram. For the layers inside
+   each module, which Spring Modulith does not check, extend `AbstractArchitectureTest` of the same artifact: it
+   runs the shared ArchUnit rules and the hexagonal rules on the `domain`, `application`, `adapter.in` and
+   `adapter.out` packages ([reference](../reference.md#test-fixtures)). Write this test first and
    observe it red on a forbidden dependency, as in [build a feature test-first](tdd-feature.md).
 7. Implement each behaviour of the model with [build a feature test-first](tdd-feature.md), one commit per
    behaviour, using the glossary's words in the Given/When/Then.

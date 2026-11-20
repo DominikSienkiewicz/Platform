@@ -411,8 +411,13 @@ and `HexagonalRules.outboundAdaptersDoNotDependOnInboundAdapters`, each as its o
 `..domain..`, `..application..` (ports under `application.port..`, for example `port.in`, `port.out` and
 `port.query` for the read side), `..adapter..`, `..adapter.in..` and `..adapter.out..`; override
 `domainPackages()`, `applicationPackages()`, `adapterPackages()`, `inboundAdapterPackages()` or
-`outboundAdapterPackages()` for other names. An empty layer passes, so a module without adapters is not a
-violation. For a modular application with layers inside its modules:
+`outboundAdapterPackages()` for other names. The five methods are independent: overriding `adapterPackages()`
+does not move the `..adapter.in..` and `..adapter.out..` defaults, so override all three together. An empty layer
+passes, so a module without adapters is not a violation, and a mistyped pattern that matches nothing passes
+silently too. The import options decide what the platform rules see: with the test classes imported, as below,
+`NO_FIELD_INJECTION` and `NO_GENERIC_EXCEPTIONS` check the tests too, while `DoNotIncludeTests`, as in the
+example above, leaves `CONTAINER_TESTS_ARE_TAGGED_INTEGRATION` with nothing to check. For a modular application
+with layers inside its modules:
 
 ```java
 @AnalyzeClasses(packagesOf = Application.class, importOptions = ImportOption.DoNotIncludeJars.class)
