@@ -143,8 +143,9 @@ trafia do BODY commita `chore(release): platform X.Y.Z` (`Użycie: ./release.sh 
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
 
 Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main`, `HEAD` ≠ `origin/main`, message nie jest
-angielskim Conventional Commit, sekcji nie da się złożyć (brak `## [Unreleased]`, wpisy pod nim, temat spoza
-Conventional Commits) albo patch miałby akcję konsumenta.
+angielskim Conventional Commit, argument nie pasuje do formy, sekcji nie da się złożyć (brak `## [Unreleased]`, wpisy
+pod nim, temat spoza Conventional Commits, najnowsza sekcja bez taga, brak commitów od taga) albo patch miałby akcję
+konsumenta.
 Commituje wyłącznie pliki wersji (i `CHANGELOG.md` ze złożoną sekcją) i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
 zielonym CI (`verify` = `ci.yml`) na otagowanym commicie; ruchomego tagu `v1` nie ma (wycofany, ADR-0014).
 Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje

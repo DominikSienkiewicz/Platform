@@ -155,9 +155,13 @@ Before it changes anything, `release.sh` refuses to run when:
 - the message is not a Conventional Commit or contains Polish characters;
 - the version's tag already exists;
 - a hand-written section for the version has no `### Consumer action required` subsection;
+- an argument does not fit `"<message>" [X.Y.Z] [-y]`, for example a leftover `--skip-canary`;
 - the section has to be composed, but CHANGELOG.md has no `## [Unreleased]` heading, has entries under
   it, or a first-parent subject since the previous tag is not a Conventional Commit (write the section
   by hand in those cases);
+- the section has to be composed, but the newest `## [X.Y.Z]` section of CHANGELOG.md has no `vX.Y.Z` tag:
+  that hand-written section is still unreleased, so release it first;
+- the section has to be composed, but there are no commits since the previous tag;
 - the release would be a patch although its section lists consumer action; the error names the
   MINOR version to use;
 - the message is `feat`, uses `!:` or carries `BREAKING CHANGE`, and no version was given;

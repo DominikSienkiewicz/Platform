@@ -332,7 +332,20 @@ fi
 grep -q 'Tag v1.2.4' "$work.log" || fail "the refusal must name the existing tag"
 assert_untouched "$work" "$head" "v1.2.4"
 
-echo 'OK: release.sh refuses an empty message and an existing tag without committing, tagging or pushing'
+# (c) argument spoza formy "<message>" [X.Y.Z] [-y] (np. dawne --skip-canary) jest odrzucany, nie pomijany
+work=$(seed_repo stray-argument)
+head=$(git -C "$work" rev-parse HEAD)
+for args in '1.2.4|--skip-canary|consumers offline' '1.2.4|-y|extra' '--skip-canary'; do
+  IFS='|' read -r -a extra <<<"$args"
+  if (cd "$work" && ASSUME_YES=1 bash ./release.sh "fix: test release" "${extra[@]}") > "$work.log" 2>&1; then
+    fail "release.sh must refuse the arguments: ${extra[*]}"
+  fi
+  grep -qF 'Unexpected argument' "$work.log" || { cat "$work.log"; fail "the refusal must name the unexpected argument (${extra[*]})"; }
+  assert_untouched "$work" "$head" ""
+done
+grep -qF 'Unexpected argument "--skip-canary"' "$work.log" || fail 'the refusal must quote the argument'
+
+echo 'OK: release.sh refuses an empty message, an existing tag and stray arguments without committing, tagging or pushing'
 )
 
 # --- trailers ---
@@ -367,7 +380,7 @@ seed() {
   cp "$root/scripts/changelog-section.sh" "$work/scripts/changelog-section.sh"
   cp "$root/scripts/release-notes.sh" "$work/scripts/release-notes.sh"
   git -C "$work" add -A
-  git -C "$work" commit -q -m initial
+  git -C "$work" commit -q -m 'chore: start the history'
   [[ "$2" == no ]] || git -C "$work" tag v1.2.3
   echo change > "$work/change.txt"
   printf '%s\n\n%s' "# Changelog" "$4" > "$work/CHANGELOG.md"
@@ -402,11 +415,12 @@ release() {
   set -e
 }
 
+# refused <work> <oczekiwany komunikat> [tagi po odmowie, domyślnie v1.2.3]
 refused() {
-  local work="$1" expected="$2"
+  local work="$1" expected="$2" tags="${3-v1.2.3}"
   [[ $rc -ne 0 ]] || { cat "$work.log"; fail "release.sh must refuse: $expected"; }
   grep -qF -- "$expected" "$work.log" || { cat "$work.log"; fail "the refusal must say: $expected"; }
-  [[ "$(git -C "$work" tag --list)" == v1.2.3 ]] || fail 'a refusal must not tag'
+  [[ "$(git -C "$work" tag --list)" == "$tags" ]] || fail 'a refusal must not tag'
   [[ -z "$(git -C "$work" status --porcelain)" ]] || fail 'a refusal must not touch the tree'
 }
 
@@ -520,6 +534,34 @@ release "$work" "fix: release" 1.2.4
 notes=$(git -C "$work" tag -l --format='%(contents)' v1.2.4)
 grep -qx -- '- Something.' <<<"$notes" || fail 'the tag must carry the hand-written section'
 if grep -q 'keep the lockfile' <<<"$notes"; then fail 'a hand-written section must not be composed from the commits'; fi
+
+# Bez taga poprzedniego wydania release.sh składa sekcję z całej historii, a PATCH z akcją konsumenta odsyła wprost
+# do komendy MINOR (nie ma sekcji do przemianowania).
+work=$(seed composed-untagged-patch no "$trailer" "$unreleased")
+release "$work" "fix: release" 1.2.4
+refused "$work" './release.sh "fix: release" 1.3.0' ''
+grep -qF 'CHANGELOG.md lists consumer action for 1.2.4, so it must be a MINOR release:' "$work.log" || { cat "$work.log"; fail 'the refusal must say why'; }
+if grep -q 'rename the section' "$work.log"; then cat "$work.log"; fail 'a composed section has no heading to rename'; fi
+work=$(seed composed-untagged-minor no "$trailer" "$unreleased")
+release "$work" "feat: release" 1.3.0
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'without a previous tag the section must be composed from the whole history'; }
+grep -qF 'composed from the commits since the first commit' "$work.log" || { cat "$work.log"; fail 'the plan must say where the composed notes start'; }
+
+# Najnowsza sekcja wersji w CHANGELOG.md bez taga to niewydana ręczna sekcja: najpierw wydaj ją, potem składaj kolejną.
+work=$(seed untagged-section yes 'fix: keep the lockfile' "$unreleased"$'\n'"$(section 1.2.4 'None.')")
+release "$work" "fix: release" 1.2.5
+refused "$work" 'has no v1.2.4 tag: release 1.2.4 first'
+work=$(seed tagged-section yes 'fix: keep the lockfile' "$unreleased"$'\n'"$(section 1.2.3 'None.')")
+release "$work" "fix: release" 1.2.4
+[[ $rc -eq 0 ]] || { cat "$work.log"; fail 'a released newest section must not block composing the next one'; }
+[[ "$(git -C "$work" show HEAD:CHANGELOG.md | grep '^## ' | cut -c1-12)" == $'## [Unreleas\n## [1.2.4] -\n## [1.2.3] -' ]] \
+  || { git -C "$work" show HEAD:CHANGELOG.md; fail 'the composed section must go between [Unreleased] and the released section'; }
+
+# Pusty zakres od taga: nie ma czego wydać.
+work=$(seed empty-range no 'chore: prepare the release' "$unreleased")
+git -C "$work" tag v1.2.3
+release "$work" "fix: release" 1.2.4
+refused "$work" 'there are no commits since v1.2.3'
 
 # Składanie odmawia, gdy nie wiadomo, gdzie wstawić sekcję albo co z niej opublikować.
 work=$(seed no-unreleased yes 'fix: keep the lockfile' '')

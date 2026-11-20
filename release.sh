@@ -14,8 +14,9 @@
 # Kontrakt (docs/adr/0002-release-and-versioning-contract.md) — odmawia też, gdy:
 #   - message nie jest angielskim Conventional Commit;
 #   - ręcznie napisana sekcja wersji nie ma podsekcji "### Consumer action required";
-#   - sekcję trzeba złożyć, a CHANGELOG.md nie ma "## [Unreleased]", ma pod nim wpisy albo temat commita
-#     od poprzedniego taga nie jest Conventional Commit;
+#   - argument spoza formy "<message>" [X.Y.Z] [-y] (np. dawne --skip-canary);
+#   - sekcję trzeba złożyć, a CHANGELOG.md nie ma "## [Unreleased]", ma pod nim wpisy, jego najnowsza sekcja
+#     wersji nie ma taga, od poprzedniego taga nie ma commitów albo temat commita nie jest Conventional Commit;
 #   - wydanie z akcją konsumenta (podsekcja inna niż "None.") miałoby być patchem;
 #   - message feat / "!:" / BREAKING CHANGE miałby dostać automatyczny patch (podaj wersję jawnie);
 #   - commit od poprzedniego wydania niesie trailer "Consumer-Action:", "!" w temacie albo stopkę
@@ -31,6 +32,13 @@ cd "$(dirname "$0")"   # zawsze z roota Platform
 MSG="${1:-}"
 VERSION="${2:-}"
 [[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
+# Tylko forma "<message>" [X.Y.Z] [-y]: inny argument (np. dawne --skip-canary) to pomyłka, której nie wolno pominąć.
+STRAY=""
+if [[ "${2:-}" == -* ]]; then STRAY="$2"
+elif [[ $# -ge 3 ]] && [[ "$3" != "-y" ]]; then STRAY="$3"
+elif [[ $# -gt 3 ]]; then STRAY="$4"
+fi
+[[ -z "$STRAY" ]] || { echo "Unexpected argument \"$STRAY\". Usage: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
 AUTO_VERSION=0
 [[ -z "$VERSION" ]] && AUTO_VERSION=1
 
@@ -91,6 +99,18 @@ COMPOSED_FROM=""
 if ! bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md > /dev/null; then
   LAST_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' HEAD 2>/dev/null || true)"
   COMPOSED_FROM="${LAST_TAG:-the first commit}"
+  # Najnowsza sekcja bez taga to niewydana ręczna sekcja (np. 1.13.0 przed wydaniem): nowa sekcja stanęłaby nad nią.
+  NEWEST="$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - / { print substr($2, 2, length($2) - 2); exit }' CHANGELOG.md)"
+  if [[ -n "$NEWEST" ]] && ! git rev-parse -q --verify "refs/tags/v$NEWEST" > /dev/null \
+    && ! git ls-remote --exit-code --tags origin "v$NEWEST" > /dev/null 2>&1; then
+    echo "The newest section of CHANGELOG.md, \"## [$NEWEST]\", has no v$NEWEST tag: release $NEWEST first"
+    echo "(./release.sh \"<message>\" $NEWEST), then $VERSION. Composing $VERSION now would bury $NEWEST unreleased under it."
+    exit 1
+  fi
+  if [[ -n "$LAST_TAG" ]] && [[ "$(git rev-list --count "$LAST_TAG..HEAD")" == 0 ]]; then
+    echo "Nothing to release: there are no commits since $LAST_TAG."
+    exit 1
+  fi
   bash scripts/release-notes.sh "${LAST_TAG:+$LAST_TAG..}HEAD" > "$WORK_DIR/notes.md"
   if grep -q '^### Unclassified' "$WORK_DIR/notes.md"; then
     echo "CHANGELOG.md has no \"## [$VERSION]\" section, and these subjects since $COMPOSED_FROM are not Conventional Commits:"
