@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Release must publish only after green CI on the tagged commit.
 #
-# Structure: release.yml calls ci.yml as `verify`, every publishing job needs it and only jobs that
-# exist, and the npm job holding `packages: write` runs no build. Behaviour: the tag<->version guard
+# Structure: release.yml calls ci.yml as `verify`, every publishing job needs it, and the npm job holding
+# `packages: write` runs no build. That ci.yml is callable, that a `needs` names a job that exists and that a job
+# reads outputs only of jobs it needs is checked by actionlint in CI. Behaviour: the tag<->version guard
 # is cut out of release.yml between its markers and run as-is, so the test exercises the shipped code.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 release="$root/.github/workflows/release.yml"
-ci="$root/.github/workflows/ci.yml"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
@@ -85,8 +85,6 @@ extract_block() {
 }
 
 # --- Structure -------------------------------------------------------------------------------
-grep -Eq '^  workflow_call:' "$ci" || fail 'ci.yml must be callable (on: workflow_call) so Release can reuse it'
-
 awk '
   /^permissions:[[:space:]]*$/ { selected = 1; next }
   selected && /^[^[:space:]#]/ { exit }
@@ -100,12 +98,7 @@ grep -Eq '^    uses: \./\.github/workflows/ci\.yml[[:space:]]*$' <<<"$verify_blo
   || fail "release.yml job 'verify' must call ./.github/workflows/ci.yml"
 
 for job in gradle npm; do
-  assert_needs "$job" version
   assert_needs "$job" verify
-  # GitHub odrzuca cały workflow, gdy needs wskazuje job, którego nie ma (np. po usunięciu registry-build).
-  while IFS= read -r need; do
-    [[ -n "$(job_block "$need")" ]] || fail "release.yml job '$job' needs '$need', which is not a job of release.yml"
-  done < <(job_needs "$job")
 done
 
 if job_mentions npm '[[:space:]]build[[:space:]]'; then
