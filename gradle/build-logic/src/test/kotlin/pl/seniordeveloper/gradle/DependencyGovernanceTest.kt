@@ -119,4 +119,16 @@ class DependencyGovernanceTest {
 
 		assertEquals(emptyList<GateFinding>(), DependencyGovernance.foreignBoms(declared, canon))
 	}
+
+	@Test
+	fun `the report lists warnings in their own section and omits it without warnings`() {
+		val warning = GateFinding(PlatformGates.DEP_FOREIGN_BOM, "io.netty:netty-bom:4.2.0.Final (implementation) — a foreign BOM")
+
+		val withWarning = DependencyGovernance.report(":app", emptyList(), emptyList(), listOf(warning))
+		val without = DependencyGovernance.report(":app", emptyList(), emptyList())
+
+		assertTrue(withWarning.contains("Warnings, the build still passes:"))
+		assertTrue(withWarning.contains("- [PLAT-DEP-006](${PlatformGates.link("PLAT-DEP-006")}) io.netty:netty-bom:4.2.0.Final"))
+		assertTrue(!without.contains("Warnings, the build still passes:"))
+	}
 }

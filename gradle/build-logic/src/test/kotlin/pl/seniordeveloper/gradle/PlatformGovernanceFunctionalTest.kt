@@ -102,6 +102,7 @@ class PlatformGovernanceFunctionalTest {
 		val result = consumer.runner("platformDependencyCheck").build()
 
 		assertEquals(TaskOutcome.SUCCESS, result.task(":platformDependencyCheck")?.outcome)
+		assertTrue(result.output.contains("BOM imports outside the Platform frame in : (1)"), result.output)
 		assertTrue(result.output.contains("[PLAT-DEP-006] io.netty:netty-bom:4.2.0.Final (implementation)"), result.output)
 	}
 
