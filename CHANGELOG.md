@@ -122,6 +122,17 @@ External callers and users of the removed items (manual):
   skills ([ADR-0031](docs/adr/0031-docs-site-with-zensical.md) is superseded).
 - **Maintainer tools:** `scripts/gate-failures.py` and `consumer-audit.sh --lag` and `--adoption`.
 
+### Fixed
+
+- The frontend canon moves `eslint` from 10.8.1 to 10.15.0, the first release that depends on `minimatch` 11, which
+  fixes GHSA-g3hv-75wg-m249 / CVE-2026-118764 (moderate, denial of service through globparts amplification, fixed in
+  11.0.1). Every 10.x release before it pinned `minimatch` `^10`, so the lockfile alone could not reach the fix and the
+  advisory stayed open on Platform's own workspace (Dependabot alert 9). `platform-bump` applies the new pin and
+  `eslint-config` follows the canon in its dependencies and peers. Where `typescript-eslint` arrives only through
+  `eslint-config-next`, npm keeps the locked 8.60.1, whose `typescript-estree` still takes `minimatch` 10;
+  `npm update typescript-eslint --package-lock-only` takes 8.73.0, the first release with `minimatch` 11. Platform's own
+  workspace lockfile resolves `minimatch` 11.0.9, `@eslint/config-array` 0.23.6 and `typescript-eslint` 8.73.0.
+
 ### Maintainer notes
 
 Not consumer actions. The owner does these in GitHub after the release:
