@@ -12,9 +12,9 @@ properties it sets. Those names grew one release at a time and use four roots:
 | Root | Names | Examples |
 | --- | --- | --- |
 | `seniordev.` | Gradle plugin IDs | `seniordev.java-conventions`, `seniordev.settings-conventions` |
-| `pl.seniordeveloper` | Maven groups and Java packages | `pl.seniordeveloper.gradle:build-logic`, `pl.seniordeveloper:platform-catalog`, `pl.seniordeveloper.platform.security` |
+| `pl.seniordeveloper` | Maven groups and Java packages | `pl.seniordeveloper.gradle:build-logic`, `pl.seniordeveloper:platform-catalog`, `pl.seniordeveloper.platform.observability` |
 | `@dominiksienkiewicz/` | npm scope | `@dominiksienkiewicz/versions`, `@dominiksienkiewicz/eslint-config` |
-| `platform` | Spring properties, Gradle tasks, Gradle properties, npm bins | `platform.security.mode`, `platformDependencyCheck`, `platformVersion`, `platform-bump` |
+| `platform` | Spring properties, Gradle tasks, Gradle properties, npm bins | `platform.observability.prometheus`, `platformDependencyCheck`, `platformVersion`, `platform-bump` |
 
 Within the last root the Gradle properties disagree: `platformVersion` and `platformRepository` carry
 the prefix, `coverageMinimum` and `sonarProjectKey` do not, and the registry credentials are

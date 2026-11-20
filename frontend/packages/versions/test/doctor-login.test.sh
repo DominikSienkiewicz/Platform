@@ -83,7 +83,7 @@ grep -qF "$fix_line" "$tmp/out" || fail 'the PD032 warning must name the fix'
 if grep -q 'PASS PD032' "$tmp/out"; then fail 'a warned check must not also pass'; fi
 if grep -qF "$dummy_token" "$tmp/out"; then fail 'the token value must never be printed'; fi
 
-# Pusty GITHUB_ACTOR, jak go przekazuje devcontainer, gdy host nie ma zmiennej, i sam z białych znaków: brak loginu.
+# Pusty GITHUB_ACTOR, jak bywa przekazywany, gdy zmienna nie jest ustawiona, i sam z białych znaków: brak loginu.
 for blank in '' '   ' "$(printf '\t ')"; do
   doctor "$backend" "$(home empty)" GITHUB_TOKEN=$dummy_token "GITHUB_ACTOR=$blank" || fail 'a blank login is a warning, not a failure'
   grep -qF "$warn_line" "$tmp/out" || fail "GITHUB_ACTOR='$blank' must count as a missing login"

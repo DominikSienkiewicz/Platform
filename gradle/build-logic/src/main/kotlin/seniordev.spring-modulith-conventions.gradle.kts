@@ -135,7 +135,7 @@ tasks.named("check") {
 	dependsOn(integrationTest)
 }
 
-// Testy modelu (@ModelTest, N-CAP-8): wolne przebiegi, np. z modelem w PlatformOllamaContainer (pobiera wagi),
+// Testy modelu (@ModelTest, N-CAP-8): wolne przebiegi, np. z prawdziwym modelem (pobiera wagi),
 // uruchamiane świadomie, poza `check` i poza sumą pokrycia, więc nie wydłużają każdego PR-a.
 // Rejestracja po skrypcie projektu, jak `lint` i `format` w java-conventions: projekt z własnym `modelTest`
 // (Azimuth: większy heap pod model ONNX) zostaje przy swoim, zamiast paść na "Cannot add task 'modelTest'".

@@ -27,7 +27,7 @@ every layer to it:
   `@dominiksienkiewicz/openapi`, which strict `frontend-ci` runs for every repository that configures
   `platform.openapi`;
 - the frontend calls with `createApiClient<paths>()` from `@dominiksienkiewicz/api-client`, typed by the
-  generated `paths`;
+  generated `paths` (the package was removed in 1.13.0; a frontend types its calls with its own client);
 - pull requests with the reusable `api-contract.yml`, which runs oasdiff against the base and fails on a
   breaking change unless the pull request carries the `api-breaking` label.
 
