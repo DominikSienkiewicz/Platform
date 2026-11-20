@@ -44,8 +44,19 @@ grep -qE '^[[:space:]]+(- )?uses: *(\./|\$/)' "$promote" \
 build_uses=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | grep -E '^    uses: ' || true)
 [[ "$build_uses" =~ ^\ {4}uses:\ DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
   || fail 'promote.yml must call deploy.yml by its full reference at a commit SHA with a # vX.Y.Z comment'
-printf '1.8.9\n%s\n' "${BASH_REMATCH[1]}" | sort -C -V || fail 'deploy.yml has the ssh-deploy input since v1.8.9: promote.yml must not pin an older one'
-grep -qE '^      ssh-deploy: false$' "$promote" || fail 'promote.yml must call deploy.yml with ssh-deploy: false'
+# Bez ssh-deploy: false starszy deploy.yml (domyślnie ssh-deploy: true) wdrażałby przez SSH, więc pin to co najmniej
+# wydanie, w którym deploy.yml tylko buduje, skanuje i podpisuje.
+printf '1.13.0\n%s\n' "${BASH_REMATCH[1]}" | sort -C -V \
+  || fail 'deploy.yml deploys nothing over SSH since v1.13.0, and promote.yml no longer passes ssh-deploy: false: an older pin would deploy over SSH'
+build_with=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" \
+  | awk '/^    with:$/ { p = 1; next } p && /^      [a-z-]+:/ { sub(/^ +/, ""); sub(/:.*/, ""); print; next } p { exit }')
+[[ -n "$build_with" ]] || fail 'the build job must pass its inputs to deploy.yml with with:'
+grep -qx 'ssh-deploy' <<< "$build_with" && fail 'promote.yml must not pass ssh-deploy: the pinned deploy.yml has no such input'
+# Wejścia sprawdzane na deploy.yml z drzewa: przy tym pinie to ten sam plik, a GitHub odrzuca run z nieznanym wejściem.
+deploy_inputs=$(sed -n '/^    inputs:$/,/^    outputs:$/p' "$deploy")
+for input in $build_with; do
+  grep -qE "^      $input:$" <<< "$deploy_inputs" || fail "promote.yml passes $input, which deploy.yml does not declare"
+done
 grep -qE '^      scan-images: true$' "$promote" || fail 'promote.yml must scan the images'
 grep -qE '^      has-migrate: false$' "$promote" || fail 'promote.yml must build without a migration image'
 grep -qE 'secrets:[[:space:]]*inherit' "$promote" && fail 'promote.yml must pass secrets explicitly, never inherit'
