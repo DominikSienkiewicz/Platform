@@ -66,7 +66,7 @@ opublikuj, podbij pin w repo konsumenta.
    (bump katalogu, nowa biblioteka, plugin): `scripts/write-verification-metadata.sh` — build-logic, test-fixtures
    i security-starter mają `gradle/verification-metadata.xml`, weryfikowane strict (docs/versions.md).
 2. **Convention plugin nie dodaje zależności biznesowych** (security, jOOQ, resilience4j, modele AI).
-   To deklaruje konsument przez `libs`. Convention = toolchain + jakość + taksonomia testów.
+   To deklaruje konsument przez `libs` albo własny katalog `appLibs`. Convention = toolchain + jakość + taksonomia testów.
 3. **`seniordev.spring-modulith-conventions` nie aplikuje pluginu Spring Boot** — robi to konsument
    (`alias(libs.plugins.spring.boot)`). Convention tylko importuje BOM-y + deps testowe + split testów.
 4. **SpotBugs report-only** do spełnienia OBU kryteriów z `docs/adr/0005-spotbugs-report-only.md`:

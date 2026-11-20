@@ -6,7 +6,7 @@ body:
     id: artifact
     attributes:
       label: Artifact
-      description: The incubating starter, private npm package, catalog bundle or registry item.
+      description: The incubating starter, private npm package or registry item.
       placeholder: pl.seniordeveloper:platform-security-starter
     validations:
       required: true

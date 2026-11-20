@@ -11,7 +11,7 @@ import pl.seniordeveloper.gradle.PlatformVersions
  *   - TAKSONOMIA TESTÓW (z Attestate): szybki `test` ‖ wolny `integrationTest` ‖ świadomy `modelTest` (poza check)
  *
  * Świadomie NIE dodaje zależności biznesowych (security, jOOQ, resilience4j, modele AI) — te są
- * per-repo i deklaruje je konsument przez współdzielony version catalog (`libs`).
+ * per-repo i deklaruje je konsument przez `libs` albo własny katalog `appLibs`.
  * Konsument NADAL aplikuje plugin Spring Boot: alias(libs.plugins.spring.boot).
  *
  * Wersje BOM/ArchUnit/JUnit = gradle/catalog przez wygenerowany PlatformVersions (precompiled script plugin nie
