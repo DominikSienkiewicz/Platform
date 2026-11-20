@@ -148,7 +148,7 @@ angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG, patch miałby
 Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
 zielonym CI (`verify` = `ci.yml`) na otagowanym commicie; ruchomego tagu `v1` nie ma (wycofany, ADR-0014).
 Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
-`templates/tests/release-contract.test.sh`.
+`templates/tests/release-script.test.sh`.
 
 ## Czego NIE robić
 

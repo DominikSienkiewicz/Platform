@@ -176,7 +176,7 @@ It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
 message is the CHANGELOG section. The tree therefore always carries one
 version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
-falls back to a hard-coded version, and `templates/tests/release-contract.test.sh` pins every
+falls back to a hard-coded version, and `templates/tests/release-script.test.sh` pins every
 refusal above.
 
 The `vX.Y.Z` tag starts `release.yml`; the trigger only matches `v*.*.*`.

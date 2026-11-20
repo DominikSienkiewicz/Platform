@@ -106,7 +106,7 @@ jobs:
           # Kod wyjścia zamiast parsowania wyjścia: 0 = wersja opublikowana. Brak pakietu (404) i każdy
           # błąd API = 1, czyli publikuj — jak wcześniej. Lista nazw najpierw do zmiennej: przy
           # `gh … | grep -q` z pipefail grep kończy po pierwszym trafieniu, gh dostaje SIGPIPE i
-          # istniejąca wersja wyglądałaby na brak. Blok testuje templates/tests/release-version-exists.test.sh.
+          # istniejąca wersja wyglądałaby na brak. Blok testuje templates/tests/release-workflow.test.sh.
           # >>> version-exists
           version_exists() {
             local names
@@ -193,7 +193,7 @@ jobs:
       # komunikaty błędów — registry zwraca różne warianty: "E409", "409 Conflict", "You cannot
       # publish over the previously published versions"), grep szeroki tylko jako fallback.
       # Pakujemy, atestujemy i publikujemy TEN SAM tarball, więc digest w atestacji = digest w registry.
-      # Bloki testuje templates/tests/release-attest.test.sh.
+      # Bloki testuje templates/tests/release-workflow.test.sh.
       - name: Pack the packages to publish
         run: |
           # >>> npm-pack
@@ -243,7 +243,7 @@ jobs:
   # Joby publikujące pomijają wersje, które już istnieją (idempotencja), więc tylko tu widać, że komplet jest.
   # Pakiety Maven: główny artefakt build-logic i marker każdego pluginu (z nazw plików źródeł), catalog
   # i pakiet każdego modułu z gradle/maven-modules.txt; npm: każda paczka bez "private": true. Blok testuje
-  # templates/tests/release-verify-published.test.sh.
+  # templates/tests/release-workflow.test.sh.
   verify-published:
     needs: [version, gradle, npm]
     runs-on: ubuntu-latest
@@ -411,7 +411,7 @@ jobs:
           cp -R templates/jvm/spring-app "$app"
           cp templates/jvm/java-library/gradlew "$app/gradlew"
           # spring-app ma własne gradle/ (kryteria JVM demona): `cp -R gradle gradle` zagnieździłby wrapper w gradle/gradle.
-          # Kroki do `cd "$app"` testuje templates/tests/release-verify-bundle-wrapper.test.sh.
+          # Kroki do `cd "$app"` testuje templates/tests/release-workflow.test.sh.
           mkdir -p "$app/gradle" && cp -R templates/jvm/java-library/gradle/wrapper "$app/gradle/"
           sed -i "s/^platformVersion=.*/platformVersion=$V/" "$app/gradle.properties"
           cd "$app"
