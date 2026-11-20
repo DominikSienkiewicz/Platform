@@ -77,7 +77,9 @@ done
 for secret in GPR_USER GPR_KEY NPM_GH_TOKEN SNYK_TOKEN PROMOTE_APP_KEY; do
   grep -qE "^      $secret:$" "$promote" || fail "promote.yml must declare the $secret secret"
 done
-grep -qE '^        default: "v1"$' <(sed -n '/^      platform-ref:$/,/^      [a-z-]*:$/p' "$promote") || fail 'platform-ref must default to v1'
+platform_ref=$(sed -n '/^      platform-ref:$/,/^      [a-z-]*:$/p' "$promote")
+grep -qE '^        required: true$' <<<"$platform_ref" || fail 'platform-ref must be required'
+if grep -qE '^        default:' <<<"$platform_ref"; then fail 'platform-ref must have no default (no floating v1)'; fi
 
 # --- promote.yml: preflight ustawień promocji, zanim ruszy build ---
 promote_preflight_job=$(sed -n '/^  preflight:$/,/^  build:$/p' "$promote")

@@ -16,8 +16,8 @@ until they bump:
 - **Artifacts** are pinned to the exact platform version.
 - **Reusable workflows** are called by the exact tag,
   `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
-  pins. The moving `v1` tag, which `release.yml` moves forward after every successful release, still
-  works for callers that have not migrated, and reaches them on their next CI run.
+  pins. There is no floating `v1` tag any more (retired, [ADR-0014](docs/adr/0014-exact-pins-moved-by-platform-bump.md)):
+  an external caller of `@v1` must pin an exact `vX.Y.Z`.
 
 Renovate's shared preset covers only GitHub Actions and Docker images; it bumps no Platform pin.
 
@@ -82,10 +82,7 @@ and `scripts/repo-settings.sh --apply` to fix it, with `gh` logged in as an admi
 It keeps:
 
 - the rulesets: `main` cannot be deleted or force-pushed; release tags `v*.*.*` cannot be deleted or
-  moved, so a published version keeps its source; `v1` cannot be deleted, but stays movable, because
-  `move-v1` moves it with every release while consumers call `@v1`. A ruleset therefore does not
-  protect `v1` from a leaked admin token; that is a known cost of the moving tag. Once consumers call
-  exact `vX.Y.Z` (Decision 3), retire `move-v1` and add `update` to `v1-pointer.json`;
+  moved, so a published version keeps its source;
 - secret scanning with push protection, Dependabot alerts without its security-update pull requests
   (`platform-bump` moves versions), private vulnerability reporting, the requirement to pin every
   action by commit SHA, and automatic deletion of merged head branches.
@@ -134,7 +131,7 @@ secret exists (the secret is only reported; its value is yours to set).
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
    (`--lag` adds how many releases and days each consumer is behind, whether it pins a yanked release
    and how many `@v1` references it keeps; `--adoption` compares each artifact's *incubating* label in
-   the README with the consumers that use it, says whether `move-v1` can retire, and names the oldest
+   the README with the consumers that use it, and names the oldest
    pinned release, below which GitHub Packages may be cleaned up. Both reports describe private
    repositories, so they stay local and never run in CI), and who
    still calls a workflow it changes. Then prepare the notes. In [CHANGELOG.md](CHANGELOG.md), rename `## [Unreleased]` to
@@ -198,13 +195,12 @@ Before it changes anything, `release.sh` refuses to run when:
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
 commits only those files, pushes `main`, and creates and pushes the annotated `vX.Y.Z` tag, whose
-message is the CHANGELOG section. It does not touch `v1`. The tree therefore always carries one
+message is the CHANGELOG section. The tree therefore always carries one
 version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
 falls back to a hard-coded version, and `templates/tests/release-contract.test.sh` pins every
 refusal above.
 
-The `vX.Y.Z` tag starts `release.yml`. Moving `v1` does not: the trigger only matches `v*.*.*`,
-because two publishes of the same version running in parallel once caused a partial release.
+The `vX.Y.Z` tag starts `release.yml`; the trigger only matches `v*.*.*`.
 
 To publish an existing tag again, run **Actions → Release (version tag) → Run workflow** on that
 tag. A dispatch from a branch fails, because a release runs only from the tag that equals
@@ -224,9 +220,7 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    tarball, which the `npm` job packs, attests and then publishes, so the attested digest is the one
    in the registry. Consumers verify them as [docs/consuming.md](docs/consuming.md#verifying-provenance)
    shows.
-4. **`move-v1`** moves `v1` to the released commit after both publish jobs succeed, and only
-   forward: re-running an older tag never moves it back. Never move `v1` by hand.
-5. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
+4. **`github-release`**, also after both publish jobs, creates the GitHub Release `vX.Y.Z` titled
    "Platform X.Y.Z". Its notes are the version's CHANGELOG.md section, extracted by
    `scripts/changelog-section.sh`, plus a link to the diff from the previous version. A re-run
    leaves an existing Release alone.
@@ -256,8 +250,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    only the first step, which turns its presence into an output for the job's conditions, and the step that
    clones and pushes `platform-example`; npm never sees it. Without that secret the job only leaves a notice.
 
-A red job stops every job after it. A tag on a commit with red CI publishes nothing, leaves `v1`
-where it was and creates no GitHub Release.
+A red job stops every job after it. A tag on a commit with red CI publishes nothing and
+creates no GitHub Release.
 
 ### Idempotency, per registry
 
@@ -379,7 +373,7 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
 - moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
-  `.github/workflows/` to the target tag, `@v1` included, and so does a `platform-ref:` input of a
+  `.github/workflows/` to the target tag, a legacy `@v1` included, and so does a `platform-ref:` input of a
   `promote.yml` caller; a reference by commit SHA stays;
 - verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from
   1.6.0 on) with `gh attestation verify`, tied to Platform's `release.yml`, and stops when it fails;

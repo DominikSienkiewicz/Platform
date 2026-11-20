@@ -74,7 +74,7 @@ promote.yml input infra-repository type=string required=true
 promote.yml input values-dir type=string required=true
 promote.yml input single-image type=boolean default=false
 promote.yml input promote-app-id type=string required=true
-promote.yml input platform-ref type=string default="v1"
+promote.yml input platform-ref type=string required=true
 promote.yml input build-timeout-minutes type=number default=30
 promote.yml input promote-timeout-minutes type=number default=5
 promote.yml secret GPR_USER required=false

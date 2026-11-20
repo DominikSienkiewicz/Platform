@@ -8,8 +8,6 @@
 
 - [ ] **None**: CI, docs or tests only; nothing published changes.
 - [ ] **On bump**: changes a published artifact; consumers get it when they bump the platform pin.
-- [ ] **Immediate**: changes a reusable workflow, which consumers call via `@v1`; it reaches them on
-      their next CI run, without a bump.
 
 ### Consumer action required
 

@@ -54,8 +54,7 @@ backlog). This ADR records them as one contract.
    section, and `platform-bump` prints the notes of every release it crosses.
 6. **Reusable workflows.** Consumers reference reusable workflows by the exact `@vX.Y.Z` of
    their pin, so workflow logic and artifacts come from one release and roll back together.
-   The moving `v1` tag keeps moving forward, after both publications succeed, only until every
-   consumer has migrated; then the `move-v1` job is retired.
+   The moving `v1` tag and its `move-v1` job were retired in 1.13.0 ([ADR-0014](0014-exact-pins-moved-by-platform-bump.md), Update).
 7. **Bump channel.** Consumers bump with `platform-bump` (a stub that runs the bin of
    `@dominiksienkiewicz/versions`); a reusable `platform-bump.yml` workflow will open the bump
    pull request. The Renovate preset is narrowed to GitHub Actions and Docker images.
@@ -83,8 +82,6 @@ Classified under this rule, 1.5.29 (toolchain 27, runtime image ≥ 27) and 1.5.
 
 ## Revisit when
 
-- Every consumer references reusable workflows by `@vX.Y.Z`: retire `move-v1` and drop item 6's
-  transition clause.
 - Platform changes its registry or artifact coordinates: that is the first MAJOR.
 
 ## Update — merge messages and the draft release (2026-10-19)

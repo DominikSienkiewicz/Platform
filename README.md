@@ -147,7 +147,6 @@ flowchart LR
   workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog,<br/>test-fixtures, security-starter")]
   workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
   workflow --> notes["GitHub Release<br/>CHANGELOG section"]
-  workflow -->|move-v1, forward only| v1(("v1"))
 
   preset["default.json<br/>on main"]
 
@@ -161,7 +160,6 @@ flowchart LR
   maven -->|pinned| gradlePins
   npm -->|pinned| npmPins
   tag -->|pinned| callers
-  v1 -.->|floating, legacy| callers
   preset -.->|floating| renovate
   bump["scripts/platform-bump.sh"] -->|bumps| gradlePins
   bump -->|bumps| npmPins
@@ -169,9 +167,9 @@ flowchart LR
 
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
 reusable workflows. `platform-bump` moves all three and prints the notes of every release it
-crosses. Two references float: the
-Renovate preset is read from `main` on every Renovate run, and `@v1` moves on every release, which
-is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
+crosses. One reference floats: the
+Renovate preset is read from `main` on every Renovate run. There is no floating workflow tag: a caller
+pins the exact tag ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
 ## Reference consumers
 

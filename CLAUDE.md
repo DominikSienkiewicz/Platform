@@ -149,8 +149,8 @@ angielskim Conventional Commit, brakuje sekcji wersji w CHANGELOG, patch miałby
 `scripts/canary.sh` nie zapisał PASS dla `HEAD` na każdym konsumencie (lokalnie, `.git/platform-canary/`;
 `--skip-canary "<powód>"` pomija, powód idzie do trailera `Canary-Skipped`).
 Commituje wyłącznie pliki wersji i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
-zielonym CI (`verify` = `ci.yml`) na otagowanym commicie, a ruchomy `v1` przesuwa job `move-v1` (tylko do
-przodu) — nie pchaj `v1` ręcznie. Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
+zielonym CI (`verify` = `ci.yml`) na otagowanym commicie; ruchomego tagu `v1` nie ma (wycofany, ADR-0014).
+Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
 `templates/tests/release-contract.test.sh`.
 
 ## Czego NIE robić

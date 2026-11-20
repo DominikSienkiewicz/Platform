@@ -10,8 +10,7 @@ types and defaults are described in the workflow files themselves (every input h
 - **Reference an exact tag.** Use the tag of your Platform pin, for example
   `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
   ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). `platform-bump` moves it together
-  with the pins, `@v1` included. The moving `@v1` still works but changes under you on every
-  Platform release.
+  with the pins, a legacy `@v1` included. There is no floating tag: `@v1` is retired and no longer moves.
 - **Grant the permissions listed below.** A called workflow can never get more than its caller
   grants, so a missing permission ends the run with `startup_failure` before any step runs.
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid
@@ -556,8 +555,8 @@ commit; the workflow does not wait for it and runs no smoke test.
   the App cannot reach any other repository, and the token is revoked when the job ends. Pass the App's
   Client ID (recommended) or App ID as `promote-app-id`.
 - Inputs: [promote.yml](../.github/workflows/promote.yml); `app-name`, `infra-repository`, `values-dir` and
-  `promote-app-id` are required. Set `platform-ref` to the tag in `uses:`, so that `promote-image.sh` comes
-  from the same release as the workflow.
+  `promote-app-id` and `platform-ref` are required. Set `platform-ref` to the tag in `uses:`, so that
+  `promote-image.sh` comes from the same release as the workflow; there is no default.
 - Branch: the key of the App is a secret of the calling repository, not of an environment, so any workflow
   that can read repository secrets can promote. Run the caller only from the release branch, for example
   with `if: github.ref == 'refs/heads/release'` on the job, and protect that branch.
@@ -615,7 +614,7 @@ Inputs:
 | `values-dir` | string | required | Directory of the GitOps repository with values-backend.yaml and values-frontend.yaml, or values.yaml with single-image, relative to its root. |
 | `single-image` | boolean | `false` | Promote one image, for an application whose boot jar serves its frontend: deploy.yml builds it with single-image, and its tag goes to values.yaml in values-dir. |
 | `promote-app-id` | string | required | The GitHub App's Client ID (recommended) or App ID; the App may write contents to infra-repository. |
-| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:. |
+| `platform-ref` | string | required | The exact Platform tag the caller pins, e.g. v1.13.0; scripts/promote-image.sh is taken from it. |
 | `build-timeout-minutes` | number | `30` | Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360. |
 | `promote-timeout-minutes` | number | `5` | Minutes before the promote job is cancelled; GitHub's default is 360. |
 <!-- /docs-gen -->

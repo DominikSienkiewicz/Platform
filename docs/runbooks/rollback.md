@@ -37,13 +37,6 @@ every file it changed.
 only some registries cannot be published again: yank it, then cut the next version. The
 `verify-published` job of the next release proves that every artifact carries it.
 
-## The moving `v1` tag points at a bad release
-
-`move-v1` in `release.yml` moves `v1` forward only. Callers on `@v1` take every release, so
-point them at an exact tag with `platform-bump`, which rewrites `@v1` to the target. Moving `v1`
-back by hand, by re-pointing the tag at the previous release and pushing it, is a last resort the
-owner decides on, because it changes the code every `@v1` caller runs on its next job.
-
 ## An application deploy goes wrong
 
 This runbook covers Platform artifacts only. Rolling back a deployed application is the concern of its

@@ -90,7 +90,7 @@ the pin the same way the managed block's link to this sheet does.
 | `/platform:ddd-modeling` | designing a domain, a bounded context or a module boundary | [model a domain with DDD](runbooks/ddd-modeling.md) |
 
 Install it from a shell in the consumer repository. `#<ref>` pins the marketplace to a branch or tag: use the tag the
-repository pins, or `#v1` for the latest 1.x release (the skills read the pin themselves, so both work). The
+repository pins (the skills read the pin themselves). The
 marketplace file exists from the first release that lists it in the [changelog](../CHANGELOG.md).
 
 ```bash
@@ -99,8 +99,8 @@ claude plugin install platform@seniordev-platform --scope project
 ```
 
 `--scope project` records the marketplace in `.claude/settings.json`, which you commit; each collaborator then runs
-the second command once. `platform-bump` does not touch that file, so an exact tag stays where it is until you move
-it, while `#v1` follows the releases. A skill runs as `/platform:<skill>`, or Claude loads it from the situation its description
+the second command once. `platform-bump` does not touch that file, so the tag stays where it is until you move
+it. A skill runs as `/platform:<skill>`, or Claude loads it from the situation its description
 names: "bump platform", a red gate with a `PLAT-` code, a new dependency, a preview of an unreleased change, a
 feature or a bug fix to write test-first, a domain to model. If the
 page does not exist at the pinned tag, the pin predates it and the skill reads the same file on `main`.

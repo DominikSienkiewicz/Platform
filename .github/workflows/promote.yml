@@ -41,9 +41,9 @@ on:
         type: string
         required: true
       platform-ref:
-        description: "Ref of DominikSienkiewicz/Platform that scripts/promote-image.sh is taken from; set it to the tag pinned in uses:."
+        description: "The exact Platform tag the caller pins, e.g. v1.13.0; scripts/promote-image.sh is taken from it."
         type: string
-        default: "v1"
+        required: true
       build-timeout-minutes:
         description: "Minutes before the build-push job of deploy.yml is cancelled; GitHub's default is 360."
         type: number
