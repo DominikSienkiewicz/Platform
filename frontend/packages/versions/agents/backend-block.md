@@ -8,8 +8,9 @@ JUnit {{junit}}. Read versions from `libs.versions.toml` of that release, never 
 
 - Frame dependencies are `libs.<alias>` without a version; Boot starters, Jackson and JUnit come from
   `pl.seniordeveloper:platform-bom`. A library the frame does not know is registered in the second catalog
-  `appLibs` (`gradle/app.versions.toml`) and belongs to this repository. Add no BOM, `resolutionStrategy` or
-  `*.version` property of your own: the Platform gates warn or fail on them.
+  `appLibs` (`backend/gradle/app.versions.toml`) and belongs to this repository. Import no BOM outside the frame
+  (`platformDependencyCheck` warns, PLAT-DEP-006) and set no `*.version` property of your own (`platformBomOverrideCheck`
+  warns); a `resolutionStrategy` rule is listed by `platform-bump`, not by a gate.
 - The conventions own toolchain, formatting, Checkstyle, coverage, PIT, SpotBugs and Sonar. Configure them in the
   `platform { }` block or through their documented properties, not through the plugins they apply.
 - Tests: `test` must not need Docker. Tag Testcontainers tests `@IntegrationTest` or `@PostgresIntegrationTest`

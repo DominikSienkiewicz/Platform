@@ -166,6 +166,9 @@ the check cannot see:
 | A BOM version property | `extra["jackson-bom.version"] = "3.1.4"`, or `jackson-bom.version=` in `gradle.properties` | `platformBomOverrideCheck` on `check`, as a warning (Decision 18); it cannot lower a floor `platform-bom` imports before Boot |
 | A resolution rule | `resolutionStrategy.eachDependency { useVersion("42.7.12") }` | `platform-bump`, which lists each one with its file and line |
 | A forced or strict version | `force("…")`, `strictly("…")` | `platform-bump`, the same way |
+| A BOM-managed library with an explicit version, in a module without `io.spring.dependency-management` | `implementation("io.netty:netty-codec:4.2.0.Final")` in a plain `seniordev.java-conventions` module | Nothing: [PLAT-DEP-003](gates.md#plat-dep-003) sees BOM management only where that plugin is applied; in a Spring application the Boot BOM still aligns the version at runtime |
+| A BOM import outside the frame | `implementation(platform("io.netty:netty-bom:4.2.0.Final"))`, `enforcedPlatform(...)` | `platformDependencyCheck`, as a warning ([PLAT-DEP-006](gates.md#plat-dep-006)) |
+| A BOM import in the dependency-management DSL | `dependencyManagement { imports { mavenBom("io.netty:netty-bom:4.2.0.Final") } }` | Nothing: PLAT-DEP-006 sees only `platform(...)` and `enforcedPlatform(...)` |
 
 Resolution rules cannot be detected from the build model, because dependency-management itself is
 built on `eachDependency`. A rule beats the BOM, so after a bump it can pin a version older than the

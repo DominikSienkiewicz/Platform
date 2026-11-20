@@ -343,7 +343,7 @@ to use, or a BOM-managed version to remove.
 
 Platform governs the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon
 ([ADR-0037](adr/0037-platform-governs-the-frame.md)). A library outside it needs no Platform release. Register a
-second catalog in `settings.gradle.kts`, next to `libs`, and keep its entries in `gradle/app.versions.toml`:
+second catalog in `settings.gradle.kts`, next to `libs`, and keep its entries in `backend/gradle/app.versions.toml`:
 
 ```kotlin
 dependencyResolutionManagement {
@@ -369,7 +369,7 @@ Declare it as `implementation(appLibs.own.library)`. Two rules still apply:
   ([PLAT-DEP-002](gates.md#plat-dep-002)): use `libs.<alias>`.
 
 A consumer that keeps `gradle.lockfile` or `verification-metadata.xml` regenerates them itself after changing an
-application-owned library: `platform-bump` does not touch `app.versions.toml`.
+application-owned library: `platform-bump` does not touch `backend/gradle/app.versions.toml`.
 
 When a second repository needs the same library, move it into the frame: a catalog entry and a release
 ([add a JVM library](runbooks/add-jvm-library.md)).
@@ -730,5 +730,5 @@ the release that produced it.
 | `platform-versions-check: versions that differ from the Platform canon` | A frontend package of the canon differs from the canon named in the report's first line | In `frontend/`, `npx platform-versions-check --fix` rewrites the drift to the installed canon offline (then `npm install --package-lock-only`); to move to a newer canon, run the `scripts/platform-bump.sh <version>` the report prints from the repository root |
 | npm `E401` or `E403` for `@dominiksienkiewicz/*` | `.npmrc` lacks the registry lines, or `GITHUB_TOKEN` is missing or lacks `read:packages` | Copy `templates/npmrc` to `frontend/.npmrc` and export the token |
 | `No matching variant of pl.seniordeveloper:platform-catalog` | The release is incomplete in GitHub Packages | Pin the previous version and report it; see the idempotency rules in [RELEASING.md](../RELEASING.md) |
-| `Dependency verification failed` after a bump | `gradle/verification-metadata.xml` misses checksums of the new versions | Run `scripts/platform-bump.sh` again; it regenerates the metadata in two passes. After changing a library in `appLibs`, regenerate `gradle.lockfile` and `verification-metadata.xml` yourself: `platform-bump` does not touch `app.versions.toml` |
+| `Dependency verification failed` after a bump | `gradle/verification-metadata.xml` misses checksums of the new versions | Run `scripts/platform-bump.sh` again; it regenerates the metadata in two passes. After changing a library in `appLibs`, regenerate `gradle.lockfile` and `verification-metadata.xml` yourself: `platform-bump` does not touch `backend/gradle/app.versions.toml` |
 | CI run ends with `startup_failure`, "is requesting 'packages: read', but is only allowed …" | The caller grants a reusable workflow fewer permissions than it requests | Grant the permissions listed in [reusable-workflows.md](reusable-workflows.md) |

@@ -23,7 +23,7 @@ different versions across repositories, cannot happen with a library that has a 
   override of a canon module in `settings.gradle.kts`) and PLAT-FE-002 (a frontend version that differs from the
   canon).
 - A library outside the frame belongs to the application. In Gradle it is registered in a second catalog,
-  `appLibs`, read from `gradle/app.versions.toml`; in the frontend it is an exact version in `package.json`. A
+  `appLibs`, read from `backend/gradle/app.versions.toml`; in the frontend it is an exact version in `package.json`. A
   library that a Spring or Platform BOM manages takes no version in either place.
 - A library moves into the frame when two or more repositories use it. The move is a catalog or canon entry and a
   release, as ADR-0001 describes, and from then on the gates hold its version.
@@ -36,6 +36,14 @@ different versions across repositories, cannot happen with a library that has a 
   without an entry in the canon no longer fails a build.
 - An `appLibs` entry that collides with a canon module still fails PLAT-DEP-002, so a consumer cannot use the second
   catalog to move a framed version.
+- PLAT-DEP-003 sees BOM management only in modules that apply `io.spring.dependency-management`, i.e.
+  `seniordev.spring-modulith-conventions`. Elsewhere a BOM-managed library with an explicit version passes; in a Spring
+  application the Boot BOM still aligns the version at runtime.
+- PLAT-DEP-006 warns about a BOM imported with `platform(...)` or `enforcedPlatform(...)` that is not in the canon,
+  because it can override the frame ([ADR-0019](0019-new-failure-modes-warn-first.md)). `mavenBom(...)` in the
+  dependency-management DSL stays unseen.
+- Accepted risk: dynamic versions, ranges and SNAPSHOTs of application-owned Gradle libraries are not pinned. They
+  stay unpinned until Renovate pins application-owned versions.
 - Overrides of a frontend package outside the canon are owned by the consumer. `platform-bump` keeps them, so the
   migration `every-drop-stale-overrides` is removed, and `canon-diff` reports the removal of a frontend canon entry
   as "the consumer owns its version from now on", not as a consumer action. A Gradle catalog removal keeps its

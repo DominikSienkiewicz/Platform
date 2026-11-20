@@ -6,7 +6,7 @@ needs no catalog entry: declare it without a version).
 **Decide first: frame or application.** Platform governs the frame; a library outside it belongs to the application
 ([ADR-0037](../adr/0037-platform-governs-the-frame.md)).
 
-- Used by one repository: do not touch Platform. Register `appLibs` from `gradle/app.versions.toml` as
+- Used by one repository: do not touch Platform. Register `appLibs` from `backend/gradle/app.versions.toml` as
   [Libraries your application owns](../consuming.md#libraries-your-application-owns) shows, declare it as
   `implementation(appLibs.own.library)`, and run `./gradlew platformDependencyCheck`. A library a BOM manages takes no
   version.
