@@ -29,19 +29,19 @@ done
 fixture="$tmp/platform"
 mkdir -p "$fixture/templates/agents" "$fixture/docs/runbooks" "$fixture/scripts" "$fixture/frontend/packages/versions"
 printf '{ "bin": { "platform-bump": "bin/platform-bump.sh" } }\n' > "$fixture/frontend/packages/versions/package.json"
-printf -- '- Run `scripts/canary.sh` first.\n' > "$fixture/docs/runbooks/cut-release.md"
+printf -- '- Run `scripts/consumer-audit.sh` first.\n' > "$fixture/docs/runbooks/cut-release.md"
 printf -- '- Bump with `platform-bump`.\n' > "$fixture/templates/agents/platform-block.md"
 cp "$fixture/templates/agents/platform-block.md" "$fixture/AGENTS.md"
 printf -- '- See `docs/runbooks/cut-release.md`.\n' > "$fixture/docs/consumer-agents.md"
-: > "$fixture/scripts/canary.sh"
+: > "$fixture/scripts/consumer-audit.sh"
 python3 -I "$root/scripts/check-agent-docs.py" "$fixture" > /dev/null || fail 'the fixture must pass before the rename'
-mv "$fixture/scripts/canary.sh" "$fixture/scripts/preview.sh"
+mv "$fixture/scripts/consumer-audit.sh" "$fixture/scripts/audit.sh"
 if OUT=$(python3 -I "$root/scripts/check-agent-docs.py" "$fixture"); then fail 'a renamed script must fail the check'; fi
-grep -qF 'docs/runbooks/cut-release.md:1: `scripts/canary.sh` does not exist' <<<"$OUT" || fail 'the failure must name the file, line and path'
+grep -qF 'docs/runbooks/cut-release.md:1: `scripts/consumer-audit.sh` does not exist' <<<"$OUT" || fail 'the failure must name the file, line and path'
 
 # Ścieżka konsumenta scripts/<x>, której Platform nie ma poza szablonem templates/<x>, musi trafiać do konsumentów
 # przez templates/manifest.json; sam szablon bez wpisu nie dociera do żadnego repo.
-mv "$fixture/scripts/preview.sh" "$fixture/scripts/canary.sh"
+mv "$fixture/scripts/audit.sh" "$fixture/scripts/consumer-audit.sh"
 printf -- '- Run `bash scripts/tool.sh lint`.\n' >> "$fixture/templates/agents/platform-block.md"
 cp "$fixture/templates/agents/platform-block.md" "$fixture/AGENTS.md"
 : > "$fixture/templates/tool.sh"

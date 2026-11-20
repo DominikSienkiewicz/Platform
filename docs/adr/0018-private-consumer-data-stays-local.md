@@ -26,3 +26,11 @@ consumers' code, pins and CI results; in a public workflow their logs would publ
 ## Revisit when
 
 The consumers become public, or Platform moves to a private CI runner.
+
+## Update — no canary and no ring rollout (2026-11-20)
+
+`scripts/canary.sh`, `scripts/preview-on-consumer.sh`, `scripts/ring-rollout.sh` and the canary gate of `release.sh`
+(with `--skip-canary` and the `Canary-Skipped:` trailer) are removed: a release no longer waits for a local preview on
+every consumer, and consumers take a release through their own `platform-bump.yml` caller. The adoption report stays
+local as decided above. An unreleased change is still tried on a consumer with `-PplatformRepository`
+([test an unreleased change](../runbooks/test-unreleased-change.md)).

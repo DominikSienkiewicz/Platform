@@ -3,46 +3,48 @@
 #
 # Bumpuje platformVersion we wszystkich miejscach, commituje jako "chore(release): platform X.Y.Z"
 # z TWOIM message w body, taguje annotated vX.Y.Z treścią sekcji CHANGELOG.md i pcha main + tag.
+# Ręcznie napisana sekcja "## [X.Y.Z] - YYYY-MM-DD" wygrywa; bez niej release.sh składa ją z commitów od taga
+# poprzedniego wydania (scripts/release-notes.sh), wstawia pod "## [Unreleased]" i commituje CHANGELOG.md razem
+# z plikami wersji.
 # Release publikuje Maven+npm dopiero po zielonym CI na tym commicie i tworzy GitHub Release z tej
 # samej sekcji.
 #
 # Odmawia przed jakąkolwiek zmianą, gdy drzewo robocze nie jest czyste, bieżąca gałąź to nie
-# main albo HEAD różni się od origin/main — commit wydania zawiera wyłącznie pliki wersji.
+# main albo HEAD różni się od origin/main — commit wydania zawiera wyłącznie pliki wersji (i złożoną sekcję).
 # Kontrakt (docs/adr/0002-release-and-versioning-contract.md) — odmawia też, gdy:
 #   - message nie jest angielskim Conventional Commit;
-#   - CHANGELOG.md nie ma sekcji "## [X.Y.Z] - YYYY-MM-DD" z podsekcją "### Consumer action required";
+#   - ręcznie napisana sekcja wersji nie ma podsekcji "### Consumer action required";
+#   - argument spoza formy "<message>" [X.Y.Z] [-y] (np. dawne --skip-canary);
+#   - sekcję trzeba złożyć, a CHANGELOG.md nie ma "## [Unreleased]", ma pod nim wpisy, jego najnowsza sekcja
+#     wersji nie ma taga, od poprzedniego taga nie ma commitów albo temat commita nie jest Conventional Commit;
 #   - wydanie z akcją konsumenta (podsekcja inna niż "None.") miałoby być patchem;
 #   - message feat / "!:" / BREAKING CHANGE miałby dostać automatyczny patch (podaj wersję jawnie);
 #   - commit od poprzedniego wydania niesie trailer "Consumer-Action:", "!" w temacie albo stopkę
-#     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.";
-#   - scripts/canary.sh nie zapisał zielonego wyniku dla HEAD na każdym konsumencie z scripts/consumers.txt
-#     (N-REL-1); --skip-canary "<powód>" pomija bramkę i zapisuje powód jako trailer Canary-Skipped commita.
+#     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.".
 #
 # Użycie:
 #   ./release.sh "fix: opis zmiany"            # patch +0.0.1 od aktualnej wersji
 #   ./release.sh "feat: opis" 1.2.0            # konkretna wersja
 #   ./release.sh "..." 1.2.0 -y                # bez pytania o potwierdzenie (też: ASSUME_YES=1)
-#   ./release.sh "..." 1.2.0 --skip-canary "consumers offline"   # bez canary, z powodem w historii
 set -euo pipefail
 cd "$(dirname "$0")"   # zawsze z roota Platform
-
-SKIP_CANARY=""
-ARGS=()
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --skip-canary)
-      SKIP_CANARY="${2:-}"
-      [[ -n "$SKIP_CANARY" ]] || { echo "--skip-canary needs a reason, e.g. --skip-canary \"consumers offline\"."; exit 1; }
-      shift 2
-      ;;
-    *) ARGS+=("$1"); shift ;;
-  esac
-done
-set -- "${ARGS[@]+"${ARGS[@]}"}"
 
 MSG="${1:-}"
 VERSION="${2:-}"
 [[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
+# Tylko forma "<message>" [X.Y.Z] [-y]: inny argument (np. dawne --skip-canary) to pomyłka, której nie wolno pominąć.
+STRAY=""
+if [[ "${2:-}" == -* ]]; then STRAY="$2"
+elif [[ $# -ge 3 ]] && [[ "$3" != "-y" ]]; then STRAY="$3"
+elif [[ $# -gt 3 ]]; then STRAY="$4"
+fi
+if [[ -n "$STRAY" ]]; then
+  echo "Unexpected argument \"$STRAY\". Usage: ./release.sh \"commit message\" [X.Y.Z] [-y]"
+  if [[ "$STRAY" == "-y" ]]; then
+    echo "-y comes after the version: ./release.sh \"$MSG\" X.Y.Z -y, or ASSUME_YES=1 ./release.sh \"$MSG\" for the next patch."
+  fi
+  exit 1
+fi
 AUTO_VERSION=0
 [[ -z "$VERSION" ]] && AUTO_VERSION=1
 
@@ -73,33 +75,15 @@ if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
   exit 1
 fi
 git fetch --quiet origin main
+# Tagi wydań z origin: git describe i bramka historii czytają tagi lokalne, a tag wypchnięty po pobraniu jego commita
+# nie przychodzi z samym "fetch origin main" — sekcja złożyłaby się od starszego taga i powtórzyła wydane commity.
+git fetch --quiet --tags origin || {
+  echo "Could not fetch the release tags from origin (a local tag that differs from origin also stops it)."
+  echo "Fix that, then release: the composed notes and the history check start at the previous release's tag."
+  exit 1
+}
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
   || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
-
-# Canary (N-REL-1): wynik scripts/canary.sh dla TEGO commita — niewydana Platform na każdym konsumencie, zanim
-# niezmienny tag trafi do wszystkich. Bez listy konsumentów nie ma kogo sprawdzać.
-if [[ -f scripts/consumers.txt ]]; then
-  if [[ -n "$SKIP_CANARY" ]]; then
-    echo "Consumer canary skipped: $SKIP_CANARY"
-  else
-    HEAD_SHA="$(git rev-parse HEAD)"
-    RECORD="$(git rev-parse --path-format=absolute --git-common-dir)/platform-canary/$HEAD_SHA"
-    [[ -f "$RECORD" ]] || {
-      echo "No consumer canary for ${HEAD_SHA:0:7}: run scripts/canary.sh, or pass --skip-canary \"<reason>\"."
-      exit 1
-    }
-    NOT_GREEN="$(grep -Ev '^[[:space:]]*(#|$)' scripts/consumers.txt | while read -r repo; do
-      status=$(awk -v repo="$repo" '$2 == repo { print $1 }' "$RECORD" | tail -1)
-      [[ "$status" == PASS ]] || echo "${status:-NOT RUN} $repo"
-    done)"
-    if [[ -n "$NOT_GREEN" ]]; then
-      echo "The consumer canary for ${HEAD_SHA:0:7} is not green on every consumer:"
-      sed 's/^/  /' <<< "$NOT_GREEN"
-      echo "Fix the consumers (scripts/preview-on-consumer.sh <dir> shows the failure), rerun scripts/canary.sh, or pass --skip-canary \"<reason>\"."
-      exit 1
-    fi
-  fi
-fi
 
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
@@ -118,12 +102,66 @@ if git rev-parse "v$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags
 fi
 
 # Notatki wydania: sekcja CHANGELOG.md tej wersji (jedno źródło dla taga, GitHub Release i platform-bump).
+# Niczego tu nie zapisuje: złożony CHANGELOG.md powstaje w katalogu tymczasowym i trafia do drzewa dopiero
+# po wszystkich odmowach i potwierdzeniu.
 CONTRACT="docs/adr/0002-release-and-versioning-contract.md"
-SECTION="$(bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md)" || {
-  echo "CHANGELOG.md has no \"## [$VERSION] - YYYY-MM-DD\" section. Move the [Unreleased] entries under it in a commit, then release."
-  exit 1
-}
-ACTION="$(bash scripts/changelog-section.sh --consumer-action "$VERSION" CHANGELOG.md)" || {
+WORK_DIR="$(mktemp -d)"
+trap 'rm -r "$WORK_DIR"' EXIT
+CHANGELOG=CHANGELOG.md
+COMPOSED_FROM=""
+if ! bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md > /dev/null; then
+  LAST_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' HEAD 2>/dev/null || true)"
+  COMPOSED_FROM="${LAST_TAG:-the first commit}"
+  # Najnowsza sekcja bez taga to niewydana ręczna sekcja (np. 1.13.0 przed wydaniem): nowa sekcja stanęłaby nad nią.
+  NEWEST="$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - / { print substr($2, 2, length($2) - 2); exit }' CHANGELOG.md)"
+  if [[ -n "$NEWEST" ]] && ! git rev-parse -q --verify "refs/tags/v$NEWEST" > /dev/null \
+    && ! git ls-remote --exit-code --tags origin "v$NEWEST" > /dev/null 2>&1; then
+    echo "The newest section of CHANGELOG.md, \"## [$NEWEST]\", has no v$NEWEST tag: release $NEWEST first"
+    echo "(./release.sh \"<message>\" $NEWEST), then $VERSION. Composing $VERSION now would bury $NEWEST unreleased under it."
+    exit 1
+  fi
+  if [[ -n "$LAST_TAG" ]] && [[ "$(git rev-list --count "$LAST_TAG..HEAD")" == 0 ]]; then
+    echo "Nothing to release: there are no commits since $LAST_TAG."
+    exit 1
+  fi
+  bash scripts/release-notes.sh "${LAST_TAG:+$LAST_TAG..}HEAD" > "$WORK_DIR/notes.md"
+  if grep -q '^### Unclassified' "$WORK_DIR/notes.md"; then
+    echo "CHANGELOG.md has no \"## [$VERSION]\" section, and these subjects since $COMPOSED_FROM are not Conventional Commits:"
+    sed -n '/^### Unclassified/,$p' "$WORK_DIR/notes.md" | grep '^- ' | sed 's/^/  /'
+    echo "Write the $VERSION section of CHANGELOG.md by hand and merge it, then release."
+    exit 1
+  fi
+  compose_status=0
+  awk -v heading="## [$VERSION] - $(date +%Y-%m-%d)" -v notes="$WORK_DIR/notes.md" '
+    /^## \[Unreleased\][[:space:]]*$/ {
+      found = 1; inside = 1
+      print; print ""; print heading; print ""
+      while ((getline line < notes) > 0) print line
+      next
+    }
+    inside && /^## / { inside = 0; print "" }
+    inside { if ($0 ~ /[^[:space:]]/) entries = 1; next }
+    { print }
+    END { if (!found) exit 3; if (entries) exit 4 }
+  ' CHANGELOG.md > "$WORK_DIR/CHANGELOG.md" || compose_status=$?
+  case "$compose_status" in
+    0) CHANGELOG="$WORK_DIR/CHANGELOG.md" ;;
+    3)
+      echo "CHANGELOG.md has no \"## [$VERSION] - YYYY-MM-DD\" section and no \"## [Unreleased]\" heading to compose it under."
+      echo "Add \"## [Unreleased]\" above the newest version, or write the $VERSION section by hand."
+      exit 1
+      ;;
+    4)
+      echo "CHANGELOG.md has no \"## [$VERSION] - YYYY-MM-DD\" section, but it has entries under \"## [Unreleased]\"."
+      echo "Rename that heading to \"## [$VERSION] - YYYY-MM-DD\" with a \"### Consumer action required\" subsection,"
+      echo "or remove the entries to compose the section from the commits since $COMPOSED_FROM; merge it, then release."
+      exit 1
+      ;;
+    *) echo "Composing the $VERSION section of CHANGELOG.md failed."; exit 1 ;;
+  esac
+fi
+SECTION="$(bash scripts/changelog-section.sh "$VERSION" "$CHANGELOG")"
+ACTION="$(bash scripts/changelog-section.sh --consumer-action "$VERSION" "$CHANGELOG")" || {
   echo "The $VERSION section of CHANGELOG.md has no \"### Consumer action required\" subsection; write \"None.\" when nothing is required."
   exit 1
 }
@@ -136,20 +174,14 @@ if [[ "$AUTO_VERSION" == 1 ]] && { grep -Eq '^[a-z]+(\([a-z0-9-]+\))?!:|^feat' <
   exit 1
 fi
 # Akcja konsumenta zapisana w historii od poprzedniego wydania (N-REL-7): trailer "Consumer-Action: …", "!"
-# w temacie albo stopka "BREAKING CHANGE:"/"BREAKING-CHANGE:". Bez taga poprzedniego wydania nie ma zakresu.
+# w temacie albo stopka "BREAKING CHANGE:"/"BREAKING-CHANGE:" na dowolnym commicie, także merge commicie merge.sh.
+# Znaczniki czyta scripts/release-notes.sh --markers, to samo źródło co złożona sekcja. Bez taga poprzedniego
+# wydania nie ma zakresu.
 history_reasons() {
-  git log --no-merges --format='%h %s%x1f%b%x1e' "$1" | awk -v RS=$'\036' -v FS=$'\037' '
-    {
-      sub(/^\n+/, "", $1)
-      if ($1 == "") next
-      if ($1 ~ /^[0-9a-f]+ [a-z]+(\([a-z0-9-]+\))?!:/) print "  " $1 " (\"!\" marks a breaking change)"
-      if ($2 ~ /(^|\n)BREAKING[ -]CHANGE: /) print "  " $1 " (BREAKING CHANGE footer)"
-      if (match($2, /(^|\n)Consumer-Action: [^\n]+/)) {
-        trailer = substr($2, RSTART, RLENGTH)
-        sub(/^\n/, "", trailer)
-        print "  " $1 " (" trailer ")"
-      }
-    }'
+  bash scripts/release-notes.sh --markers "$1" | awk -v FS=$'\037' '
+    $3 == "trailer" { print "  " $1 " " $2 " (Consumer-Action: " $4 ")" }
+    $3 == "footer" { print "  " $1 " " $2 " (BREAKING CHANGE footer)" }
+    $3 == "bang" { print "  " $1 " " $2 " (\"!\" marks a breaking change)" }'
 }
 if git rev-parse -q --verify "refs/tags/v$CUR" >/dev/null; then
   REASONS="$(history_reasons "v$CUR..HEAD")"
@@ -168,13 +200,21 @@ if git rev-parse -q --verify "refs/tags/v$CUR" >/dev/null; then
 fi
 if [[ "${VERSION%.*}" == "${CUR%.*}" ]] && ! [[ "$ACTION" =~ ^None\.?$ ]]; then
   echo "CHANGELOG.md lists consumer action for $VERSION, so it must be a MINOR release:"
-  echo "  rename the section to $NEXT_MINOR, commit, then: ./release.sh \"$MSG\" $NEXT_MINOR"
+  if [[ -n "$COMPOSED_FROM" ]]; then
+    echo "  ./release.sh \"$MSG\" $NEXT_MINOR"
+  else
+    echo "  rename the section to $NEXT_MINOR, commit, then: ./release.sh \"$MSG\" $NEXT_MINOR"
+  fi
   echo "See $CONTRACT."
   exit 1
 fi
 
 echo "Plan: $CUR -> $VERSION   branch: $BR   commit: \"chore(release): platform $VERSION\""
-echo "Release notes (CHANGELOG.md):"
+if [[ -n "$COMPOSED_FROM" ]]; then
+  echo "Release notes (composed from the commits since $COMPOSED_FROM; the release commit adds them to CHANGELOG.md):"
+else
+  echo "Release notes (CHANGELOG.md):"
+fi
 printf '  %s\n' "${SECTION//$'\n'/$'\n'  }"
 if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
   read -r -p "Kontynuować (commit + tag v$VERSION + push)? [y/N] " ans
@@ -192,15 +232,14 @@ for f in "${PACKAGE_FILES[@]}"; do
 done
 
 git add -- "${PROPERTY_FILES[@]}" "${PACKAGE_FILES[@]}"
-if [[ -n "$SKIP_CANARY" ]]; then
-  git commit -m "chore(release): platform $VERSION" -m "$MSG" -m "Canary-Skipped: $SKIP_CANARY"
-else
-  git commit -m "chore(release): platform $VERSION" -m "$MSG"
+if [[ -n "$COMPOSED_FROM" ]]; then
+  cp "$WORK_DIR/CHANGELOG.md" CHANGELOG.md
+  git add -- CHANGELOG.md
 fi
+git commit -m "chore(release): platform $VERSION" -m "$MSG"
 git push origin main
 # --cleanup=verbatim: domyślne "strip" wycina linie zaczynające się od '#', czyli nagłówki Markdown sekcji.
-TAG_MESSAGE="$(mktemp)"
-trap 'rm -f "$TAG_MESSAGE"' EXIT
+TAG_MESSAGE="$WORK_DIR/tag-message"
 printf 'Platform %s\n\n%s\n' "$VERSION" "$SECTION" > "$TAG_MESSAGE"
 git tag -a --cleanup=verbatim -F "$TAG_MESSAGE" "v$VERSION"
 git push origin "v$VERSION"

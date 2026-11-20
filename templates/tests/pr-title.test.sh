@@ -29,4 +29,10 @@ done
 sed -i.bak '/^CONVENTIONAL=/d' "$tmp/release.sh"
 if check 'fix: anything'; then fail 'without the pattern in release.sh the check must fail, not pass everything'; fi
 
-echo 'OK: pr-title checks pull request titles with the Conventional Commit pattern of release.sh'
+# pr-title jest doradczy: właściciel integruje bezpośrednim pushem (merge.sh + push, release.sh), a wymagany check
+# statusu w rulesecie odrzuciłby każdy taki push, bo nowy commit nie ma przebiegu pr-title.
+if jq -e 'any(.rules[]; .type == "required_status_checks")' "$root/.github/rulesets/main.json" > /dev/null; then
+  fail 'the main ruleset must not require status checks: the owner integrates and releases by direct push'
+fi
+
+echo 'OK: pr-title checks pull request titles with the Conventional Commit pattern of release.sh, and stays advisory'
