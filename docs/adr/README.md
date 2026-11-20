@@ -45,7 +45,7 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0009](0009-integration-tag-is-a-contract.md) | Test taxonomy — the `integration` JUnit tag is a public contract | Accepted |
 | [0010](0010-agent-resource-profile.md) | Opt-in agent resource profile via AI_AGENT | Accepted |
 | [0011](0011-contract-first-openapi.md) | Contract-first OpenAPI: the committed spec is the contract | Accepted |
-| [0012](0012-platform-scans-itself-in-sonarqube-cloud.md) | Platform's own Java modules are analysed in SonarQube Cloud like a consumer | Accepted |
+| [0012](0012-platform-scans-itself-in-sonarqube-cloud.md) | Platform's own Java modules are analysed in SonarQube Cloud like a consumer | Superseded |
 | [0013](0013-catalog-for-aliases-bom-for-constraints.md) | The catalog carries aliases and versions, platform-bom carries constraints | Accepted |
 | [0014](0014-exact-pins-moved-by-platform-bump.md) | Consumers pin exact releases, and platform-bump moves every pin | Accepted |
 | [0015](0015-rulesets-protect-main-and-release-tags.md) | Rulesets protect main and the release tags without a required pull request | Accepted |

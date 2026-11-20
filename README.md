@@ -182,7 +182,7 @@ checks with `strict: true`.
 Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
 and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
-they compile to the same Java 27 bytecode as consumers' code. The `sonar` job of `ci.yml` analyses both in SonarQube Cloud.
+they compile to the same Java 27 bytecode as consumers' code.
 
 ### The starter's modules
 

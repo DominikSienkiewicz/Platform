@@ -19,8 +19,7 @@ repositories { mavenCentral() }
 // Ostrzeżenie Javadoc wywala `build` w ci.yml, więc wychodzi na PR-ze, nie dopiero przy publikacji javadocJar z taga.
 tasks.javadoc { (options as CoreJavadocOptions).addBooleanOption("Werror", true) }
 
-// Decyzja 28: Platform skanuje się w SonarQube Cloud jak konsumenci (zasada 8). projectKey z fallbacku
-// DominikSienkiewicz_<rootProject.name>; job `sonar` w ci.yml biegnie tylko z sekretem SONAR_TOKEN.
+// quality-conventions jak u konsumenta (zasada 8); PIT tylko na pakietach modułu.
 pitest {
 	targetClasses.set(listOf("pl.seniordeveloper.platform.testing.*"))
 }

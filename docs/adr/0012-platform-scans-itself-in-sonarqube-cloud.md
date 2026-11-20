@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted — 2026-10-19
+Superseded — 2026-11-20: Platform no longer analyses its own modules in SonarQube Cloud. Platform 1.13.0 removes
+the `sonar` job of `ci.yml`, and with it the need for a `SONAR_TOKEN` secret and the two projects, because no
+consumer depends on that dashboard and `platform-security-starter`, one of the two modules, is gone. The update on
+multi-module consumers below still holds: `seniordev.quality-conventions` and `seniordev.sonar-conventions` keep
+configuring SonarQube Cloud for consumers. Accepted 2026-10-19.
 
 ## Context
 

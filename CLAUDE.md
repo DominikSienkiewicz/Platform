@@ -121,8 +121,8 @@ opublikuj, podbij pin w repo konsumenta.
    `quality-conventions`, w wielomodułowym root aplikuje `seniordev.sonar-conventions`, a moduły dopisują swój raport
    JaCoCo (F-13; nigdy `:<moduł>:sonar`). `projectKey` per-repo przez `platform { sonar { projectKey } }` albo property
    `sonarProjectKey` w `gradle.properties` (fallback `DominikSienkiewicz_<rootProject.name>`). Wersja pluginu = `sonarqube` w katalogu.
-   Dotyczy też samej Platform (Decyzja 28): test-fixtures i security-starter aplikują quality-conventions,
-   a job `sonar` w `ci.yml` skanuje je, gdy istnieje sekret `SONAR_TOKEN`.
+   Moduły Java Platform też aplikują quality-conventions, ale sama Platform nie skanuje się w SonarQube Cloud
+   (job `sonar` w `ci.yml` usunięty 2026-11-20, ADR-0012 superseded); konfiguracja Sonara służy konsumentom.
 
 ## Wersjonowanie
 

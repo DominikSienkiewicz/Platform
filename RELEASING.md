@@ -87,20 +87,10 @@ It keeps:
   (`platform-bump` moves versions), private vulnerability reporting, the requirement to pin every
   action by commit SHA, and automatic deletion of merged head branches.
 
-SonarQube Cloud (Decision 28) is set up by hand once. The `sonar` job of `ci.yml` waits for each analysis
-(`sonar.qualitygate.wait`), so every step below that is missing turns it red:
-
-- create the projects `DominikSienkiewicz_platform-test-fixtures` and `DominikSienkiewicz_platform-security-starter`
-  in the `dominiksienkiewicz` organisation as **public** projects. The Free plan caps private code at 50k lines
-  across the organisation, which Azimuth already fills, so the background task of a private project's analysis
-  fails; the repository is public anyway;
-- rename each project's main branch from `master`, the default for a project created by hand, to `main`
-  (Project → Branches, the branch's menu → Rename). CI analyses `main`, which the Free plan would otherwise
-  treat as a secondary branch. If an earlier analysis left a short-lived `main` branch, delete it first;
-- set each project's New code definition (Administration → New code), 30 days like the organisation's other
-  projects. Without one the quality gate is not computed (status `NONE`), which the scanner reports as failed;
-- turn off Automatic Analysis and add a `SONAR_TOKEN` secret. Until the secret exists, the job only leaves a
-  notice.
+Platform does not analyse its own modules in SonarQube Cloud
+([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md), superseded); the Sonar configuration of
+`seniordev.quality-conventions` and `seniordev.sonar-conventions` serves consumers only, so the repository needs
+no `SONAR_TOKEN` secret.
 
 The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
 `scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon

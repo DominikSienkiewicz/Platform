@@ -104,7 +104,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 | Criterion | Level | Status | Evidence |
 |---|---|---|---|
-| `static_analysis` | MUST | **Met** | Semgrep ([`semgrep.yml`](../.github/workflows/semgrep.yml), run on Platform by [`self-scan.yml`](../.github/workflows/self-scan.yml)), Checkstyle, SpotBugs (report-only, [ADR-0005](adr/0005-spotbugs-report-only.md)) and SonarCloud (the `sonar` job of [`ci.yml`](../.github/workflows/ci.yml), while the `SONAR_TOKEN` secret exists). |
+| `static_analysis` | MUST | **Met** | Semgrep ([`semgrep.yml`](../.github/workflows/semgrep.yml), run on Platform by [`self-scan.yml`](../.github/workflows/self-scan.yml)), Checkstyle and SpotBugs (report-only, [ADR-0005](adr/0005-spotbugs-report-only.md)). |
 | `static_analysis_common_vulnerabilities` | SUGGESTED | **Met** | Semgrep's `p/default`, `p/secrets`, `p/java`, `p/javascript`, `p/typescript`, `p/dockerfile` and `p/github-actions` rulesets. |
 | `static_analysis_fixed` | MUST | **Met** | A Semgrep finding of severity CRITICAL, HIGH or ERROR fails the job, so it blocks the change until it is fixed or explicitly accepted with `# nosemgrep` ([security scanning](security-scanning.md)). |
 | `static_analysis_often` | SUGGESTED | **Met** | [`self-scan.yml`](../.github/workflows/self-scan.yml) runs on every push to `main`, every pull request and every Monday. |
