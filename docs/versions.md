@@ -64,7 +64,7 @@ sources contain no version literal.
 | `SPRING_BOOT`, `SPRING_MODULITH`, `SPRING_AI`, `LOMBOK`, `TOMCAT`, `JACKSON_BOM`, `JACKSON_2_BOM` | no convention since the conventions import `platform-bom`; `PlatformVersionsTest` still compares them with the catalog | `springBoot`, `springModulith`, `springAi`, `lombok`, `tomcat`, `jacksonBom`, `jackson2Bom` |
 
 Two mirrors live outside Kotlin and stay guarded by tests: the `toolchain-java-version` default of
-`backend-ci.yml`, `deploy.yml`, `platform-bump.yml` and `sonar.yml` (catalog `java`,
+`backend-ci.yml`, `deploy.yml` and `platform-bump.yml` (catalog `java`,
 `PlatformToolVersionMirrorTest`), and the Gradle wrappers and the minimum consumer Gradle
 (`PlatformGradleVersionMirrorTest`).
 
@@ -207,7 +207,7 @@ pins all of it.
 
 ## JDK 27 toolchain on CI
 
-The reusable `backend-ci.yml`, `deploy.yml` and `sonar.yml` install the toolchain JDK with
+The reusable `backend-ci.yml` and `deploy.yml` install the toolchain JDK with
 `actions/setup-java` (input `toolchain-java-version`, default `27`) and register it through
 `org.gradle.java.installations.paths` in the Gradle user home. Gradle itself runs on the
 `java-version` JDK, which is the same Java 27 since 1.8.0: Platform builds and tests `build-logic` with Gradle on

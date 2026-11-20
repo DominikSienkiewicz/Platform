@@ -32,7 +32,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 | `sites_https` | MUST | **Met** | The repository, GitHub Releases and GitHub Packages (Maven and npm) are served over HTTPS; the documentation site is built for GitHub Pages ([`docs-site.yml`](../.github/workflows/docs-site.yml)), which serves HTTPS once the maintainer enables it. |
 | `discussion` | MUST | **Met** | GitHub issues and pull requests: searchable, one URL per topic, no proprietary client. |
 | `english` | SHOULD | **Met** | README, `docs/`, the issue forms and the release notes are in English ([README](../README.md#documentation-language)), and reports are accepted in English. `CLAUDE.md` and code comments are Polish, and are maintainer-facing. |
-| `maintained` | MUST | **Met** | Active history on `main`, a [changelog](../CHANGELOG.md) with an `[Unreleased]` section, and weekly scheduled workflows ([`ci.yml`](../.github/workflows/ci.yml), [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml), [`reproducibility.yml`](../.github/workflows/reproducibility.yml)). |
+| `maintained` | MUST | **Met** | Active history on `main`, a [changelog](../CHANGELOG.md) with an `[Unreleased]` section, and weekly scheduled workflows ([`ci.yml`](../.github/workflows/ci.yml), [`canon-cve-scan.yml`](../.github/workflows/canon-cve-scan.yml)).  |
 
 ## Change control
 
@@ -65,7 +65,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 | Criterion | Level | Status | Evidence |
 |---|---|---|---|
-| `build` | MUST | **Met** | Gradle wrappers and pnpm build everything from source ([local development](local-development.md)); [`ci.yml`](../.github/workflows/ci.yml) rebuilds on every push and pull request, and [`reproducibility.yml`](../.github/workflows/reproducibility.yml) rebuilds the latest tag and compares jar digests. |
+| `build` | MUST | **Met** | Gradle wrappers and pnpm build everything from source ([local development](local-development.md)); [`ci.yml`](../.github/workflows/ci.yml) rebuilds on every push and pull request. |
 | `build_common_tools` | SUGGESTED | **Met** | Gradle and pnpm. |
 | `build_floss_tools` | SHOULD | **Met** | JDK, Gradle, Node and pnpm are all FLOSS. |
 | `test` | MUST | **Met** | JUnit suites in the Java modules, Vitest in `frontend/`, and shell tests in [`templates/tests/`](../templates/tests/); how to run them is in [CONTRIBUTING](../CONTRIBUTING.md#the-gate). |

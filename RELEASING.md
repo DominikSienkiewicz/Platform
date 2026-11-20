@@ -65,9 +65,6 @@ gpr.key=<classic PAT with read:packages>       # add write:packages only to publ
 export GITHUB_TOKEN=<classic PAT with read:packages>
 
 # C) Consumer repositories need a GPR_TOKEN secret (classic PAT with read:packages) for CI.
-
-# D) Optional: the public example repository. Create <owner>/platform-example, then give Platform the
-#    PLATFORM_EXAMPLE_TOKEN secret, a fine-grained PAT with contents: write on that repository only.
 ```
 
 ## Repository settings
@@ -229,12 +226,6 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
    for. **`verify-bundle`** then builds the `spring-app` starter from the zip
    alone, with an empty Gradle home and no `GITHUB_TOKEN`
    ([README](README.md#try-it-without-credentials)).
-9. **`example`**, after `github-release`, regenerates the public `platform-example` repository from the
-   release with `scripts/render-example.sh` (`--kind spring-app --frontend next`, plus the frontend
-   lockfile) and commits the difference. npm reads the canon packages with the workflow's `GITHUB_TOKEN`
-   (`packages: read`), the variable the rendered `frontend/.npmrc` expects. `PLATFORM_EXAMPLE_TOKEN` reaches
-   only the first step, which turns its presence into an output for the job's conditions, and the step that
-   clones and pushes `platform-example`; npm never sees it. Without that secret the job only leaves a notice.
 
 A red job stops every job after it. A tag on a commit with red CI publishes nothing and
 creates no GitHub Release.
@@ -304,12 +295,6 @@ from a tag, and set the repository variable `PAGES_ENABLED=true`. Until then the
 uploads it as an artifact without deploying it. To preview the assembled site, install
 `docs/requirements-site.txt` with `pip install --require-hashes` into a virtual environment and run
 `python scripts/docs-versions.py <empty-directory>`; it builds `main` and every release tag of the local clone.
-
-## Reproducibility
-
-Every Tuesday `reproducibility.yml` rebuilds the latest tag, with the commit date of the tag as the release
-date, and compares the SHA-256 of every jar with its copy in GitHub Packages (`scripts/compare-rebuild.sh`).
-Matching digests are logged; a difference or a missing copy opens or updates one issue.
 
 ## Support policy
 
@@ -416,19 +401,9 @@ repository with `-PplatformRepository`, as described in
 
 ## Package retention
 
-Old versions are never pruned automatically, neither in `release.yml` nor on a schedule. The
-support rule is: **no version that a consumer still pins may be deleted**, and a consumer stays on
-a deleted version only by accident. Clean up deliberately with
-**Actions → Cleanup old package versions → Run workflow**:
-
-- `protect` (required): every version a consumer still pins, comma-separated, for example
-  `1.5.26,1.5.31`. Read them from the Platform pin column of `scripts/consumer-audit.sh` before the run.
-  Protected versions are never deleted, whatever their age.
-- `keep` (default `10`): how many of the newest versions of each package to keep.
-- `dry_run` (default `true`): print the plan only. Review it, then run again with `dry_run`
-  unticked to delete.
-
-The workflow runs [`scripts/cleanup-packages.sh`](scripts/cleanup-packages.sh), which touches only
-Platform packages and refuses to run without `protect`. It needs a `PACKAGES_ADMIN_TOKEN` secret
-(classic PAT with `read:packages` and `delete:packages`). GitHub can restore a deleted package
+Old versions are never pruned automatically, neither in `release.yml` nor on a schedule, and Platform has no
+cleanup tool. The support rule is: **no version that a consumer still pins may be deleted**, and a consumer
+stays on a deleted version only by accident. When a deletion is needed, do it by hand in the package settings
+on GitHub after reading the Platform pin column of `scripts/consumer-audit.sh`, and keep every version a
+consumer still pins. GitHub can restore a deleted package
 version for 30 days; after that it is gone.

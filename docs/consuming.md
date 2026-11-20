@@ -37,8 +37,7 @@ scripts/new-consumer.sh --name order-service --package pl.example.orders --kind 
 
 Then provide the credentials: `GPR_TOKEN` as a repository secret for CI, and `gpr.user`/`gpr.key` and
 `GITHUB_TOKEN` locally ([Prerequisites](#prerequisites)); run `npm install` once in `frontend/` and commit
-the `package-lock.json` it writes. Once the public `DominikSienkiewicz/platform-example` repository exists,
-every release regenerates it from this command ([RELEASING.md](../RELEASING.md#what-releaseyml-does)).
+the `package-lock.json` it writes.
 
 It writes `backend/` (the starter with your package, group and name, the Gradle wrapper and the
 `platformVersion=` pin), a `ci.yml` caller of `backend-ci.yml` at the exact tag with `packages: read`

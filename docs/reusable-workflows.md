@@ -1,6 +1,6 @@
 # Reusable workflows: the caller contract
 
-Platform ships 12 reusable workflows. This page lists what a caller must provide to each: the
+Platform ships 11 reusable workflows. This page lists what a caller must provide to each: the
 `permissions` it grants, the secrets and variables it passes, and a snippet to copy. Inputs, their
 types and defaults are described in the workflow files themselves (every input has a
 `description:`); this page links to them instead of repeating them.
@@ -323,43 +323,6 @@ Inputs:
 | Input | Type | Default | Description |
 |---|---|---|---|
 | `timeout-minutes` | number | `10` | Minutes before the job is cancelled; GitHub's default is 360. Raise it for a slower build. |
-<!-- /docs-gen -->
-
-## sonar.yml
-
-**Deprecated.** No consumer calls this workflow: two removed their Sonar jobs on 2026-08-05, and
-the third scans inline, within SonarQube Cloud's 50,000-line limit for private projects. It stays so
-that existing references resolve; do not adopt it. Run the `sonar` task in the backend job instead,
-which `seniordev.quality-conventions` configures.
-
-SonarQube Cloud for a backend plus frontend monorepo. Both jobs are skipped until the repository has
-a `SONAR_TOKEN` secret.
-
-- Permissions: `contents: read`, `packages: read`.
-- Secrets `SONAR_TOKEN` and `gpr_token`, both optional: without `SONAR_TOKEN` both jobs are skipped,
-  without `gpr_token` the automatic `GITHUB_TOKEN` resolves Platform's packages.
-- Inputs: [sonar.yml](../.github/workflows/sonar.yml).
-
-```yaml
-permissions:
-  contents: read
-  packages: read
-jobs:
-  sonar:
-    uses: DominikSienkiewicz/Platform/.github/workflows/sonar.yml@vX.Y.Z
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      gpr_token: ${{ secrets.GPR_TOKEN }}
-```
-
-Inputs:
-
-<!-- docs-gen:inputs sonar.yml -->
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `java-version` | string | `27` | JDK that runs Gradle for the backend scan. |
-| `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
-| `node-version` | string | `24` | Node.js version for the frontend tests and coverage. |
 <!-- /docs-gen -->
 
 ## platform-bump.yml

@@ -17,7 +17,7 @@ itself shows less than it claims.
 
 - `self-scan.yml` runs Scorecard with `publish_results: true` (Decision 15) and Semgrep on Platform.
 - Semgrep uses the registry rulesets, with the exception procedure of `docs/security-scanning.md` (Decision 26).
-- `sonar.yml` has no callers; it is deprecated and kept so existing references resolve (Decision 14).
+- The reusable `sonar.yml`, which had no callers, was removed on 2026-11-20 (it was deprecated by Decision 14).
   Platform's own SonarQube Cloud analysis was [ADR-0012](0012-platform-scans-itself-in-sonarqube-cloud.md), removed
   in 1.13.0.
 
@@ -27,4 +27,4 @@ itself shows less than it claims.
 
 ## Revisit when
 
-`sonar.yml` gets a caller, or is removed in a MAJOR.
+a consumer needs a reusable SonarQube Cloud workflow again.

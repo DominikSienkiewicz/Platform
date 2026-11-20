@@ -30,7 +30,7 @@ mismatch read as an accident, and a reader could not tell which one to change.
 
 - Two lockfile formats to keep current: `pnpm install` regenerates Platform's, `platform-bump` the
   consumers'.
-- A consumer that wants pnpm needs Platform to support it in `frontend-ci.yml`, `sonar.yml`,
+- A consumer that wants pnpm needs Platform to support it in `frontend-ci.yml`,
   `security-scan.yml` and `platform-bump`, together, in a MINOR release.
 - `docs/consuming.md` states the npm requirement next to the frontend setup.
 
