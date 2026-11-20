@@ -38,7 +38,13 @@ if [[ "${2:-}" == -* ]]; then STRAY="$2"
 elif [[ $# -ge 3 ]] && [[ "$3" != "-y" ]]; then STRAY="$3"
 elif [[ $# -gt 3 ]]; then STRAY="$4"
 fi
-[[ -z "$STRAY" ]] || { echo "Unexpected argument \"$STRAY\". Usage: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
+if [[ -n "$STRAY" ]]; then
+  echo "Unexpected argument \"$STRAY\". Usage: ./release.sh \"commit message\" [X.Y.Z] [-y]"
+  if [[ "$STRAY" == "-y" ]]; then
+    echo "-y comes after the version: ./release.sh \"$MSG\" X.Y.Z -y, or ASSUME_YES=1 ./release.sh \"$MSG\" for the next patch."
+  fi
+  exit 1
+fi
 AUTO_VERSION=0
 [[ -z "$VERSION" ]] && AUTO_VERSION=1
 

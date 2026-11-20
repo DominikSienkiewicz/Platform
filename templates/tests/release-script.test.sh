@@ -344,6 +344,11 @@ for args in '1.2.4|--skip-canary|consumers offline' '1.2.4|-y|extra' '--skip-can
   assert_untouched "$work" "$head" ""
 done
 grep -qF 'Unexpected argument "--skip-canary"' "$work.log" || fail 'the refusal must quote the argument'
+# "-y" w miejscu wersji: odmowa podpowiada obie poprawne formy.
+if (cd "$work" && bash ./release.sh "fix: test release" -y) > "$work.log" 2>&1; then fail 'a -y in place of the version must be refused'; fi
+grep -qF 'ASSUME_YES=1' "$work.log" && grep -qF '"fix: test release" X.Y.Z -y' "$work.log" \
+  || { cat "$work.log"; fail 'the refusal of -y in place of the version must point to ASSUME_YES=1 and to X.Y.Z -y'; }
+assert_untouched "$work" "$head" ""
 
 echo 'OK: release.sh refuses an empty message, an existing tag and stray arguments without committing, tagging or pushing'
 )
