@@ -24,6 +24,8 @@ Desktop.ini
 **/build/
 .kotlin/
 out/
+# Pakiety adapter.out heksagonu w źródłach (próbki testów arch w test-fixtures) to kod, nie wyjście IntelliJ.
+!**/src/**/out/
 *.class
 # Wyjście Buildship/Eclipse (bin/main, bin/test) — kopia src/, generowana przy imporcie do IDE.
 gradle/*/bin/

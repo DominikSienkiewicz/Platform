@@ -117,6 +117,17 @@ The Spring starter has two Spring Modulith modules joined by one event: `account
 `AbstractModulithDocumentationTest` from `platform-test-fixtures` ([reference](reference.md#test-fixtures))
 to get the diagrams of yours.
 
+Check the architecture the same way instead of copying ArchUnit rules: a subclass of `AbstractArchitectureTest`
+runs the platform's rules and the hexagonal rules on the package canon `domain`, `application` (ports under
+`application.port..`), `adapter.in` and `adapter.out`, and an empty layer passes. Flat modules without layers
+override `hexagonal()` to return `false` and keep only the platform's rules
+([reference](reference.md#test-fixtures)):
+
+```java
+@AnalyzeClasses(packagesOf = Application.class, importOptions = ImportOption.DoNotIncludeJars.class)
+class ArchitectureTest extends AbstractArchitectureTest {}
+```
+
 The template is pinned to the latest Platform release: `release.sh` bumps its
 `platformVersion` together with every other version file. Keep `platformVersion` in the
 consumer's `gradle.properties` on an **already published** release. Add your own

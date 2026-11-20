@@ -68,4 +68,19 @@ class PlatformArchRulesTest {
         .allSatisfy(rule -> assertThat(rule.evaluate(violating).hasViolation()).isTrue())
         .allSatisfy(rule -> assertThat(rule.evaluate(clean).hasViolation()).isFalse());
   }
+
+  @org.junit.jupiter.api.Test
+  void outboundAdaptersMayNotDependOnInboundAdapters() {
+    String layout = "pl.seniordeveloper.platform.testing.arch.layout.";
+    JavaClasses violating = new ClassFileImporter().importPackages(layout + "adapterdirection");
+    JavaClasses clean = new ClassFileImporter().importPackages(layout + "canon");
+
+    var rule =
+        HexagonalRules.outboundAdaptersDoNotDependOnInboundAdapters(
+            "..adapter.out..", "..adapter.in..");
+
+    assertThat(rule.evaluate(violating).getFailureReport().getDetails())
+        .anyMatch(detail -> detail.contains("InvoiceTable") && detail.contains("InvoiceEndpoint"));
+    assertThat(rule.evaluate(clean).hasViolation()).isFalse();
+  }
 }
