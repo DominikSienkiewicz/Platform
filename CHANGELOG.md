@@ -26,19 +26,22 @@ continues.
 
 None.
 
+### Added
+
+- `platformDependencyCheck` warns about a BOM outside the Platform frame imported with `platform(...)` or
+  `enforcedPlatform(...)` ([PLAT-DEP-006](docs/gates.md#plat-dep-006)), because its versions can override the frame; the
+  build still passes. The limit of PLAT-DEP-003, which sees BOM management only in modules that apply
+  `io.spring.dependency-management`, is documented.
+
 ### Changed
 
 - Platform governs the frame, and consumers own the rest ([ADR-0037](docs/adr/0037-platform-governs-the-frame.md)).
   The frame is Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon; PLAT-DEP-002,
   PLAT-DEP-003, PLAT-DEP-004 and PLAT-FE-002 keep holding their versions. A library or package outside it no longer
   needs a Platform release: a Gradle library goes in the second catalog `appLibs` read from
-  `gradle/app.versions.toml`, a frontend package is an exact version in `package.json`, and a library a Spring or
+  `backend/gradle/app.versions.toml`, a frontend package is an exact version in `package.json`, and a library a Spring or
   Platform BOM manages takes no version. An `appLibs` entry that collides with a canon module still fails
   PLAT-DEP-002.
-- `platformDependencyCheck` warns about a BOM outside the Platform frame imported with `platform(...)` or
-  `enforcedPlatform(...)` ([PLAT-DEP-006](docs/gates.md#plat-dep-006)), because its versions can override the frame; the
-  build still passes. The limit of PLAT-DEP-003, which sees BOM management only in modules that apply
-  `io.spring.dependency-management`, is documented.
 - `platform-bump` keeps the consumer's frontend overrides. The migration `every-drop-stale-overrides` is removed.
 - `canon-diff` reports the removal of a frontend canon entry as "the consumer owns its version from now on", not as
   a consumer action; the removal of a Gradle catalog entry keeps its action.
