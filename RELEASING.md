@@ -19,7 +19,10 @@ until they bump:
   pins. There is no floating `v1` tag any more (retired, [ADR-0014](docs/adr/0014-exact-pins-moved-by-platform-bump.md)):
   an external caller of `@v1` must pin an exact `vX.Y.Z`.
 
-Renovate's shared preset covers only GitHub Actions and Docker images; it bumps no Platform pin.
+Renovate's shared preset (`default.json`) updates what the application owns: its Gradle and npm dependencies,
+pinned exactly, GitHub Actions and Docker images. It bumps no Platform pin and no frame entry (the catalog, the
+frontend canon, the Gradle wrapper, Platform's artifacts and reusable workflows): `scripts/renovate-preset.py`
+generates those `Frame:` rules with `enabled: false`, and `platform-bump` moves the frame.
 
 The current version is not repeated here, because a copy goes stale. Read it from the source:
 
