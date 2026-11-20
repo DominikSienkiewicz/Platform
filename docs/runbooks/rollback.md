@@ -46,5 +46,5 @@ owner decides on, because it changes the code every `@v1` caller runs on its nex
 
 ## An application deploy goes wrong
 
-This runbook covers Platform artifacts only. Rolling back a deployed application is the deploy
-workflow's concern: redeploy the previous image tag with `deploy.yml`.
+This runbook covers Platform artifacts only. Rolling back a deployed application is the concern of its
+promotion: revert the commit `promote.yml` made in the GitOps repository, and Argo CD deploys the previous tag.

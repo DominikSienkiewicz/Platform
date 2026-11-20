@@ -166,14 +166,6 @@ if [[ -f backend/Dockerfile ]]; then
   fi
 fi
 
-if [[ -f .secrets.local ]] || [[ -f scripts/setup-gh-deploy.sh ]]; then
-  if git check-ignore -q .secrets.local; then
-    report PASS PD050 ".secrets.local is ignored"
-  else
-    report FAIL PD050 ".secrets.local is not ignored, so deploy secrets could be committed" "add .secrets.local to .gitignore (templates/gitignore/root.gitignore)"
-  fi
-fi
-
 # --- Frontend side ---------------------------------------------------------------------------------------
 if [[ -f frontend/package.json ]]; then
   if grep -qxF "@dominiksienkiewicz:registry=https://npm.pkg.github.com" frontend/.npmrc 2>/dev/null; then

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# promote.yml i wejście ssh-deploy w deploy.yml: promocja buduje przez deploy.yml bez SSH i zapisuje tagi w repozytorium
-# GitOps; konsument SSH bez nowego wejścia działa jak dotąd. Blok preflightu jest wycinany między znacznikami i uruchamiany.
+# promote.yml i deploy.yml bez ścieżki SSH: deploy.yml tylko buduje, skanuje i podpisuje, a promocja buduje przez niego
+# i zapisuje tagi w repozytorium GitOps. Blok preflightu jest wycinany między znacznikami i uruchamiany.
 # shellcheck disable=SC2016 # literal GitHub expressions
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -12,39 +12,28 @@ fail() { echo "FAIL: $*" >&2; cat "$tmp/out" 2>/dev/null >&2 || true; exit 1; }
 
 [[ -f "$promote" ]] || fail 'promote.yml does not exist'
 
-# --- deploy.yml: ssh-deploy ---
-grep -qE '^      ssh-deploy:$' "$deploy" || fail 'deploy.yml must declare the ssh-deploy input'
-grep -qE '^        default: true$' <(sed -n '/^      ssh-deploy:$/,/^      [a-z-]*:$/p' "$deploy") \
-  || fail 'ssh-deploy must default to true, so an SSH consumer without the input behaves as before'
-grep -qE '^        type: boolean$' <(sed -n '/^      ssh-deploy:$/,/^      [a-z-]*:$/p' "$deploy") || fail 'ssh-deploy must be a boolean'
-grep -qF 'inputs.ssh-deploy' <(sed -n '/^  deploy:/,/^    runs-on:/p' "$deploy") || fail 'the deploy job must be gated by inputs.ssh-deploy'
+# --- deploy.yml: build, skan i podpis, bez wdrożenia SSH ---
+grep -qE '^  deploy:$' "$deploy" && fail 'deploy.yml must have no deploy job: Argo CD deploys what promote.yml commits'
+grep -qE '^      ssh-deploy:$' "$deploy" && fail 'deploy.yml must not declare the ssh-deploy input: it deploys nothing over SSH'
+grep -q 'SSH_' "$deploy" && fail 'deploy.yml must not declare or read SSH_ secrets'
+grep -qE '^    environment:' "$deploy" && fail 'no job of deploy.yml runs in an environment: none deploys'
 for output in backend-tag frontend-tag; do
   grep -qE "^      $output:$" "$deploy" || fail "deploy.yml must expose the $output output"
 done
 grep -qF 'value: ${{ jobs.versions.outputs.backend }}' "$deploy" || fail 'backend-tag must come from jobs.versions.outputs.backend'
 grep -qF 'value: ${{ jobs.versions.outputs.frontend }}' "$deploy" || fail 'frontend-tag must come from jobs.versions.outputs.frontend'
 
-deploy_job=$(sed -n '/^  deploy:$/,/^    runs-on:/p' "$deploy")
-grep -qFx "    if: \${{ !cancelled() && inputs.ssh-deploy && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}" <<< "$deploy_job" \
-  || fail 'the deploy job must run exactly when ssh-deploy is true, the versions succeeded and the build succeeded or was skipped'
 [[ "$(grep -cFx '          fail-build: true' "$deploy")" == 2 ]] || fail 'both Grype steps must keep fail-build: true: the scan is the gate of every promotion'
 grep -q 'fail-build: false' "$deploy" && fail 'no Grype step may set fail-build: false'
 
 # --- deploy.yml: preflight ---
-preflight_job=$(sed -n '/^  preflight:$/,/^  versions:$/p' "$deploy")
-grep -qFx '          SSH_DEPLOY: ${{ inputs.ssh-deploy }}' <<< "$preflight_job" || fail 'the preflight step must pass inputs.ssh-deploy as SSH_DEPLOY in its env:'
-
 awk 'index($0, "# >>> preflight") { inside = 1; next } index($0, "# <<< preflight") { inside = 0 } inside { sub(/^          /, ""); print }' \
   "$deploy" > "$tmp/preflight.sh"
 [[ -s "$tmp/preflight.sh" ]] || fail 'deploy.yml has no preflight block between its markers'
-preflight() {
-  (env -u DEPLOY_PATH GPR_USER=u GPR_KEY=k NPM_GH_TOKEN=n GHCR_OWNER=o SSH_DEPLOY="$1" bash "$tmp/preflight.sh") > "$tmp/out" 2>&1
-}
-preflight false || fail 'without SSH the preflight must not require DEPLOY_PATH'
-preflight true && fail 'with SSH the preflight must still require DEPLOY_PATH'
-grep -qF 'DEPLOY_PATH' "$tmp/out" || fail 'the preflight must name DEPLOY_PATH when it is missing'
-(env -u GPR_KEY GPR_USER=u NPM_GH_TOKEN=n GHCR_OWNER=o SSH_DEPLOY=false bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
-  && fail 'the preflight must require GPR_KEY in both modes'
+(env -u DEPLOY_PATH GPR_USER=u GPR_KEY=k NPM_GH_TOKEN=n GHCR_OWNER=o bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
+  || fail 'the preflight must not require DEPLOY_PATH: nothing deploys over SSH'
+(env -u GPR_KEY GPR_USER=u NPM_GH_TOKEN=n GHCR_OWNER=o bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
+  && fail 'the preflight must require GPR_KEY'
 grep -qF 'GPR_KEY' "$tmp/out" || fail 'the preflight must name GPR_KEY when it is missing'
 
 # --- promote.yml ---
@@ -130,4 +119,4 @@ done
 awk '/^        run: \|$/ { r = 1; next } /^      - |^        [a-z-]+:/ { r = 0 } r' "$promote" | grep -qE '\$\{\{ *inputs\.' \
   && fail 'values reach run steps through env:, never expanded inside a script'
 
-echo 'OK: promote.yml builds through deploy.yml without SSH and commits the tags; SSH consumers are unchanged'
+echo 'OK: deploy.yml deploys nothing over SSH; promote.yml builds through it and commits the tags'

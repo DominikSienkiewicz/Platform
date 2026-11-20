@@ -1,26 +1,21 @@
-name: Deploy (reusable)
+name: Build, scan and sign images (reusable)
 
-# Reusable deploy = UNIA najlepszych cech release.yml (SSP) i deploy.yml (BoS):
-#   • preflight walidujący sekrety/zmienne ZANIM ruszy build          (z SSP)
+# Budowanie, skan i podpis obrazów aplikacji; wdraża Argo CD po promocji (promote.yml, ADR-0035), nie ten workflow.
+# Nazwa pliku zostaje deploy.yml: Kyverno w klastrze przyjmuje podpis, którego certyfikat wskazuje
+# Platform/.github/workflows/deploy.yml@<SHA>.
+#   • preflight walidujący sekrety/zmienne ZANIM ruszy build
 #   • build obrazów przez docker/build-push-action: cache warstw w GHA (scope na obraz, mode=max) i domyślna
 #     atestacja provenance BuildKita (min, niepodpisana); bootJar z cache Gradle przez setup-gradle
-#   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest) (z BoS)
-#   • workflow_dispatch — ręczny re-deploy                            (z BoS)
-#   • environment: production — bramka: deployment branch policy `release` (tylko ta gałąź wdraża)
-#     i sekrety SSH_* trzymane w tym environmencie, więc workflow z innej gałęzi ich nie przeczyta.
-#     Zatwierdzania przez recenzenta nie ma: GitHub daje tę regułę prywatnym repo dopiero na Enterprise.
-#   • SSH z PINOWANYM known_hosts — naprawia regresję host-key w BoS   (z SSP); przypięty przy bootstrapie,
-#     sprawdzony względem SSH_HOST_KEY_SHA256, gdy go podano (templates/setup-gh-deploy.sh)
-#   • logika on-box w jednym źródle: Platform/scripts/deploy-remote.sh (wzorzec SSP, bez duplikatu w repo)
+#   • idempotencja: pomiń tag, który już jest w GHCR (docker manifest)
 #   • single-image: jeden obraz backendu z eksportem frontendu w jarze (npm ci + npm run build przed bootJar),
-#     bez obrazu frontendu; tylko z ssh-deploy: false, jak w promote.yml, bo wdrożenie SSH stawia dwa obrazy
+#     bez obrazu frontendu
 #   • scan-images: tag -> digest raz, potem bramki Grype i Trivy na tym digeście, a job sign podpisuje cosign keyless
 #     dokładnie te digesty, dopiero gdy obie bramki przeszły (łańcuch dostaw, Kyverno verifyImages po stronie klastra)
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
 #   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
 #   secrets: { GPR_USER: ${{ secrets.GPR_USER }}, GPR_KEY: ${{ secrets.GPR_KEY }}, … }
-# Różnice między repo idą przez `with:` (app-name, compose-dir, has-worker, migrate-*).
+# Różnice między repo idą przez `with:` (app-name, has-worker, migrate-*, single-image, scan-images).
 
 on:
   workflow_call:
@@ -29,18 +24,10 @@ on:
         description: "Minutes before the build-push job is cancelled; GitHub's default is 360."
         type: number
         default: 30
-      deploy-timeout-minutes:
-        description: "Minutes before the deploy job (upload, migrations, health gate) is cancelled; GitHub's default is 360."
-        type: number
-        default: 20
       app-name:
         description: "Image name prefix, e.g. skillsprintplus or bookofstyling."
         type: string
         required: true
-      compose-dir:
-        description: "Directory with the compose file and the Caddyfile on the host (e.g. '.' or 'infra')."
-        type: string
-        default: "."
       has-worker:
         description: "Also build the <app>-eval-worker image."
         type: boolean
@@ -62,54 +49,30 @@ on:
         type: string
         default: "27"
       has-migrate:
-        description: "Build and run a separate migration image. Use false for applications that migrate on start (Flyway)."
+        description: "Build a separate migration image. Use false for applications that migrate on start (Flyway)."
         type: boolean
         default: true
       scan-images:
-        description: "Scan the pushed images by digest before deploying (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in."
+        description: "Scan the pushed images by digest (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in."
         type: boolean
         default: false
       scan-severity:
         description: "Fail threshold of the Grype and Trivy gates for scan-images: negligible, low, medium, high or critical."
         type: string
         default: high
-      compose-file:
-        description: "Compose file name in compose-dir."
-        type: string
-        default: "docker-compose.prod.yml"
-      base-env:
-        description: "Base env file on the host; empty picks .env.prod, then .env."
-        type: string
-        default: ""
-      platform-ref:
-        description: "Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:."
-        type: string
-        default: "v1"
-      ssh-deploy:
-        description: "Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required."
-        type: boolean
-        default: true
       single-image:
-        description: "Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. Requires ssh-deploy: false."
+        description: "Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty."
         type: boolean
         default: false
-      rollback-to-backend:
-        description: "Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
-        type: string
-        default: ""
-      rollback-to-frontend:
-        description: "Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push."
-        type: string
-        default: ""
     outputs:
       backend-tag:
-        description: "Tag of the backend image: the version of the checkout, or rollback-to-backend."
+        description: "Tag of the backend image: the version of the checkout."
         value: ${{ jobs.versions.outputs.backend }}
       frontend-tag:
-        description: "Tag of the frontend image: the version of the checkout, or rollback-to-frontend; empty with single-image."
+        description: "Tag of the frontend image: the version of the checkout; empty with single-image."
         value: ${{ jobs.versions.outputs.frontend }}
     # Wszystkie required: false — brak wymaganego sekretu zgłasza preflight czytelnym błędem, zanim ruszy build.
-    # Zmienne GHCR_OWNER i DEPLOY_PATH idą z kontekstu `vars` callera.
+    # Zmienna GHCR_OWNER idzie z kontekstu `vars` callera.
     secrets:
       GPR_USER:
         description: "GitHub user owning GPR_KEY; the bootJar build resolves Platform's Gradle packages with them."
@@ -120,25 +83,13 @@ on:
       NPM_GH_TOKEN:
         description: "Classic PAT with read:packages, passed to the frontend image build as a BuildKit secret."
         required: false
-      SSH_HOST:
-        description: "Host the deploy job connects to over SSH. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
-        required: false
-      SSH_USER:
-        description: "SSH user on the deploy host. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
-        required: false
-      SSH_KEY:
-        description: "Private SSH key of SSH_USER. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
-        required: false
-      SSH_KNOWN_HOSTS:
-        description: "known_hosts entry of SSH_HOST, pinned at bootstrap by templates/setup-gh-deploy.sh. Keep it a secret of the caller's production environment, which the deploy job reads; a passed value is ignored there."
-        required: false
       SNYK_TOKEN:
         description: "Snyk token for the advisory image scan. Without it the Snyk steps are skipped; Grype stays the gate."
         required: false
 
 concurrency:
   group: deploy-${{ inputs.app-name }}
-  cancel-in-progress: false # nie przerywaj trwającego deployu
+  cancel-in-progress: false # nie przerywaj trwającego buildu ani podpisu
 
 # W reusable workflow blok top-level tylko zawęża to, co przyznał caller; joby dostają resztę jawnie.
 permissions:
@@ -148,7 +99,7 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  # ---- Fail-fast: ujawnij brakującą konfigurację ZANIM ruszy build/deploy ----
+  # ---- Fail-fast: ujawnij brakującą konfigurację ZANIM ruszy build ----
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -160,26 +111,15 @@ jobs:
           GPR_KEY: ${{ secrets.GPR_KEY }}
           NPM_GH_TOKEN: ${{ secrets.NPM_GH_TOKEN }}
           GHCR_OWNER: ${{ vars.GHCR_OWNER }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          SSH_DEPLOY: ${{ inputs.ssh-deploy }}
-          SINGLE_IMAGE: ${{ inputs.single-image }}
-        # SSH_* żyją w environmencie production, którego ten job nie widzi — sprawdza je pierwszy krok joba deploy.
-        # Bez wdrożenia SSH (ssh-deploy: false) DEPLOY_PATH nie jest potrzebny.
         run: |
           # >>> preflight
           set -euo pipefail
-          if [ "${SINGLE_IMAGE:-false}" = "true" ] && [ "$SSH_DEPLOY" = "true" ]; then
-            echo "::error::single-image builds no frontend image, but the SSH deploy runs a backend and a frontend. Call deploy.yml with ssh-deploy: false, as promote.yml does."
-            exit 1
-          fi
-          required=(GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER)
-          if [ "$SSH_DEPLOY" = "true" ]; then required+=(DEPLOY_PATH); fi
           missing=()
-          for v in "${required[@]}"; do
+          for v in GPR_USER GPR_KEY NPM_GH_TOKEN GHCR_OWNER; do
             [ -n "${!v:-}" ] || missing+=("$v")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing secrets or variables: ${missing[*]}. Set them with templates/setup-gh-deploy.sh (docs/reusable-workflows.md, deploy.yml)."
+            echo "::error::Missing secrets or variables: ${missing[*]}. Pass the secrets from the caller and set the variable GHCR_OWNER in the calling repository (docs/reusable-workflows.md, deploy.yml)."
             exit 1
           fi
           echo "Preflight OK."
@@ -192,14 +132,11 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      packages: read
     outputs:
       owner: ${{ steps.v.outputs.owner }}
       backend: ${{ steps.v.outputs.backend }}
       frontend: ${{ steps.v.outputs.frontend }}
       migrate: ${{ steps.v.outputs.migrate }}
-      worker: ${{ steps.v.outputs.backend }} # worker sprzężony z backendem
-      rollback: ${{ steps.v.outputs.rollback }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
@@ -209,8 +146,6 @@ jobs:
         env:
           GHCR_OWNER: ${{ vars.GHCR_OWNER || github.repository_owner }}
           MIGRATE_TAG_SOURCE: ${{ inputs.migrate-tag-source }}
-          ROLLBACK_BACKEND: ${{ inputs.rollback-to-backend }}
-          ROLLBACK_FRONTEND: ${{ inputs.rollback-to-frontend }}
           SINGLE_IMAGE: ${{ inputs.single-image }}
         run: |
           # >>> versions
@@ -221,43 +156,17 @@ jobs:
           if [ "${SINGLE_IMAGE:-false}" != "true" ]; then
             frontend="$(node -p "require('./frontend/package.json').version")"
           fi
-          # Rollback (N-REL-12): tag z wejścia zamiast wersji checkoutu; build-push wtedy nie rusza.
-          backend="${ROLLBACK_BACKEND:-$backend}"
-          frontend="${ROLLBACK_FRONTEND:-$frontend}"
-          rollback=false
-          if [ -n "${ROLLBACK_BACKEND}${ROLLBACK_FRONTEND}" ]; then rollback=true; fi
           if [ "$MIGRATE_TAG_SOURCE" = "changelog" ]; then
             migrate="$(find backend/src/main/resources/db/changelog/changes -mindepth 1 -maxdepth 1 -printf '%f\n' 2>/dev/null | grep -oE '^[0-9]{4}' | sort | tail -1)"
           else
             migrate="$backend"
           fi
-          { echo "owner=$owner"; echo "backend=$backend"; echo "frontend=$frontend"; echo "migrate=$migrate"; echo "rollback=$rollback"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "owner=$owner"; echo "backend=$backend"; echo "frontend=$frontend"; echo "migrate=$migrate"; } | tee -a "$GITHUB_OUTPUT"
           # <<< versions
-      # Rollback wdraża tylko istniejące obrazy: brak tagu w GHCR zatrzymuje go przed SSH na boks.
-      - name: Check that the rollback tags exist in GHCR
-        if: steps.v.outputs.rollback == 'true'
-        env:
-          OWNER: ${{ steps.v.outputs.owner }}
-          APP: ${{ inputs.app-name }}
-          ROLLBACK_BACKEND: ${{ inputs.rollback-to-backend }}
-          ROLLBACK_FRONTEND: ${{ inputs.rollback-to-frontend }}
-          GH_ACTOR: ${{ github.actor }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin > /dev/null
-          for image in ${ROLLBACK_BACKEND:+"$APP-backend:$ROLLBACK_BACKEND"} ${ROLLBACK_FRONTEND:+"$APP-frontend:$ROLLBACK_FRONTEND"}; do
-            if ! docker manifest inspect "ghcr.io/$OWNER/$image" > /dev/null 2>&1; then
-              echo "::error::ghcr.io/$OWNER/$image does not exist, so there is nothing to roll back to."
-              exit 1
-            fi
-            echo "Rolling back to ghcr.io/$OWNER/$image"
-          done
 
-  # ---- Build + push: build-push-action (z SSP) + idempotentny skip istniejącego tagu (z BoS) ----
+  # ---- Build + push: build-push-action + idempotentny skip istniejącego tagu ----
   build-push:
     needs: versions
-    if: needs.versions.outputs.rollback != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.build-timeout-minutes }}
     permissions:
@@ -413,7 +322,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ inputs.app-name }}-frontend
 
       # Cache warstw (cache-from/cache-to wyżej) dzieli limit 10 GB cache Actions repo konsumenta z cache Gradle;
-      # GitHub usuwa najstarsze wpisy po przekroczeniu, więc przy rzadkich deployach to zysk, nie ryzyko.
+      # GitHub usuwa najstarsze wpisy po przekroczeniu, więc przy rzadkich wydaniach to zysk, nie ryzyko.
       # Bramki i podpis dotyczą tych samych bajtów: tag z GHCR zamieniany na digest raz, potem wszystko po digeście.
       # Obraz pominięty jako już istniejący też dostaje digest, więc ponowny run po poprawionym wyjątku go podpisze.
       - name: Resolve the digests of the scanned images
@@ -435,8 +344,8 @@ jobs:
           { echo "backend=$backend"; echo "frontend=$frontend"; echo "images=$backend${frontend:+ $frontend}"
             echo "backend-digest=$backend_digest"; echo "frontend-digest=$frontend_digest"; } | tee -a "$GITHUB_OUTPUT"
           # <<< image-digests
-      # ---- Opt-in gate: skan obrazów PO push, PRZED deployem i podpisem. Fail Grype albo Trivy => job pada => deploy
-      #      się nie ruszy, a job sign nie podpisze obrazu, więc Kyverno go nie wpuści, choć leży w GHCR.
+      # ---- Opt-in gate: skan obrazów PO push, PRZED podpisem. Fail Grype albo Trivy => job pada => job sign nie
+      #      podpisze obrazu, więc Kyverno go nie wpuści, choć leży w GHCR.
       #      Base-image OS CVE, tylko fixowalne. Snyk (druga opinia) biegnie w osobnym jobie snyk-advisory.
       - name: Grype scan — backend (gate)
         if: ${{ inputs.scan-images }}
@@ -476,7 +385,7 @@ jobs:
       # Trivy obok Grype: ten sam próg, tylko podatności z poprawką, każdy obraz skanowany nawet po porażce poprzedniego.
       # Wersja przypięta, setup-trivy sprawdza sumę kontrolną wydania. Wyjątki: .trivyignore.yaml w korzeniu repo
       # (docs/security-scanning.md). Trivy biegnie tu, jak Grype, a nie w osobnym jobie: build-push i tak uruchamia kod
-      # zależności z packages: write, a osobny job bramki musiałby zmienić warunek joba deploy.
+      # zależności z packages: write, a osobny job bramki musiałby zmienić warunek joba sign.
       - name: Set up Trivy
         if: ${{ inputs.scan-images }}
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
@@ -509,8 +418,8 @@ jobs:
           # <<< trivy-scan
 
   # ---- Snyk: druga opinia, nieblokująca, pomijana bez SNYK_TOKEN. Osobny job, bo obraz Snyka dostaje gniazdo
-  #      Dockera hosta: tu może co najwyżej CZYTAĆ GHCR, a w build-push miałby packages: write tuż przed
-  #      deployem. Deploy na ten job nie czeka.
+  #      Dockera hosta: tu może co najwyżej CZYTAĆ GHCR, a w build-push miałby packages: write. Podpis na ten job
+  #      nie czeka.
   snyk-advisory:
     needs: [versions, build-push]
     if: ${{ inputs.scan-images }}
@@ -598,101 +507,3 @@ jobs:
             cosign sign --yes "$image"
           done
           # <<< sign-images
-
-  # ---- Deploy on-box: SSH z PINOWANYM known_hosts; logika w Platform/scripts/deploy-remote.sh ----
-  deploy:
-    needs: [versions, build-push]
-    # Rollback pomija build-push, więc deploy biegnie także po pominiętym buildzie, ale nie po porażce.
-    # ssh-deploy: false (promote.yml) pomija deploy w całości.
-    if: ${{ !cancelled() && inputs.ssh-deploy && needs.versions.result == 'success' && (needs.build-push.result == 'success' || needs.build-push.result == 'skipped') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.deploy-timeout-minutes }}
-    permissions:
-      contents: read
-    environment: production # deployment branch policy `release` + sekrety SSH_* tylko tego environmentu
-    env:
-      OWNER: ${{ needs.versions.outputs.owner }}
-    steps:
-      # >>> ssh-secrets
-      - name: Check the SSH secrets of the production environment
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          missing=()
-          for v in SSH_HOST SSH_USER SSH_KEY SSH_KNOWN_HOSTS; do
-            [ -n "${!v}" ] || missing+=("$v")
-          done
-          if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing secrets of the production environment: ${missing[*]}. Store them with templates/setup-gh-deploy.sh, which keeps SSH_* in that environment."
-            exit 1
-          fi
-      # <<< ssh-secrets
-
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 — repo wołające: compose + Caddyfile
-        with:
-          persist-credentials: false
-
-      # Platform jest publiczny: checkout bez tokenu, więc PAT konsumenta nie ląduje w _platform/.git/config
-      # joba z dostępem SSH do produkcji. platform-ref = tag z `uses:`, żeby workflow i skrypt były z jednej wersji.
-      - name: Pobierz deploy-remote.sh z Platform (jedno źródło prawdy, bez duplikatu w repo)
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          repository: DominikSienkiewicz/Platform
-          ref: ${{ inputs.platform-ref }}
-          path: _platform
-          persist-credentials: false
-
-      - name: Plik z tagami (.env.deploy) — aliasy *_TAG i *_VER (compose SSP używa TAG, BoS VER)
-        run: |
-          {
-            echo "GHCR_OWNER=${{ env.OWNER }}"
-            echo "BACKEND_TAG=${{ needs.versions.outputs.backend }}"
-            echo "BACKEND_VER=${{ needs.versions.outputs.backend }}"
-            echo "FRONTEND_TAG=${{ needs.versions.outputs.frontend }}"
-            echo "FRONTEND_VER=${{ needs.versions.outputs.frontend }}"
-            echo "WORKER_TAG=${{ needs.versions.outputs.worker }}"
-            echo "MIGRATE_TAG=${{ needs.versions.outputs.migrate }}"
-            echo "MIGRATE_VER=${{ needs.versions.outputs.migrate }}"
-          } > .env.deploy
-
-      # known_hosts przypięty przy bootstrapie; setup-gh-deploy.sh sprawdza go względem SSH_HOST_KEY_SHA256, gdy podano.
-      - name: Konfiguracja SSH (known_hosts PINOWANE)
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-
-      - name: Wgranie artefaktów na boks (DEPLOY_PATH)
-        env:
-          COMPOSE_DIR: ${{ inputs.compose-dir }}
-          COMPOSE_FILE: ${{ inputs.compose-file }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-        run: |
-          set -euo pipefail
-          files=("$COMPOSE_DIR/$COMPOSE_FILE" .env.deploy _platform/scripts/deploy-remote.sh)
-          # Caddyfile opcjonalny — aplikacje bez reverse-proxy (np. health-check wprost na backend) go nie mają.
-          [ -f "$COMPOSE_DIR/Caddyfile" ] && files+=("$COMPOSE_DIR/Caddyfile")
-          scp -i ~/.ssh/id_ed25519 "${files[@]}" "$SSH_USER@$SSH_HOST:$DEPLOY_PATH/"
-
-      - name: Deploy (migracje -> backend -> frontend -> caddy, warunkowo + health-gate)
-        env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
-          COMPOSE_FILE: ${{ inputs.compose-file }}
-          BASE_ENV: ${{ inputs.base-env }}
-        run: |
-          set -euo pipefail
-          ssh -i ~/.ssh/id_ed25519 "$SSH_USER@$SSH_HOST" \
-            "cd '$DEPLOY_PATH' && COMPOSE_FILE='$COMPOSE_FILE' BASE_ENV='$BASE_ENV' bash deploy-remote.sh"

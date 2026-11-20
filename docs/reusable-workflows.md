@@ -17,9 +17,9 @@ types and defaults are described in the workflow files themselves (every input h
 - **Pass secrets explicitly** where a workflow declares them, as in the snippets below. Avoid
   `secrets: inherit`: it hands every repository secret to Platform code.
 - **Every job has a time limit.** A calling job cannot set `timeout-minutes` on a `uses:` job, so
-  each workflow takes it as an input: `timeout-minutes` (in `deploy.yml`, `build-timeout-minutes` and
-  `deploy-timeout-minutes`), with a default of a few times the longest measured run. Pass a larger
-  value with `with:` when your build is slower; GitHub's own default is 360 minutes.
+  each workflow takes it as an input: `timeout-minutes` (in `deploy.yml`, `build-timeout-minutes`), with a
+  default of a few times the longest measured run. Pass a larger value with `with:` when your build is
+  slower; GitHub's own default is 360 minutes.
 - **Contract changes are announced.** A new permission, input, secret or changed default is a
   consumer action: it ships in a MINOR release with a **Consumer action required** entry in
   [CHANGELOG.md](../CHANGELOG.md). `templates/tests/workflow-contract.test.sh` fails Platform's CI
@@ -456,10 +456,12 @@ Inputs:
 
 ## deploy.yml
 
-Builds, scans (optionally), pushes and deploys the application images to a host over SSH. With
-`scan-images: true`, Grype and Trivy gate the deploy, and the `sign` job signs the scanned images once
-both gates pass. Snyk runs in a separate advisory job with read-only package access, which the deploy
-does not wait for.
+Builds and pushes the application images, and with `scan-images: true` gates and signs them; it deploys nothing.
+[`promote.yml`](#promoteyml) calls it and commits the new tags to a GitOps repository, which Argo CD deploys. The
+file keeps its name because the cluster admits a signature only when its certificate names
+`.github/workflows/deploy.yml` ([signed images](security-scanning.md#signed-images)). Grype and Trivy gate the
+images, and the `sign` job signs the scanned images once both gates pass. Snyk runs in a separate advisory job
+with read-only package access, which the signing does not wait for.
 
 - Permissions: `contents: read`, `packages: write` (to push to GHCR), and `id-token: write` for the
   `sign` job. GitHub checks the permissions of every called job before the run starts, so grant it
@@ -474,43 +476,18 @@ does not wait for.
   [security-scanning.md](security-scanning.md#signed-images).
 - Secrets: `GPR_USER`, `GPR_KEY`, `NPM_GH_TOKEN` and optionally `SNYK_TOKEN`, passed by the caller.
   They are declared optional so that the `preflight` job, not GitHub, names the missing ones.
-- Environment `production`: the `deploy` job runs in it. Its deployment branch policy admits only
-  `release`, and `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `SSH_KNOWN_HOSTS` are secrets of that
-  environment, so a workflow on any other branch can neither deploy nor read the SSH key. The job
-  checks them in its first step. GitHub offers required reviewers for private repositories only on
-  Enterprise, so the branch policy is the gate. Environment secrets in a private repository need
-  GitHub Pro, Team or Enterprise.
-- Set all of it with `templates/setup-gh-deploy.sh` from `templates/secrets.local.example`: it creates
-  the environment and its `release` policy, stores the SSH secrets there, and names the
-  repository-level `SSH_*` secrets an older bootstrap left, with the commands that delete them. Give it
-  `SSH_HOST_KEY_SHA256` from a trusted channel, and it refuses a scanned host key with another
-  fingerprint instead of trusting it on first use.
-- Variables: `GHCR_OWNER`, `DEPLOY_PATH`.
-- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. Set `platform-ref`
-  to the tag in `uses:`, so that `scripts/deploy-remote.sh` comes from the same release as the
-  workflow; its default `v1` is transitional.
-- Rollback dispatch: `rollback-to-backend` and `rollback-to-frontend` take a tag that is already in GHCR.
-  Either one skips `build-push`, the `versions` job checks that the tags exist, and the deploy runs the
-  given tag; an empty one keeps the version of the checkout. Wire them to `workflow_dispatch` inputs of
-  the caller. The migrate tag follows the backend, so a rollback runs the older changelog, which finds
-  nothing pending.
-- No SSH: `ssh-deploy: false` builds, scans and pushes the images and skips the `deploy` job; the
-  preflight then does not require `DEPLOY_PATH`, and the SSH secrets are not read. The default `true`
-  keeps the behaviour above. The `backend-tag` and `frontend-tag` outputs carry the pushed tags;
-  [`promote.yml`](#promoteyml) uses them.
+- Variables: `GHCR_OWNER`.
+- Inputs: [deploy.yml](../.github/workflows/deploy.yml); `app-name` is required. The `backend-tag` and
+  `frontend-tag` outputs carry the pushed tags; [`promote.yml`](#promoteyml) uses them.
 - One image: `single-image: true` is for an application whose boot jar serves its own frontend. Before
   `bootJar`, `build-push` sets up Node 24 and runs `npm ci --ignore-scripts` in `frontend/` with
   `NPM_GH_TOKEN` as `GITHUB_TOKEN`, which the `.npmrc` template reads, then `npm run build` without any
   credential; the application's build packs the export into the jar. Only `<app>-backend` is built,
-  scanned and pushed, `frontend/package.json` is not read and `frontend-tag` is empty. It requires
-  `ssh-deploy: false`: the preflight refuses it with the SSH deploy, which runs a backend and a frontend.
+  scanned and pushed, `frontend/package.json` is not read and `frontend-tag` is empty.
   [`promote.yml`](#promoteyml) passes it on from its own `single-image` input.
-- Rollback on the host: `scripts/deploy-remote.sh` writes the running tags to `.env.deploy.previous`
-  before it replaces a layer. When the new backend, or a frontend whose compose service defines a
-  healthcheck, does not become healthy within two minutes, it recreates that layer with the previous
-  tag from the local image and the job fails with `ROLLED BACK to <tag>`. Database migrations are never
-  rolled back, so every schema change must be expand/contract: the previous release must still run on
-  the new schema. A first deploy has nothing to roll back to and fails as before.
+- No SSH deploy: since 1.13.0 there is no `deploy` job, `production` environment, SSH secret, compose input or
+  rollback dispatch, because no consumer deployed over SSH. Roll back a promotion by reverting its commit in the
+  GitOps repository.
 
 ```yaml
 permissions:
@@ -518,11 +495,11 @@ permissions:
   packages: write
   id-token: write
 jobs:
-  deploy:
+  build:
     uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
     with:
       app-name: myapp
-      platform-ref: vX.Y.Z
+      scan-images: true
     secrets:
       GPR_USER: ${{ secrets.GPR_USER }}
       GPR_KEY: ${{ secrets.GPR_KEY }}
@@ -536,24 +513,16 @@ Inputs:
 | Input | Type | Default | Description |
 |---|---|---|---|
 | `build-timeout-minutes` | number | `30` | Minutes before the build-push job is cancelled; GitHub's default is 360. |
-| `deploy-timeout-minutes` | number | `20` | Minutes before the deploy job (upload, migrations, health gate) is cancelled; GitHub's default is 360. |
 | `app-name` | string | required | Image name prefix, e.g. skillsprintplus or bookofstyling. |
-| `compose-dir` | string | `.` | Directory with the compose file and the Caddyfile on the host (e.g. '.' or 'infra'). |
 | `has-worker` | boolean | `false` | Also build the <app>-eval-worker image. |
 | `migrate-image-suffix` | string | `migrate` | Suffix of the migration image (e.g. 'migrate' or 'db-migrate'). |
 | `migrate-tag-source` | string | `backend` | Tag of the migration image: 'backend' (the backend version) or 'changelog' (the changelog number). |
 | `java-version` | string | `27` | JDK that runs Gradle. Platform builds and tests its plugins with Gradle on Java 27 (ADR-0034), the only JDK it supports for Gradle. |
 | `toolchain-java-version` | string | `27` | Toolchain JDK that seniordev.java-conventions compiles with; installed by setup-java, not Foojay. |
-| `has-migrate` | boolean | `true` | Build and run a separate migration image. Use false for applications that migrate on start (Flyway). |
-| `scan-images` | boolean | `false` | Scan the pushed images by digest before deploying (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in. |
+| `has-migrate` | boolean | `true` | Build a separate migration image. Use false for applications that migrate on start (Flyway). |
+| `scan-images` | boolean | `false` | Scan the pushed images by digest (Grype and Trivy gates, optional Snyk), then sign the scanned digests with cosign keyless; the caller grants id-token: write. Opt-in. |
 | `scan-severity` | string | `high` | Fail threshold of the Grype and Trivy gates for scan-images: negligible, low, medium, high or critical. |
-| `compose-file` | string | `docker-compose.prod.yml` | Compose file name in compose-dir. |
-| `base-env` | string | empty | Base env file on the host; empty picks .env.prod, then .env. |
-| `platform-ref` | string | `v1` | Ref of DominikSienkiewicz/Platform that scripts/deploy-remote.sh is taken from; set it to the tag pinned in uses:. |
-| `ssh-deploy` | boolean | `true` | Deploy over SSH after the build. Set false to only build and scan the images, as promote.yml does; the SSH secrets and DEPLOY_PATH are then not required. |
-| `single-image` | boolean | `false` | Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. Requires ssh-deploy: false. |
-| `rollback-to-backend` | string | empty | Backend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
-| `rollback-to-frontend` | string | empty | Frontend image tag already in GHCR to deploy again, for a rollback dispatch; empty deploys the version of the checkout. Either rollback input skips build-push. |
+| `single-image` | boolean | `false` | Build one image, for an application whose boot jar serves its frontend: npm ci and npm run build in frontend/ before bootJar, then only the backend image is built, scanned and pushed, and frontend-tag is empty. |
 <!-- /docs-gen -->
 
 ## promote.yml

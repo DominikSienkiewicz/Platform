@@ -26,9 +26,7 @@ container-scan.yml secret snyk_token required=false
 container-scan.yml permissions contents: read
 container-scan.yml permissions packages: read
 deploy.yml input build-timeout-minutes type=number default=30
-deploy.yml input deploy-timeout-minutes type=number default=20
 deploy.yml input app-name type=string required=true
-deploy.yml input compose-dir type=string default="."
 deploy.yml input has-worker type=boolean default=false
 deploy.yml input migrate-image-suffix type=string default="migrate"
 deploy.yml input migrate-tag-source type=string default="backend"
@@ -37,32 +35,20 @@ deploy.yml input toolchain-java-version type=string default="27"
 deploy.yml input has-migrate type=boolean default=true
 deploy.yml input scan-images type=boolean default=false
 deploy.yml input scan-severity type=string default=high
-deploy.yml input compose-file type=string default="docker-compose.prod.yml"
-deploy.yml input base-env type=string default=""
-deploy.yml input platform-ref type=string default="v1"
-deploy.yml input ssh-deploy type=boolean default=true
 deploy.yml input single-image type=boolean default=false
-deploy.yml input rollback-to-backend type=string default=""
-deploy.yml input rollback-to-frontend type=string default=""
 deploy.yml secret GPR_USER required=false
 deploy.yml secret GPR_KEY required=false
 deploy.yml secret NPM_GH_TOKEN required=false
-deploy.yml secret SSH_HOST required=false
-deploy.yml secret SSH_USER required=false
-deploy.yml secret SSH_KEY required=false
-deploy.yml secret SSH_KNOWN_HOSTS required=false
 deploy.yml secret SNYK_TOKEN required=false
 deploy.yml permissions contents: read
 deploy.yml job preflight permissions {}
 deploy.yml job versions permissions contents: read
-deploy.yml job versions permissions packages: read
 deploy.yml job build-push permissions contents: read
 deploy.yml job build-push permissions packages: write
 deploy.yml job snyk-advisory permissions contents: read
 deploy.yml job snyk-advisory permissions packages: read
 deploy.yml job sign permissions id-token: write
 deploy.yml job sign permissions packages: write
-deploy.yml job deploy permissions contents: read
 frontend-ci.yml input timeout-minutes type=number default=20
 frontend-ci.yml input working-directory type=string default=frontend
 frontend-ci.yml input node-version type=string default="24"

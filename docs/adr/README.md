@@ -49,7 +49,7 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0013](0013-catalog-for-aliases-bom-for-constraints.md) | The catalog carries aliases and versions, platform-bom carries constraints | Accepted |
 | [0014](0014-exact-pins-moved-by-platform-bump.md) | Consumers pin exact releases, and platform-bump moves every pin | Accepted |
 | [0015](0015-rulesets-protect-main-and-release-tags.md) | Rulesets protect main and the release tags without a required pull request | Accepted |
-| [0016](0016-production-deploys-from-the-release-branch.md) | Production deploys run only from the release branch, with rollback by dispatch | Accepted |
+| [0016](0016-production-deploys-from-the-release-branch.md) | Production deploys run only from the release branch, with rollback by dispatch | Superseded |
 | [0017](0017-artifact-attestations-and-consumer-verification.md) | Artifacts carry GitHub attestations, and consumers can verify them | Accepted |
 | [0018](0018-private-consumer-data-stays-local.md) | Nothing about the private consumers runs in Platform's public CI | Accepted |
 | [0019](0019-new-failure-modes-warn-first.md) | A new failure mode warns first and fails in a later MINOR | Accepted |

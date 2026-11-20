@@ -8,7 +8,6 @@
     { "source": "worktree-status.sh", "target": "scripts/worktree-status.sh", "optional": true },
     { "source": "bump-version.sh", "target": "scripts/bump-version.sh" },
     { "source": ".editorconfig", "target": ".editorconfig" },
-    { "source": "setup-gh-deploy.sh", "target": "scripts/setup-gh-deploy.sh", "optional": true },
     { "source": "devcontainer/Dockerfile", "target": ".devcontainer/Dockerfile", "optional": true },
     { "source": "devcontainer/devcontainer.json", "target": ".devcontainer/devcontainer.json", "optional": true },
     { "source": "devcontainer/post-create.sh", "target": ".devcontainer/post-create.sh", "optional": true },

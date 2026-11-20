@@ -580,7 +580,7 @@ PY
 fi
 
 # --- Reusable workflows Platform: `uses: …/Platform/.github/workflows/<w>.yml@<ref>` i wejście `platform-ref:`
-#     callera deploy.yml idą na v$TARGET razem z pinami (Decyzja 3: dokładny tag przesuwany przez bump). Ruchome
+#     callera promote.yml idą na v$TARGET razem z pinami (Decyzja 3: dokładny tag przesuwany przez bump). Ruchome
 #     @v1 też przechodzi na dokładny tag — to migracja z Decyzji 3; referencje po SHA zostają nietknięte. ---
 # platform-bump:workflows
 for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do

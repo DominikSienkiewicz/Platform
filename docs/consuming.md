@@ -406,10 +406,8 @@ The template also declares how the container reports health and sizes its heap:
   (404, `management.endpoint.health.probes.enabled` is off) it falls back to `/actuator/health`. The port
   is `MANAGEMENT_SERVER_PORT`, then `SERVER_PORT`, then 8080; the endpoint must answer without
   authentication, as the security starter's default `permitted-paths` allow. The application gets 60 s
-  to start; after that, six failed probes 10 s apart mark the container unhealthy.
-  [`deploy-remote.sh`](../scripts/deploy-remote.sh) waits for `healthy` only when a container has a
-  healthcheck, and a `healthcheck:` in the compose file replaces this one, so delete the compose-level
-  check of the backend service.
+  to start; after that, six failed probes 10 s apart mark the container unhealthy. A `healthcheck:` in a
+  compose file replaces this one, so delete the compose-level check of the backend service.
 - `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"` sizes the heap from the
   container's memory limit and ends the process on `OutOfMemoryError`, so the restart policy starts a
   fresh one. A compose `environment:` entry replaces the whole variable, not one flag.
@@ -682,7 +680,6 @@ its own as `./gradlew platformDoctor`; resolving the toolchain may provision a J
 | PD041 | Node is 22.13 or newer |
 | PD042 | `frontend/package-lock.json` is committed, as `npm ci` needs |
 | PD043 | npm resolves the pinned `@dominiksienkiewicz/versions` |
-| PD050 | `.secrets.local` is ignored when the repository deploys |
 | PD060 | `backend/Dockerfile` runs Java 27 or newer for a release with the 27 toolchain |
 | PD070 | whether `AI_AGENT` is on |
 | PD080 | (`platformDoctor`) the settings plugin, the catalog's `platform` version and `platformVersion` are the same release |

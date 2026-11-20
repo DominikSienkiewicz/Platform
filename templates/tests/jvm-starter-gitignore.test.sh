@@ -17,11 +17,11 @@ for starter in java-library spring-app; do
   [[ "$(rules "$gitignore")" == "$expected" ]] \
     || fail "$starter/.gitignore rozjechał się z root.gitignore + backend.gitignore"
   cp "$gitignore" "$WORK/.gitignore"
-  for path in .secrets.local .env .env.local .idea/workspace.xml bin/main/App.class \
+  for path in .env .env.local .idea/workspace.xml bin/main/App.class \
     build/libs/app.jar .gradle/caches out/production; do
     git -C "$WORK" check-ignore -q --no-index -- "$path" || fail "$starter/.gitignore nie ignoruje $path"
   done
-  for path in .secrets.local.example .env.example gradle/wrapper/gradle-wrapper.jar src/main/java/App.java; do
+  for path in .env.example gradle/wrapper/gradle-wrapper.jar src/main/java/App.java; do
     git -C "$WORK" check-ignore -q --no-index -- "$path" && fail "$starter/.gitignore ignoruje $path"
   done
 done

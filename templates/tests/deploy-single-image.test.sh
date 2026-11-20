@@ -24,21 +24,12 @@ input=$(sed -n '/^      single-image:$/,/^      [a-z-]*:$/p' "$workflow")
 grep -qFx '        type: boolean' <<< "$input" || fail 'single-image must be a boolean'
 grep -qFx '        default: false' <<< "$input" || fail 'single-image must default to false, so a consumer of two images behaves as before'
 
-# --- preflight: jeden obraz nie idzie przez SSH, które wdraża dwa ---
+# --- preflight: jeden obraz wymaga tych samych sekretów co dwa ---
 block preflight > "$tmp/preflight.sh"
 [[ -s "$tmp/preflight.sh" ]] || fail 'deploy.yml has no preflight block between its markers'
-grep -qFx '          SINGLE_IMAGE: ${{ inputs.single-image }}' <<< "$(job preflight)" \
-  || fail 'the preflight step must pass inputs.single-image as SINGLE_IMAGE in its env:'
-preflight() { (env -u DEPLOY_PATH GPR_USER=u GPR_KEY=k NPM_GH_TOKEN=n GHCR_OWNER=o "$@" bash "$tmp/preflight.sh") > "$tmp/out" 2>&1; }
-preflight SINGLE_IMAGE=true SSH_DEPLOY=false || fail 'a single image without SSH must pass the preflight'
-preflight SINGLE_IMAGE=true SSH_DEPLOY=true DEPLOY_PATH=/srv/app \
-  && fail 'the preflight must refuse a single image with the SSH deploy, which deploys a backend and a frontend'
-if ! grep -qF 'single-image' "$tmp/out" || ! grep -qF 'ssh-deploy' "$tmp/out"; then
-  fail 'the refusal must name single-image and ssh-deploy'
-fi
-preflight SINGLE_IMAGE=false SSH_DEPLOY=true DEPLOY_PATH=/srv/app || fail 'two images with SSH must still pass the preflight'
-preflight SSH_DEPLOY=true DEPLOY_PATH=/srv/app || fail 'a preflight without SINGLE_IMAGE must behave as for two images'
-(env -u NPM_GH_TOKEN GPR_USER=u GPR_KEY=k GHCR_OWNER=o SINGLE_IMAGE=true SSH_DEPLOY=false bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
+(env GPR_USER=u GPR_KEY=k NPM_GH_TOKEN=n GHCR_OWNER=o bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
+  || fail 'a single image must pass the preflight when every secret and variable is set'
+(env -u NPM_GH_TOKEN GPR_USER=u GPR_KEY=k GHCR_OWNER=o bash "$tmp/preflight.sh") > "$tmp/out" 2>&1 \
   && fail 'a single image must still require NPM_GH_TOKEN: npm ci of the export reads it'
 
 # --- wersje: bez wersji frontendu, więc frontend/package.json nie jest potrzebny ---
@@ -51,12 +42,17 @@ printf 'version=2.0.0\n' > "$tmp/checkout/backend/gradle.properties"
 versions() {
   : > "$tmp/github-output"
   (cd "$tmp/checkout" && env GITHUB_OUTPUT="$tmp/github-output" GHCR_OWNER=Owner MIGRATE_TAG_SOURCE=backend \
-    ROLLBACK_BACKEND='' ROLLBACK_FRONTEND='' "$@" bash "$tmp/versions.sh") > "$tmp/out" 2>&1 || return 1
+    "$@" bash "$tmp/versions.sh") > "$tmp/out" 2>&1 || return 1
   paste -sd' ' - < "$tmp/github-output"
 }
 outputs=$(versions SINGLE_IMAGE=true) || fail 'with a single image the versions block must run without frontend/package.json'
-[[ "$outputs" == 'owner=owner backend=2.0.0 frontend= migrate=2.0.0 rollback=false' ]] \
+[[ "$outputs" == 'owner=owner backend=2.0.0 frontend= migrate=2.0.0' ]] \
   || fail "a single image takes the backend version and leaves the frontend tag empty, got: $outputs"
+mkdir -p "$tmp/checkout/frontend"
+printf '{ "version": "3.0.0" }\n' > "$tmp/checkout/frontend/package.json"
+outputs=$(versions SINGLE_IMAGE=false) || fail 'with two images the versions block must run'
+[[ "$outputs" == 'owner=owner backend=2.0.0 frontend=3.0.0 migrate=2.0.0' ]] \
+  || fail "two images take the versions of the checkout, got: $outputs"
 
 # --- build-push: eksport przed bootJar, bez obrazu frontendu ---
 single_backend_if="        if: \${{ inputs.single-image && steps.exists.outputs.backend == 'false' }}"
@@ -109,4 +105,4 @@ snyk_pulls() {
 [[ "$(snyk_pulls SINGLE_IMAGE=false FRONTEND_VER=3.0.0)" == 'ghcr.io/o/app-backend:2.0.0 ghcr.io/o/app-frontend:3.0.0' ]] \
   || fail 'with two images Snyk must still scan the backend and the frontend'
 
-echo 'OK: single-image builds the export into the jar and only the backend image; two images and SSH are unchanged'
+echo 'OK: single-image builds the export into the jar and only the backend image; two images are unchanged'
