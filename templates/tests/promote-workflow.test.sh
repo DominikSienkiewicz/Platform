@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# promote.yml i deploy.yml bez ścieżki SSH: deploy.yml tylko buduje, skanuje i podpisuje, a promocja buduje przez niego
-# i zapisuje tagi w repozytorium GitOps. Blok preflightu jest wycinany między znacznikami i uruchamiany.
+# deploy.yml z drzewa nie ma ścieżki SSH: tylko buduje, skanuje i podpisuje. promote.yml buduje przez deploy.yml
+# przypięty po SHA (1.10.1, z ssh-deploy: false) i zapisuje tagi w repozytorium GitOps. Blok preflightu jest wycinany
+# między znacznikami i uruchamiany.
 # shellcheck disable=SC2016 # literal GitHub expressions
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -12,7 +13,7 @@ fail() { echo "FAIL: $*" >&2; cat "$tmp/out" 2>/dev/null >&2 || true; exit 1; }
 
 [[ -f "$promote" ]] || fail 'promote.yml does not exist'
 
-# --- deploy.yml: build, skan i podpis, bez wdrożenia SSH ---
+# --- deploy.yml z drzewa (nie ten przypięty w promote.yml): build, skan i podpis, bez wdrożenia SSH ---
 grep -qE '^  deploy:$' "$deploy" && fail 'deploy.yml must have no deploy job: Argo CD deploys what promote.yml commits'
 grep -qE '^      ssh-deploy:$' "$deploy" && fail 'deploy.yml must not declare the ssh-deploy input: it deploys nothing over SSH'
 grep -q 'SSH_' "$deploy" && fail 'deploy.yml must not declare or read SSH_ secrets'
@@ -44,19 +45,25 @@ grep -qE '^[[:space:]]+(- )?uses: *(\./|\$/)' "$promote" \
 build_uses=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | grep -E '^    uses: ' || true)
 [[ "$build_uses" =~ ^\ {4}uses:\ DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
   || fail 'promote.yml must call deploy.yml by its full reference at a commit SHA with a # vX.Y.Z comment'
-# Bez ssh-deploy: false starszy deploy.yml (domyślnie ssh-deploy: true) wdrażałby przez SSH, więc pin to co najmniej
-# wydanie, w którym deploy.yml tylko buduje, skanuje i podpisuje.
-printf '1.13.0\n%s\n' "${BASH_REMATCH[1]}" | sort -C -V \
-  || fail 'deploy.yml deploys nothing over SSH since v1.13.0, and promote.yml no longer passes ssh-deploy: false: an older pin would deploy over SSH'
-build_with=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" \
-  | awk '/^    with:$/ { p = 1; next } p && /^      [a-z-]+:/ { sub(/^ +/, ""); sub(/:.*/, ""); print; next } p { exit }')
-[[ -n "$build_with" ]] || fail 'the build job must pass its inputs to deploy.yml with with:'
-grep -qx 'ssh-deploy' <<< "$build_with" && fail 'promote.yml must not pass ssh-deploy: the pinned deploy.yml has no such input'
-# Wejścia sprawdzane na deploy.yml z drzewa: przy tym pinie to ten sam plik, a GitHub odrzuca run z nieznanym wejściem.
-deploy_inputs=$(sed -n '/^    inputs:$/,/^    outputs:$/p' "$deploy")
-for input in $build_with; do
-  grep -qE "^      $input:$" <<< "$deploy_inputs" || fail "promote.yml passes $input, which deploy.yml does not declare"
-done
+# Przypięty deploy.yml deklaruje ssh-deploy (domyślnie true) i platform-ref od v1.8.9 do 1.13.0, które je usuwa. Pin
+# i wejścia przesuwa razem późniejsze wydanie, gdy tag 1.13.0 już istnieje (action-pins, RELEASING.md). Płytki
+# checkout CI nie ma przypiętego pliku, więc wejścia to dokładny blok with: z 1.12.0, a nie deploy.yml z drzewa.
+pinned=${BASH_REMATCH[1]}
+printf '1.8.9\n%s\n' "$pinned" | sort -C -V || fail 'deploy.yml has the ssh-deploy input since v1.8.9: promote.yml must not pin an older one'
+if [[ "$pinned" == 1.13.0 ]] || ! printf '%s\n1.13.0\n' "$pinned" | sort -C -V; then
+  fail "promote.yml passes ssh-deploy and platform-ref, which deploy.yml drops in v1.13.0: move the pin (v$pinned) together with the build inputs"
+fi
+grep -qE '^      ssh-deploy: false$' "$promote" || fail 'promote.yml must call deploy.yml with ssh-deploy: false, or the pinned deploy.yml deploys over SSH'
+build_with=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | awk '/^    with:$/ { p = 1; next } p && /^      / { print; next } p { exit }')
+expected_with='      app-name: ${{ inputs.app-name }}
+      ssh-deploy: false
+      scan-images: true
+      has-migrate: false
+      single-image: ${{ inputs.single-image }}
+      platform-ref: ${{ inputs.platform-ref }}
+      build-timeout-minutes: ${{ inputs.build-timeout-minutes }}'
+[[ "$build_with" == "$expected_with" ]] \
+  || fail "the build job must pass the pinned deploy.yml exactly the inputs of 1.12.0, got: $(paste -sd'|' - <<< "$build_with")"
 grep -qE '^      scan-images: true$' "$promote" || fail 'promote.yml must scan the images'
 grep -qE '^      has-migrate: false$' "$promote" || fail 'promote.yml must build without a migration image'
 grep -qE 'secrets:[[:space:]]*inherit' "$promote" && fail 'promote.yml must pass secrets explicitly, never inherit'
@@ -130,4 +137,4 @@ done
 awk '/^        run: \|$/ { r = 1; next } /^      - |^        [a-z-]+:/ { r = 0 } r' "$promote" | grep -qE '\$\{\{ *inputs\.' \
   && fail 'values reach run steps through env:, never expanded inside a script'
 
-echo 'OK: deploy.yml deploys nothing over SSH; promote.yml builds through it and commits the tags'
+echo 'OK: deploy.yml deploys nothing over SSH; promote.yml builds through its pinned deploy.yml with ssh-deploy: false and commits the tags'

@@ -527,9 +527,10 @@ Inputs:
 
 ## promote.yml
 
-Promotes the images of an application to a GitOps repository, for a cluster that Argo CD keeps in sync with that
-repository ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). The `build` job calls `deploy.yml` with
-`scan-images: true` and `has-migrate: false`, so the images are built and pushed, gated by
+Promotes the images of an application to a GitOps repository instead of deploying them over SSH, for a
+cluster that Argo CD keeps in sync with that repository
+([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). The `build` job calls `deploy.yml` with
+`ssh-deploy: false`, `scan-images: true` and `has-migrate: false`, so the images are built and pushed, gated by
 Grype and Trivy, and signed with cosign keyless once both gates pass
 ([signed images](security-scanning.md#signed-images)). The `promote` job then mints a GitHub App token and runs
 [`scripts/promote-image.sh`](../scripts/promote-image.sh), which sets `image.tag` in `values-backend.yaml`
@@ -549,7 +550,7 @@ commit; the workflow does not wait for it and runs no smoke test.
   `PROMOTE_APP_KEY`, the private key of the GitHub App, which is required. Pass them explicitly: a called
   workflow gets nothing else, and `secrets: inherit` would hand over every secret of the repository.
 - Variables: `GHCR_OWNER`, as for `deploy.yml`, and `PROMOTE_APP_ID`, the App identifier that the snippet below
-  passes as `promote-app-id`.
+  passes as `promote-app-id`. `DEPLOY_PATH` and the SSH secrets are not used.
 - GitHub App: install it on the GitOps repository only, with the repository permission **Contents: Read and
   write** and nothing else. The workflow asks for a token on that one repository with `contents: write`, so
   the App cannot reach any other repository, and the token is revoked when the job ends. Pass the App's
@@ -574,10 +575,11 @@ commit; the workflow does not wait for it and runs no smoke test.
   looks a relative reference in a workflow called through an annotated tag up at the tag object and fails at startup
   with "workflow was not found" ([ADR-0035](adr/0035-promotion-by-commit-for-argo-cd.md)). So a change to `deploy.yml`
   reaches `promote.yml` only when that pin moves, in a later release. Version 1.8.9 of `promote.yml` cannot start;
-  use 1.8.10 or later. The pin is 1.13.0, whose `deploy.yml` deploys nothing over SSH, so `build` passes no
-  `ssh-deploy: false`; an older pin would deploy over SSH without it. That `deploy.yml` gates with Trivy and signs,
-  as since 1.9.0, signs when the repository owner is the value of a secret, and frees the disk for Trivy. A promotion
-  fails, and commits nothing, when either gate or the signature fails. Accept a finding in both `.grype.yaml`
+  use 1.8.10 or later. The pin is 1.10.1. Its `deploy.yml` gates with Trivy and signs, as since 1.9.0. It also signs
+  when the repository owner is the value of a secret, and it frees the disk for Trivy. The pin stays at 1.10.1 in
+  1.13.0, so `build` still passes that `deploy.yml` `ssh-deploy: false` and `platform-ref`; the `deploy.yml` without
+  the SSH deploy reaches promotions when a later release moves the pin to the commit of the 1.13.0 tag. A promotion fails, and commits
+  nothing, when either gate or the signature fails. Accept a finding in both `.grype.yaml`
   and `.trivyignore.yaml` ([accepting a finding](security-scanning.md#accepting-a-finding)).
 
 ```yaml
