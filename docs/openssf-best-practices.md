@@ -85,7 +85,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 |---|---|---|---|
 | `know_secure_design` | MUST | **Owner action** | A statement about the maintainer's knowledge. Supporting material: [SECURITY.md](../SECURITY.md) "Security mechanisms", [security scanning](security-scanning.md), actions pinned by SHA, `permissions:` set per workflow, and the [rulesets](../.github/rulesets/main.json). |
 | `know_common_errors` | MUST | **Owner action** | The same statement, for common error types and their mitigations. |
-| `crypto_published` | MUST | **N/A** | Platform contains no cryptographic code. The security starter configures Spring Security and delegates TLS and token handling to it. |
+| `crypto_published` | MUST | **N/A** | Platform contains no cryptographic code. |
 | `crypto_call` | SHOULD | **N/A** | Nothing is re-implemented; see `crypto_published`. |
 | `crypto_floss` | MUST | **N/A** | No cryptographic functionality of its own. |
 | `crypto_keylength` | MUST | **N/A** | No keys are generated or configured by default. |

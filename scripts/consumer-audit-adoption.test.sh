@@ -10,7 +10,7 @@ fail() { echo "FAIL: $*" >&2; echo "$out" >&2; exit 1; }
 
 cat > "$work/README.md" <<'MD'
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) | all five |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` (*incubating*) | GitHub Packages (Maven) | none |
+| `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/catalog/` | its bundles `modulith-web` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | none |
 | `frontend/packages/versions/` | `@acme/versions` | GitHub Packages (npm) | all |
 | `frontend/packages/query/` | `@acme/query` (*incubating*) | not published | none |
@@ -61,7 +61,7 @@ audit() {
 out=$(audit)
 for expected in \
   '| `platform-test-fixtures` | adopted | acme/one, acme/two | ok |' \
-  '| `platform-security-starter` | incubating | — | ok |' \
+  '| `platform-observability-starter` | incubating | — | ok |' \
   '| `modulith-web` | incubating | acme/one | adopted: drop the incubating label |' \
   '| `dev-docker-compose` | incubating | — | ok |' \
   '| `@acme/versions` | adopted | — | no consumer: label it incubating |' \

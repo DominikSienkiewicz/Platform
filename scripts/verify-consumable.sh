@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # verify-consumable.sh <version> — czy opublikowane wydanie da się skonsumować tak, jak robi to konsument:
 # z prawdziwego GitHub Packages, z czystym GRADLE_USER_HOME i bez -PplatformRepository.
-#   Gradle: kopie templates/jvm/java-library (+ test-fixtures i security-starter z katalogu) i spring-app na pinie
-#           <version> rozwiązują settings plugin, markery convention pluginów, wariant katalogu i obie biblioteki.
+#   Gradle: kopie templates/jvm/java-library (+ test-fixtures z katalogu) i spring-app na pinie <version>
+#           rozwiązują settings plugin, markery convention pluginów, wariant katalogu i test-fixtures.
 #   npm:    każda publiczna paczka z frontend/packages instaluje się w <version> i zawiera pliki, które deklaruje
 #           (main, bin, exports); integralność trafia do podsumowania joba.
 # Pierwsza próba każdego rozwiązania dostaje jedną powtórkę: GitHub Packages bywa chwilę za świeżą publikacją.
@@ -43,7 +43,6 @@ cat >> "$work/java-library/build.gradle.kts" <<'KTS'
 
 dependencies {
 	testImplementation(libs.platform.test.fixtures)
-	implementation(libs.platform.security.starter)
 }
 KTS
 for starter in java-library spring-app; do

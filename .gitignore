@@ -32,7 +32,6 @@ gradle/*/bin/
 node_modules/
 **/dist/
 *.tsbuildinfo
-frontend/packages/ui-registry/public/r/
 
 # === Logs ===
 *.log

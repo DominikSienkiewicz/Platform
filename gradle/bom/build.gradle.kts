@@ -1,7 +1,7 @@
 // platform-bom (N-CAP-12, ADR-0013): kanał OGRANICZEŃ obok katalogu. Katalog trzyma aliasy i wersje, a BOM
 // to, czego TOML nie wyrazi: importy BOM-ów, podłogi CVE i nadpisania zgodności z uzasadnieniem (because).
-// Konsument: implementation(platform(libs.platform.bom)); test-fixtures i security-starter importują go zamiast
-// osobnych BOM-ów. Każda wersja pochodzi z gradle/catalog; podłogę zdejmuje się razem z wpisem w katalogu.
+// Konsument: implementation(platform(libs.platform.bom)); test-fixtures i observability-starter importują go
+// zamiast osobnych BOM-ów. Każda wersja pochodzi z gradle/catalog; podłogę zdejmuje się razem z wpisem w katalogu.
 plugins {
 	`java-platform`
 	`maven-publish`
@@ -48,9 +48,7 @@ dependencies {
 		}
 		api(libs.archunit.junit5)
 		api(libs.platform.test.fixtures)
-		api(libs.platform.security.starter)
 		api(libs.platform.observability.starter)
-		api(libs.platform.web.starter)
 	}
 }
 

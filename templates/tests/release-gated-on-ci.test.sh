@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Release must publish only after green CI on the tagged commit.
 #
-# Structure: release.yml calls ci.yml as `verify`, every publishing job needs it and the registry
-# build runs outside the jobs holding `packages: write`. Behaviour: the tag<->version guard is cut
-# out of release.yml between its markers and run as-is, so the test exercises the shipped code.
+# Structure: release.yml calls ci.yml as `verify`, every publishing job needs it and only jobs that
+# exist, and the npm job holding `packages: write` runs no build. Behaviour: the tag<->version guard
+# is cut out of release.yml between its markers and run as-is, so the test exercises the shipped code.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
@@ -102,12 +102,12 @@ grep -Eq '^    uses: \./\.github/workflows/ci\.yml[[:space:]]*$' <<<"$verify_blo
 for job in gradle npm; do
   assert_needs "$job" version
   assert_needs "$job" verify
-  assert_needs "$job" registry-build
+  # GitHub odrzuca cały workflow, gdy needs wskazuje job, którego nie ma (np. po usunięciu registry-build).
+  while IFS= read -r need; do
+    [[ -n "$(job_block "$need")" ]] || fail "release.yml job '$job' needs '$need', which is not a job of release.yml"
+  done < <(job_needs "$job")
 done
 
-if job_mentions registry-build 'packages:[[:space:]]*write'; then
-  fail "release.yml job 'registry-build' runs third-party build code and must not hold packages: write"
-fi
 if job_mentions npm '[[:space:]]build[[:space:]]'; then
   fail "release.yml job 'npm' holds packages: write and must not run any build"
 fi

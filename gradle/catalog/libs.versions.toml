@@ -65,9 +65,7 @@ nullaway = { group = "com.uber.nullaway", name = "nullaway", version.ref = "null
 # --- Artefakty platformy (pin = dynamiczny `platform`) ---
 platform-bom = { group = "pl.seniordeveloper", name = "platform-bom", version.ref = "platform" }
 platform-test-fixtures = { group = "pl.seniordeveloper", name = "platform-test-fixtures", version.ref = "platform" }
-platform-security-starter = { group = "pl.seniordeveloper", name = "platform-security-starter", version.ref = "platform" }
 platform-observability-starter = { group = "pl.seniordeveloper", name = "platform-observability-starter", version.ref = "platform" }
-platform-web-starter = { group = "pl.seniordeveloper", name = "platform-web-starter", version.ref = "platform" }
 
 # --- Startery Spring Boot / Modulith (BOM-managed → BEZ wersji) ---
 boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }

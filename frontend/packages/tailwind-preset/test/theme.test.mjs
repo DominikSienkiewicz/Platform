@@ -10,10 +10,7 @@ import { compile } from "tailwindcss";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const theme = await readFile(resolve(packageDir, "theme.css"), "utf8");
-const button = await readFile(
-  resolve(packageDir, "../ui-registry/registry/new-york/ui/button.tsx"),
-  "utf8",
-);
+const button = await readFile(resolve(packageDir, "test/fixtures/button-variants.txt"), "utf8");
 const require = createRequire(import.meta.url);
 
 async function loadStylesheet(id, base) {
@@ -59,14 +56,14 @@ test("every light-mode token has a colour utility, and every mapping points at a
   assert.deepEqual([...tokens].filter((token) => !mapped.has(token)), []);
 });
 
-test("every colour utility of the registry button resolves against the preset", async () => {
+test("every colour utility of the shadcn new-york button resolves against the preset", async () => {
   const variants = button.slice(button.indexOf("cva("), button.indexOf("defaultVariants"));
   const utilities = [...variants.matchAll(/"([^"]*)"/g)]
     .flatMap(([, classes]) => classes.split(/\s+/))
     .map((token) => token.slice(token.lastIndexOf(":") + 1).replace(/\/\d+$/, ""))
     .filter((utility) => /^(bg|text|border|ring|outline)(-|$)/.test(utility));
   const unique = [...new Set(utilities)];
-  assert.ok(unique.includes("bg-primary"), "the button classes were not found in button.tsx");
+  assert.ok(unique.includes("bg-primary"), "the button classes were not found in the fixture");
 
   const css = await build(unique);
   const escape = (utility) => utility.replace(/[^\w-]/g, (character) => `\\${character}`);

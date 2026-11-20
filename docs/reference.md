@@ -194,46 +194,14 @@ Generated from each `package.json` by `scripts/docs-gen.sh`.
 <!-- docs-gen:npm-packages -->
 | Package | Directory | Published | Bins | Description |
 |---|---|---|---|---|
-| `@dominiksienkiewicz/api-client` | `frontend/packages/api-client/` | no (private) | — | Shared fetch wrapper for the frontends: base URL from the environment, JSON bodies, null for 204 and an ApiError carrying the response body. |
 | `@dominiksienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
 | `@dominiksienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
 | `@dominiksienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
-| `@dominiksienkiewicz/query` | `frontend/packages/query/` | no (private) | — | Shared QueryClient (staleTime 60 s, refetchOnWindowFocus off) and a QueryProvider with React Query Devtools. |
 | `@dominiksienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
 | `@dominiksienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
-| `@dominiksienkiewicz/ui` | `frontend/packages/ui-registry/` | yes | — | shadcn registry (utils, button). |
 | `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
 | `@dominiksienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
 <!-- /docs-gen -->
-
-## Security starter (*incubating*)
-
-`pl.seniordeveloper:platform-security-starter` registers a `SecurityFilterChain` and CORS in a servlet web
-application unless the application defines its own. It is ordered before Spring Boot's default web and
-management security, which back off when it is present. No consumer has adopted it yet, so treat these as provisional. Source:
-[`PlatformSecurityProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformSecurityProperties.java)
-and [`PlatformCorsProperties`](../gradle/security-starter/src/main/java/pl/seniordeveloper/platform/security/PlatformCorsProperties.java).
-
-| Property | Default | Effect |
-|---|---|---|
-| `platform.security.mode` | `AUTHENTICATED` | `AUTHENTICATED` requires authentication for everything not permitted; `PERMIT_ALL` permits every request; `JWT` makes the application an OAuth2 resource server that requires a bearer JWT, without a session |
-| `platform.security.stateless` | `false` | `true` disables the HTTP session; `JWT` is always stateless |
-| `platform.security.csrf` | `ON` | `ON` keeps the token in the session, `OFF` disables CSRF protection (only for an API without cookie authentication), `SPA` hands the token to a browser client in the `XSRF-TOKEN` cookie and accepts it back in `X-XSRF-TOKEN` (Spring Security's `csrf.spa()`); `true` and `false` still mean `ON` and `OFF` |
-| `platform.security.jwt.authorities-claim` | unset (`scope`, `scp`) | the JWT claim whose values become authorities, each with the `SCOPE_` prefix |
-| `platform.security.http-basic` | `true` | HTTP Basic authentication |
-| `platform.security.permitted-paths` | `/actuator/health`, `/actuator/health/**`, `/actuator/info` | paths that never require authentication; a value replaces the defaults, so repeat the health paths |
-
-A 401 or a 403 from the chain is `application/problem+json` in the shape of the web starter, `title`, `status`,
-`detail`, `instance`, `message` and `traceId` when tracing set one, with the challenge of the mode in
-`WWW-Authenticate`: `Basic realm="Realm"` with HTTP Basic, the RFC 6750 `Bearer` challenge with `JWT`, none
-otherwise. `JWT` needs `spring-boot-starter-security-oauth2-resource-server`, which the application declares,
-and a `JwtDecoder`, which Spring Boot builds from `spring.security.oauth2.resourceserver.jwt.issuer-uri` (or
-`jwk-set-uri`, or `public-key-location`); without either the application fails at startup and names the fix.
-Scope rules stay in the application, for example `@PreAuthorize("hasAuthority('SCOPE_orders.read')")`.
-| `platform.cors.allowed-origins` | empty | setting it opts into the Platform CORS source; `*` fails at startup while `allow-credentials` is `true`; see [consuming.md](consuming.md#security-starter-cors) |
-| `platform.cors.allowed-methods` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS` | allowed methods |
-| `platform.cors.allowed-headers` | `*` | allowed headers |
-| `platform.cors.allow-credentials` | `true` | whether credentials are allowed |
 
 ## Observability starter (*incubating*)
 
@@ -251,7 +219,6 @@ wins. Source: [`PlatformObservabilityEnvironmentPostProcessor`](../gradle/observ
 | Property | Default | Effect |
 |---|---|---|
 | `platform.observability.prometheus` | `false` | exposes `/actuator/prometheus`; metrics leak information, so it is opt-in |
-| `platform.observability.public-metrics` | `false` | with `prometheus=true`, adds `/actuator/prometheus` to the default `platform.security.permitted-paths` of the security starter, for a scraper inside the network; an application that sets its own list adds the path itself |
 | `platform.observability.json-logs` | `false` | `logging.structured.format.console=ecs` |
 
 The `tracing` feature adds `spring-boot-starter-opentelemetry` (traces and OTLP export). It carries only
@@ -275,29 +242,6 @@ OpenTelemetry semantic conventions for server spans require, the status has no d
 success leaves it unset. A thrown exception keeps the status, description and `exception` event the bridge
 records from it, and client spans are left as they are. An application turns it off with
 `spring.autoconfigure.exclude=pl.seniordeveloper.platform.observability.PlatformTracingAutoConfiguration`.
-
-## Web starter (*incubating*)
-
-`pl.seniordeveloper:platform-web-starter` answers every error of a Spring MVC application as RFC 9457
-`application/problem+json` in one shape, the one `@dominiksienkiewicz/api-client` reads into
-`ApiError.problem` ([api-contracts.md](api-contracts.md#errors-problem-details)). It replaces Spring Boot's
-`ProblemDetailsExceptionHandler` and backs off when the application defines its own
-`ResponseEntityExceptionHandler`. Source: [`PlatformProblemDetailsExceptionHandler`](../gradle/web-starter/src/main/java/pl/seniordeveloper/platform/web/PlatformProblemDetailsExceptionHandler.java).
-
-| Exception | Status | Body |
-|---|---|---|
-| `@Valid` failure, `jakarta.validation.ConstraintViolationException` | 400 | `errors[]` of `{ pointer, detail }`, the pointer a JSON Pointer such as `#/items/0/quantity` |
-| any other Spring MVC exception (404, 405, 415 …) | as Spring MVC | Spring's Problem Details |
-| `DataIntegrityViolationException`, optimistic or pessimistic locking failure | 409 | a fixed detail, never the database message |
-| anything else | 500 | a fixed detail; the exception goes to the log only |
-
-Every body carries `traceId` when tracing put one in the MDC, and `message`, a copy of `detail` for
-clients of the old shape, throughout the 1.x line.
-
-| Property | Default | Effect |
-|---|---|---|
-| `platform.web.problem-details.enabled` | `true` | `false` hands the errors back to Spring Boot |
-| `platform.web.problem-details.legacy-message` | `true` | the `message` member |
 
 ## Test fixtures
 

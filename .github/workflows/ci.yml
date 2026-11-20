@@ -1,9 +1,8 @@
 name: CI
 
-# Walidacja pushy do main i PR-ów: czy build-logic / catalog / test-fixtures kompilują się
-# na JDK 27, czy paczki frontendu instalują się, przechodzą ESLint i tsc (checkJs, deklaracje .d.ts,
-# testy typów, rejestr .tsx), własne testy i budują rejestr shadcn oraz czy przechodzą wszystkie
-# śledzone testy skryptów (*.test.sh poza frontend/).
+# Walidacja pushy do main i PR-ów: czy moduły z gradle/maven-modules.txt budują się na JDK 27,
+# czy paczki frontendu instalują się, przechodzą ESLint, tsc (checkJs, deklaracje .d.ts, testy typów)
+# i własne testy oraz czy przechodzą wszystkie śledzone testy skryptów (*.test.sh poza frontend/).
 # Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
 # Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
 # (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
@@ -488,7 +487,7 @@ jobs:
   # Dwie nogi: Node 24 (wersja Platform) i 22.13.0 — dolna granica engines.node paczek, którą konsumenci mogą
   # uruchamiać; bez tej nogi deklarowana granica nigdy nie była wykonywana (N-REL-4).
   frontend:
-    name: Frontend (Node ${{ matrix.node }}) — install + lint + typecheck + test + registry build
+    name: Frontend (Node ${{ matrix.node }}) — install + lint + typecheck + test
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -513,9 +512,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm -r --if-present test
-      # Zepsuty rejestr czerwieni PR, zamiast wyjść dopiero przy wydaniu.
-      - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
       - name: Record the Node version
         env:
           NODE_LEG: ${{ matrix.node }}

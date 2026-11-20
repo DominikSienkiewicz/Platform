@@ -19,7 +19,7 @@ readonly VERSION_FILES="frontend/packages/alpha/package.json
 frontend/packages/beta/package.json
 gradle/build-logic/gradle.properties
 gradle/catalog/gradle.properties
-gradle/security-starter/gradle.properties
+gradle/observability-starter/gradle.properties
 gradle/test-fixtures/gradle.properties
 templates/jvm/java-library/gradle.properties
 templates/jvm/spring-app/gradle.properties"
@@ -38,7 +38,7 @@ seed_repo() {
   git init -q -b main "$work"
   git -C "$work" config user.name 'Release Test'
   git -C "$work" config user.email 'release-test@example.invalid'
-  for module in gradle/build-logic gradle/catalog gradle/security-starter gradle/test-fixtures \
+  for module in gradle/build-logic gradle/catalog gradle/observability-starter gradle/test-fixtures \
     templates/jvm/java-library templates/jvm/spring-app; do
     mkdir -p "$work/$module"
     printf 'platformVersion=%s\n' "$CURRENT" > "$work/$module/gradle.properties"

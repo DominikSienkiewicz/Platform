@@ -57,7 +57,7 @@ put acme/beta/backend/gradle.properties <<'EOF'
 platformVersion=1.5.31
 EOF
 put acme/beta/backend/app/build.gradle.kts <<'EOF'
-dependencies { implementation(libs.platform.security.starter) }
+dependencies { implementation(libs.platform.observability.starter) }
 EOF
 put acme/beta/backend/gradle/wrapper/gradle-wrapper.properties <<'EOF'
 distributionUrl=https\://services.gradle.org/distributions/gradle-9.8.1-bin.zip
@@ -80,7 +80,7 @@ printf 'main\n' | put acme/beta/branches.txt
 printf '# fixtures\nacme/alpha\n\nacme/beta\n' > "$work/consumers.txt"
 
 expected=$(cat <<'EOF'
-| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | security-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |
+| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | observability-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |
 |---|---|---|---|---|---|---|---|---|---|---|
 | acme/alpha | 1.5.26 | 9.6.1 | `sapmachine:27-jre` | yes | no | modulith.web, modulith.web.tests | 1.5.26: eslint-config, versions | v1 | no | 2 |
 | acme/beta | 1.5.31 | 9.8.1 | `eclipse-temurin:27-jre` | no | yes | — | no frontend | v1.5.31 | yes | 0 |

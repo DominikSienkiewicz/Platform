@@ -54,9 +54,7 @@ when a second repository needs it.
 | `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all three; `seniordev.nullness-conventions` Training, `seniordev.sonar-conventions` none |
 | `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`) with the libraries and plugins of the frame | GitHub Packages (Maven) | all three |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) | all three, through `seniordev.spring-modulith-conventions` |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) | Azimuth, Training |
-| `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` — RFC 9457 Problem Details for every Spring MVC error, the shape `api-client` reads (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | Azimuth, Training |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | Azimuth, Training |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | Azimuth, Training |
@@ -65,9 +63,6 @@ when a second repository needs it.
 | `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) | Training |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | Azimuth, Training |
 | `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) | Training |
-| `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
 | `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all three; `platform-bump.yml`, `roadmap-unblock.yml` and `sonar.yml` none |
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
@@ -78,12 +73,7 @@ when a second repository needs it.
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does: that
-repository's adoption pull request removes the label here. How to adopt the security starter is in
-[docs/consuming.md](docs/consuming.md#adopting-the-security-starter-incubating).
-
-`api-client` and `query` are also private: no frontend adopted them, and `api-client` overlaps the
-clients the consumers generate from OpenAPI. Releases skip them, and they stay at 1.5.31 in the
-registry until a first consumer adopts one; that pull request removes `"private": true` too.
+repository's adoption pull request removes the label here.
 
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
@@ -144,7 +134,7 @@ Every task, property and default they add is listed in [docs/reference.md](docs/
 flowchart LR
   release["./release.sh"] -->|annotated tag| tag(("vX.Y.Z"))
   tag --> workflow["release.yml<br/>after green ci.yml"]
-  workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog,<br/>test-fixtures, security-starter")]
+  workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog, BOM,<br/>test-fixtures, observability-starter")]
   workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
   workflow --> notes["GitHub Release<br/>CHANGELOG section"]
 
@@ -175,11 +165,10 @@ pins the exact tag ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)
 
 [`templates/jvm/`](templates/jvm/) contains a pure Java library and a minimal Spring
 application. Gradle TestKit consumes locally published plugins and catalog artifacts
-using these templates. Main CI includes all seven published Maven modules of `gradle/maven-modules.txt`; a failed
-UI registry build blocks npm publication. Consumers can opt into mandatory frontend
-checks with `strict: true`.
+using these templates. Main CI includes all five published Maven modules of `gradle/maven-modules.txt`.
+Consumers can opt into mandatory frontend checks with `strict: true`.
 
-Platform's own Java modules, `test-fixtures` and `security-starter`, apply `seniordev.java-conventions`
+Platform's own Java modules, `test-fixtures` and `observability-starter`, apply `seniordev.java-conventions`
 and `seniordev.quality-conventions` from `gradle/build-logic` through `includeBuild`, so the code shipped
 to consumers passes the same Spotless, Checkstyle, coverage, `platformDependencyCheck` and SpotBugs gates;
 they compile to the same Java 27 bytecode as consumers' code.
@@ -242,7 +231,7 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
 - **Every task, property and default the plugins add** → **[docs/reference.md](docs/reference.md)** —
-  with the security starter properties and the test fixtures.
+  with the observability starter properties and the test fixtures.
 - **Building and publishing locally** → **[docs/local-development.md](docs/local-development.md)** —
   bootstrap, GitHub Packages credentials, and how a local build works without GitHub.
 - **Where versions are declared** → **[docs/versions.md](docs/versions.md)** — the single

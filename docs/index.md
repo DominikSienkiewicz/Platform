@@ -1,7 +1,7 @@
 # Platform
 
 Platform is the shared build, quality, version and frontend layer of a set of product repositories: Gradle
-convention plugins, a version catalog and BOM, test fixtures, incubating Spring Boot starters, npm packages,
+convention plugins, a version catalog and BOM, test fixtures, an observability Spring Boot starter, npm packages,
 reusable GitHub workflows and the templates every repository copies. One release pins all of it, and
 `platform-bump` moves a consumer from one release to the next.
 

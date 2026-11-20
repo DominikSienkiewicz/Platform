@@ -2,7 +2,8 @@ name: Release (version tag)
 
 # Świadome wydanie: push taga vX.Y.Z (albo ręczny workflow_dispatch) publikuje platformVersion
 # z gradle/build-logic/gradle.properties — bez auto-bumpu i bez auto-prune:
-#   - Maven: moduły z gradle/maven-modules.txt (build-logic + markery pluginów, catalog, bom, test-fixtures, security-starter),
+#   - Maven: moduły z gradle/maven-modules.txt (build-logic + markery pluginów, catalog, bom, test-fixtures,
+#     observability-starter),
 #   - npm: każda paczka z frontend/packages/* bez "private": true.
 # Procedura i idempotencja per rejestr: RELEASING.md. Konsumenci trzymają DOKŁADNE piny.
 on:
@@ -19,7 +20,7 @@ concurrency:
   cancel-in-progress: false
 
 # Bramka wydania: version (tag == platformVersion) → verify (pełne CI na otagowanym commicie)
-# + registry-build → gradle + npm (packages: write) → github-release (contents: write).
+# → gradle + npm (packages: write) → github-release (contents: write).
 # Czerwony job zatrzymuje wszystko za nim: nic nie trafia do GitHub Packages i nie powstaje GitHub Release.
 jobs:
   version:
@@ -55,34 +56,8 @@ jobs:
       packages: read
     uses: ./.github/workflows/ci.yml
 
-  # Rejestr shadcn budowany osobno, bez packages: write: narzędzie i jego zależności nie widzą
-  # tokenu publikacji. Wynik nie jest publikowany — job jest wyłącznie bramką.
-  registry-build:
-    needs: version
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
-        with:
-          version: 11.18.0
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: "24"
-      # --ignore-scripts: build rejestru nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
-      - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Build registry (shadcn)
-        run: pnpm --filter @dominiksienkiewicz/ui build
-
   gradle:
-    needs: [version, verify, registry-build]
+    needs: [version, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # id-token + attestations: atestacja provenance (SLSA) zbudowanych plików, weryfikowalna przez
@@ -166,9 +141,9 @@ jobs:
             gradle/*/build/libs/*.jar
             gradle/catalog/build/version-catalog/*.toml
 
-  # Job z packages: write nie uruchamia żadnego builda — rejestr sprawdza registry-build.
+  # Job z packages: write nie uruchamia żadnego builda.
   npm:
-    needs: [version, verify, registry-build]
+    needs: [version, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

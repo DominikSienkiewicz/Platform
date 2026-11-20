@@ -41,9 +41,7 @@ Every artifact below is published at the same `platformVersion`.
 | `gradle/catalog/` | `pl.seniordeveloper:platform-catalog` | GitHub Packages (Maven) |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) |
-| `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` | GitHub Packages (Maven) |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` | GitHub Packages (Maven) |
-| `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` | GitHub Packages (Maven) |
 | `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
 | `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
 | `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
@@ -51,12 +49,10 @@ Every artifact below is published at the same `platformVersion`.
 | `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` | GitHub Packages (npm) |
 | `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
 | `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` | GitHub Packages (npm) |
-| `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` | GitHub Packages (npm) |
 
 The npm job publishes every workspace package under `frontend/packages/` that is not marked
 `"private": true`, so a new package is released as soon as it exists. Update this table and the
-README in the same change. `@dominiksienkiewicz/api-client` and `@dominiksienkiewicz/query` are
-private until a first consumer adopts them; 1.5.31 is their last published release.
+README in the same change.
 
 ## One-time setup
 
@@ -201,8 +197,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 1. **`version`** reads `platformVersion` from `gradle/build-logic/gradle.properties` and fails
    unless the run started from the tag `v<platformVersion>`, so every published version has its
    tag and every tag has its version.
-2. **`verify`** runs the full CI (`ci.yml`) on the tagged commit, and **`registry-build`** builds
-   the shadcn registry without `packages: write`. Both must be green before anything is published.
+2. **`verify`** runs the full CI (`ci.yml`) on the tagged commit. It must be green before anything
+   is published.
 3. **`gradle`** and **`npm`** then run in parallel. One can fail while the other succeeds, so a
    release can be complete in one registry and missing in the other. Check both jobs before you
    announce a release. Each attests the files it publishes with `actions/attest`: SLSA build
@@ -221,8 +217,8 @@ tag. A dispatch from a branch fails, because a release runs only from the tag th
 7. **`verify-consumable`**, after `verify-published`, resolves the release the way a consumer does,
    from GitHub Packages with an empty Gradle home and no `-PplatformRepository`
    (`scripts/verify-consumable.sh`). Copies of the `java-library` and `spring-app` starters pinned to
-   the version resolve the settings plugin, every convention plugin marker, the catalog's variant,
-   test-fixtures and security-starter; every public npm package installs at the version and ships the
+   the version resolve the settings plugin, every convention plugin marker, the catalog's variant and
+   test-fixtures; every public npm package installs at the version and ships the
    files its `main`, `bin` and `exports` name. Each resolution gets one retry, and the job summary
    lists every npm integrity. A failure points at [the rollback runbook](docs/runbooks/rollback.md).
 8. **`release-assets`**, after `github-release`, attaches the release as files to the GitHub Release

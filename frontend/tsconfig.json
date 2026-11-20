@@ -9,37 +9,16 @@
       "node"
     ],
     "paths": {
-      "@/registry/*": [
-        "./packages/ui-registry/registry/*"
-      ],
-      "@dominiksienkiewicz/api-client": [
-        "./packages/api-client/index.d.ts"
-      ],
-      "@dominiksienkiewicz/query": [
-        "./packages/query/index.d.ts"
-      ],
       "@dominiksienkiewicz/vitest-config": [
         "./packages/vitest-config/index.d.ts"
       ]
     }
   },
-  "files": [
-    "packages/api-client/index.js",
-    "packages/query/index.js"
-  ],
   "include": [
-    "packages/api-client/index.d.ts",
-    "packages/api-client/type-tests/consumer.ts",
-    "packages/api-client/type-tests/typed-consumer.ts",
-    "packages/api-client/type-tests/xsrf-consumer.ts",
-    "packages/query/index.d.ts",
-    "packages/query/type-tests/consumer.ts",
     "packages/vitest-config/index.d.ts",
     "packages/vitest-config/type-tests/consumer.ts",
     "packages/vitest-config/index.js",
     "packages/vitest-config/setup.js",
-    "packages/versions/bin/check.mjs",
-    "packages/ui-registry/registry/**/*.ts",
-    "packages/ui-registry/registry/**/*.tsx"
+    "packages/versions/bin/check.mjs"
   ]
 }

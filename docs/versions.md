@@ -26,7 +26,7 @@ Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-cata
   floors and compatibility overrides with their `because(...)` reasons (the table in
   [Overrides above the Spring Boot BOM](#overrides-above-the-spring-boot-bom)), and the Platform artifacts.
 
-`platform-test-fixtures`, `platform-security-starter` and `seniordev.spring-modulith-conventions` import
+`platform-test-fixtures`, `platform-observability-starter` and `seniordev.spring-modulith-conventions` import
 `platform-bom` of their own release, so the floors live in one place and reach every classpath those
 builds resolve. `PlatformBomImportFunctionalTest` holds the conventions to it with `dependencyInsight`:
 the BOM's Lombok, Jackson and Tomcat win, also over a consumer's `jackson-bom.version`, because the BOM
@@ -228,7 +228,7 @@ compile, and keeps a single JDK.
 
 ## Dependency locking
 
-`gradle/build-logic`, `gradle/test-fixtures` and `gradle/security-starter` each carry a
+`gradle/build-logic`, `gradle/test-fixtures` and `gradle/observability-starter` each carry a
 `gradle.lockfile` for reproducible resolution. After bumping any version in those modules,
 regenerate the lockfile and commit the diff:
 
@@ -260,7 +260,7 @@ It runs two passes per module with `--refresh-dependencies`, as `platform-bump` 
 `build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
 bumps the catalog stays red on verification until you run the script and push its result to that branch.
 `gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows. `test-fixtures` and
-`security-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
+`observability-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
 root's file verifies everything, so their files also hold the checksums of the plugin classpath.
 
 A bump of `java`, `gradle`, `springBoot`, `springModulith`, `springAi` or `junit` also changes the stack the

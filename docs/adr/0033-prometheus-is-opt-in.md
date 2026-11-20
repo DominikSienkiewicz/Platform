@@ -21,3 +21,9 @@ starter's permitted paths for a scraper inside the network (Decision 37).
 ## Revisit when
 
 None.
+
+## Update — no security starter (2026-11-20)
+
+Platform 1.13.0 removes `platform-security-starter`, and with it `platform.observability.public-metrics`, which only
+added `/actuator/prometheus` to that starter's permitted paths. `platform.observability.prometheus` stays opt-in; who
+may read the endpoint is the application's own security configuration.

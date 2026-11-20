@@ -24,7 +24,6 @@ nav = [
   { "Versions" = "versions.md" },
   { "Compatibility" = "compatibility.md" },
   { "API contracts" = "api-contracts.md" },
-  { "API client" = "api-client.md" },
   { "Security scanning" = "security-scanning.md" },
   { "Local development" = "local-development.md" },
   { "Agents" = [

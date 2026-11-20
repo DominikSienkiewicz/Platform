@@ -405,7 +405,7 @@ The template also declares how the container reports health and sizes its heap:
   neither curl nor wget, and treats only HTTP 200 as healthy. When the liveness group does not exist
   (404, `management.endpoint.health.probes.enabled` is off) it falls back to `/actuator/health`. The port
   is `MANAGEMENT_SERVER_PORT`, then `SERVER_PORT`, then 8080; the endpoint must answer without
-  authentication, as the security starter's default `permitted-paths` allow. The application gets 60 s
+  authentication, so the application's security permits it. The application gets 60 s
   to start; after that, six failed probes 10 s apart mark the container unhealthy. A `healthcheck:` in a
   compose file replaces this one, so delete the compose-level check of the backend service.
 - `JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError"` sizes the heap from the
@@ -521,13 +521,6 @@ backend test and breaking-change gate included, is in [api-contracts.md](api-con
 @import "tailwindcss";
 ```
 
-The component registry `@dominiksienkiewicz/ui` is *incubating*: it has no hosted endpoint, and no
-consumer has adopted it. If you install it, also add an `@source` line that points from
-`globals.css` to the package, so Tailwind sees its classes: `@source "../node_modules/@dominiksienkiewicz/ui";`
-in `app/globals.css`, or `@source "../../node_modules/@dominiksienkiewicz/ui";` in `src/app/globals.css`.
-Use the `shadcn` version from `@dominiksienkiewicz/versions` (`npx shadcn@4.22.1 …`), never an
-unpinned one.
-
 `vitest.config.ts`:
 
 ```ts
@@ -605,7 +598,7 @@ the container, and `devcontainer.json` passes them through `remoteEnv`. They are
 build stops with "No GitHub Packages credentials". Without a token the container still builds and registers the
 toolchain JDK, but it prints a hint and does not run `npm ci --ignore-scripts`.
 
-## Adopting the observability and web starters (*incubating*)
+## Adopting the observability starter
 
 `implementation(libs.platform.observability.starter)` replaces the `management:` block most backends
 write by hand: probes on, `health` and `info` exposed, details only when authorized, and an `application`
@@ -614,49 +607,6 @@ scraper reads `/actuator/prometheus` (BookOfStyling, Azimuth), and drop a separa
 `micrometer-registry-prometheus` line, which the starter brings. For the Spring Modulith actuator and
 observability modules, declare `spring-modulith-actuator` and `spring-modulith-observability` (group
 `org.springframework.modulith`) without a version: the Spring Modulith BOM manages them.
-
-`implementation(libs.platform.web.starter)` replaces a hand-written `@ControllerAdvice` for errors; the
-shapes it answers with are in the [reference](reference.md#web-starter-incubating). An application with its
-own `ResponseEntityExceptionHandler` keeps it, because the starter backs off. Both starters stay
-*incubating* until the first application adopts them; that pull request removes the label in README.md.
-
-## Adopting the security starter (*incubating*)
-
-Add `implementation(libs.platform.security.starter)`, delete the application's own `SecurityConfig`, and
-express its behaviour as properties. The two configurations the
-starter was written from map like this:
-
-| Application | Properties | Then |
-|---|---|---|
-| permit-all, stateless API with CORS (BookOfStyling) | `platform.security.mode=permit-all`, `platform.security.stateless=true`, `platform.security.csrf=false`, `platform.cors.allowed-origins=${app.cors.allowed-origins}` | delete `SecurityConfig` |
-| authenticated with HTTP Basic (SkillSprintPlus) | none: these are the defaults | delete `SecurityConfig` |
-| a JWT resource server, as the `TODO(identity module)` of both plans | `platform.security.mode=jwt`, `spring.security.oauth2.resourceserver.jwt.issuer-uri=…`, optionally `platform.security.jwt.authorities-claim=roles` | add `implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")`, delete `SecurityConfig`, keep the scope rules in `@PreAuthorize` |
-| a browser client with a cookie session | `platform.security.csrf=spa` | create the frontend client with `createApiClient({ xsrf: true })` ([api-client.md](api-client.md#csrf-for-a-single-page-application)) |
-
-Every 401 and 403 is `application/problem+json`, which the api-client turns into `ApiError.problem`
-([reference](reference.md#security-starter-incubating)).
-
-Both variants are covered by `PlatformSecurityAutoConfigurationTest`, and the starter's chain takes
-precedence over Spring Boot's default web security (`PlatformSecurityBootAutoConfigurationTest`). The
-starter stays *incubating* until the first application adopts it; that pull request removes the label.
-
-## Security starter CORS
-
-`platform.cors.allowed-origins` opts into the Platform CORS source. The security
-chain preserves Spring Security’s precedence for a user `CorsFilter` named `corsFilter`.
-Otherwise it uses an explicit application source in preference to MVC infrastructure,
-regardless of its bean name. Without an explicit source, MVC's existing CORS mapping
-remains the fallback; without MVC or CORS configuration, the starter does not add a
-CORS filter. An application-provided `SecurityFilterChain` still replaces the
-Platform chain. Multiple explicit sources require an unambiguous primary source
-or an application-owned chain; the starter does not silently choose one, and the context fails
-to start without a `@Primary` one. `platform.cors.allowed-origins=*` fails at startup while
-`allow-credentials` is `true`, the default: Spring rejects that pair, and before it did so only
-on the first CORS request.
-
-`platform.security.permitted-paths` replaces the default list instead of adding to it. Repeat
-`/actuator/health`, `/actuator/health/**` and `/actuator/info` when you set it, or the deploy health
-gate gets 401.
 
 ## Troubleshooting
 

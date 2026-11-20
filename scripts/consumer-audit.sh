@@ -155,7 +155,7 @@ lag_row() {
 
 # Artefakty Platform: "maven <alias libs>", "bundle <nazwa z kropkami>", "npm <nazwa paczki>".
 artifacts() {
-  printf 'maven %s\n' platform.bom platform.test.fixtures platform.security.starter platform.observability.starter platform.web.starter
+  printf 'maven %s\n' platform.bom platform.test.fixtures platform.observability.starter
   sed -n '/^\[bundles\]/,/^\[plugins\]/p' "$catalog" | sed -nE 's/^([a-z0-9-]+)[[:space:]]*=.*/\1/p' | tr '-' '.' | sed 's/^/bundle /'
   local manifest
   for manifest in "$packages_dir"/*/package.json; do
@@ -234,7 +234,7 @@ row() {
   local repo=$1 dir=$2
   printf '| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n' \
     "$repo" "$(pin "$dir")" "$(wrapper "$dir")" "$(runtime_image "$dir")" \
-    "$(uses_alias "$dir" platform.test.fixtures)" "$(uses_alias "$dir" platform.security.starter)" \
+    "$(uses_alias "$dir" platform.test.fixtures)" "$(uses_alias "$dir" platform.observability.starter)" \
     "$(bundles "$dir")" "$(npm_pins "$dir")" "$(workflow_refs "$dir")" "$(bump_caller "$dir")" \
     "$(renovate_branches "$dir")"
 }
@@ -272,7 +272,7 @@ main() {
     echo '| Repository | Platform pin | Releases behind | Days behind | Yanked pin | @v1 refs |'
     echo '|---|---|---|---|---|---|'
   else
-    echo '| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | security-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |'
+    echo '| Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | observability-starter | Catalog bundles | npm packages | Workflow refs | platform-bump.yml | Renovate branches |'
     echo '|---|---|---|---|---|---|---|---|---|---|---|'
   fi
   while IFS= read -r repo; do

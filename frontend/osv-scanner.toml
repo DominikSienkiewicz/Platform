@@ -5,4 +5,4 @@
 [[IgnoredVulns]]
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2027-01-19
-reason = "braces 3.0.3 has no fixed release. It reaches the workspace only through shadcn > fast-glob > micromatch (dev tooling), and every pattern it expands is Platform's own, so the stack-exhaustion DoS needs no untrusted input."
+reason = "braces 3.0.3 has no fixed release. It reaches the workspace only through eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch (dev tooling), and every pattern it expands is Platform's own, so the stack-exhaustion DoS needs no untrusted input."

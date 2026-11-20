@@ -49,8 +49,8 @@ you are credited in the advisory unless you ask not to be.
 
 In scope:
 
-- the published Maven artifacts: the convention plugins, the version catalog, `test-fixtures` and
-  `security-starter`;
+- the published Maven artifacts: the convention plugins, the version catalog, `platform-bom`,
+  `test-fixtures` and `observability-starter`;
 - the published npm packages under `@dominiksienkiewicz/`;
 - the reusable workflows in `.github/workflows/`;
 - the scripts consumers run or copy from this repository (`scripts/`, `templates/`).

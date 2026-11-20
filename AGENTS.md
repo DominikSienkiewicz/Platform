@@ -13,7 +13,7 @@ consumer's `AGENTS.md`.
 | `gradle/build-logic/` | the convention plugins `seniordev.{java,quality,spring-modulith,sonar,nullness}-conventions` and the settings plugin `seniordev.settings-conventions` |
 | `gradle/catalog/` | the published version catalog `pl.seniordeveloper:platform-catalog`, the single source of JVM versions |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom`: the Spring BOM imports, CVE floors and compatibility overrides |
-| `gradle/test-fixtures/`, `gradle/*-starter/` | the test fixtures and the incubating Spring Boot starters |
+| `gradle/test-fixtures/`, `gradle/observability-starter/` | the test fixtures and the observability Spring Boot starter |
 | `frontend/packages/` | the npm packages; `versions/versions.json` is the single source of the frame's frontend versions |
 | `.github/workflows/` | the reusable workflows consumers call, and Platform's own CI and release |
 | `.claude-plugin/`, `plugins/platform/` | the Claude Code marketplace and its `platform` plugin: seven skills that open the runbooks at the tag a repository pins |

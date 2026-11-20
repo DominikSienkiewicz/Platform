@@ -6,12 +6,12 @@ Frontend requirements: Node.js ≥ 22.13 (this repository is built with Node 24)
 11.18.0.
 
 ```bash
-# Gradle — publish all 4 modules to the local Maven repository (a smoke test that needs no registry):
+# Gradle — publish every module of gradle/maven-modules.txt to the local Maven repository
+# (a smoke test that needs no registry):
 ./buildAndPublishLocal.sh --skip-frontend
 
 # Frontend:
 cd frontend && pnpm install
-pnpm --filter @dominiksienkiewicz/ui build   # generates public/r/*.json (shadcn)
 ```
 
 ## GitHub Packages credentials
@@ -50,7 +50,7 @@ no convention reads the local Maven repository implicitly.
 
 ```bash
 # Once, in the platform — publishes the Gradle modules to ~/.m2/repository and installs the frontend:
-./buildAndPublishLocal.sh                  # (--skip-frontend / --with-registry / --help)
+./buildAndPublishLocal.sh                  # (--skip-frontend / --help)
 
 # In a consuming backend (it prints this command with the version filled in):
 ./gradlew build -PplatformVersion=<version> -PplatformRepository=file://$HOME/.m2/repository
