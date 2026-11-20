@@ -3,7 +3,7 @@
 **Designed and maintained by [Dominik Sienkiewicz](https://www.linkedin.com/in/dominik-sienkiewicz/), built with AI coding agents:** I set the architecture, write the specifications, define the quality gates enforced in CI and review every change. How that works: [engineering with agents](docs/engineering-with-agents.md).
 
 A shared build platform for a multi-repository JVM and frontend organisation. Build
-configuration, quality gates, dependency versions and frontend presets live here once,
+configuration, quality gates, the versions of the shared frame and frontend presets live here once,
 are published as versioned artifacts, and are consumed like any other dependency.
 
 ![Java 27](https://img.shields.io/badge/Java-27-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
@@ -38,29 +38,38 @@ neither can be consumed across a repository boundary. A published, versioned art
 the only mechanism that crosses that boundary, which also means a consumer upgrades on its
 own schedule and rolls back by pinning an older version.
 
+Platform governs the frame, not every dependency
+([ADR-0037](docs/adr/0037-platform-governs-the-frame.md)). The frame is Java, Gradle, the Spring BOMs,
+the libraries in the catalog and the frontend canon. A consumer cannot give them another version, and an
+explicit version of a library a Spring or Platform BOM manages fails the build
+([gates](docs/gates.md#gradle)). A library only one repository uses belongs to that repository: a Gradle
+build declares it in a second catalog `appLibs` read from `backend/gradle/app.versions.toml`, a frontend
+pins its exact version in `package.json`, and neither needs a Platform release. A library joins the frame
+when a second repository needs it.
+
 ## What it publishes
 
 | Path | Artifact | Published to | Adopted by |
 |---|---|---|---|
-| `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all five |
-| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | all five; the bundles none |
-| `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions (*incubating*) | GitHub Packages (Maven) | none |
+| `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all three; `seniordev.nullness-conventions` Training, `seniordev.sonar-conventions` none |
+| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | all three; the bundles none |
+| `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) | all three, through `seniordev.spring-modulith-conventions` |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
-| `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` (*incubating*) | GitHub Packages (Maven) | none |
+| `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) | Azimuth, Training |
 | `gradle/web-starter/` | `pl.seniordeveloper:platform-web-starter` — RFC 9457 Problem Details for every Spring MVC error, the shape `api-client` reads (*incubating*) | GitHub Packages (Maven) | none |
-| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | all five |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter (*incubating*) | GitHub Packages (npm) | none |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | the four frontends |
-| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec (*incubating*) | GitHub Packages (npm) | none |
+| `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) | Azimuth, Training |
+| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) | Azimuth, Training |
+| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) | Azimuth, Training |
+| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) | Azimuth, Training |
+| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) | Azimuth, Training |
+| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) | Training |
+| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) | Azimuth, Training |
+| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) | Training |
 | `frontend/packages/api-client/` | `@dominiksienkiewicz/api-client` — shared `fetch` wrapper, typed by the generated OpenAPI `paths` (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
 | `frontend/packages/query/` | `@dominiksienkiewicz/query` — shared TanStack `QueryClient` and provider (*incubating*, private) | not published; 1.5.31 is the last release in GitHub Packages | none |
 | `frontend/packages/ui-registry/` | `@dominiksienkiewicz/ui` — shadcn registry sources: `utils` and `button` (*incubating*) | GitHub Packages (npm); the built registry JSON is not shipped or hosted yet | none |
 | `infra/` | `docker-compose` template (pgvector, optionally Ollama, optionally an observability stack) | copied / submodule | not audited |
-| `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all five; `platform-bump.yml`, `api-contract.yml` and `promote.yml` none |
+| `.github/workflows/` | twelve reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` | all three; `platform-bump.yml`, `roadmap-unblock.yml` and `sonar.yml` none |
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh`, `agent-gradle.sh` and `setup-gh-deploy.sh` with `secrets.local.example`, the roadmap toolkit, the GitHub files, the default community health files of a `.github` repository and a devcontainer (*incubating*); each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
@@ -87,11 +96,12 @@ described in [RELEASING.md](RELEASING.md).
 | `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
 | `DominikSienkiewicz/Training` | backend and frontend |
 
-"The four frontends" above are the first four. The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
+The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
 image, Platform artifacts, workflow references and `platform-bump.yml` caller, with GET requests
 only. Its output describes private repositories, so it runs on the maintainer's machine, not in CI.
-The "Adopted by" column is from its run on 2026-10-18; an adoption pull request updates it.
+The "Adopted by" column was checked against the consumers' build files and workflows on 2026-11-20; an
+adoption pull request updates it.
 
 ### Reusable workflows
 
@@ -167,7 +177,7 @@ is why a new caller pins the exact tag instead ([ADR-0002](docs/adr/0002-release
 
 [`templates/jvm/`](templates/jvm/) contains a pure Java library and a minimal Spring
 application. Gradle TestKit consumes locally published plugins and catalog artifacts
-using these templates. Main CI includes all four published Maven modules; a failed
+using these templates. Main CI includes all seven published Maven modules of `gradle/maven-modules.txt`; a failed
 UI registry build blocks npm publication. Consumers can opt into mandatory frontend
 checks with `strict: true`.
 
@@ -197,7 +207,7 @@ flowchart LR
 
 GitHub Packages refuses anonymous reads, so resolving Platform from it needs a token even though the
 repository is public. Every GitHub Release from 1.6.0 on therefore carries the release as files:
-`platform-maven-repo-X.Y.Z.zip` (a Maven repository with all four modules), the npm tarballs and
+`platform-maven-repo-X.Y.Z.zip` (a Maven repository with every module of `gradle/maven-modules.txt`), the npm tarballs and
 `SHA256SUMS`, all attested. Build a starter from them without a token:
 
 ```bash
@@ -290,6 +300,6 @@ draft release **Next** current.
 
 [MIT](LICENSE) — Copyright (c) 2026 Dominik Sienkiewicz.
 
-The licence is also declared in the POM metadata of every published Maven artifact (`catalog`,
-`build-logic`, `test-fixtures`, `security-starter`) and in the `license` field of every npm
+The licence is also declared in the POM metadata of every published Maven artifact (every module of
+`gradle/maven-modules.txt`) and in the `license` field of every npm
 package, so a consumer's dependency scanner sees it without reading this repository.
