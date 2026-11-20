@@ -25,8 +25,8 @@ continues.
 ## [1.13.0] - 2026-11-20
 
 Platform 1.13.0 slims Platform to the frame: what no consumer used is removed. A promotion through `promote.yml` keeps
-calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false` until 1.13.1 moves that pin to the commit of the v1.13.0
-tag, so the `deploy.yml` removals below reach only direct callers of that file.
+calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false` until a later release moves that pin to a tagged commit
+of the new `deploy.yml`, so the `deploy.yml` removals below reach only direct callers of that file.
 
 It also simplifies the release and the bump: `release.sh` no longer waits for a consumer canary and composes a
 missing version section from the commits, a template schedules the weekly `platform-bump.yml`, and the Renovate preset
@@ -88,7 +88,7 @@ External callers and users of the removed items (manual):
 - Platform's maintainer no longer runs `scripts/canary.sh`, `scripts/preview-on-consumer.sh` or
   `scripts/ring-rollout.sh`, and `release.sh` refuses `--skip-canary` as an unexpected argument. An unreleased change
   is tried on a consumer with `-PplatformRepository` ([runbook](docs/runbooks/test-unreleased-change.md)), and a
-  consumer takes a release with `scripts/platform-bump.sh` or its own `platform-bump.yml` caller.
+  consumer takes a release with the `scripts/platform-bump.sh` of its repository or its own `platform-bump.yml` caller.
 
 ### Added
 
@@ -143,8 +143,8 @@ External callers and users of the removed items (manual):
   every library and plugin of the catalog (plugins by id and by marker coordinate), `pl.seniordeveloper:*`,
   `seniordev.*`, every key of `versions.json`, `@dominiksienkiewicz/*` and the references to Platform's reusable
   workflows. Renovate reads the preset from Platform's `main`, so a repository that extends it gets the change from
-  the merge on, not from the release. Docker images keep their rules, so a base image can still be offered a Java or
-  Node major the frame has not adopted. ADR-0001, ADR-0002 and ADR-0014 have an update.
+  the merge on, not from the release. Docker images are not restricted by the `Frame:` rules, so a base image can still
+  be offered a Java or Node major the frame has not adopted. ADR-0001, ADR-0002 and ADR-0014 have an update.
 - `release.sh` refuses an argument outside `"<message>" [X.Y.Z] [-y]`, a leftover `--skip-canary` included (a `-y` in
   place of the version gets the two forms that work). When it has to compose the section, it also refuses a
   CHANGELOG.md without `## [Unreleased]` or with entries under it, a first-parent subject since the previous tag that
