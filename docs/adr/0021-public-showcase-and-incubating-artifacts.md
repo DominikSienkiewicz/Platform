@@ -4,8 +4,8 @@
 
 Accepted — 2026-10-19
 
-Applied on 2026-11-20 (1.13.0): the starters, `api-client`, `query` and the ui registry named in the Context, which
-no consumer adopted, were removed instead of staying incubating.
+Applied on 2026-11-20 (1.13.0): the security and web starters, `api-client`, `query` and the ui registry named in the
+Context, which no consumer adopted, were removed instead of staying incubating; the observability starter stays.
 
 ## Context
 

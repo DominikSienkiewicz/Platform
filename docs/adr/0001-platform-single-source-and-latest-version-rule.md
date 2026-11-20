@@ -80,7 +80,8 @@ marked private, so they are not published until then. `docs/consuming.md` shows 
 
 **Update (2026-11-20, 1.13.0).** No consumer adopted them, so Platform removed `platform-security-starter`,
 `platform-web-starter`, `@dominiksienkiewicz/api-client`, `@dominiksienkiewicz/query` and the ui registry
-(`@dominiksienkiewicz/ui`), with the canon entries only they needed. The catalog bundles stay.
+(`@dominiksienkiewicz/ui`), with the canon entries only they needed; a consumer that still uses one of those
+libraries owns its version from now on. The catalog bundles had already been removed in 1.12.0.
 
 ## Copied templates (2026-10-18)
 

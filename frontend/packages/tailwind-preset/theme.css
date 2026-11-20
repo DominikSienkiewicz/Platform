@@ -11,7 +11,6 @@
  *   @import "@dominiksienkiewicz/tailwind-preset/theme.css";   // tokeny PRZED tailwind
  *   @import "tailwindcss";
  *   @import "tw-animate-css";                                   // opcjonalnie (animacje) — dep aplikacji
- *   @source "../../node_modules/@dominiksienkiewicz/ui";       // v4 skanuje klasy paczki UI
  */
 
 @custom-variant dark (&:is(.dark *));

@@ -28,9 +28,11 @@ tag, so the `deploy.yml` removals below reach only direct callers of that file.
 
 ### Consumer action required
 
-None for Azimuth, Touchstone and Training: none of them uses an artifact, input or file listed under **Removed**. Their
-`AGENTS.md` changes on the next bump without any action: the managed `platform-agents` block lost its
-"Skills: /platform:…" line, because the Claude Code plugin it named is gone.
+None for Azimuth, Touchstone and Training: none of them uses an artifact, input or file listed under **Removed**,
+except that the frontend canon dropped `@tanstack/react-query`, which Training pins in its own `frontend/package.json`:
+Training now owns that exact version and `platform-versions-check` no longer holds it. Their `AGENTS.md` changes on the
+next bump without any action: the managed `platform-agents` block lost its "Skills: /platform:…" line, because the
+Claude Code plugin it named is gone.
 
 External callers and users of the removed items (manual):
 
@@ -77,7 +79,10 @@ External callers and users of the removed items (manual):
 - `ci.yml` no longer builds the shadcn registry, and in `release.yml` the `gradle` and `npm` jobs need `version` and
   `verify` only.
 - The ADRs of removed parts carry a status or a dated note: ADR-0012, ADR-0016, ADR-0024 and ADR-0031 are superseded;
-  ADR-0001, ADR-0025, ADR-0035 and ADR-0036 are partly superseded; ADR-0021 and ADR-0033 have an update.
+  ADR-0025, ADR-0035 and ADR-0036 are partly superseded; ADR-0001, ADR-0014, ADR-0021 and ADR-0033 have an update.
+  ADR-0002, ADR-0006, ADR-0007, ADR-0009, ADR-0011, ADR-0013, ADR-0015, ADR-0017, ADR-0018 and ADR-0034 carry a dated
+  note or a corrected sentence where they named a removed part.
+- `scripts/adr-index.sh` is gone: the ADR index is a region of `scripts/docs-gen.sh`, which CI already runs.
 - The README has no "Adopted by" column and no Codespaces button, and the reviewer tour has nine stops.
 
 ### Removed
@@ -100,9 +105,11 @@ External callers and users of the removed items (manual):
   `contracts/problem-detail.openapi.yaml`, their catalog aliases and their `platform-bom` constraints, and the
   property `platform.observability.public-metrics` of the observability starter.
 - **npm packages:** `@dominiksienkiewicz/api-client`, `@dominiksienkiewicz/query` and the ui registry
-  (`@dominiksienkiewicz/ui`), with the `build:registry` script and the nine canon entries only they needed:
+  (`@dominiksienkiewicz/ui`), with the `build:registry` script. The frontend canon drops the nine entries only they needed:
   `@tanstack/react-query`, `@tanstack/react-query-devtools`, `fast-check`, `class-variance-authority`, `clsx`,
-  `@radix-ui/react-slot`, `lucide-react`, `shadcn` and `tailwind-merge`.
+  `@radix-ui/react-slot`, `lucide-react`, `shadcn` and `tailwind-merge`. A consumer that uses one owns its version from
+  now on, as an exact version in `package.json`, and `platform-versions-check` no longer holds it (Training does so
+  for `@tanstack/react-query`).
 - **Test fixtures:** `AbstractLiquibaseChangelogTest`, `PlatformOllamaContainer` with `PlatformImages.OLLAMA`, and
   `AbstractTestcontainersFootprintTest`; the `liquibase-core` and `testcontainers-ollama` dependencies went with them.
 - **Templates and tools:** `templates/roadmap` with the reusable `roadmap-unblock.yml`, `templates/devcontainer`,
