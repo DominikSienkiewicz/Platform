@@ -52,7 +52,7 @@ when a second repository needs it.
 | Path | Artifact | Published to | Adopted by |
 |---|---|---|---|
 | `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) | all three; `seniordev.nullness-conventions` Training, `seniordev.sonar-conventions` none |
-| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`); its bundles `modulith-web`, `modulith-web-tests` and `dev-docker-compose` are *incubating* | GitHub Packages (Maven) | all three; the bundles none |
+| `gradle/catalog/` | version catalog (`pl.seniordeveloper:platform-catalog`) with the libraries and plugins of the frame | GitHub Packages (Maven) | all three |
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) | all three, through `seniordev.spring-modulith-conventions` |
 | `gradle/security-starter/` | `pl.seniordeveloper:platform-security-starter` — configurable SecurityFilterChain and CORS (*incubating*) | GitHub Packages (Maven) | none |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) | Azimuth, Training |
@@ -78,8 +78,8 @@ when a second repository needs it.
 
 *Incubating* artifacts are published and versioned with everything else, but no product
 repository has adopted them yet. Treat their API as provisional until the first one does: that
-repository's adoption pull request removes the label here. How to adopt the bundles and the security
-starter is in [docs/consuming.md](docs/consuming.md#catalog-bundles-incubating).
+repository's adoption pull request removes the label here. How to adopt the security starter is in
+[docs/consuming.md](docs/consuming.md#adopting-the-security-starter-incubating).
 
 `api-client` and `query` are also private: no frontend adopted them, and `api-client` overlaps the
 clients the consumers generate from OpenAPI. Releases skip them, and they stay at 1.5.31 in the

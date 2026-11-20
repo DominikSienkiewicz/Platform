@@ -22,6 +22,38 @@ continues.
 
 ## [Unreleased]
 
+### Consumer action required
+
+- The catalog keeps only the frame ([ADR-0037](docs/adr/0037-platform-governs-the-frame.md)): the aliases below, which
+  one application or none used, are removed. For each one your build still uses, declare it in your `appLibs`, or by
+  its coordinates without a version when a Spring BOM manages it; the impact report of `platform-bump --report` names
+  the ones a repository uses (manual).
+  - Into `appLibs`, with the version the catalog had: `bucket4j-core`, `commonmark`, `commonmark-ext-gfm-tables`,
+    `garmin-fit`, `javers-spring-boot-starter-sql`, `jsoup`, `mapstruct`, `mapstruct-processor`, `openrewrite-bom`,
+    `pdfbox`, `picocli`, `resilience4j-spring-boot4`, `shedlock-provider-jdbc-template`, `shedlock-spring` and
+    `wiremock-standalone`, together with the version entries `bucket4j`, `commonmark`, `garminFit`, `javers`,
+    `jsoup`, `mapstruct`, `openrewrite`, `pdfbox`, `picocli`, `resilience4j`, `shedlock` and `wiremock`.
+  - By coordinates without a version, managed by the Spring BOMs through `platform-bom`: `boot-docker-compose`,
+    `boot-starter-data-jpa`, `boot-starter-jdbc`, `boot-starter-liquibase`, `boot-starter-validation`,
+    `boot-test-actuator`, `boot-test-data-jpa`, `boot-test-jdbc`, `boot-test-liquibase`, `boot-test-validation`,
+    `jackson-databind`, `jackson-dataformat-yaml`, `modulith-actuator`, `modulith-observability`,
+    `modulith-starter-jdbc`, `modulith-starter-jpa` and `spring-ai-docker-compose`.
+  - The four bundles `modulith-web`, `modulith-web-tests`, `dev-docker-compose` and `observability-modulith` are
+    removed with the whole `[bundles]` section: declare their members one by one, as above or through the aliases
+    that stay (`boot-starter-actuator`, `boot-starter-webmvc`, `modulith-starter-core`, `boot-test-webmvc`).
+
+### Changed
+
+- The `guava` CVE floor of `platform-bom` stays although Javers left the catalog: it still raises the Guava 33.5.0-jre
+  that `javers-persistence-sql` 7.11.x brings to an application that declares Javers itself.
+
+### Removed
+
+- The frontend canon drops `@testing-library/dom`, `@testing-library/user-event`, `js-yaml`, `radix-ui`,
+  `react-hook-form`, `react-markdown`, `remark-gfm`, `tw-animate-css` and `zod`: the consumer owns its version from now
+  on, as an exact version in `package.json`, and `platform-versions-check` no longer holds it. `@tanstack/react-query`
+  stays, as the peer of the `query` package.
+
 ## [1.11.1] - 2026-11-20
 
 ### Consumer action required

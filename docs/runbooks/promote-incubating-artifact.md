@@ -1,6 +1,6 @@
 # Promote an incubating artifact
 
-**Preconditions:** an incubating artifact (a starter, a private npm package, a catalog bundle; Decision 7) is
+**Preconditions:** an incubating artifact (a starter or a private npm package; Decision 7) is
 ready for a first consumer.
 
 1. In the consumer, adopt it against the unreleased change ([test an unreleased change](test-unreleased-change.md)),

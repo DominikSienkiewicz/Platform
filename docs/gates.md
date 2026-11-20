@@ -28,7 +28,7 @@ the Platform version from the link.
 ### PLAT-DEP-002
 
 **Cause:** an explicit version that differs from the Platform canon.
-**Example:** `implementation("org.jsoup:jsoup:1.0.0")` while the canon has another version.
+**Example:** `implementation("org.jspecify:jspecify:0.3.0")` while the canon has another version.
 **Fix:** declare it through the alias the message names, which carries the canon version.
 
 ### PLAT-DEP-003
@@ -47,7 +47,7 @@ Spring application the Boot BOM still aligns the version at runtime.
 **Cause:** the `libs` catalog of the consumer overrides a version of the Platform canon with `version(...)`
 after `from(...)` in `settings.gradle.kts`. The check compares with the canon embedded in the plugin, so the
 override cannot redefine what is canonical.
-**Example:** `version("jsoup", "1.0.0")` inside `create("libs") { from("pl.seniordeveloper:platform-catalog:…") }`.
+**Example:** `version("jspecify", "0.3.0")` inside `create("libs") { from("pl.seniordeveloper:platform-catalog:…") }`.
 **Fix:** remove the override; a different version needs a Platform release.
 
 ### PLAT-DEP-005

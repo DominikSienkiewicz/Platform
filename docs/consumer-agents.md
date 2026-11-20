@@ -7,7 +7,7 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
 
 - Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Their
   versions are never overridden ([gates](gates.md)).
-- JVM: declare a library of the frame through the catalog, `implementation(libs.jsoup)`. A dependency the Platform
+- JVM: declare a library of the frame through the catalog, `implementation(libs.jspecify)`. A dependency the Platform
   BOMs manage (Spring Boot starters, Jackson, JUnit) has no version at all. `./gradlew platformDependencyCheck` fails
   on an inline version of either, on a version that differs from the canon and on a `version(...)` override in
   `backend/settings.gradle.kts`.

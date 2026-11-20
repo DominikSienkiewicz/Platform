@@ -260,7 +260,9 @@ that dependency, so declare the starter as well:
 ```kotlin
 implementation(libs.platform.observability.starter)
 implementation(libs.platform.observability.starter) { capabilities { requireFeature("tracing") } }
-implementation(libs.bundles.observability.modulith) // spring-modulith-actuator and -observability
+// Spring Modulith actuator and observability, without a version: the Spring Modulith BOM manages them
+implementation("org.springframework.modulith:spring-modulith-actuator")
+implementation("org.springframework.modulith:spring-modulith-observability")
 ```
 
 With the Micrometer bridge to OpenTelemetry on the classpath, which the `tracing` feature brings,
