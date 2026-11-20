@@ -63,3 +63,10 @@ npm install --no-save <absolute path>/Platform/frontend/packages/<name>
 > `platformRepository` line of [`templates/jvm/spring-app/settings.gradle.kts`](../templates/jvm/spring-app/settings.gradle.kts);
 > otherwise plugins still resolve from GitHub Packages. A missing local artifact may still need
 > remote access.
+
+`buildAndPublishLocal.sh` publishes under the version in `gradle.properties`, which is normally already
+released. On a real consumer the local artifacts then share coordinates with the published ones: Gradle may
+use whichever copy it resolves first, the consumer's dependency verification metadata holds the checksums of the
+published bytes and fails on the local ones, and literal pins in the consumer are not rewritten. Treat such a
+build as a local experiment, and verify the change on the consumer again after the release and its
+`platform-bump`.
