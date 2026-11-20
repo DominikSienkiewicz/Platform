@@ -64,7 +64,7 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0028](0028-agent-guidance-beside-claude-md.md) | Agent guidance: AGENTS.md beside CLAUDE.md, and a managed block in consumers | Accepted |
 | [0029](0029-support-window.md) | Support window: the latest MINOR, at most 3 releases or 60 days behind | Accepted |
 | [0030](0030-quarantine-with-a-deadline.md) | Flaky tests: quarantine with a deadline, and retries that keep the build red | Accepted |
-| [0031](0031-docs-site-with-zensical.md) | A documentation site built with Zensical, deployed when the owner enables Pages | Accepted |
+| [0031](0031-docs-site-with-zensical.md) | A documentation site built with Zensical, deployed when the owner enables Pages | Superseded |
 | [0032](0032-nullness-checking-is-opt-in.md) | Nullness checking is opt-in | Accepted |
 | [0033](0033-prometheus-is-opt-in.md) | Prometheus is opt-in in the observability starter | Accepted |
 | [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md) | One JDK 27 runs Gradle, compiles build-logic and is the consumer toolchain | Accepted |

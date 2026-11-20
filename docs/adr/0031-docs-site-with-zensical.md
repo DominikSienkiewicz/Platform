@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted — 2026-10-19
+Superseded — 2026-11-20: Platform no longer builds a documentation site. Platform 1.13.0 removes `zensical.toml`,
+`docs-site.yml`, `scripts/docs-site.py`, `scripts/docs-versions.py` and `docs/requirements-site.txt`, because nobody
+reads the site and GitHub renders `docs/` itself; `scripts/docs-gen.sh` and `scripts/check-doc-links.py` stay.
+Accepted 2026-10-19.
 
 ## Context
 

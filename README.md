@@ -65,7 +65,6 @@ when a second repository needs it.
 | `default.json` | shared Renovate preset for GitHub Actions and Docker images; Platform pins move with `platform-bump` | `extends: github>DominikSienkiewicz/Platform` | none has a Renovate branch |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh` and `agent-gradle.sh`, and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift | not audited |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` | — |
-| `.claude-plugin/`, `plugins/platform/` | Claude Code marketplace `seniordev-platform` and its plugin `platform`: seven thin skills that open the runbook or the gate section at the tag a repository pins (*incubating*; [install](docs/consumer-agents.md#claude-code-skills)) | git: `claude plugin marketplace add DominikSienkiewicz/Platform#vX.Y.Z` | none |
 | `scripts/` | scripts Platform's own workflows run: `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `preview-on-consumer.sh` (an unreleased Platform on a real consumer) and `canary.sh` (that preview on every consumer, which `release.sh` requires), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included), `adr-index.sh` (the ADR index), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `ring-rollout.sh` (the maintainer's Touchstone-first bump of every consumer), `verify-consumable.sh` (the release resolves as a consumer resolves it), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published | — |
 
 *Incubating* artifacts are published and versioned with everything else, but no product
@@ -213,15 +212,10 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 ## Documentation
 
-- **The documentation as a site** → built from `docs/` with Zensical in strict mode (`docs-site.yml`), one version
-  per released MINOR plus `unreleased (main)`, with a version selector; it goes live on GitHub Pages once the
-  maintainer enables Pages ([RELEASING.md](RELEASING.md#the-documentation-site)).
 - **A reviewer's tour, incident notes and how agents build it** → [docs/tour.md](docs/tour.md),
   [docs/notes/](docs/notes/), [docs/engineering-with-agents.md](docs/engineering-with-agents.md).
 - **Guidance for coding agents** → [AGENTS.md](AGENTS.md) for this repository, the
-  [rule sheet](docs/consumer-agents.md) and the [runbooks](docs/runbooks/README.md) for consumer repositories,
-  and the Claude Code plugin `platform` whose seven skills open those runbooks at the tag a repository pins
-  ([install](docs/consumer-agents.md#claude-code-skills)).
+  [rule sheet](docs/consumer-agents.md) and the [runbooks](docs/runbooks/README.md) for consumer repositories.
 - **Consuming the platform in a product repository** → **[docs/consuming.md](docs/consuming.md)** —
   the Gradle `settings.gradle.kts` and `build.gradle.kts` wiring, and the frontend
   `tsconfig` / ESLint / Tailwind / Vitest setup.
