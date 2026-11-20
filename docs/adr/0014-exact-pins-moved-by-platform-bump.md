@@ -17,7 +17,9 @@ change without a commit in the consumer, and `@v1` had already shipped a permiss
   versions, and `uses: …@vX.Y.Z` for the reusable workflows (Decision 3). The moving `v1` tag was retired once
   every consumer pinned an exact tag (Update, 2026-11-20).
 - One channel moves them: `platform-bump`, run through `scripts/platform-bump.sh` or the reusable
-  `platform-bump.yml` (Decision 5). The Renovate preset covers only GitHub Actions and Docker images.
+  `platform-bump.yml` (Decision 5). The Renovate preset leaves every pin and the rest of the frame to it, and
+  updates what the application owns (Update, 2026-11-20: its Gradle and npm dependencies too, not only GitHub
+  Actions and Docker images).
 - The bump runs the logic of the release it goes to: a copy that is not the target hands over to the target's bin
   from the release assets, checked against `SHA256SUMS` and the attestation (N-DX-4), and `--report` names what
   the crossed releases change for the repository (N-REL-8).
