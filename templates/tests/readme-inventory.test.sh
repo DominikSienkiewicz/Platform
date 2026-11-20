@@ -21,7 +21,7 @@ for workflow in "$root"/.github/workflows/*.yml; do
   grep -qF "\`$name\`" "$root/README.md" || missing+=("README.md: reusable workflow $name")
 done
 
-# Canonical files: a file under jvm/ is covered by its directory row, the rest by their own row.
+# Pliki kanoniczne: plik pod jvm/ pokrywa wiersz jego katalogu, resztę pokrywa wiersz każdego z nich.
 while IFS= read -r path; do
   relative="${path#templates/}"
   case "$relative" in

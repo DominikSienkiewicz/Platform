@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# promote.yml and the deploy.yml it pins, case by case: the preflight and the pin of the called deploy.yml, the signing
-# permissions (only the build job may grant id-token) and the single-image mode. Blocks cut out of the workflows run
-# against stubs. Shared helpers (fail, job) live in lib/workflow.sh.
-# shellcheck disable=SC2016 # literal GitHub expressions
+# promote.yml i przypięty przez niego deploy.yml, przypadek po przypadku: preflight i pin wołanego deploy.yml, uprawnienia
+# podpisu (id-token może nadać tylko job build) i tryb jednego obrazu. Bloki wycięte z workflowów biegną na atrapach.
+# Wspólne helpery (fail, job) są w lib/workflow.sh.
+# shellcheck disable=SC2016 # dosłowne wyrażenia GitHuba
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"

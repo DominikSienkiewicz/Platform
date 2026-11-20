@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One JDK everywhere (ADR-0034), case by case: the workflows, build-logic, modules, SDKMAN and daemon criteria equal the
-# catalog's java entry, and both starters pin the Gradle daemon JVM.
+# Jeden JDK wszędzie (ADR-0034), przypadek po przypadku: workflowy, build-logic, moduły, SDKMAN i kryteria demona równają
+# się wpisowi `java` katalogu, a oba startery przypinają JVM demona Gradle'a.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }

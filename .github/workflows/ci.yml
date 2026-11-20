@@ -3,7 +3,7 @@ name: CI
 # Walidacja pushy do main i PR-ów: czy moduły z gradle/maven-modules.txt budują się na JDK 27,
 # czy paczki frontendu instalują się, przechodzą ESLint, tsc (checkJs, deklaracje .d.ts, testy typów)
 # i własne testy oraz czy przechodzą wszystkie śledzone testy skryptów (*.test.sh poza frontend/).
-# Filtr branches jest celowy: bez niego CI odpala się też na tagach (v1.3.2, ruchomy v1).
+# Filtr branches jest celowy: bez niego CI odpala się też na tagach (np. v1.3.2).
 # Wydanie nie polega na wyniku pushu do main: release.yml woła ten workflow przez workflow_call
 # (job `verify`) na otagowanym commicie i publikuje dopiero po jego zielonym wyniku.
 # Cron w poniedziałek 04:00 UTC: dryf środowiska (runner, Foojay, GitHub Packages) widać tu przed

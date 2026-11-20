@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# deploy.yml, case by case: the layer cache of the image builds, the signed supply chain (digests, Grype and Trivy
-# gates, keyless cosign signature), the single-image mode and the disk freed for the Trivy databases. Blocks cut out of
-# the workflow run against stubs of docker, trivy, cosign and gh, so the tests exercise the shipped code.
-# Shared helpers (fail, block, job, step, line_of, pinned) live in lib/workflow.sh.
-# shellcheck disable=SC2016 # literal GitHub expressions
+# deploy.yml, przypadek po przypadku: cache warstw budowania obrazów, podpisany łańcuch dostaw (digesty, bramki Grype
+# i Trivy, podpis cosign keyless), tryb jednego obrazu i miejsce zwalniane na bazy Trivy. Bloki wycięte z workflowu
+# biegną na atrapach docker, trivy, cosign i gh, więc testy uruchamiają dostarczany kod.
+# Wspólne helpery (fail, block, job, step, line_of, pinned) są w lib/workflow.sh.
+# shellcheck disable=SC2016 # dosłowne wyrażenia GitHuba
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"

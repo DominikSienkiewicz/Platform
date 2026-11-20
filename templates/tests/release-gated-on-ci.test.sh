@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Release must publish only after green CI on the tagged commit.
+# Wydanie publikuje dopiero po zielonym CI na otagowanym commicie.
 #
-# Structure: release.yml calls ci.yml as `verify`, every publishing job needs it, and the npm job holding
-# `packages: write` runs no build. That ci.yml is callable, that a `needs` names a job that exists and that a job
-# reads outputs only of jobs it needs is checked by actionlint in CI. Behaviour: the tag<->version guard
-# is cut out of release.yml between its markers and run as-is, so the test exercises the shipped code.
+# Struktura: release.yml woła ci.yml jako `verify`, każdy job publikujący go wymaga, a job npm z `packages: write`
+# niczego nie buduje. Że ci.yml da się wołać, że `needs` wskazuje istniejący job i że job czyta wyjścia tylko jobów,
+# których wymaga, sprawdza w CI actionlint. Zachowanie: strażnik tag<->wersja jest wycinany z release.yml między
+# znacznikami i uruchamiany bez zmian, więc test uruchamia dostarczany kod.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)

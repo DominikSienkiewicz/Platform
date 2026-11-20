@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# The open-pr block of platform-bump.yml, case by case: the branch, the pull request and what GITHUB_TOKEN may push, and
-# the impact report above the bump log. The block is cut out between its markers and run in a real repository whose
-# origin is a local bare repository, with a stub gh.
+# Blok open-pr z platform-bump.yml, przypadek po przypadku: gałąź, pull request i to, co może wypchnąć GITHUB_TOKEN, oraz
+# raport wpływu nad logiem bumpa. Blok jest wycinany między znacznikami i uruchamiany w prawdziwym repozytorium, którego
+# origin to lokalne bare repo, z atrapą gh.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 
@@ -109,8 +109,8 @@ echo 'OK: the bump pull request is opened once, carries the log, and respects wh
 )
 
 # --- impact-report ---
-# The open-pr block of platform-bump.yml puts the impact report of `platform-bump --report` (N-REL-8) into the pull
-# request body when the bump job produced one, above the log; without a report the body is as before.
+# Blok open-pr z platform-bump.yml wkłada raport wpływu z `platform-bump --report` (N-REL-8) do treści pull requesta,
+# gdy job bumpa go wytworzył, nad logiem; bez raportu treść jest taka jak dotąd.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT

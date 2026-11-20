@@ -3,7 +3,8 @@ name: Promote images (reusable)
 # Promocja zamiast wdrożenia SSH, dla klastra zarządzanego przez Argo CD (ADR-0035):
 #   1. build — deploy.yml z ssh-deploy: false buduje obrazy backendu i frontendu, wypycha je do GHCR, skanuje je po
 #      digeście bramkami Grype i Trivy, a dopiero gdy obie przejdą, podpisuje cosign keyless (job sign, ADR-0036);
-#      budowanie zostaje w jednym miejscu, a konsumenci SSH nie zmieniają zachowania,
+#      budowanie zostaje w jednym miejscu; do przesunięcia pinu w 1.13.1 woła to deploy.yml z v1.10.1, który jeszcze
+#      ma wejście ssh-deploy (deploy.yml z drzewa nie ma już ścieżki SSH),
 #   2. promote — commit z nowymi tagami do values-backend.yaml i values-frontend.yaml w repozytorium GitOps
 #      (scripts/promote-image.sh), tokenem GitHub App z zapisem `contents` tylko do tego jednego repo.
 # single-image: jeden obraz backendu z eksportem frontendu w jarze (tryb single-image deploy.yml), a jego tag idzie do

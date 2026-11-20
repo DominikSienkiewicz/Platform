@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# release.sh, case by case: every case runs a copy of the script in its own temporary repository whose origin is a local
-# bare repository, so nothing reaches the network. The cases: refusals of an unsafe tree and the version bump, the
-# release and versioning contract, the remaining refusals, and consumer action recorded in the history.
+# release.sh, przypadek po przypadku: każdy przypadek uruchamia kopię skryptu we własnym repozytorium tymczasowym,
+# którego origin to lokalne bare repo, więc nic nie wychodzi do sieci. Przypadki: odmowy dla niebezpiecznego drzewa
+# i podbicie wersji, kontrakt wydań i wersjonowania, pozostałe odmowy oraz akcja konsumenta zapisana w historii.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 
 # --- refuse-and-bump ---
-# Hermetic tests for release.sh: every case runs a copy of the script in its own temporary
-# repository whose origin is a local bare repository, so nothing reaches the network.
+# Hermetyczne testy release.sh: każdy przypadek uruchamia kopię skryptu we własnym repozytorium tymczasowym,
+# którego origin to lokalne bare repo, więc nic nie wychodzi do sieci.
 #
-# release.sh must refuse a dirty tree, a branch other than main and a main that is not
-# origin/main before it bumps, commits, tags or pushes anything; a clean release commits only
-# the version files and never creates a moving `v1` tag.
+# release.sh musi odmówić przy brudnym drzewie, gałęzi innej niż main i mainie, który nie jest origin/main,
+# zanim cokolwiek podbije, scommituje, otaguje albo wypchnie; czyste wydanie commituje tylko
+# pliki wersji i nigdy nie tworzy ruchomego tagu `v1`.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -130,17 +130,17 @@ echo 'OK: release.sh refuses unsafe trees and commits only the version bump'
 )
 
 # --- contract ---
-# release.sh enforces the release and versioning contract (docs/adr/0002-release-and-versioning-contract.md):
+# release.sh egzekwuje kontrakt wydań i wersjonowania (docs/adr/0002-release-and-versioning-contract.md):
 #
-# - the message is an English Conventional Commit and becomes the body of
+# - komunikat to angielski Conventional Commit i staje się treścią
 #   "chore(release): platform X.Y.Z";
-# - the version has a CHANGELOG.md section with a "Consumer action required" subsection;
-# - a release with consumer action, or a feat/breaking message without an explicit version,
-#   cannot be a patch;
-# - the version tag is annotated with the CHANGELOG section.
+# - wersja ma sekcję CHANGELOG.md z podsekcją "Consumer action required";
+# - wydanie z akcją konsumenta albo komunikat feat/breaking bez jawnej wersji
+#   nie może być patchem;
+# - tag wersji jest adnotowany sekcją CHANGELOG.
 #
-# Every case runs a copy of release.sh in its own repository whose origin is a local bare
-# repository, so nothing reaches the network. Refusals must leave the repository untouched.
+# Każdy przypadek uruchamia kopię release.sh we własnym repozytorium, którego origin to lokalne bare
+# repo, więc nic nie wychodzi do sieci. Odmowy muszą zostawić repozytorium nietknięte.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -150,7 +150,7 @@ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 readonly CURRENT=1.2.3
 
 
-# seed_repo <name> <changelog body appended after the header>
+# seed_repo <nazwa> <treść changelogu dopisana po nagłówku>
 seed_repo() {
   local name="$1"
   local changelog="$2"
@@ -217,7 +217,7 @@ if bash "$root/scripts/changelog-section.sh" 3.0.0 "$fixture" >/dev/null; then
   fail 'changelog-section.sh must exit non-zero for a version without a section'
 fi
 
-# --- Refusals ------------------------------------------------------------------------------
+# --- Odmowy --------------------------------------------------------------------------------
 work=$(seed_repo message "$(section 1.2.4 'None.')")
 assert_refused "$work" 'a message that is not a Conventional Commit' 'Conventional Commit' 'update libs'
 
@@ -239,7 +239,7 @@ assert_refused "$work" 'a section without Consumer action required' 'Consumer ac
 work=$(seed_repo action-patch "$(section 1.2.4 '- Grant packages: read.')")
 assert_refused "$work" 'a patch that requires consumer action' './release.sh "fix: patch it" 1.3.0' 'fix: patch it'
 
-# --- A minor with consumer action ----------------------------------------------------------
+# --- Minor z akcją konsumenta --------------------------------------------------------------
 work=$(seed_repo minor "$(section 1.3.0 '- Grant packages: read.')")
 if ! run_release "$work" 'feat: require packages read' 1.3.0; then
   cat "$work.log" >&2
@@ -262,10 +262,10 @@ echo 'OK: release.sh enforces the message, CHANGELOG and MINOR rules and annotat
 )
 
 # --- refusals ---
-# release.sh refusals that release-script.test.sh does not cover: an empty message prints the usage,
-# and a version whose tag exists is refused. Neither may commit, tag or push anything.
-# Hermetic like release-script.test.sh: a copy of the script in a temporary repository whose origin
-# is a local bare repository.
+# Odmowy release.sh, których nie pokrywa release-script.test.sh: pusty komunikat wypisuje użycie,
+# a wersja, której tag istnieje, jest odrzucana. Żadna nie może commitować, tagować ani pushować.
+# Hermetycznie jak release-script.test.sh: kopia skryptu w repozytorium tymczasowym, którego origin
+# to lokalne bare repo.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -293,7 +293,7 @@ seed_repo() {
   printf '%s\n' "$work"
 }
 
-# assert_untouched <work> <head before> <tags before>: no commit, no new tag, origin unchanged.
+# assert_untouched <work> <head przed> <tagi przed>: bez commita, bez nowego taga, origin bez zmian.
 assert_untouched() {
   local work="$1" head="$2" tags="$3"
   [[ "$(git -C "$work" rev-parse HEAD)" == "$head" ]] || fail "release.sh committed although it refused"
@@ -301,7 +301,7 @@ assert_untouched() {
   [[ "$(git -C "$work" ls-remote origin refs/heads/main | cut -f1)" == "$head" ]] || fail "release.sh pushed although it refused"
 }
 
-# (a) an empty message prints the usage
+# (a) pusty komunikat wypisuje użycie
 work=$(seed_repo empty-message)
 head=$(git -C "$work" rev-parse HEAD)
 if (cd "$work" && bash ./release.sh "" 1.2.4 -y) > "$work.log" 2>&1; then
@@ -310,7 +310,7 @@ fi
 grep -q 'release.sh "commit message" \[X.Y.Z\] \[-y\]' "$work.log" || fail "an empty message must print the usage"
 assert_untouched "$work" "$head" ""
 
-# (b) a version whose tag already exists is refused
+# (b) wersja, której tag już istnieje, jest odrzucana
 work=$(seed_repo existing-tag)
 git -C "$work" tag v1.2.4
 head=$(git -C "$work" rev-parse HEAD)
@@ -337,7 +337,7 @@ section() {
   printf '## [%s] - 2026-10-19\n\n### Consumer action required\n\n%s\n\n### Fixed\n\n- Something.\n\n' "$1" "$2"
 }
 
-# seed <name> <tag the start: yes|no> <commit message of the change> <changelog section>
+# seed <nazwa> <tag startu: yes|no> <komunikat commita zmiany> <sekcja changelogu>
 seed() {
   local work="$tmp/$1" origin="$tmp/$1.git"
   git init -q --bare -b main "$origin"

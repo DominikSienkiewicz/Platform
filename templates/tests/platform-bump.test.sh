@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# templates/platform-bump.sh, case by case: the stub delegates to the installed bin of @dominiksienkiewicz/versions, and in
-# a repository without a frontend it takes the bin from the GitHub Release assets after checking SHA256SUMS.
+# templates/platform-bump.sh, przypadek po przypadku: stub deleguje do zainstalowanego binu @dominiksienkiewicz/versions,
+# a w repozytorium bez frontendu bierze bin z assetów GitHub Release po sprawdzeniu SHA256SUMS.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 

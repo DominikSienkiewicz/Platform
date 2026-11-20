@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# frontend-ci.yml, case by case: the steps cut out of the workflow run on a throwaway package.json. The cases: the
-# script that failed the job is named, strict mode requires format:check and the OpenAPI types check, and the standard
-# scripts and the version guard. Shared helpers (extract_step, step_condition) live in lib/workflow.sh.
-# shellcheck disable=SC2016 # literal GitHub expressions
+# frontend-ci.yml, przypadek po przypadku: kroki wycięte z workflowu biegną na jednorazowym package.json. Przypadki:
+# nazwany skrypt, który czerwieni job, tryb strict wymagający format:check i sprawdzenia typów OpenAPI oraz standardowe
+# skrypty i strażnik wersji. Wspólne helpery (extract_step, step_condition) są w lib/workflow.sh.
+# shellcheck disable=SC2016 # dosłowne wyrażenia GitHuba
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"
@@ -42,7 +42,7 @@ trap 'rm -rf "$tmp"' EXIT
 extract_step "$workflow" 'Format check' > "$tmp/format.sh"
 step_condition "$workflow" 'Format check' > "$tmp/if.txt"
 [[ -s "$tmp/format.sh" ]] || fail 'frontend-ci.yml has no "Format check" step'
-# shellcheck disable=SC2016 # ${{ inputs.strict }} is a literal GitHub expression, not a shell expansion
+# shellcheck disable=SC2016 # ${{ inputs.strict }} to dosłowne wyrażenie GitHuba, nie rozwinięcie powłoki
 grep -qx '        if: ${{ inputs.strict }}' "$tmp/if.txt" || fail 'the format check must run only with strict: true'
 
 cd "$tmp"
@@ -71,7 +71,7 @@ trap 'rm -rf "$tmp"' EXIT
 extract_step "$workflow" 'OpenAPI types check' > "$tmp/openapi.sh"
 step_condition "$workflow" 'OpenAPI types check' > "$tmp/if.txt"
 [[ -s "$tmp/openapi.sh" ]] || fail 'frontend-ci.yml has no "OpenAPI types check" step'
-# shellcheck disable=SC2016 # ${{ inputs.strict }} is a literal GitHub expression, not a shell expansion
+# shellcheck disable=SC2016 # ${{ inputs.strict }} to dosłowne wyrażenie GitHuba, nie rozwinięcie powłoki
 grep -qx '        if: ${{ inputs.strict }}' "$tmp/if.txt" || fail 'the OpenAPI types check must run only with strict: true'
 
 cd "$tmp"

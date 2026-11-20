@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# templates/agent-gradle.sh, case by case: the agent limits and the backend/ layout, the missing wrapper, the machine-wide
-# test slots and AI_AGENT_MAX_WORKERS.
+# templates/agent-gradle.sh, przypadek po przypadku: limity agenta i układ backend/, brak wrappera, ogólnomaszynowe
+# sloty testów i AI_AGENT_MAX_WORKERS.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -43,8 +43,8 @@ expected="$backend_dir"$'\n:module:test\n--max-workers=2\n--no-parallel'
 )
 
 # --- no-wrapper ---
-# agent-gradle.sh in a repository with neither ./gradlew nor backend/gradlew says so and exits 1,
-# instead of failing on exec with "No such file or directory" (exit 127).
+# agent-gradle.sh w repozytorium bez ./gradlew i bez backend/gradlew mówi o tym i kończy się kodem 1,
+# zamiast paść na exec z "No such file or directory" (kod 127).
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT

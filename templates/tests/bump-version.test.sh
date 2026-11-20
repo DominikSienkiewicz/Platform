@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# bump-version.sh, case by case: semver of the backend, the changeset in an empty Liquibase master and the repository name as
-# author, and the numbering of new changesets after the highest existing prefix.
+# bump-version.sh, przypadek po przypadku: semver backendu, changeset w pustym masterze Liquibase i nazwa repozytorium
+# jako autor oraz numeracja nowych changesetów po najwyższym istniejącym prefiksie.
 set -euo pipefail
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -51,8 +51,8 @@ echo 'OK: bump-version bumps semver, writes changesets into an empty master and 
 )
 
 # --- changeset-numbering ---
-# bump-version.sh db new-migration numbers the new Liquibase changeset after the highest existing
-# 4-digit prefix and ignores files without one.
+# bump-version.sh db new-migration numeruje nowy changeset Liquibase po najwyższym istniejącym
+# 4-cyfrowym prefiksie i pomija pliki bez niego.
 (
 canon="$(cd "$(dirname "$0")/.." && pwd)/bump-version.sh"
 tmp=$(mktemp -d)

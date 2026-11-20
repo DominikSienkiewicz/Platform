@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# backend-ci.yml, case by case: the Gradle step forwards separate tasks without expanding wildcards and keeps the Gradle
-# exit code behind tee, and the Spring Modulith documentation of every module is uploaded.
-# Shared helpers (extract_step) live in lib/workflow.sh.
+# backend-ci.yml, przypadek po przypadku: krok Gradle przekazuje osobne zadania bez rozwijania wildcardów i zachowuje kod
+# wyjścia Gradle'a za tee, a dokumentacja Spring Modulith każdego modułu jest wysyłana jako artefakt.
+# Wspólne helpery (extract_step) są w lib/workflow.sh.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"
@@ -60,7 +60,7 @@ echo 'OK: the backend-ci Gradle step keeps the Gradle exit code and the output f
 (
 step=$(sed -n '/- name: Upload Spring Modulith documentation/,/retention-days/p' "$root/.github/workflows/backend-ci.yml")
 [[ -n "$step" ]] || { echo 'FAIL: backend-ci.yml has no "Upload Spring Modulith documentation" step' >&2; exit 1; }
-# shellcheck disable=SC2016 # literal GitHub expressions
+# shellcheck disable=SC2016 # dosłowne wyrażenia GitHuba
 for expected in 'name: module-docs-${{ github.run_id }}' 'path: ${{ inputs.working-directory }}/**/build/spring-modulith-docs/' 'if-no-files-found: ignore'; do
   grep -qF "$expected" <<<"$step" || { echo "FAIL: the module docs upload needs: $expected" >&2; exit 1; }
 done

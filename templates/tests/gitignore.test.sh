@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# .gitignore, case by case: no tracked file matches the ignore rules and the OS and editor sections equal the canon, and the
-# JVM starters carry the rules of root.gitignore plus backend.gitignore.
+# .gitignore, przypadek po przypadku: żaden śledzony plik nie pasuje do reguł ignorowania, sekcje systemu i edytora
+# równają się kanonowi, a startery JVM niosą reguły root.gitignore plus backend.gitignore.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # --- hygiene ---
-# No tracked file matches the ignore rules (Buildship output under gradle/*/bin/ once slipped in), and the
-# OS and editor sections of Platform's .gitignore equal the canonical templates/gitignore/root.gitignore.
+# Żaden śledzony plik nie pasuje do reguł ignorowania (raz wpadł wynik Buildship w gradle/*/bin/), a sekcje
+# systemu i edytora w .gitignore Platform równają się kanonicznemu templates/gitignore/root.gitignore.
 (
 tracked=$(git -C "$root" ls-files -ci --exclude-standard)
 [[ -z "$tracked" ]] || fail "tracked files match .gitignore; untrack them with git rm --cached:
 $tracked"
 
-# section <heading prefix> <file>: the lines of that section, up to the next blank line
+# section <prefiks nagłówka> <plik>: wiersze tej sekcji, do następnego pustego wiersza
 section() {
   local heading="$1" file="$2"
   awk -v heading="$heading" 'index($0, heading) == 1 { inside = 1 } inside && /^$/ { exit } inside' "$file"

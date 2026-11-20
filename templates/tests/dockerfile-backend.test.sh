@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# templates/Dockerfile.backend, case by case: the healthcheck, JVM flags and non-root user (the probe runs against a stub
-# HTTP server), and the Boot layers with the opt-in AOT cache.
+# templates/Dockerfile.backend, przypadek po przypadku: healthcheck, flagi JVM i użytkownik inny niż root (sonda biegnie
+# na atrapie serwera HTTP) oraz warstwy Boota z opcjonalnym cache AOT.
 set -euo pipefail
 fail() { echo "FAIL: $*" >&2; exit 1; }
 

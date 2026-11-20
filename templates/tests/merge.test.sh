@@ -592,9 +592,9 @@ test_no_colour_wins_over_forced_colour() {
   return $?
 }
 
-# merge.sh warns, and still merges, when the source re-applies commits whose changes are already on the target (the same
-# patch-id, for example a cherry-pick merged by two routes): a hotfix cherry-picked to main and then merged with its
-# branch is a legal pattern. Hermetic repository, no origin (--offline).
+# merge.sh ostrzega, gdy gałąź źródłowa nakłada commity, których zmiany już są na celu (ten sam patch-id,
+# np. cherry-pick wpięty dwiema drogami), i mimo to merguje: hotfix wybrany na main, a potem merge gałęzi
+# to legalny wzorzec. Hermetyczne repo, bez origin (--offline).
 test_duplicate_commits_warn_and_still_merge() {
   local work="$WORK/duplicates" repo out=""
   mkdir -p "$work"
@@ -634,10 +634,11 @@ test_duplicate_commits_warn_and_still_merge() {
   return $?
 }
 
-# merge.sh treats `.kotlin/` like `build/`: it is the Kotlin plugin's cache for Gradle (sessions/, errors/), which stays in
-# every module that compiles Kotlin (gradle/build-logic, a consumer's buildSrc) and is rebuilt by the next build. On
-# 2026-10-19 an empty `gradle/build-logic/.kotlin/sessions/` alone blocked a Platform branch merge with "has local or
-# ignored files". A similar name that is not that cache still blocks. Hermetic repository, no origin (--offline).
+# merge.sh traktuje `.kotlin/` jak `build/`: to cache pluginu Kotlina dla Gradle (sessions/, errors/), który zostaje
+# w każdym module kompilującym Kotlina (gradle/build-logic, buildSrc konsumenta) i odtwarza się przy następnym buildzie.
+# 2026-10-19 sam pusty `gradle/build-logic/.kotlin/sessions/` zablokował merge gałęzi Platform komunikatem
+# "has local or ignored files: !! gradle/build-logic/.kotlin/". Podobna nazwa, która nie jest tym cache'em,
+# nadal blokuje. Hermetyczne repo, bez origin (--offline).
 test_kotlin_cache_is_build_output_but_look_alikes_block() {
   local work="$WORK/kotlin-cache" repo out=""
   mkdir -p "$work"

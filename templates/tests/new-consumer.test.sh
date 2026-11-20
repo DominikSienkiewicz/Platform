@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# scripts/new-consumer.sh, case by case: the rendered spring-app and java-library consumers, the build context
-# Dockerfile.frontend needs, the strict Next.js frontend, the import order of the rendered sources and the sub-packages
-# of the starter.
-# shellcheck disable=SC2016 # literal GitHub expressions
+# scripts/new-consumer.sh, przypadek po przypadku: wyrenderowani konsumenci spring-app i java-library, kontekst
+# budowania, którego wymaga Dockerfile.frontend, frontend Next.js w trybie strict, kolejność importów wyrenderowanych
+# źródeł i podpakiety startera.
+# shellcheck disable=SC2016 # dosłowne wyrażenia GitHuba
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }

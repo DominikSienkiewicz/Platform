@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# upstream-canary.yml, case by case: the next-JDK leg fails on bytecode a tool cannot read, and runs Checkstyle on the
-# canon toolchain while the rest of the starter builds on the next JDK. Blocks cut out of the workflow run on logs and a
-# stub gradlew. Shared helpers (fail, block) live in lib/workflow.sh.
+# upstream-canary.yml, przypadek po przypadku: noga next-jdk failuje na bajtkodzie, którego narzędzie nie czyta, i uruchamia
+# Checkstyle na toolchainie kanonu, gdy reszta startera buduje się na następnym JDK. Bloki wycięte z workflowu biegną na
+# logach i stubie gradlew. Wspólne helpery (fail, block) są w lib/workflow.sh.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"

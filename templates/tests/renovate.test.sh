@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Renovate, case by case: the shared preset covers actions and Docker only and Platform's own config manages the canons,
-# and the preset delays fresh releases while security fixes pass at once.
+# Renovate, przypadek po przypadku: wspólny preset obejmuje tylko akcje i Dockera, a własna konfiguracja Platform pilnuje
+# kanonów; preset opóźnia świeże wydania, a poprawki bezpieczeństwa przechodzą od razu.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # --- config ---
-# The shared Renovate preset covers GitHub Actions and Docker only (Decision 5): Gradle, npm and the
-# Platform pins belong to platform-bump. Platform's own renovate.json manages the two canons, and its
-# regexes match every entry of versions.json and both lines of the digest-pinned Snyk image.
+# Wspólny preset Renovate obejmuje tylko GitHub Actions i Dockera (Decyzja 5): Gradle, npm i piny Platform
+# należą do platform-bump. Własny renovate.json Platform pilnuje obu kanonów, a jego regexy pasują do każdego
+# wpisu versions.json i obu wierszy obrazu Snyka przypiętego po digeście.
 (
 node --input-type=module - "$root" <<'NODE'
 import { readFileSync } from "node:fs";

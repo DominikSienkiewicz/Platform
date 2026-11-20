@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# release.yml, case by case: every job and every block cut out of the workflow runs against stubs, so the tests
-# exercise the shipped code. The cases: attestation and publication of the npm tarballs, the GitHub Release notes,
-# the unambiguous npm publish path, the spring-app starter of verify-bundle, verify-published and version_exists.
-# Shared helpers (fail, block, job) live in lib/workflow.sh.
+# release.yml, przypadek po przypadku: każdy job i każdy blok wycięty z workflowu biegnie na atrapach, więc testy
+# uruchamiają dostarczany kod. Przypadki: atestacja i publikacja tarballi npm, notatki GitHub Release, jednoznaczna
+# ścieżka npm publish, starter spring-app w verify-bundle, verify-published i version_exists.
+# Wspólne helpery (fail, block, job) są w lib/workflow.sh.
 set -euo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib/workflow.sh
 source "$(dirname "$0")/lib/workflow.sh"
@@ -78,13 +78,11 @@ echo 'OK: release.yml attests the files it publishes and publishes the attested 
 )
 
 # --- github-release ---
-# release.yml creates the GitHub Release of a version from its CHANGELOG.md section, after both
-# publications, and only once.
+# release.yml tworzy GitHub Release wersji z jej sekcji CHANGELOG.md, po obu publikacjach i tylko raz.
 #
-# Structure: the github-release job needs version, gradle and npm, holds contents: write and
-# nothing writable for packages. Behaviour: the notes step is cut out of release.yml between its
-# markers and run against a throwaway repository with a stubbed gh, so the test exercises the
-# shipped code.
+# Struktura: job github-release wymaga version, gradle i npm, ma contents: write i nic zapisywalnego dla packages.
+# Zachowanie: krok z notatkami jest wycinany z release.yml między znacznikami i uruchamiany na jednorazowym repozytorium
+# z atrapą gh, więc test uruchamia dostarczany kod.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -92,7 +90,7 @@ trap 'rm -rf "$tmp"' EXIT
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 
 
-# --- Structure -------------------------------------------------------------------------------
+# --- Struktura -------------------------------------------------------------------------------
 block=$(job github-release)
 [[ -n "$block" ]] || fail "release.yml must have a github-release job"
 grep -Eq '^    needs: \[version, gradle, npm\][[:space:]]*$' <<<"$block" \
@@ -102,7 +100,7 @@ if grep -Eq 'packages:[[:space:]]*write' <<<"$block"; then
   fail "github-release must not hold packages: write"
 fi
 
-# --- Behaviour -------------------------------------------------------------------------------
+# --- Zachowanie ------------------------------------------------------------------------------
 step="$tmp/notes-step.sh"
 block github-release-notes > "$step"
 [[ -s "$step" ]] || fail "release.yml has no github-release-notes block between its markers"
@@ -234,8 +232,8 @@ echo 'OK: verify-bundle gives spring-app the wrapper of java-library next to its
 )
 
 # --- verify-published ---
-# verify-published in release.yml fails a release unless every published artifact carries the version.
-# The block is cut out between its markers and run in a fake checkout against stub gh and npm.
+# verify-published w release.yml czerwieni wydanie, jeśli któryś opublikowany artefakt nie niesie wersji.
+# Blok jest wycinany między znacznikami i uruchamiany w atrapie checkoutu na atrapach gh i npm.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -253,7 +251,7 @@ touch "$checkout/gradle/build-logic/src/main/kotlin/seniordev.java-conventions.g
 printf '{ "name": "@dominiksienkiewicz/eslint-config" }\n' > "$checkout/frontend/packages/eslint-config/package.json"
 printf '{ "name": "@dominiksienkiewicz/query", "private": true }\n' > "$checkout/frontend/packages/query/package.json"
 
-# Stubs: gh lists 1.6.0 for every Maven package except $MISSING_MAVEN; npm knows 1.6.0 unless $MISSING_NPM.
+# Atrapy: gh wypisuje 1.6.0 dla każdej paczki Maven poza $MISSING_MAVEN; npm zna 1.6.0, chyba że ustawiono $MISSING_NPM.
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
@@ -298,8 +296,8 @@ echo 'OK: verify-published requires the version on every Maven package and every
 )
 
 # --- version-exists ---
-# version_exists in release.yml decides whether a Maven module is already published and skipped on a
-# re-run. The block is cut out of release.yml between its markers and run against a stub gh.
+# version_exists w release.yml rozstrzyga, czy moduł Maven jest już opublikowany i pomijany przy ponownym przebiegu.
+# Blok jest wycinany z release.yml między znacznikami i uruchamiany na atrapie gh.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -308,9 +306,9 @@ trap 'rm -rf "$tmp"' EXIT
 block version-exists > "$tmp/version-exists.sh"
 [[ -s "$tmp/version-exists.sh" ]] || fail 'release.yml has no version-exists block between its markers'
 
-# Stub gh: prints the names in $STUB_NAMES_FILE (one per line), or fails like a 404 when STUB_STATUS != 0.
-# A file, not an environment variable: Linux refuses to exec with one variable over 128 KiB (MAX_ARG_STRLEN),
-# and the long list below is larger than that.
+# Atrapa gh: wypisuje nazwy z $STUB_NAMES_FILE (po jednej w wierszu) albo failuje jak 404, gdy STUB_STATUS != 0.
+# Plik, nie zmienna środowiskowa: Linux odmawia exec przy jednej zmiennej powyżej 128 KiB (MAX_ARG_STRLEN),
+# a długa lista poniżej jest większa.
 mkdir -p "$tmp/bin"
 cat > "$tmp/bin/gh" <<'GH'
 #!/usr/bin/env bash
@@ -332,7 +330,7 @@ if check 1.5.3; then fail 'a prefix of a published version is not that version';
 published 1.5.30
 if check 1.5.31; then fail 'an unpublished version must not be found'; fi
 if STUB_STATUS=1 check 1.5.31; then fail 'a missing package (404) means not published'; fi
-# Many versions, the match first: grep stops early, which must not turn into "not published".
+# Wiele wersji, trafienie pierwsze: grep kończy wcześnie, co nie może zamienić się w "nieopublikowane".
 { printf '1.6.0\n'; seq -f '0.%g.0' 1 50000; } > "$tmp/names"
 check 1.6.0 || fail 'an early match in a long version list must be found'
 
