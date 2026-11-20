@@ -28,13 +28,38 @@ Platform 1.13.0 slims Platform to the frame: what no consumer used is removed. A
 calling the `deploy.yml` of v1.10.1 with `ssh-deploy: false` until 1.13.1 moves that pin to the commit of the v1.13.0
 tag, so the `deploy.yml` removals below reach only direct callers of that file.
 
+It also simplifies the release and the bump: `release.sh` no longer waits for a consumer canary and composes a
+missing version section from the commits, a template schedules the weekly `platform-bump.yml`, and the Renovate preset
+updates what the application owns while leaving the frame to `platform-bump`. `platform-test-fixtures` gains one shared
+architecture test, `AbstractArchitectureTest`.
+
 ### Consumer action required
 
 None for Azimuth, Touchstone and Training: none of them uses an artifact, input or file listed under **Removed**,
 except that the frontend canon dropped `@tanstack/react-query`, which Training pins in its own `frontend/package.json`:
 Training now owns that exact version and `platform-versions-check` no longer holds it. Their `AGENTS.md` changes on the
 next bump without any action: the managed `platform-agents` block lost its "Skills: /platform:…" line, because the
-Claude Code plugin it named is gone.
+Claude Code plugin it named is gone. Nothing else in this release needs action from them; the additions below take
+effect in a repository only when it adopts them.
+
+Recommended with the bump, not required:
+
+- Copy `templates/github/workflows/platform-bump.yml` to `.github/workflows/platform-bump.yml` and set the tag in its
+  `uses:` to the repository's Platform pin once; every bump moves it from then on. It runs the bump every Monday at
+  06:00 UTC and on `workflow_dispatch`, and passes the repository secrets `GPR_TOKEN` and
+  `PLATFORM_BUMP_TOKEN` as `gpr_token` and `bump_token`
+  ([reusable workflows](docs/reusable-workflows.md#platform-bumpyml)).
+- Add a `renovate.json` with `"extends": ["github>DominikSienkiewicz/Platform"]`, so Renovate updates the
+  application's own dependencies and never the frame (see **Changed**). Azimuth then removes `.github/dependabot.yml`,
+  so two bots do not update the same dependencies.
+- Replace the hand-written architecture test with a subclass of `AbstractArchitectureTest`
+  ([ADR-0038](docs/adr/0038-shared-architecture-test.md)): Azimuth replaces `HexagonalArchitectureTest`, and
+  Training the body of its `ArchitectureTest`. The shared rules check more than Azimuth's test did (every
+  `PlatformArchRules` rule and `applicationReachesAdaptersThroughPorts`), so fix what they report first. Touchstone adds
+  `testImplementation(libs.platform.test.fixtures)` and a subclass in `:app` whose `hexagonal()` returns `false`, so
+  only the `PlatformArchRules` tests run.
+- Touchstone aligns `backend/.gitignore` with `templates/gitignore/backend.gitignore`: its unanchored `out/` also
+  hides any `adapter/out` or `port/out` source package (see **Fixed**). Azimuth and Training already anchor it.
 
 External callers and users of the removed items (manual):
 
@@ -60,10 +85,36 @@ External callers and users of the removed items (manual):
 - A configuration that sets `platform.observability.public-metrics` drops it; Spring ignores the unknown property, and
   `platform.observability.prometheus` stays opt-in ([ADR-0033](docs/adr/0033-prometheus-is-opt-in.md)).
 - A script that reads `platform-doctor` output no longer meets PD050; the check went with the SSH deploy.
+- Platform's maintainer no longer runs `scripts/canary.sh`, `scripts/preview-on-consumer.sh` or
+  `scripts/ring-rollout.sh`, and `release.sh` refuses `--skip-canary` as an unexpected argument. An unreleased change
+  is tried on a consumer with `-PplatformRepository` ([runbook](docs/runbooks/test-unreleased-change.md)), and a
+  consumer takes a release with `scripts/platform-bump.sh` or its own `platform-bump.yml` caller.
 
 ### Added
 
 - CI lints every workflow with actionlint (pinned version).
+- `release.sh` composes the `## [X.Y.Z] - YYYY-MM-DD` section when CHANGELOG.md has none for the version. It runs
+  `scripts/release-notes.sh` over the commits since the previous `vX.Y.Z` tag, inserts the section, dated today, under
+  an empty `## [Unreleased]`, and commits CHANGELOG.md with the version files; the tag and the GitHub Release carry
+  that section. A hand-written section still wins. The composed `### Consumer action required` lists every
+  `Consumer-Action:` trailer and a `Breaking change:` line for each `!` subject or `BREAKING CHANGE:` footer that no
+  trailer covers, merge commits included, and says `None.` when there are none, so the MINOR rule of
+  [ADR-0002](docs/adr/0002-release-and-versioning-contract.md) applies unchanged.
+- `templates/github/workflows/platform-bump.yml`: a caller of the reusable `platform-bump.yml` that runs every Monday
+  at 06:00 UTC and on `workflow_dispatch`, with an optional `version`. It pins the workflow by an exact tag, which
+  `platform-bump` moves, and is not in `templates/manifest.json`, because that tag differs per repository.
+  `templates/tests/platform-bump-caller.test.sh` holds it to the workflow contract.
+- `scripts/renovate-preset.py` generates the `Frame:` rules of the Renovate preset `default.json` from
+  `gradle/catalog/libs.versions.toml` and `frontend/packages/versions/versions.json` and keeps the hand-written rules.
+  Its `--check` mode runs in CI through `templates/tests/renovate.test.sh` and fails when the catalog or the canon
+  changed without a regenerated preset.
+- `platform-test-fixtures`: `pl.seniordeveloper.platform.testing.arch.AbstractArchitectureTest`
+  ([ADR-0038](docs/adr/0038-shared-architecture-test.md)). A subclass with `@AnalyzeClasses` runs every
+  `PlatformArchRules` rule, the three `HexagonalRules.of(...)` rules and the new
+  `HexagonalRules.outboundAdaptersDoNotDependOnInboundAdapters`, each as its own test, on the package canon `domain`,
+  `application` (ports under `application.port..`), `adapter.in` and `adapter.out`. An empty layer passes, the five
+  package methods can be overridden, and `hexagonal()` returning `false` skips the four layer tests for flat modules.
+  It cannot freeze or leave out a single rule. `HexagonalRules.of(...)` keeps its three rules.
 
 ### Changed
 
@@ -86,6 +137,36 @@ External callers and users of the removed items (manual):
   note or a corrected sentence where they named a removed part.
 - `scripts/adr-index.sh` is gone: the ADR index is a region of `scripts/docs-gen.sh`, which CI already runs.
 - The README has no "Adopted by" column and no Codespaces button, and the reviewer tour has nine stops.
+- The Renovate preset `default.json` updates what the application owns: the `gradle` and `npm` managers are enabled
+  with `rangeStrategy: pin` (peer dependency and `engines` ranges stay ranges), next to GitHub Actions and Docker
+  images as before. Generated `Frame:` rules keep Renovate off everything `platform-bump` moves: the Gradle wrapper,
+  every library and plugin of the catalog (plugins by id and by marker coordinate), `pl.seniordeveloper:*`,
+  `seniordev.*`, every key of `versions.json`, `@dominiksienkiewicz/*` and the references to Platform's reusable
+  workflows. Renovate reads the preset from Platform's `main`, so a repository that extends it gets the change from
+  the merge on, not from the release. Docker images keep their rules, so a base image can still be offered a Java or
+  Node major the frame has not adopted. ADR-0001, ADR-0002 and ADR-0014 have an update.
+- `release.sh` refuses an argument outside `"<message>" [X.Y.Z] [-y]`, a leftover `--skip-canary` included (a `-y` in
+  place of the version gets the two forms that work). When it has to compose the section, it also refuses a
+  CHANGELOG.md without `## [Unreleased]` or with entries under it, a first-parent subject since the previous tag that
+  is not a Conventional Commit, a newest version section without its tag (release that version first) and a range
+  without commits; each refusal says to write the section by hand or what to release first.
+- `scripts/release-notes.sh` reads the consumer actions from every commit of the range, merge commits included: each
+  `Consumer-Action:` trailer once, and a `Breaking change:` line only where no trailer covers the change, a merge
+  commit and the commits it brings in counting as one change. `--markers` prints those markers for the history check
+  of `release.sh`, so the composed section and the check read one source.
+- `pr-title` stays an advisory pull request check: `.github/rulesets/main.json` requires no status check, because the
+  owner integrates and releases by direct push, which a required check would reject.
+  `templates/tests/pr-title.test.sh` now fails when the ruleset requires one.
+- The pull request template asks for a `Consumer-Action:` trailer instead of an `[Unreleased]` entry per change.
+- RELEASING.md, the `cut-release` and `test-unreleased-change` runbooks and `docs/local-development.md` describe the
+  release without the canary and the composed section; ADR-0002 and ADR-0018 have an update. `docs/reference.md`,
+  `docs/consuming.md` and the `ddd-modeling` runbook point to `AbstractArchitectureTest`.
+- The modules of `gradle/maven-modules.txt` stay separate Gradle builds. Joining them in one build was planned only if
+  the median of the CI job "Gradle — every module of gradle/maven-modules.txt" over its first five runs on `main`
+  from dc24fe4 (the slimming) on exceeded 6 minutes. Those runs took 8.78, 5.33, 1.40, 7.48 and 5.27 minutes, a
+  median of 5.33, so the plan is dropped. Most of a long run is the TestKit suite of `gradle/build-logic`, which one
+  build would not shorten. Running that suite in two test JVMs instead was measured locally: about 16% faster on warm
+  caches (a median of 54.5 s against 45.7 s), short of the 30% it needed, so it is not adopted either.
 
 ### Removed
 
@@ -121,6 +202,10 @@ External callers and users of the removed items (manual):
   `scripts/docs-versions.py`) and the `seniordev-platform` Claude Code marketplace with its `platform` plugin of seven
   skills ([ADR-0031](docs/adr/0031-docs-site-with-zensical.md) is superseded).
 - **Maintainer tools:** `scripts/gate-failures.py` and `consumer-audit.sh --lag` and `--adoption`.
+- **Release flow:** the consumer canary, that is `scripts/canary.sh`, `scripts/preview-on-consumer.sh` and
+  `scripts/ring-rollout.sh` with their tests, the canary gate of `release.sh` with `--skip-canary` and the
+  `Canary-Skipped:` trailer, and the preview section of `docs/local-development.md`; and `release-draft.yml`, which
+  kept a draft GitHub Release **Next** (`scripts/release-notes.sh v<previous>..HEAD` shows the next section).
 
 ### Fixed
 
@@ -132,6 +217,16 @@ External callers and users of the removed items (manual):
   `eslint-config-next`, npm keeps the locked 8.60.1, whose `typescript-estree` still takes `minimatch` 10;
   `npm update typescript-eslint --package-lock-only` takes 8.73.0, the first release with `minimatch` 11. Platform's own
   workspace lockfile resolves `minimatch` 11.0.9, `@eslint/config-array` 0.23.6 and `typescript-eslint` 8.73.0.
+- The canonical `templates/gitignore/backend.gitignore` and the `.gitignore` of the two JVM starters ignored every
+  directory named `out`, so they also hid hexagonal `adapter/out` and `port/out` source packages. They now ignore
+  IntelliJ's output only, with `/out/`, `**/out/production/` and `**/out/test/`, and
+  `templates/tests/gitignore.test.sh` checks both directions. The `.gitignore` copies are not in
+  `templates/manifest.json`, so `platform-templates-check` does not report the old rule.
+- The history check of `release.sh` read only non-merge commits, so a `!` subject, a `BREAKING CHANGE:` footer or a
+  `Consumer-Action:` trailer written only in a `./merge.sh` message let a PATCH through; it now reads merge commits
+  too. It also read only local tags and skipped the check when the previous release's tag existed only on `origin`:
+  `release.sh` now fetches the release tags from `origin` first and refuses when it cannot, for example when a local
+  tag differs from the one on `origin`.
 
 ### Maintainer notes
 
@@ -140,7 +235,17 @@ Not consumer actions. The owner does these in GitHub after the release:
 - delete the `v1-pointer` ruleset and the remote `v1` tag (`git push origin :refs/tags/v1`);
 - delete the secrets `SONAR_TOKEN`, `PLATFORM_EXAMPLE_TOKEN` and `PACKAGES_ADMIN_TOKEN`;
 - delete the two SonarQube Cloud projects of `platform-test-fixtures` and `platform-security-starter`;
-- archive the `platform-example` repository.
+- archive the `platform-example` repository;
+- create the secret `PLATFORM_BUMP_TOKEN` (a classic PAT with the `repo` and `workflow` scopes) in Azimuth, Touchstone
+  and Training, which the weekly caller passes as `bump_token`; without it the bump pull request runs no CI and
+  leaves the workflow references alone, and `scripts/repo-settings.sh --check --consumers` reports it as missing;
+- install the Renovate app on Azimuth, Touchstone and Training, and decide how Renovate authenticates to GitHub
+  Packages (host rules in each consumer's `renovate.json`, with an encrypted token or the app's secrets) before its
+  Gradle and npm pull requests can resolve Platform's artifacts, which GitHub Packages serves only with a token; the
+  shared preset carries no `hostRules`.
+
+`scripts/repo-settings.sh --apply` changes nothing for `pr-title`: `.github/rulesets/main.json` is the same as in
+1.12.0, so direct pushes to `main` keep working.
 
 ## [1.12.0] - 2026-11-20
 
