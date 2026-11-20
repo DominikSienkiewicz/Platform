@@ -32,7 +32,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Find the release candidate
@@ -46,7 +46,7 @@ jobs:
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
           [ -n "$version" ] || echo "::notice::There is no Gradle release candidate right now."
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         if: ${{ steps.rc.outputs.version != '' }}
         id: toolchain-jdk
         with:
@@ -89,7 +89,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       # Blok testuje templates/tests/upstream-canary.test.sh.
@@ -101,7 +101,7 @@ jobs:
           echo "canon=$java" >> "$GITHUB_OUTPUT"
           echo "version=$((java + 1))" >> "$GITHUB_OUTPUT"
           # <<< next-jdk-versions
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         id: next-jdk
         continue-on-error: true
         with:
@@ -112,7 +112,7 @@ jobs:
         env:
           NEXT: ${{ steps.next.outputs.version }}
         run: echo "::notice::There is no Temurin early-access build of Java $NEXT right now."
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         if: ${{ steps.next-jdk.outcome == 'success' }}
         with:
           distribution: temurin
@@ -204,7 +204,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Look for the Temurin image of the toolchain
