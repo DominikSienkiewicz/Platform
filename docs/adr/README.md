@@ -30,8 +30,9 @@ Every settled decision of the maintainer's backlog has an ADR; Decision 23 was a
 | 37 (Prometheus) | [0033](0033-prometheus-is-opt-in.md) |
 | Gate codes, agent guidance, support window, quarantine, docs site, nullness, toolchain override (2026-10-19) | [0027](0027-gate-codes-are-a-contract.md), [0028](0028-agent-guidance-beside-claude-md.md), [0029](0029-support-window.md), [0030](0030-quarantine-with-a-deadline.md), [0031](0031-docs-site-with-zensical.md), [0032](0032-nullness-checking-is-opt-in.md), [0004](0004-consumer-toolchain-jdk-27.md) (carried over by [0034](0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)) |
 
-The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI fails when it is stale.
+The table below is generated from the ADR headers by `scripts/docs-gen.sh`; CI fails when it is stale.
 
+<!-- docs-gen:adr-index -->
 | # | Decision | Status |
 | --- | --- | --- |
 | [0001](0001-platform-single-source-and-latest-version-rule.md) | Platform as the single source of shared artifacts, and the latest-in-portfolio rule | Accepted |
@@ -71,3 +72,4 @@ The table below is generated from the ADR headers by `scripts/adr-index.sh`; CI 
 | [0035](0035-promotion-by-commit-for-argo-cd.md) | Promotion by commit replaces SSH deploy for a cluster managed by Argo CD | Accepted |
 | [0036](0036-images-signed-keyless-after-the-gates.md) | Application images are signed keyless, and only after the scan gates | Accepted |
 | [0037](0037-platform-governs-the-frame.md) | Platform governs the frame, and consumers own the rest | Accepted |
+<!-- /docs-gen -->

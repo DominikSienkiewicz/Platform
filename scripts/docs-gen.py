@@ -6,7 +6,9 @@ Regions:
   file, so a snippet cannot drift from the template it shows;
 - `<!-- docs-gen:inputs <workflow>.yml -->` … `<!-- /docs-gen -->`: the inputs table of a reusable workflow, from
   `on.workflow_call.inputs` of .github/workflows/<workflow>.yml;
-- `<!-- docs-gen:npm-packages -->` … `<!-- /docs-gen -->`: every package under frontend/packages, from its package.json.
+- `<!-- docs-gen:npm-packages -->` … `<!-- /docs-gen -->`: every package under frontend/packages, from its package.json;
+- `<!-- docs-gen:adr-index -->` … `<!-- /docs-gen -->`: the table of the ADRs in the directory of the document (number from
+  the file name, title from `# ADR-NNNN: …`, status from the first word under `## Status`).
 With --check nothing is written: the script lists the files whose regions are stale and exits 1.
 """
 import glob
@@ -89,12 +91,32 @@ def npm_packages():
     return "\n".join(rows) + "\n"
 
 
-def region(match):
+def adr_index(directory):
+    rows = ["| # | Decision | Status |", "| --- | --- | --- |"]
+    for adr in sorted(glob.glob(os.path.join(directory, "[0-9][0-9][0-9][0-9]-*.md"))):
+        name = os.path.basename(adr)
+        number = name.split("-")[0]
+        with open(adr, encoding="utf-8") as handle:
+            lines = handle.read().splitlines()
+        title = re.match(rf"^# ADR-{number}: (.*)$", lines[0]) if lines else None
+        status = None
+        if "## Status" in lines:
+            following = [line.split()[0] for line in lines[lines.index("## Status") + 1 :] if line.strip()]
+            status = following[0] if following else None
+        if not title or not status:
+            raise SystemExit(f"{name} needs a first line '# ADR-{number}: <title>' and a '## Status' section.")
+        rows.append(f"| [{number}]({name}) | {title.group(1)} | {status} |")
+    return "\n".join(rows) + "\n"
+
+
+def region(match, directory):
     kind, argument = match.group(2), match.group(3)
     if kind == "inputs":
         body = inputs_table(argument)
     elif kind == "npm-packages":
         body = npm_packages()
+    elif kind == "adr-index":
+        body = adr_index(directory)
     else:
         raise SystemExit(f"unknown docs-gen region {kind}")
     return match.group(1) + body + match.group(5)
@@ -107,7 +129,7 @@ def main():
         if "/docs/concepts/" in path:
             continue
         text = open(path, encoding="utf-8").read()
-        generated = REGION.sub(region, INCLUDE.sub(include, text))
+        generated = REGION.sub(lambda match: region(match, os.path.dirname(path)), INCLUDE.sub(include, text))
         if generated != text:
             stale.append(os.path.relpath(path, root))
             if not check:
