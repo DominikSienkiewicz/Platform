@@ -21,17 +21,23 @@ class PlatformDependencyCheckFunctionalTest {
 		consumer.appendToBuildScript(
 			"""
 			dependencies {
-			    implementation("org.jsoup:jsoup:1.0.0")
+			    implementation("org.jspecify:jspecify:0.3.0")
 			    implementation(platform("org.springframework.boot:spring-boot-dependencies:4.0.0"))
-			    testImplementation("org.jsoup:jsoup") { version { strictly("1.0.1") } }
+			    testImplementation("org.jspecify:jspecify") { version { strictly("0.2.0") } }
 			}
 			""".trimIndent(),
 		)
 
 		val output = failedCheck(consumer)
 
-		assertViolation(output, "org.jsoup:jsoup:1.0.0 (implementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
-		assertViolation(output, "org.jsoup:jsoup:1.0.1 (testImplementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
+		assertViolation(
+			output,
+			"org.jspecify:jspecify:0.3.0 (implementation) — Platform canon is ${canon("jspecify")}: declare it as libs.jspecify",
+		)
+		assertViolation(
+			output,
+			"org.jspecify:jspecify:0.2.0 (testImplementation) — Platform canon is ${canon("jspecify")}: declare it as libs.jspecify",
+		)
 		assertViolation(
 			output,
 			"org.springframework.boot:spring-boot-dependencies:4.0.0 (implementation) — Platform canon is ${canon(
@@ -57,8 +63,8 @@ class PlatformDependencyCheckFunctionalTest {
 			"""
 			sourceSets.create("extra")
 			dependencies {
-			    constraints { implementation("org.jsoup:jsoup:1.0.0") }
-			    "extraImplementation"("org.jsoup:jsoup:1.0.0")
+			    constraints { implementation("org.jspecify:jspecify:0.3.0") }
+			    "extraImplementation"("org.jspecify:jspecify:0.3.0")
 			    testImplementation("pl.seniordeveloper:platform-test-fixtures:1.4.3")
 			}
 			""".trimIndent(),
@@ -68,9 +74,12 @@ class PlatformDependencyCheckFunctionalTest {
 
 		assertViolation(
 			output,
-			"org.jsoup:jsoup:1.0.0 (implementation constraint) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup",
+			"org.jspecify:jspecify:0.3.0 (implementation constraint) — Platform canon is ${canon("jspecify")}: declare it as libs.jspecify",
 		)
-		assertViolation(output, "org.jsoup:jsoup:1.0.0 (extraImplementation) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
+		assertViolation(
+			output,
+			"org.jspecify:jspecify:0.3.0 (extraImplementation) — Platform canon is ${canon("jspecify")}: declare it as libs.jspecify",
+		)
 		assertViolation(
 			output,
 			"pl.seniordeveloper:platform-test-fixtures:1.4.3 (testImplementation) — Platform canon is ${System.getProperty(
@@ -85,7 +94,7 @@ class PlatformDependencyCheckFunctionalTest {
 		consumer.appendToBuildScript(
 			"""
 			dependencies {
-			    developmentOnly("org.jsoup:jsoup:1.17.0")
+			    developmentOnly("org.jspecify:jspecify:0.2.0")
 			    implementation("org.springframework.boot:spring-boot-starter-webmvc:4.0.0")
 			    implementation("org.springframework.boot:spring-boot-starter-mail:4.0.0")
 			}
@@ -94,7 +103,10 @@ class PlatformDependencyCheckFunctionalTest {
 
 		val output = failedCheck(consumer)
 
-		assertViolation(output, "org.jsoup:jsoup:1.17.0 (developmentOnly) — Platform canon is ${canon("jsoup")}: declare it as libs.jsoup")
+		assertViolation(
+			output,
+			"org.jspecify:jspecify:0.2.0 (developmentOnly) — Platform canon is ${canon("jspecify")}: declare it as libs.jspecify",
+		)
 		assertViolation(
 			output,
 			"org.springframework.boot:spring-boot-starter-webmvc:4.0.0 (implementation) — managed by the Platform BOMs: remove the explicit version and declare it as libs.boot.starter.webmvc",

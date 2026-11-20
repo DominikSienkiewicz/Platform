@@ -233,10 +233,11 @@ contract: `AbstractLiquibaseChangelogTest` fails on a file outside `NNNN-<slug>.
 prefix and on a file no changeset of which reaches the master. Flyway applications name migrations
 `V<n>__<description>.sql`, which `AbstractFlywayMigrationTest` checks ([reference](reference.md#test-fixtures)).
 
-`spring-modulith-starter-jpa` (also in the `modulith-web` bundle) and `spring-modulith-starter-jdbc`
-(`libs.modulith.starter.jdbc`) store event publications in the `event_publication` table. Use one registry
-starter, not both: each brings its own `EventPublicationRepository`. Without the table the registry does not
-persist publications, so events are not republished after a failure. The JPA registry never creates the table.
+`spring-modulith-starter-jpa` and `spring-modulith-starter-jdbc` (group `org.springframework.modulith`, declared
+without a version: the Spring Modulith BOM manages them) store event publications in the `event_publication` table.
+Use one registry starter, not both: each brings its own `EventPublicationRepository`. Without the table the
+registry does not persist publications, so events are not republished after a failure. The JPA registry never
+creates the table.
 The JDBC registry creates it at startup unless `spring.modulith.events.jdbc.schema-initialization.enabled=false`:
 Spring Modulith 2.1 turns the creation on when the property is missing, although its configuration metadata
 lists `false`. Set it to `false` when migrations own the schema, so the table has one definition (Modulith's
@@ -606,37 +607,15 @@ the container, and `devcontainer.json` passes them through `remoteEnv`. They are
 build stops with "No GitHub Packages credentials". Without a token the container still builds and registers the
 toolchain JDK, but it prints a hint and does not run `npm ci --ignore-scripts`.
 
-## Catalog bundles (*incubating*)
-
-The catalog groups the Spring starters every product backend declares into three bundles. Their members
-carry no version, so the Platform BOMs decide it, as before:
-
-```kotlin
-// Before: one line per starter, the same in every repository
-implementation("org.springframework.boot:spring-boot-starter-actuator")
-implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-implementation("org.springframework.boot:spring-boot-starter-validation")
-implementation("org.springframework.boot:spring-boot-starter-webmvc")
-implementation("org.springframework.modulith:spring-modulith-starter-core")
-implementation("org.springframework.modulith:spring-modulith-starter-jpa")
-
-// After
-implementation(libs.bundles.modulith.web)
-testImplementation(libs.bundles.modulith.web.tests) // actuator, data-jpa, validation and webmvc test starters
-developmentOnly(libs.bundles.dev.docker.compose)    // spring-boot-docker-compose and Spring AI's
-```
-
-Keep any starter outside these lists on its own line. The bundles stay *incubating* until a first
-backend adopts them; that pull request removes the label in README.md.
-
 ## Adopting the observability and web starters (*incubating*)
 
 `implementation(libs.platform.observability.starter)` replaces the `management:` block most backends
 write by hand: probes on, `health` and `info` exposed, details only when authorized, and an `application`
 tag on every metric. Keep only what differs, such as `platform.observability.prometheus=true` where a
 scraper reads `/actuator/prometheus` (BookOfStyling, Azimuth), and drop a separate
-`micrometer-registry-prometheus` line, which the starter brings. `libs.bundles.observability.modulith`
-adds the Spring Modulith actuator and observability modules.
+`micrometer-registry-prometheus` line, which the starter brings. For the Spring Modulith actuator and
+observability modules, declare `spring-modulith-actuator` and `spring-modulith-observability` (group
+`org.springframework.modulith`) without a version: the Spring Modulith BOM manages them.
 
 `implementation(libs.platform.web.starter)` replaces a hand-written `@ControllerAdvice` for errors; the
 shapes it answers with are in the [reference](reference.md#web-starter-incubating). An application with its

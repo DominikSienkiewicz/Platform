@@ -20,11 +20,11 @@ class PlatformGovernanceFunctionalTest {
 	@Test
 	fun `a catalog override in settings fails with PLAT-DEP-004 and the link to the release docs`() {
 		val consumer = ConsumerFixture(directory, "java-library")
-		editSettings(consumer) { line -> if ("platform-catalog:" in line) "$line\n\t\t\tversion(\"jsoup\", \"1.0.0\")" else line }
+		editSettings(consumer) { line -> if ("platform-catalog:" in line) "$line\n\t\t\tversion(\"jspecify\", \"0.3.0\")" else line }
 
 		val output = consumer.runner("platformDependencyCheck").buildAndFail().output
 
-		assertTrue(output.contains("[PLAT-DEP-004] the libs catalog sets org.jsoup:jsoup to 1.0.0"), output)
+		assertTrue(output.contains("[PLAT-DEP-004] the libs catalog sets org.jspecify:jspecify to 0.3.0"), output)
 		assertTrue(output.contains("/blob/v$version/docs/gates.md#plat-dep-004"), "the failure must link the docs of the release")
 	}
 
@@ -42,14 +42,14 @@ class PlatformGovernanceFunctionalTest {
 	@Test
 	fun `a dependency a late afterEvaluate adds is governed and reported in Markdown`() {
 		val consumer = ConsumerFixture(directory, "java-library")
-		consumer.appendToBuildScript("afterEvaluate { dependencies { \"implementation\"(\"org.jsoup:jsoup:1.0.0\") } }")
+		consumer.appendToBuildScript("afterEvaluate { dependencies { \"implementation\"(\"org.jspecify:jspecify:0.3.0\") } }")
 		val summary = directory.resolve("summary.md").toFile()
 		val environment = System.getenv().toMutableMap().apply { put("GITHUB_STEP_SUMMARY", summary.path) }
 
 		val result = consumer.runner("platformDependencyCheck").withEnvironment(environment).buildAndFail()
 
 		assertEquals(TaskOutcome.FAILED, result.task(":platformDependencyCheck")?.outcome)
-		assertTrue(result.output.contains("[PLAT-DEP-002] org.jsoup:jsoup:1.0.0 (implementation)"), result.output)
+		assertTrue(result.output.contains("[PLAT-DEP-002] org.jspecify:jspecify:0.3.0 (implementation)"), result.output)
 		val report = consumer.file("build/reports/platform/dependency-check.md").readText()
 		assertTrue(report.contains("| [PLAT-DEP-002]("), report)
 		assertTrue(summary.readText().contains("### platformDependencyCheck — :"), "the report must reach the job summary")
@@ -62,7 +62,7 @@ class PlatformGovernanceFunctionalTest {
 			"""
 			[libraries]
 			own-library = "com.example:own-library:2.3.4"
-			jsoup-other = "org.jsoup:jsoup:1.0.0"
+			jspecify-other = "org.jspecify:jspecify:0.3.0"
 			""".trimIndent(),
 		)
 		editSettings(consumer) { line ->
@@ -71,11 +71,11 @@ class PlatformGovernanceFunctionalTest {
 		consumer.appendToBuildScript("dependencies { implementation(appLibs.own.library) }")
 
 		val passed = consumer.runner("platformDependencyCheck").build()
-		consumer.appendToBuildScript("dependencies { implementation(appLibs.jsoup.other) }")
+		consumer.appendToBuildScript("dependencies { implementation(appLibs.jspecify.other) }")
 		val failed = consumer.runner("platformDependencyCheck").buildAndFail()
 
 		assertEquals(TaskOutcome.SUCCESS, passed.task(":platformDependencyCheck")?.outcome)
-		assertTrue(failed.output.contains("[PLAT-DEP-002] org.jsoup:jsoup:1.0.0 (implementation)"), failed.output)
+		assertTrue(failed.output.contains("[PLAT-DEP-002] org.jspecify:jspecify:0.3.0 (implementation)"), failed.output)
 	}
 
 	@Test

@@ -18,8 +18,9 @@ yet exist at the time `build-logic` is compiled. The plugin marker artifacts on 
 
 Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)):
 
-- `pl.seniordeveloper:platform-catalog`, the version catalog, holds every alias and version. Consumers
-  declare the frame's dependencies through it, and `platformDependencyCheck` holds explicit versions of them to it.
+- `pl.seniordeveloper:platform-catalog`, the version catalog, holds the alias and version of every library and
+  plugin of the frame. Consumers declare the frame's dependencies through it, and `platformDependencyCheck` holds
+  explicit versions of them to it.
 - `pl.seniordeveloper:platform-bom`, a `java-platform` built from the same TOML, holds what a catalog
   cannot express: the imports of the Spring Boot, Spring Modulith, Spring AI and JUnit BOMs, the CVE
   floors and compatibility overrides with their `because(...)` reasons (the table in
@@ -91,11 +92,13 @@ Three CVE overrides came back after the first canon scan, because no Boot releas
 Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
 as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
 
-Guava has a CVE floor although Boot does not manage it. `javers-persistence-sql` 7.11.7, which
-`javers-spring-boot-starter-sql` brings, declares Guava 33.5.0-jre, and so does Javers 7.11.9, the newest release.
-That version has CVE-2026-102554 (GHSA-xxph-c9ww-hj94, HIGH, fixed in 33.7.2). `platform-bom` therefore constrains
-`com.google.guava:guava` to the catalog's `guava` (33.7.2-jre), and `PlatformBomImportFunctionalTest` checks that a
-consumer of the Javers starter resolves it. Drop the floor when a Javers release brings Guava 33.7.2 or later.
+Guava has a CVE floor although Boot does not manage it. `javers-persistence-sql` 7.11.x, which
+`javers-spring-boot-starter-sql` brings, declares Guava 33.5.0-jre up to Javers 7.11.9, the newest release.
+That version has CVE-2026-102554 (GHSA-xxph-c9ww-hj94, HIGH, fixed in 33.7.2). Javers is not part of the frame: an
+application declares it in its own `appLibs` catalog. `platform-bom` still constrains `com.google.guava:guava` to the
+catalog's `guava` (33.7.2-jre) on every classpath it reaches, and `PlatformBomImportFunctionalTest` checks that a
+consumer declaring the Javers starter with its own version resolves it. Drop the floor when a Javers release brings
+Guava 33.7.2 or later.
 
 The convention plugins themselves carry one floor of their own. The CycloneDX Gradle plugin brings
 Jackson 2.22.2, with four HIGH advisories fixed in 2.22.3. `gradle/build-logic` therefore imports
