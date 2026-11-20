@@ -258,8 +258,10 @@ safe: it publishes only the packages that are still missing.
 
 `scripts/merge.sh` (`./merge.sh` in Platform) refuses a merge message that is not a Conventional Commit, as
 `release.sh` does: the merge commits on `main` are what `scripts/release-notes.sh` turns into the next
-section. A pull request title is held to the same pattern by the `pr-title` job of `ci.yml`, a required check
-of the `main` ruleset (`.github/rulesets/main.json`, applied with `scripts/repo-settings.sh --apply`).
+section. The `pr-title` job of `ci.yml` checks a pull request title against the same pattern. It stays an
+advisory check, not a required one in the `main` ruleset: the owner integrates by direct push (`./merge.sh`, then
+`git push`) and `release.sh` pushes its release commit, and a required status check would reject every such push,
+because a commit made locally never carries a `pr-title` run.
 `scripts/release-notes.sh v<previous>..HEAD` shows the next section and any `Consumer-Action:` trailer before
 `./release.sh`.
 

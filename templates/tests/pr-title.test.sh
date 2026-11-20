@@ -29,13 +29,10 @@ done
 sed -i.bak '/^CONVENTIONAL=/d' "$tmp/release.sh"
 if check 'fix: anything'; then fail 'without the pattern in release.sh the check must fail, not pass everything'; fi
 
-# Ruleset main wymaga checka pr-title po nazwie joba (kontekst statusu); zmiana nazwy joba bez rulesetu po cichu
-# zdjęłaby wymóg.
-job_name=$(awk '$0 == "  pr-title:" { job = 1; next } job && /^    name: / { sub(/^    name: /, ""); print; exit }' "$root/.github/workflows/ci.yml")
-[[ -n "$job_name" ]] || fail 'the pr-title job of ci.yml must have a name'
-jq -e --arg context "$job_name" \
-  'any(.rules[]; .type == "required_status_checks" and any(.parameters.required_status_checks[]; .context == $context and .integration_id == 15368))' \
-  "$root/.github/rulesets/main.json" > /dev/null \
-  || fail "the main ruleset must require the GitHub Actions check \"$job_name\""
+# pr-title jest doradczy: właściciel integruje bezpośrednim pushem (merge.sh + push, release.sh), a wymagany check
+# statusu w rulesecie odrzuciłby każdy taki push, bo nowy commit nie ma przebiegu pr-title.
+if jq -e 'any(.rules[]; .type == "required_status_checks")' "$root/.github/rulesets/main.json" > /dev/null; then
+  fail 'the main ruleset must not require status checks: the owner integrates and releases by direct push'
+fi
 
-echo 'OK: pr-title checks pull request titles with the Conventional Commit pattern of release.sh, and main requires it'
+echo 'OK: pr-title checks pull request titles with the Conventional Commit pattern of release.sh, and stays advisory'

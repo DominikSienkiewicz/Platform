@@ -98,4 +98,5 @@ it under `## [Unreleased]` and commits CHANGELOG.md with the version files; a ha
 `### Consumer action required` lists the `Consumer-Action:` trailers, and a `Breaking change:` line for a `!` commit
 or a `BREAKING CHANGE:` footer without one, so the MINOR rule of item 4 applies to a composed section unchanged.
 Whether a change needs consumer action is still a human judgement, recorded in the commit that causes it.
-`release-draft.yml` is removed, and the `pr-title` check is required on `main`.
+`release-draft.yml` is removed. The `pr-title` check stays advisory: `main` is integrated by direct push, which a required
+status check would reject.
