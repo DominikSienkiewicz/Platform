@@ -22,6 +22,8 @@ continues.
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-11-20
+
 ### Consumer action required
 
 None.
