@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestExecutionResult.Status;
+import org.junit.platform.engine.discovery.ClassSelector;
 import org.junit.platform.launcher.EngineFilter;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
@@ -111,8 +112,27 @@ class AbstractArchitectureTestTest {
   void overriddenPackageNamesAreHonoured() {
     assertThat(failed(run(RenamedLayers.class)))
         .containsExactlyInAnyOrder(
-            "domainDependsOnNothingOutsideItself", "outboundAdaptersDoNotDependOnInboundAdapters");
+            "domainDependsOnNothingOutsideItself",
+            "applicationReachesAdaptersThroughPorts",
+            "outboundAdaptersDoNotDependOnInboundAdapters");
     assertThat(failed(run(RenamedLayersUnderCanonNames.class))).isEmpty();
+  }
+
+  @Test
+  void anInboundAdapterMayDependOnAnOutboundAdapter() {
+    Map<String, TestExecutionResult> results = run(InboundOnOutbound.class);
+
+    assertThat(results).hasSize(PLATFORM.size() + HEXAGON.size());
+    assertThat(results.values()).allMatch(result -> result.getStatus() == Status.SUCCESSFUL);
+  }
+
+  @Test
+  void aConsumerStyleSubclassInAnotherPackageRunsEveryInheritedRule() {
+    Map<String, TestExecutionResult> results =
+        run(selectClass("pl.seniordeveloper.platform.testing.archconsumer.CanonArchitectureTest"));
+
+    assertThat(results.keySet()).containsExactlyInAnyOrderElementsOf(union(PLATFORM, HEXAGON));
+    assertThat(results.values()).allMatch(result -> result.getStatus() == Status.SUCCESSFUL);
   }
 
   @Test
@@ -124,10 +144,14 @@ class AbstractArchitectureTestTest {
   }
 
   private static Map<String, TestExecutionResult> run(Class<?> testClass) {
+    return run(selectClass(testClass));
+  }
+
+  private static Map<String, TestExecutionResult> run(ClassSelector selector) {
     Map<String, TestExecutionResult> results = new TreeMap<>();
     var request =
         LauncherDiscoveryRequestBuilder.request()
-            .selectors(selectClass(testClass))
+            .selectors(selector)
             .filters(EngineFilter.includeEngines("archunit"))
             .build();
     LauncherFactory.create()
@@ -177,6 +201,9 @@ class AbstractArchitectureTestTest {
 
   @AnalyzeClasses(packages = LAYOUT + "adapterdirection")
   static class OutboundOnInbound extends AbstractArchitectureTest {}
+
+  @AnalyzeClasses(packages = LAYOUT + "inboundonoutbound")
+  static class InboundOnOutbound extends AbstractArchitectureTest {}
 
   @AnalyzeClasses(packages = LAYOUT + "flat")
   static class FlatWithHexagon extends AbstractArchitectureTest {}

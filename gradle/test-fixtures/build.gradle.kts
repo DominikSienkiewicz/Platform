@@ -56,6 +56,8 @@ dependencies {
 
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.assertj:assertj-core")
+	// AbstractArchitectureTestTest uruchamia podklasy AbstractArchitectureTest przez Launcher JUnit Platform.
+	testImplementation("org.junit.platform:junit-platform-launcher")
 	testImplementation("org.springframework:spring-webmvc")
 	testImplementation("jakarta.servlet:jakarta.servlet-api")
 	testImplementation("tools.jackson.core:jackson-databind")
@@ -76,8 +78,6 @@ dependencies {
 	// Sterownik PostgreSQL dla SharedPostgresContainerIT, dialekt Flyway dla AbstractSchemaValidationIT.
 	testRuntimeOnly("org.postgresql:postgresql")
 	testRuntimeOnly("org.flywaydb:flyway-database-postgresql")
-	// AbstractArchitectureTestTest uruchamia podklasy AbstractArchitectureTest przez Launcher JUnit Platform.
-	testImplementation("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test>().configureEach { useJUnitPlatform() }
