@@ -1,0 +1,35 @@
+{
+  "name": "Platform",
+  "kicker": "Shared build platform",
+  "description": "Versioned Gradle plugins, catalog, BOM and npm presets that consumer repositories use as dependencies.",
+  "accent": "#1DA6C4",
+  "stack": [
+    {
+      "icon": "openjdk",
+      "label": "Java 27",
+      "color": "#F89820"
+    },
+    {
+      "icon": "gradle",
+      "label": "Gradle 9.8",
+      "color": "#1DA6C4"
+    },
+    {
+      "icon": "kotlin",
+      "label": "Kotlin DSL",
+      "color": "#7F52FF"
+    },
+    {
+      "icon": "typescript",
+      "label": "TypeScript 6",
+      "color": "#3178C6"
+    }
+  ],
+  "preview": {
+    "type": "code",
+    "title": "templates/jvm/spring-app/build.gradle.kts",
+    "text": "plugins {\n\talias(libs.plugins.spring.boot)\n\tid(\"seniordev.java-conventions\")\n\tid(\"seniordev.quality-conventions\")\n\tid(\"seniordev.spring-modulith-conventions\")\n}\n\ngroup = \"example\"\nversion = \"0.1.0-SNAPSHOT\"\n\ndependencies {\n\timplementation(libs.boot.starter.webmvc)\n\timplementation(libs.modulith.starter.core)\n}"
+  },
+  "previewLabel": "Consumer build file from Platform's spring-app template",
+  "authorCaption": "Designed and maintained by"
+}
