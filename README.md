@@ -70,6 +70,50 @@ when a second repository needs it.
 Every published artifact, with its exact coordinates, and how a release reaches each registry are
 described in [RELEASING.md](RELEASING.md).
 
+### From source to consumer
+
+Each source area reaches a consumer repository through its own channel, and every arrow names what crosses it.
+
+```mermaid
+flowchart LR
+    subgraph platform["Platform repository"]
+        preset["default.json<br/>Renovate preset"]
+        gradleSrc["gradle/*<br/>plugins, catalog, BOM,<br/>test-fixtures, observability-starter"]
+        npmSrc["frontend/packages/*<br/>seven npm packages"]
+        workflows[".github/workflows<br/>ten reusable workflows"]
+        templates["templates/<br/>canonical files"]
+    end
+
+    renovate["Renovate"]
+    maven[("GitHub Packages<br/>Maven")]
+    npm[("GitHub Packages<br/>npm")]
+    release[("GitHub Release<br/>notes and offline assets")]
+
+    subgraph consumer["Consumer repository: Azimuth, Touchstone, Training"]
+        gradleBuild["backend Gradle build"]
+        bump["platform-bump<br/>stub or platform-bump.yml"]
+        frontend["frontend<br/>package.json"]
+        callers[".github/workflows<br/>callers"]
+        copies["copies of templates/"]
+    end
+
+    preset -->|"extends, read from main"| renovate
+    renovate -->|"pull requests for app-owned dependencies"| consumer
+    gradleSrc -->|"release.yml: Gradle publish"| maven
+    maven -->|"settings plugin, catalog, BOM, libraries"| gradleBuild
+    gradleSrc -->|"Maven repository zip"| release
+    npmSrc -->|"release.yml: npm publish"| npm
+    npm -->|"npm pack: tarballs"| release
+    npm -->|"versions package: the bin"| bump
+    npm -->|"exact pins, npm ci"| frontend
+    release -->|"target release's bin, SHA256SUMS"| bump
+    workflows -->|"uses: …@vX.Y.Z"| callers
+    templates -.->|"copied; platform-templates-check reports drift"| copies
+```
+
+In a repository without a frontend, the `scripts/platform-bump.sh` stub takes the bin from the GitHub Release
+assets instead of `frontend/node_modules`; `platform-bump.yml` always starts it with `npx` from GitHub Packages.
+
 ## Consumers
 
 | Repository | Layout |
@@ -141,6 +185,7 @@ flowchart LR
   preset -.->|floating| renovate
   bump["scripts/platform-bump.sh"] -->|bumps| gradlePins
   bump -->|bumps| npmPins
+  bump -->|bumps| callers
 ```
 
 Three channels are pinned to one release: the Gradle plugins and catalog, the npm packages and the
@@ -148,6 +193,108 @@ reusable workflows. `platform-bump` moves all three and prints the notes of ever
 crosses. One reference floats: the
 Renovate preset is read from `main` on every Renovate run. There is no floating workflow tag: a caller
 pins the exact tag ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
+
+### From a tag to a consumer pull request
+
+Read it top to bottom: nothing is published before `ci.yml` passes on the tagged commit, and a consumer adopts
+the release through a pull request, never by itself.
+
+```mermaid
+sequenceDiagram
+    actor M as Maintainer
+    participant R as release.yml
+    participant P as GitHub Packages
+    participant G as GitHub Release
+    participant B as platform-bump.yml
+    participant C as Consumer repository
+
+    M->>R: ./release.sh pushes main and the tag vX.Y.Z
+    R->>R: verify: ci.yml on the tagged commit
+    R->>P: publish the Maven modules and npm packages, attest their provenance
+    par checks of the published release
+        R->>P: verify-published, verify-consumable
+    and the GitHub Release
+        R->>G: notes: the CHANGELOG.md section
+        R->>G: Maven repository zip, npm tarballs, SHA256SUMS, attestation
+        R->>G: verify-bundle: build spring-app from the zip alone
+    end
+    Note over B,C: in the consumer, Mondays 06:00 UTC or workflow_dispatch
+    B->>P: npx @dominiksienkiewicz/versions@latest platform-bump
+    B->>P: newest release of the current MAJOR
+    B->>G: notes of every release since the current pin
+    opt the running bin is not the target release
+        B->>G: target release's bin, checked against SHA256SUMS and its attestation
+    end
+    B->>B: rewrite the pins, workflow refs, Gradle wrapper and lockfiles
+    B->>C: push platform-bump/vX.Y.Z and open the pull request
+    C->>C: the pull request's CI runs when the caller passes bump_token
+```
+
+Without `bump_token` the pull request is opened with `GITHUB_TOKEN`, so its CI does not start and the workflow
+refs stay unchanged; the caller and its secrets are described in [docs/reusable-workflows.md](docs/reusable-workflows.md).
+
+## Integrations
+
+Platform runs no service of its own: its code runs in a consumer's Gradle build and in the workflows a consumer
+calls, and from there it reaches the services below.
+
+Read it from the left: the two places Platform's code runs in a consumer, and the external service each call goes to.
+
+```mermaid
+flowchart LR
+    build["Consumer build<br/>Gradle and npm, local or in CI"]
+    ci["Consumer CI<br/>reusable workflows"]
+
+    foojay["Foojay Disco API"]
+    central[("Maven Central")]
+    sonar["SonarQube Cloud"]
+    ghp[("GitHub Packages<br/>Maven, npm")]
+    dockerhub[("Docker Hub")]
+    ghcr[("GitHub Container Registry")]
+    scanners["Grype, Trivy, Snyk"]
+    sigstore["Sigstore"]
+    gitops["GitOps repository"]
+    scorecard["OpenSSF Scorecard API"]
+    semgrep["Semgrep Registry"]
+
+    build -->|"Gradle: JDK 27 when it is not installed"| foojay
+    build -->|"Gradle: every other dependency"| central
+    build -->|"Gradle sonar task: analysis, JaCoCo reports"| sonar
+    build -->|"Platform's Maven artifacts and npm packages"| ghp
+    ci -->|"deploy.yml: base images"| dockerhub
+    ci -->|"deploy.yml: push images"| ghcr
+    ci -->|"SBOM and image scans"| scanners
+    ci -->|"cosign keyless: sign scanned digests"| sigstore
+    ci -->|"promote.yml: commit image tags"| gitops
+    ci -->|"scorecard.yml: publish results"| scorecard
+    ci -->|"semgrep.yml: rulesets"| semgrep
+```
+
+Every external service Platform's build logic and workflows call, including those only Platform's own workflows
+use. The logos only identify the services.
+
+| Logo | Service | Purpose | Interface | Status |
+|---|---|---|---|---|
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Packages" height="20"> | GitHub Packages | Registry of every Maven artifact and npm package of a release; it refuses anonymous reads, so consumers resolve them with a classic PAT with `read:packages` | Maven repository `https://maven.pkg.github.com/DominikSienkiewicz/Platform`, npm registry `https://npm.pkg.github.com`, the Packages REST API for the released versions | Published by `release.yml` on every `vX.Y.Z` tag |
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Releases" height="20"> | GitHub Releases | The notes of each release, and its credential-free assets: the offline Maven repository, the npm tarballs, `SHA256SUMS` and the attestation bundle; `platform-bump` takes the target release's bin from them | `gh release` in `release.yml`; the Releases REST API and HTTPS downloads in `platform-bump` | Every release; assets since 1.6.0 |
+| <img src="https://cdn.simpleicons.org/githubactions" alt="GitHub Actions" height="20"> | GitHub Actions | Platform's own CI, release, scans and canary, and the ten reusable workflows consumers call | `workflow_call`; `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z` | On |
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Container Registry" height="20"> | GitHub Container Registry | The images `deploy.yml` builds and pushes and `container-scan.yml` scans; cosign stores their signatures next to them | `docker/login-action` and `docker/build-push-action` on `ghcr.io` | In consumers that call `deploy.yml` or `promote.yml` |
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub" height="20"> | GitOps repository | `promote.yml` commits the new image tags with `scripts/promote-image.sh`, for a cluster that Argo CD syncs | GitHub App token from `actions/create-github-app-token`, `git push` | In consumers that call `promote.yml` |
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub code scanning" height="20"> | GitHub code scanning (CodeQL) | SAST of Platform's own code; the alerts appear in Code scanning | `github/codeql-action` in `codeql.yml` | Platform only: pushes, pull requests and Mondays |
+| <img src="https://cdn.simpleicons.org/renovate" alt="Renovate" height="20"> | Renovate | Updates what a consumer owns (Gradle and npm dependencies, GitHub Actions, Docker images) and leaves the frame and the Platform pins to `platform-bump` | Preset `default.json`, `extends: ["github>DominikSienkiewicz/Platform"]`, read from `main` | In consumers that extend the preset |
+| <img src="https://cdn.simpleicons.org/apachemaven" alt="Maven Central" height="20"> | Maven Central | Every dependency that is not a Platform artifact | `mavenCentral()` declared by `seniordev.settings-conventions` | Every consumer build |
+| | Foojay Disco API | Downloads the JDK 27 toolchain on a machine without it | `org.gradle.toolchains.foojay-resolver-convention`, applied by `seniordev.settings-conventions` | Local builds; the reusable workflows install the JDK with `setup-java` instead |
+| <img src="https://cdn.simpleicons.org/sonarqubecloud" alt="SonarQube Cloud" height="20"> | SonarQube Cloud | Static analysis and coverage of consumer code in the `dominiksienkiewicz` organization | `org.sonarqube` Gradle plugin, applied by `seniordev.quality-conventions` or `seniordev.sonar-conventions`; `https://sonarcloud.io` | Consumers; Platform does not analyse itself ([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md) is superseded) |
+| <img src="https://cdn.simpleicons.org/docker" alt="Docker Hub" height="20"> | Docker Hub | Base images of the canonical Dockerfiles (`sapmachine:27-jre`, `node:24-slim`); `upstream-canary.yml` looks for an `eclipse-temurin` image of the toolchain | `FROM` in `templates/Dockerfile.backend` and `templates/Dockerfile.frontend`; `docker manifest inspect` | On |
+| | Grype | The blocking CVE gate for SBOMs and images | `anchore/scan-action` in `security-scan.yml`, `container-scan.yml`, `deploy.yml`, `canon-cve-scan.yml` and `upstream-canary.yml` | On |
+| <img src="https://cdn.simpleicons.org/trivy/1904DA/ffffff" alt="Trivy" height="20"> | Trivy | The second gate on a pushed image digest | `aquasecurity/setup-trivy` and `trivy image` in `deploy.yml` | With `scan-images` |
+| <img src="https://cdn.simpleicons.org/snyk/4C4A73/ffffff" alt="Snyk" height="20"> | Snyk | A non-blocking second opinion on images and a monitoring dashboard | Snyk CLI in the digest-pinned `snyk/snyk:docker` image, `SNYK_TOKEN` | Only when the caller passes a Snyk token |
+| | Sigstore | Keyless signatures of the scanned image digests with an entry in the public Rekor log, and the provenance attestations of the release files that `platform-bump` verifies | `cosign` from `sigstore/cosign-installer`; `actions/attest`; `gh attestation verify` | Every release; image signing with `scan-images` |
+| | OpenSSF Scorecard | A published supply-chain score of the repository | `ossf/scorecard-action` with `publish_results` in `scorecard.yml` | Callers, and Platform's `self-scan.yml` |
+| | Semgrep Registry | The SAST rulesets (`p/default`, `p/secrets`, `p/java` and others) | `semgrep scan --config` with the CLI installed by `pipx` in `semgrep.yml` | Callers, and Platform's `self-scan.yml` |
+| <img src="https://cdn.simpleicons.org/gradle/02303A/ffffff" alt="Gradle" height="20"> | Gradle services | The current Gradle release candidate, on which `upstream-canary.yml` builds a starter | `https://services.gradle.org/versions/release-candidate` | Platform only, Mondays |
+
+What each scan gates and how a finding is accepted is in [docs/security-scanning.md](docs/security-scanning.md).
 
 ## Reference consumers
 
