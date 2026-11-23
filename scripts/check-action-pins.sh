@@ -13,8 +13,18 @@ trap 'rm -rf "$cache"' EXIT
 
 # resolve <owner/repo> <tag>: SHA commita, na który rozwija się tag; pusty, gdy GitHub go nie zna.
 resolve() {
-  local entry="$cache/${1//\//_}@$2"
-  [[ -f "$entry" ]] || gh api "repos/$1/commits/$2" --jq .sha > "$entry" 2>/dev/null || : > "$entry"
+  local repo=$1 tag=$2 entry
+  git check-ref-format "refs/tags/$tag" >/dev/null || return 0
+  entry="$cache/$(printf '%s' "$repo@$tag" | git hash-object --stdin)"
+  if [[ ! -f "$entry" ]] && ! gh api "repos/$repo/commits/refs/tags/$tag" --jq .sha > "$entry" 2>/dev/null; then
+    [[ -d "$cache/upstream" ]] || git init --quiet --bare "$cache/upstream"
+    if GIT_ASKPASS=false GIT_TERMINAL_PROMPT=0 git -C "$cache/upstream" -c credential.helper= \
+      fetch --quiet --depth=1 --filter=tree:0 --no-tags "https://github.com/$repo.git" "refs/tags/$tag" 2>/dev/null; then
+      git -C "$cache/upstream" rev-parse --verify 'FETCH_HEAD^{commit}' > "$entry" 2>/dev/null || : > "$entry"
+    else
+      : > "$entry"
+    fi
+  fi
   cat "$entry"
 }
 

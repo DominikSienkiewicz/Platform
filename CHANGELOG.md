@@ -46,6 +46,8 @@ artifact was published. Its tag was removed and releases continued under the per
   artifacts to `seniordeveloper-pl-dominik-sienkiewicz/Platform` with their existing coordinates.
 - Resolve nested image builds through the organization at the pinned commit of `deploy.yml`.
   New consumers and CI resolve the packages and workflows for their selected major version.
+- Run the backend red-proof against the parent revision of changed GitHub workflows as well
+  as production sources. Workflow contract tests keep the test classes and Gradle setup from the fix.
 
 ## [1.13.1] - 2026-11-21
 

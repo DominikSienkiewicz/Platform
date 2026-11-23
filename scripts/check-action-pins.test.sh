@@ -15,9 +15,14 @@ codeql_commit=6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee
 
 # Atrapa: `gh api repos/<owner>/<repo>/commits/<ref> --jq .sha` wypisuje SHA z $GH_REFS (wiersze "repo ref sha").
 mkdir -p "$work/bin"
+export GIT_CONFIG_GLOBAL="$work/gitconfig" GIT_CONFIG_NOSYSTEM=1
+git config --global user.name fixture
+git config --global user.email fixture@example.test
+git config --global url."file://$work/remotes/".insteadOf 'https://github.com/'
 cat > "$work/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 path="$2"
+[[ "$path" == */commits/refs/tags/* ]] || exit 1
 repo=$(cut -d/ -f2-3 <<<"$path")
 ref=${path##*/}
 sha=$(awk -v repo="$repo" -v ref="$ref" '$1 == repo && $2 == ref { print $3 }' "$GH_REFS")
@@ -68,5 +73,30 @@ grep -qF "has no '# vX.Y.Z' comment" "$work/out.txt" || fail 'the failure must a
 repo unknown-tag "      - uses: actions/checkout@$checkout_commit # v9.9.9"
 if run unknown-tag; then fail 'a comment naming a tag the action does not have must fail'; fi
 grep -qF 'tag v9.9.9 not found in actions/checkout' "$work/out.txt" || fail 'the failure must name the missing tag'
+
+mkdir -p "$work/remotes/example"
+upstream="$work/fixture-source"
+git init -q "$upstream"
+echo fixture > "$upstream/source"
+git -C "$upstream" add source
+git -C "$upstream" commit -qm base
+commit=$(git -C "$upstream" rev-parse HEAD)
+git -C "$upstream" tag -a v1 -m version
+git -C "$upstream" tag v2
+git -C "$upstream" branch v3
+git -C "$upstream" tag v4 "$(git -C "$upstream" rev-parse HEAD:source)"
+git clone -q --bare "$upstream" "$work/remotes/example/fallback.git"
+for version in v1 v2; do
+  repo "git-$version" "  - uses: example/fallback@$commit # $version"
+  run "git-$version" || fail "a public Git tag must verify when the API is unavailable ($version)"
+done
+for version in v3 v4; do
+  repo "reject-$version" "  - uses: example/fallback@$commit # $version"
+  if run "reject-$version"; then fail "a branch or a tag without a target commit cannot verify a pin ($version)"; fi
+done
+object=$(git -C "$upstream" rev-parse refs/tags/v1)
+repo git-object "  - uses: example/fallback@$object # v1"
+if run git-object; then fail 'the fallback must reject the annotated tag object itself'; fi
+grep -qF "Pin example/fallback@$commit # v1" "$work/out.txt" || fail 'the fallback must identify the peeled commit'
 
 echo 'OK: check-action-pins.sh accepts pins on tag commits and rejects tag objects, missing comments and unknown tags'
