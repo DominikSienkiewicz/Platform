@@ -21,7 +21,7 @@ For Gradle, in `~/.gradle/gradle.properties` — not in the repository:
 ```properties
 gpr.user=<github-login>
 gpr.key=<PAT with read:packages / write:packages>
-gpr.owner=DominikSienkiewicz
+gpr.owner=seniordeveloper-pl-dominik-sienkiewicz
 gpr.repo=Platform
 ```
 
@@ -32,7 +32,7 @@ For npm, pnpm 11 requires the token in a trusted `~/.npmrc`, not in the committe
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-> For GitHub Packages npm the scope (`@dominiksienkiewicz`) must equal the repository
+> For GitHub Packages npm the scope (`@seniordeveloper-pl-dominik-sienkiewicz`) must equal the repository
 > owner, lowercased. A different owner means changing the scope in the packages and in
 > `.npmrc`.
 

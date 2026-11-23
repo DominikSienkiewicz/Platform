@@ -53,6 +53,12 @@ accidental.
   `platformRepository` included; `docs/reference.md` lists them with the rest.
 - A reviewer of a pull request that adds a public name checks it against this list.
 
+## Organization transfer
+
+The npm names above document the original 1.x coordinates. Platform 2.0.0 moves its seven packages
+to `@seniordeveloper-pl-dominik-sienkiewicz` under the same naming rule. Maven coordinates and plugin IDs
+retain their names. See [the consumer migration](../consuming.md#move-a-1x-consumer-to-200).
+
 ## Revisit when
 
 A MAJOR release is planned for another reason. Renaming the frozen keys then costs one more line

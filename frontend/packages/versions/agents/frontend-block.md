@@ -11,7 +11,7 @@ Vitest {{vitest}}, ESLint {{eslint}}, Prettier {{prettier}}. Read versions from 
   override of one, belongs to this repository.
 - Use npm and commit `package-lock.json`, which `frontend-ci` installs with `npm ci`. Fix a CVE in a transitive
   package with `npm update <package> --package-lock-only` before reaching for an override.
-- Shared configuration comes from the `@dominiksienkiewicz/*` presets (`tsconfig`, `eslint-config`,
+- Shared configuration comes from the `@seniordeveloper-pl-dominik-sienkiewicz/*` presets (`tsconfig`, `eslint-config`,
   `prettier-config`, `vitest-config`, `tailwind-preset`): extend them, do not copy them.
 - Run the `lint` and `format:check` scripts as the default gate and tests only when asked; with `AI_AGENT=1`,
   Vitest uses `AI_AGENT_MAX_WORKERS` workers (2 unless set).

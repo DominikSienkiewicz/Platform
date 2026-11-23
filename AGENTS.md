@@ -61,8 +61,8 @@ change, and the frontend from `versions.json`.
 
 ## Platform rules for agents (Platform {{VERSION}})
 
-For a repository that pins [DominikSienkiewicz/Platform](https://github.com/DominikSienkiewicz/Platform) {{VERSION}}.
-The full rule sheet of that release: https://github.com/DominikSienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
+For a repository that pins [SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform) {{VERSION}}.
+The full rule sheet of that release: https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v{{VERSION}}/docs/consumer-agents.md
 
 - Platform owns the frame: Java, Gradle, the Spring BOMs, the libraries in `libs` and the frontend canon. Never
   give a frame library another version; `platformDependencyCheck` and `platform-versions-check` fail the build

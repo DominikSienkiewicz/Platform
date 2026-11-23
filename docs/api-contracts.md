@@ -11,7 +11,7 @@ generates the spec from the code.
 | Layer | What holds it to the spec | Fails when |
 |---|---|---|
 | Backend (Spring MVC) | `AbstractOpenApiContractTest` from `platform-test-fixtures` | a controller mapping is missing from the spec, or the spec describes an operation no controller implements |
-| Frontend types | `platform-openapi-check` from `@dominiksienkiewicz/openapi`, run by strict `frontend-ci` | the committed `.d.ts` differs from what the committed spec generates |
+| Frontend types | `platform-openapi-check` from `@seniordeveloper-pl-dominik-sienkiewicz/openapi`, run by strict `frontend-ci` | the committed `.d.ts` differs from what the committed spec generates |
 | Pull requests | reusable `api-contract.yml` (oasdiff) | the change breaks existing clients and the pull request has no `api-breaking` label |
 
 ## Backend: the spec matches the controllers
@@ -38,7 +38,7 @@ The test covers Spring MVC only; a WebFlux controller is not scanned.
 
 ## Frontend: generated types
 
-Add `@dominiksienkiewicz/openapi` and `openapi-typescript` to `devDependencies` at the canon versions,
+Add `@seniordeveloper-pl-dominik-sienkiewicz/openapi` and `openapi-typescript` to `devDependencies` at the canon versions,
 and name the spec and the generated file in `package.json`:
 
 ```json

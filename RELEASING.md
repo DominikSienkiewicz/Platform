@@ -10,12 +10,12 @@ means and what every release must carry is the
 [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 
 Consumers pin everything to one release and move it with `scripts/platform-bump.sh`, or on a
-schedule with the reusable `platform-bump.yml`, which opens the pull request. Nothing changes for them
-until they bump:
+schedule with the reusable `platform-bump.yml`, which opens the pull request. The move from 1.x
+to 2.0.0 requires the [organization launcher](docs/consuming.md#move-a-1x-consumer-to-200).
 
 - **Artifacts** are pinned to the exact platform version.
 - **Reusable workflows** are called by the exact tag,
-  `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
+  `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, which the bump moves with the
   pins. There is no floating `v1` tag any more (retired, [ADR-0014](docs/adr/0014-exact-pins-moved-by-platform-bump.md)):
   an external caller of `@v1` must pin an exact `vX.Y.Z`.
 
@@ -45,13 +45,13 @@ Every artifact below is published at the same `platformVersion`.
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` | GitHub Packages (Maven) |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` | GitHub Packages (Maven) |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` | GitHub Packages (npm) |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` | GitHub Packages (npm) |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` | GitHub Packages (npm) |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` | GitHub Packages (npm) |
-| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` | GitHub Packages (npm) |
+| `frontend/packages/tsconfig/` | `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | GitHub Packages (npm) |
+| `frontend/packages/eslint-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | GitHub Packages (npm) |
+| `frontend/packages/tailwind-preset/` | `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` | GitHub Packages (npm) |
+| `frontend/packages/vitest-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` | GitHub Packages (npm) |
+| `frontend/packages/versions/` | `@seniordeveloper-pl-dominik-sienkiewicz/versions` | GitHub Packages (npm) |
+| `frontend/packages/openapi/` | `@seniordeveloper-pl-dominik-sienkiewicz/openapi` | GitHub Packages (npm) |
 
 The npm job publishes every workspace package under `frontend/packages/` that is not marked
 `"private": true`, so a new package is released as soon as it exists. Update this table and the
@@ -92,13 +92,38 @@ The `consumer-impact.yml` workflow labels a pull request `consumer-action` when
 `scripts/canon-diff.py` finds a change consumers must act on: a removed catalog alias or canon
 package, or a reusable workflow that loses an input or secret, gains a required input or a
 permission, or changes a default. Create the label once (`gh label create consumer-action`); until
-it exists the job only warns. The rule is the one `release.sh` applies: such a change ships in a
-MINOR release with a **Consumer action required** entry.
+it exists the job only warns. Such a change calls for at least a MINOR release with a **Consumer action required** entry.
 
 It never deletes a branch: it lists remote branches already merged into `main` with the command that
 deletes them. `--consumers` also checks every repository in `scripts/consumers.txt` for what
 `platform-bump.yml` needs: GitHub Actions may create pull requests there, and a `PLATFORM_BUMP_TOKEN`
 secret exists (the secret is only reported; its value is yours to set).
+
+## First organization release
+
+The registry move is a MAJOR distribution change under [ADR-0002](docs/adr/0002-release-and-versioning-contract.md).
+Keep `1.13.1` in the release-managed version files during preparation. Once the changes are integrated and
+the release preconditions hold, the owner selects the explicit version:
+
+```bash
+./release.sh "feat: publish Platform packages under the organization" 2.0.0
+```
+
+The release gate verifies the first 2.x release against its published 1.x predecessor.
+The frontend image smoke resolves 1.13.1 from public release archives and verifies the checksum
+manifest with the historical signing workflow and release commit. The backend smoke directs the
+historical plugin to the organization Maven endpoint. Both checks run before 2.0.0 packages exist.
+
+Before cutting the tag, confirm that the workflow can publish GitHub Packages under
+`SeniorDeveloper-pl-Dominik-Sienkiewicz` and can create artifact attestations. A consumer's
+`GPR_TOKEN` or repository Actions package access must permit reads of the organization packages.
+An account's login is still the Gradle username. The Maven endpoint uses the lowercase organization in
+`https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform`.
+
+After publication, check that release verification succeeded for the organization Maven modules and
+all seven npm packages, and that `v2.0.0` contains `SHA256SUMS`, the attestation bundle and
+`seniordeveloper-pl-dominik-sienkiewicz-versions-2.0.0.tgz`.
+Existing 1.x consumers should then [bootstrap the 2.0.0 launcher](docs/consuming.md#move-a-1x-consumer-to-200).
 
 ## Cutting a release
 
@@ -117,8 +142,7 @@ secret exists (the secret is only reported; its value is yours to set).
 2. Run `scripts/consumer-audit.sh` to see which consumers and pins the release reaches
    (the report describes private repositories, so it stays local and never runs in CI), and who
    still calls a workflow it changes. Then decide on the notes. Pick the number by the
-   [contract](docs/adr/0002-release-and-versioning-contract.md): consumer action means a MINOR, anything
-   else a PATCH. `release.sh` composes the `## [X.Y.Z] - YYYY-MM-DD` section of [CHANGELOG.md](CHANGELOG.md)
+   [contract](docs/adr/0002-release-and-versioning-contract.md). Use a MAJOR for the change in distribution, a MINOR for consumer action within the same distribution, and a PATCH for a compatible change that requires no action. `release.sh` composes the `## [X.Y.Z] - YYYY-MM-DD` section of [CHANGELOG.md](CHANGELOG.md)
    from the commits since the previous tag unless you wrote it yourself (see step 4);
    `scripts/release-notes.sh v<previous>..HEAD` prints what it would compose. To write the notes by hand
    instead, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]`
@@ -298,7 +322,8 @@ would make old commits impossible to rebuild. Silence it with `-Pplatform.stalen
 
 ## Consumers: adopting a new version
 
-In a consumer repository:
+For a consumer on 1.x switching to 2.0.0, first [install the organization launcher](docs/consuming.md#move-a-1x-consumer-to-200).
+For subsequent updates within the same major version, run the launcher from the consumer root.
 
 ```bash
 ./scripts/platform-bump.sh
@@ -306,8 +331,8 @@ In a consumer repository:
 
 Without an argument the script bumps to the newest release of the consumer's current MAJOR
 version; when a newer MAJOR exists it says so and leaves crossing it to an explicit version. Pass
-a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a stub that calls the
-`platform-bump` bin of `@dominiksienkiewicz/versions`, reads its token from `GPR_TOKEN`,
+a version (`./scripts/platform-bump.sh 2.0.0`) to pin a specific one. It is a stub that calls the
+`platform-bump` bin of `@seniordeveloper-pl-dominik-sienkiewicz/versions`, reads its token from `GPR_TOKEN`,
 `GITHUB_TOKEN` or `gpr.key`, and:
 
 - stops with exit code 2 before writing anything when a tool it needs is missing (`git`, `curl`,
@@ -327,12 +352,12 @@ a version (`./scripts/platform-bump.sh 1.6.0`) to pin a specific one. It is a st
   when the layout has no pin, instead of reporting success;
 - applies the frontend version canon to `frontend/package.json`, including `overrides`, and
   regenerates `package-lock.json`;
-- moves every `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
+- moves every `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@<ref>` in
   `.github/workflows/` to the target tag, a legacy `@v1` included, and so does a `platform-ref:` input of a
   `promote.yml` caller; a reference by commit SHA stays;
-- verifies the attestation of the `@dominiksienkiewicz/versions` package it downloads (targets from
-  1.6.0 on) with `gh attestation verify`, tied to Platform's `release.yml`, and stops when it fails;
-  `--skip-provenance "<reason>"` overrides it, and a machine without `gh` gets a warning;
+- verifies the attestation of the downloaded versions package with `gh attestation verify`, tied to the release's
+  publishing workflow. A 2.0.0 bootstrap requires the organization workflow signature and
+  the checksum. A missing verifier or an unsuccessful check stops the bootstrap;
 - runs the upgrade migrations of the target release (`frontend/packages/versions/migrations/`) from
   the downloaded package, so it always applies the target's logic: each migration whose `SINCE` lies
   after the current pin and up to the target, and the `every-*` ones on every bump. It prints which it
