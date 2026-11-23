@@ -30,7 +30,11 @@ case "$url" in
       { printf 'HTTP/2 %s\r\n' "$FAKE_USER_CODE"; [[ -z "${FAKE_SCOPES+x}" ]] || printf 'x-oauth-scopes: %s\r\n' "$FAKE_SCOPES"; } > "$headers"
     fi
     printf '%s' "$FAKE_USER_CODE" ;;
-  */packages/maven/*/versions) [[ -n "${FAKE_VERSIONS:-}" ]] || exit 22; printf '%s' "$FAKE_VERSIONS" > "$out" ;;
+  */packages/maven/*/versions|*/packages/maven/*/versions\?per_page=100\&page=1)
+    [[ -n "${FAKE_VERSIONS:-}" ]] || exit 22
+    printf '%s' "$FAKE_VERSIONS" > "$out"
+    if [[ -n "${FAKE_VERSIONS_NEXT:-}" && -n "$headers" ]]; then printf 'Link: <https://api.github.com/page2>; rel="next"\r\n' > "$headers"; fi ;;
+  */packages/maven/*/versions\?per_page=100\&page=2) printf '%s' "$FAKE_VERSIONS_NEXT" > "$out" ;;
   */releases/yanked.txt) [[ -n "${FAKE_YANKED:-}" ]] || exit 22; printf '%s\n' "$FAKE_YANKED" > "$out" ;;
   *) exit 22 ;;
 esac

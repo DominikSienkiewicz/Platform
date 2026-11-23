@@ -9,12 +9,14 @@ from pathlib import Path
 
 OWNER = "SeniorDeveloper-pl-Dominik-Sienkiewicz"
 SCOPE = "@" + OWNER.lower()
-PACKAGES = "eslint-config|openapi|prettier-config|tailwind-preset|tsconfig|versions|vitest-config"
+PACKAGES = "|".join(re.escape(name) for name in sys.argv[2].split())
 PACKAGE = re.compile(r"@dominiksienkiewicz/(?=(" + PACKAGES + r")(?![\w.-]))", re.I)
 REPOSITORY = re.compile(r"(?<![\w-])DominikSienkiewicz/Platform(?![\w-])", re.I)
 MAVEN = re.compile(r"maven\.pkg\.github\.com/DominikSienkiewicz/Platform(?![\w-])", re.I)
 REGISTRY = f"{SCOPE}:registry=https://npm.pkg.github.com"
 LEGACY_REGISTRY = re.compile(r"^@dominiksienkiewicz:registry\s*=\s*https://npm\.pkg\.github\.com/?\s*$", re.I)
+PROMOTE_CALL = re.compile(rf"^    uses:[ \t]*[\"']?{OWNER}/Platform/\.github/workflows/promote\.yml@", re.I | re.M)
+INFRA_INPUT = re.compile(r"""^(      infra-repository:[ \t]*["']?)DominikSienkiewicz/(?=[\w.-]+["']?[ \t]*(?:#.*)?$)""", re.I | re.M)
 FRONTEND_SUFFIXES = {
     ".cjs", ".css", ".cts", ".js", ".json", ".json5", ".jsonc", ".jsx", ".less",
     ".mjs", ".mts", ".sass", ".scss", ".ts", ".tsx", ".yaml", ".yml",
@@ -78,6 +80,9 @@ def migrated(path, data):
         return data.rstrip("\n") + "\n" + REGISTRY + "\n"
     data = MAVEN.sub(f"maven.pkg.github.com/{OWNER.lower()}/Platform", data)
     data = REPOSITORY.sub(f"{OWNER}/Platform", data)
+    if path.parts[:2] == (".github", "workflows"):
+        jobs = re.split(r"(?=^  [\w-]+:)", data, flags=re.M)
+        data = "".join(INFRA_INPUT.sub(rf"\g<1>{OWNER}/", job) if PROMOTE_CALL.search(job) else job for job in jobs)
     updated = PACKAGE.sub(SCOPE + "/", data)
     if path.name == "package.json" and updated != data:
         try:
@@ -108,7 +113,7 @@ def main():
                 before = path.read_bytes() if path.exists() else b""
                 path.write_bytes(migrated(path, before.decode("utf-8")).encode("utf-8"))
     else:
-        raise SystemExit("Usage: organization.py files|apply")
+        raise SystemExit("Usage: organization.py files|apply PACKAGE_NAMES")
 
 
 if __name__ == "__main__":

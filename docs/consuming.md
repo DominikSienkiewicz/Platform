@@ -75,7 +75,11 @@ launcher first, including on a JVM-only consumer and on a frontend with 1.x alre
    checks its digest against the release's `SHA256SUMS`, and verifies its attestation from
    `SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/release.yml` before execution.
 
-4. Review the Maven endpoint and GitHub workflow paths. The Maven group, artifact IDs and Gradle
+4. Review the Maven endpoint and GitHub workflow paths. When a caller of `promote.yml` names a GitOps repository
+   under the former owner, the bump updates its literal `infra-repository` input. Review your own tests that
+   assert exact workflow paths and verify that the GitHub App can write to the transferred GitOps repository.
+   An organization migration preview lists affected paths and shows changed version pins and workflow references.
+   The Maven group, artifact IDs and Gradle
    plugin IDs keep their existing names. In the frontend, check the seven Platform packages
    (`tsconfig`, `eslint-config`, `prettier-config`, `tailwind-preset`, `vitest-config`, `versions`
    and `openapi`), their imports and the scope routing in `.npmrc`. Other dependencies under the

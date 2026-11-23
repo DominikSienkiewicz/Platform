@@ -91,6 +91,7 @@ if [[ ! -f backend/settings.gradle.kts ]] && [[ ! -f frontend/package.json ]] &&
 fi
 
 OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
+PLATFORM_NPM_PACKAGES="versions eslint-config openapi prettier-config tailwind-preset tsconfig vitest-config"
 # Wersje 1.x zachowują nazwę npm i podpis workflow z chwili wydania.
 release_owner() {
   if [[ "${1%%.*}" == 1 || "${1%%.*}" == 0 ]]; then printf '%s' DominikSienkiewicz; else printf '%s' "$OWNER"; fi
@@ -312,7 +313,21 @@ if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
   CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
-  CURRENT="$(grep -oE '"@(seniordeveloper-pl-dominik-sienkiewicz|dominiksienkiewicz)/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  CURRENT="$(python3 - "$PLATFORM_NPM_PACKAGES" <<'PY'
+import json, re, sys
+
+with open("frontend/package.json") as file:
+    manifest = json.load(file)
+for name in sys.argv[1].split():
+    for group in ("devDependencies", "dependencies", "optionalDependencies", "peerDependencies"):
+        deps = manifest.get(group, {})
+        for owner in ("seniordeveloper-pl-dominik-sienkiewicz", "dominiksienkiewicz"):
+            pin = deps.get(f"@{owner}/{name}", "")
+            if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", pin):
+                print(pin)
+                sys.exit(0)
+PY
+)"
 fi
 
 # Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
@@ -330,11 +345,21 @@ yanked_line() { awk -v version="$1" '{ sub(/#.*/, "") } $1 == version { $1 = "";
 if [[ -z "$TARGET" ]]; then
   echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
   VERSIONS_JSON="$(mktemp)"
-  curl -fsSL --proto '=https' --proto-redir '=https' \
-    -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/orgs/$OWNER/packages/maven/$CATALOG_PKG/versions" -o "$VERSIONS_JSON"
+  extra_pages=()
+  page=1
+  output="$VERSIONS_JSON"
+  while :; do
+    : > "$SNAPSHOT/package-headers"
+    curl -fsSL --proto '=https' --proto-redir '=https' \
+      -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -D "$SNAPSHOT/package-headers" \
+      "https://api.github.com/orgs/$OWNER/packages/maven/$CATALOG_PKG/versions?per_page=100&page=$page" -o "$output"
+    grep -Eiq '^link:.*rel="next"' "$SNAPSHOT/package-headers" || break
+    page=$((page + 1))
+    output="$SNAPSHOT/package-versions-$page.json"
+    extra_pages+=("$output")
+  done
   # Bez argumentu: najnowsze wydanie BIEŻĄCEGO majora; nowy MAJOR tylko jawnie (ADR-0002).
-  python3 - "$VERSIONS_JSON" "$CURRENT" "$YANKED_FILE" > "$VERSIONS_JSON.choice" <<'PY'
+  python3 - "$VERSIONS_JSON" "$CURRENT" "$YANKED_FILE" ${extra_pages[@]+"${extra_pages[@]}"} > "$SNAPSHOT/choice" <<'PY'
 # platform-bump:target — marker wycinania dla frontend/packages/versions/test/release-notes.test.sh
 import json, re, sys
 
@@ -350,18 +375,20 @@ key = lambda version: [int(part) for part in version.split(".")]
 releases = sorted(
     (
         v["name"]
-        for v in json.load(open(versions_path))
+        for page in [versions_path, *sys.argv[4:]]
+        for v in json.load(open(page))
         if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v["name"]) and v["name"] not in yanked
     ),
     key=key,
 )
 if releases:
     same_major = [v for v in releases if current and v.split(".")[0] == current.split(".")[0]]
+    if current and not same_major:
+        sys.exit(f"No published release for major {current.split('.')[0]} in the package listing. Pass an explicit version to change major.")
     print(same_major[-1] if same_major else releases[-1], releases[-1])
 PY
   NEWEST=""
-  read -r TARGET NEWEST < "$VERSIONS_JSON.choice" || true
-  rm -f "$VERSIONS_JSON.choice"
+  read -r TARGET NEWEST < "$SNAPSHOT/choice" || true
   if [[ -n "${NEWEST:-}" ]] && [[ "${NEWEST%%.*}" != "${TARGET%%.*}" ]]; then
     echo "NOTE: Platform $NEWEST starts a new MAJOR and is not taken automatically."
     echo "      Read its release notes, then run platform-bump $NEWEST to cross it."
@@ -504,9 +531,9 @@ snapshot
 
 if [[ "${TARGET%%.*}" -ge 2 ]]; then
   coordinates="$SELF_ROOT/migrations/lib/organization.py"
-  python3 "$coordinates" files > "$SNAPSHOT/coordinates"
+  python3 "$coordinates" files "$PLATFORM_NPM_PACKAGES" > "$SNAPSHOT/coordinates"
   while IFS= read -r -d '' migrated; do snapshot_file "$migrated"; done < "$SNAPSHOT/coordinates"
-  python3 "$coordinates" apply < "$SNAPSHOT/coordinates"
+  python3 "$coordinates" apply "$PLATFORM_NPM_PACKAGES" < "$SNAPSHOT/coordinates"
 fi
 
 # --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
@@ -540,7 +567,7 @@ fi
 
 # --- Frontend: piny pakietów Platform i kanon z wydania docelowego ---
 if [[ -f frontend/package.json ]]; then
-  python3 - "$TARGET" <<'PY'
+  python3 - "$TARGET" "$PLATFORM_NPM_PACKAGES" <<'PY'
 # platform-bump:pins — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
 
@@ -555,13 +582,14 @@ def walk(node, path, parent, visit):
 
 t=sys.argv[1]
 scope = "@dominiksienkiewicz/" if int(t.split(".")[0]) < 2 else "@seniordeveloper-pl-dominik-sienkiewicz/"
+packages = {scope + name for name in sys.argv[2].split()}
 p="frontend/package.json"
 d=json.load(open(p))
 def to_target(node, key, name, version, at):
-    if name.startswith(scope): node[key]=t
+    if name in packages: node[key]=t
 for sec in ("dependencies","devDependencies","optionalDependencies","peerDependencies"):
     for k in list(d.get(sec,{})):
-        if k.startswith(scope): d[sec][k]=t
+        if k in packages: d[sec][k]=t
 walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
@@ -694,10 +722,17 @@ fi
 # --- Dry run: pokaż zmienione linie względem migawki i zakończ; finish() przywraca pliki, Gradle nie rusza. ---
 # platform-bump:dry-run
 if [[ "$DRY_RUN" == true ]]; then
-  echo "==> Dry run: the bump to $TARGET changes these lines; nothing is written."
+  echo "==> Dry run: proposed changes for $TARGET"
   for file in "${CANDIDATES[@]}"; do
-    if [[ "$file" == *.npmrc ]]; then
-      cmp -s "$SNAPSHOT/files/$file" "$file" || echo "Updated registry mapping in $file (contents omitted)."
+    if [[ -s "$SNAPSHOT/coordinates" || "$file" == *.npmrc ]]; then
+      [[ -f "$file" ]] && ! cmp -s "$SNAPSHOT/files/$file" "$file" || continue
+      printf 'Updated %s\n' "$file"
+      case "$file" in
+        frontend/package.json)
+          diff -U0 "$SNAPSHOT/files/$file" "$file" | grep -E '^[-+][[:space:]]*"[@a-zA-Z0-9_./-]+":[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+",?$' || true ;;
+        .github/workflows/*.yml|.github/workflows/*.yaml)
+          diff -U0 "$SNAPSHOT/files/$file" "$file" | grep -E '^[-+][[:space:]]*uses: (DominikSienkiewicz|SeniorDeveloper-pl-Dominik-Sienkiewicz)/Platform/\.github/workflows/[a-zA-Z0-9_-]+\.ya?ml@[a-zA-Z0-9.]+[[:space:]]*$' || true ;;
+      esac
     elif [[ -e "$SNAPSHOT/files/$file" ]]; then
       diff -u --label "a/$file" --label "b/$file" "$SNAPSHOT/files/$file" "$file" || true
     elif [[ -e "$file" ]]; then

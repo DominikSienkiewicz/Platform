@@ -99,15 +99,15 @@ if grep -q 'overrides' "$REPO/frontend/package.json"; then fail "pusta sekcja ov
 setup_repo pins '{
   "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.4" },
   "overrides": {
-    "next": { "@seniordeveloper-pl-dominik-sienkiewicz/ui": "1.5.4" },
-    "@seniordeveloper-pl-dominik-sienkiewicz/query": "1.5.4",
+    "next": { "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig": "1.5.4" },
+    "@seniordeveloper-pl-dominik-sienkiewicz/openapi": "1.5.4",
     "react": "19.2.7"
   }
 }'
-( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 ) >/dev/null
+( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 "versions tsconfig openapi" ) >/dev/null
 [[ "$(value_at devDependencies @seniordeveloper-pl-dominik-sienkiewicz/versions)" == "9.9.9" ]] || fail "regresja: pin platformy w devDependencies nie został podbity"
-[[ "$(value_at overrides next @seniordeveloper-pl-dominik-sienkiewicz/ui)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
-[[ "$(value_at overrides @seniordeveloper-pl-dominik-sienkiewicz/query)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
+[[ "$(value_at overrides next @seniordeveloper-pl-dominik-sienkiewicz/tsconfig)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
+[[ "$(value_at overrides @seniordeveloper-pl-dominik-sienkiewicz/openapi)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
 [[ "$(value_at overrides react)" == "19.2.7" ]] || fail "blok pinów ruszył paczkę spoza scope'u platformy"
 
 [[ $fails -eq 0 ]] || exit 1

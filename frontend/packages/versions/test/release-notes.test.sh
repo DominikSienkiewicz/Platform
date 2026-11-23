@@ -30,6 +30,11 @@ JSON
   || fail 'a consumer already on the newest MAJOR must get its newest release'
 [[ "$(python3 "$WORK/target.py" "$WORK/versions.json" "")" == "2.0.0 2.0.0" ]] \
   || fail 'without a known current pin the bump must take the newest release'
+printf '[{"name":"2.0.0"}]\n' > "$WORK/versions.json"
+if python3 "$WORK/target.py" "$WORK/versions.json" 1.13.1 > "$WORK/target" 2> "$WORK/error"; then
+  fail 'a listing with only the new major must require an explicit version from the consumer'
+fi
+grep -qF 'explicit version' "$WORK/error" || fail 'the failure must explain how to select a major'
 
 # --- Notes: every release in (current, target], oldest first, and their consumer actions ------
 cat > "$WORK/releases.json" <<'JSON'
