@@ -86,9 +86,9 @@ run_case consumer-owned '{
 [[ $RC -eq 0 ]] || fail "override paczki spoza kanonu nie powinien failować (exit $RC)"
 if grep -q 'PLAT-FE' <<<"$OUT"; then fail "override paczki spoza kanonu nie powinien dawać PLAT-FE"; fi
 
-# --- 7) Pin platformy (@dominiksienkiewicz/*) w overrides jest poza governance kanonu ---
+# --- 7) Pin platformy (@seniordeveloper-pl-dominik-sienkiewicz/*) w overrides jest poza governance kanonu ---
 run_case platform-scope '{
-  "overrides": { "@dominiksienkiewicz/ui": "1.5.14" }
+  "overrides": { "@seniordeveloper-pl-dominik-sienkiewicz/ui": "1.5.14" }
 }'
 [[ $RC -eq 0 ]] || fail "pin platformy w overrides nie podlega kanonowi (exit $RC)"
 

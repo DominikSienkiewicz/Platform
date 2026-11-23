@@ -12,7 +12,7 @@ fail() { echo "FAIL: $*" >&2; echo "$OUT" >&2; exit 1; }
 
 mkdir -p "$tmp/pkg/bin" "$tmp/app"
 cp "$here/../bin/check.mjs" "$tmp/pkg/bin/check.mjs"
-printf '{ "name": "@dominiksienkiewicz/versions", "version": "1.5.26" }\n' > "$tmp/pkg/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "1.5.26" }\n' > "$tmp/pkg/package.json"
 printf '{ "versions": { "next": "16.4.0" }, "releasedAt": "2026-08-10" }\n' > "$tmp/pkg/versions.json"
 printf '{ "dependencies": { "next": "16.4.0" } }\n' > "$tmp/app/package.json"
 notices() { grep -c ' days ago (2026-08-10); the support window is 60 days or 3 releases' <<<"$OUT" || true; }

@@ -30,9 +30,9 @@ dir=$(consumer dry-run)
 bump "$dir" --dry-run 9.9.9
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail '(c) a dry run must succeed'; }
 grep -qF -- '-    "@dominiksienkiewicz/versions": "1.5.29",' "$dir.log" || { cat "$dir.log"; fail '(c) the old pin must be shown'; }
-grep -qF -- '+    "@dominiksienkiewicz/versions": "9.9.9",' "$dir.log" || fail '(c) the new pin must be shown'
+grep -qF -- '+    "@seniordeveloper-pl-dominik-sienkiewicz/versions": "9.9.9",' "$dir.log" || fail '(c) the new pin must be shown'
 grep -qF -- '+    "react": "19.2.8"' "$dir.log" || fail '(c) the canon change must be shown'
-grep -qF -- '+    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v9.9.9' "$dir.log" || fail '(c) the workflow ref must be shown'
+grep -qF -- '+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v9.9.9' "$dir.log" || fail '(c) the workflow ref must be shown'
 [[ -z "$(git -C "$dir" status --porcelain)" ]] || { git -C "$dir" status --porcelain; fail '(c) a dry run must not change the tree'; }
 if grep -q '^npm install' "$FAKE_NPM_LOG"; then fail '(c) a dry run must not run npm install'; fi
 

@@ -11,7 +11,7 @@ import os
 import re
 import sys
 
-CALLER = re.compile(r"^\s+uses:\s*DominikSienkiewicz/Platform/\.github/workflows/[^@\s]+@")
+CALLER = re.compile(r"^\s+uses:\s*(?:DominikSienkiewicz|SeniorDeveloper-pl-Dominik-Sienkiewicz)/Platform/\.github/workflows/[^@\s]+@")
 JAVA_VERSION = re.compile(r"^(\s+java-version:\s*)([\"']?)(\d+)(\2)(\s*(?:#.*)?)$")
 JOB = re.compile(r"^  [A-Za-z0-9_-]+:\s*$")
 SDKMAN = re.compile(r"^java=(\d+)\S*\s*$")

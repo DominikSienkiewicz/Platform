@@ -24,7 +24,7 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-USES = re.compile(r"^    uses:\s*DominikSienkiewicz/Platform/\.github/workflows/([A-Za-z0-9_.-]+\.ya?ml)@(\S+)")
+USES = re.compile(r"^    uses:\s*(?:DominikSienkiewicz|SeniorDeveloper-pl-Dominik-Sienkiewicz)/Platform/\.github/workflows/([A-Za-z0-9_.-]+\.ya?ml)@(\S+)")
 LEVEL = {"none": 0, "read": 1, "write": 2}
 
 

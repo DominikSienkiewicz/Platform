@@ -9,7 +9,7 @@ import glob
 import re
 import sys
 
-CALLEE = re.compile(r"^\s+uses:\s*DominikSienkiewicz/Platform/\.github/workflows/(?:backend|frontend)-ci\.ya?ml@")
+CALLEE = re.compile(r"^\s+uses:\s*(?:DominikSienkiewicz|SeniorDeveloper-pl-Dominik-Sienkiewicz)/Platform/\.github/workflows/(?:backend|frontend)-ci\.ya?ml@")
 GRANTS = re.compile(r"\bpackages:\s*(?:read|write)\b")
 
 

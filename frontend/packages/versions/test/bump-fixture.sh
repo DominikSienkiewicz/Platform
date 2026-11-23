@@ -6,7 +6,8 @@ fixture_work=$(mktemp -d)
 trap 'rm -rf "$fixture_work"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-mkdir -p "$fixture_work/bin" "$fixture_work/tool"
+mkdir -p "$fixture_work/bin" "$fixture_work/tool" "$fixture_work/migrations/lib"
+cp "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../migrations/lib/organization.py" "$fixture_work/migrations/lib/"
 cp "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../bin/platform-bump.sh" "$fixture_work/tool/platform-bump.sh"
 # curl: /user odpowiada FAKE_USER_CODE (+ FAKE_SCOPES jako x-oauth-scopes), lista wersji = FAKE_VERSIONS,
 # lista wycofanych = FAKE_YANKED; wszystko inne (notatki, katalog) kończy się błędem jak bez sieci.
@@ -42,6 +43,9 @@ cat > "$fixture_work/bin/npm" <<'STUB'
 echo "npm $*" >> "$FAKE_NPM_LOG"
 if [[ "$1" == pack ]]; then
   [[ "${FAKE_PACK:-ok}" == ok ]] || { printf 'npm error code E401\n' >&2; exit 1; }
+  spec=$2
+  scope=${spec%%/*}
+  version=${spec##*@}
   while [[ $# -gt 0 && "$1" != --pack-destination ]]; do shift; done
   staging=$(mktemp -d)
   mkdir -p "$staging/package"
@@ -52,7 +56,7 @@ if [[ "$1" == pack ]]; then
     cp "$FAKE_PACKAGE/bin/workflows-check.py" "$staging/package/bin/"
     cp "$FAKE_PACKAGE/workflow-contract.txt" "$staging/package/"
   fi
-  tar -czf "$2/dominiksienkiewicz-versions-9.9.9.tgz" -C "$staging" package
+  tar -czf "$2/${scope#@}-versions-$version.tgz" -C "$staging" package
   rm -rf "$staging"
 fi
 exit 0

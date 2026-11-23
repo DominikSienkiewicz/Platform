@@ -15,12 +15,34 @@ other artifacts. Since 1.6.0 `release.yml` fails unless every artifact carries t
 1.6.0 itself has only its Maven artifacts: the npm publish failed, so it has no npm packages, no GitHub
 Release with assets and no `v1` move. 1.7.0 is tagged but was never published: its release gate failed
 before any artifact went out, so use 1.8.0, which replaces both. 1.10.1 is tagged but was never published either:
-a test of its release gate failed on the GitHub runner, so use 1.10.2, which carries its fixes. 2.0.0 was never
-published: it moved Platform to the organization `SeniorDeveloper-pl-Dominik-Sienkiewicz`, but Platform stays under
-`DominikSienkiewicz`, so its publish was refused before any artifact went out, its tag was removed and the 1.x line
-continues.
+a test of its release gate failed on the GitHub runner, so use 1.10.2, which carries its fixes. An earlier attempt at 2.0.0 ended before any
+artifact was published. Its tag was removed and releases continued under the personal account through 1.13.1.
 
 ## [Unreleased]
+
+## [2.0.0] - 2026-11-23
+
+### Consumer action required
+
+- Replace the 1.x bootstrap with `templates/platform-bump.sh` from the published v2.0.0 tag. Review
+  `scripts/platform-bump.sh --dry-run 2.0.0`, then run `scripts/platform-bump.sh 2.0.0` and commit
+  the updated pins, imports, lockfiles and workflows. The bootstrap verifies the release tarball with
+  GitHub CLI. [Upgrade instructions](docs/consuming.md#move-a-1x-consumer-to-200).
+- Give consumers read access to the organization’s npm packages and Maven repository. Use the organization
+  scope in direct npm configuration, the organization repository in Maven URLs and the canonical owner in
+  reusable workflow references and the shared Renovate preset. Historical npm versions remain under
+  `@dominiksienkiewicz`.
+- For applications using `promote.yml`, install the promotion GitHub App on the new GitOps repository and
+  update `infra-repository`. Coordinate GHCR write and pull access, image names and the admission policy
+  for images signed by the organization's Platform workflow before promoting an application. Keep verified
+  rollback images and their original signer identities available.
+
+### Changed
+
+- Publish the seven frontend packages in `@seniordeveloper-pl-dominik-sienkiewicz` and publish Maven
+  artifacts to `seniordeveloper-pl-dominik-sienkiewicz/Platform` with their existing coordinates.
+- Resolve nested image builds through the organization at the pinned commit of `deploy.yml`.
+  New consumers and CI resolve the packages and workflows for their selected major version.
 
 ## [1.13.1] - 2026-11-21
 
