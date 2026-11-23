@@ -105,7 +105,7 @@ jobs:
     needs: preflight
     # Pełne odwołanie zamiast ./: caller przypina ten workflow do adnotowanego taga, a GitHub szuka ./ pod obiektem taga,
     # nie pod jego commitem, i run pada na starcie z „workflow was not found” (ADR-0035). Przesuwanie pinu: RELEASING.md.
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@d88288965f4377fbab95db2f850aa70a1d0a2d3f # v1.10.1
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@d88288965f4377fbab95db2f850aa70a1d0a2d3f # v1.10.1
     permissions:
       contents: read
       packages: write
@@ -135,6 +135,7 @@ jobs:
       contents: read
     env:
       INFRA_REPOSITORY: ${{ inputs.infra-repository }}
+      GHCR_OWNER: ${{ vars.GHCR_OWNER }}
       APP_NAME: ${{ inputs.app-name }}
       VALUES_DIR: ${{ inputs.values-dir }}
       BACKEND_TAG: ${{ needs.build.outputs.backend-tag }}
@@ -172,7 +173,7 @@ jobs:
       - name: Fetch promote-image.sh from Platform
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: DominikSienkiewicz/Platform
+          repository: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
           ref: ${{ inputs.platform-ref }}
           path: _platform
           persist-credentials: false
@@ -181,10 +182,11 @@ jobs:
         if: ${{ !inputs.single-image }}
         run: |
           set -euo pipefail
-          bash _platform/scripts/promote-image.sh \
+          image_prefix="ghcr.io/$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')/$APP_NAME"
+          bash _platform/scripts/promote-image.sh --require-repository \
             "chore: promote $APP_NAME to backend $BACKEND_TAG, frontend $FRONTEND_TAG" \
-            "$VALUES_DIR/values-backend.yaml=$BACKEND_TAG" \
-            "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"
+            "$VALUES_DIR/values-backend.yaml=$image_prefix-backend:$BACKEND_TAG" \
+            "$VALUES_DIR/values-frontend.yaml=$image_prefix-frontend:$FRONTEND_TAG"
 
       # Jeden obraz: frontend-tag z deploy.yml jest pusty, więc idzie tylko tag backendu, do jednego pliku.
       - name: Commit the new image tag
@@ -192,7 +194,8 @@ jobs:
         run: |
           # >>> promote-single
           set -euo pipefail
-          bash _platform/scripts/promote-image.sh \
+          image_prefix="ghcr.io/$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')/$APP_NAME"
+          bash _platform/scripts/promote-image.sh --require-repository \
             "chore: promote $APP_NAME to $BACKEND_TAG" \
-            "$VALUES_DIR/values.yaml=$BACKEND_TAG"
+            "$VALUES_DIR/values.yaml=$image_prefix-backend:$BACKEND_TAG"
           # <<< promote-single

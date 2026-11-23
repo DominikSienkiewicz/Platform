@@ -45,7 +45,7 @@ expect(!JSON.stringify(preset.customManagers ?? []).includes("platform-catalog")
 expect(!JSON.stringify(preset).includes("hostRules"), "default.json needs no registry credentials");
 expect((preset.customManagers ?? []).some((m) => m.managerFilePatterns.some((p) => p.includes("PlatformImages"))),
   "default.json keeps the Docker manager for PlatformImages.java");
-expect((platform.extends ?? []).includes("github>DominikSienkiewicz/Platform"), "renovate.json must extend the shared preset");
+expect((platform.extends ?? []).includes("github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"), "renovate.json must extend the shared preset");
 
 const managerFor = (fragment) => (platform.customManagers ?? []).find((m) => m.managerFilePatterns.some((p) => p.includes(fragment)));
 const regex = (manager) => new RegExp(manager.matchStrings[0], "g");
@@ -79,7 +79,7 @@ NODE
 # --- frame ---
 # Reguły ramy w default.json generuje scripts/renovate-preset.py (--check w CI przez ten test): Renovate nie rusza
 # żadnej współrzędnej katalogu (biblioteki i pluginy), klucza versions.json, pl.seniordeveloper:*, seniordev.*,
-# @dominiksienkiewicz/* ani referencji DominikSienkiewicz/Platform, a zależności aplikacji aktualizuje. Własne reguły
+# @seniordeveloper-pl-dominik-sienkiewicz/* ani referencji SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform, a zależności aplikacji aktualizuje. Własne reguły
 # Platform (renovate.json) dalej włączają aktualizacje kanonów w samej Platform. Dopasowanie liczy uproszczony
 # model Renovate: ostatnia pasująca reguła z `enabled` wygrywa; matchPackageNames patrzy na packageName, a bez
 # niego na depName; `*` w globie nie przechodzi przez `/`. Plugin sprawdzamy w obu postaciach (z packageName
@@ -154,10 +154,12 @@ for plugin in plugins + ["seniordev.settings-conventions", "seniordev.future-con
     for dep in ({"manager": "gradle", "depName": plugin, "packageName": f"{plugin}:{plugin}.gradle.plugin"},
                 {"manager": "gradle", "depName": plugin}):
         expect(not enabled(shared, dep), f"Renovate must leave the frame plugin {plugin} alone ({dep.get('packageName', 'by id')})")
-for package in sorted(canon) + ["@dominiksienkiewicz/versions", "@dominiksienkiewicz/eslint-config"]:
+for package in sorted(canon) + ["@seniordeveloper-pl-dominik-sienkiewicz/versions", "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config",
+                                "@dominiksienkiewicz/versions"]:
     expect(not enabled(shared, {"manager": "npm", "depName": package}), f"Renovate must leave the frame package {package} alone")
-expect(not enabled(shared, {"manager": "github-actions", "depName": "DominikSienkiewicz/Platform"}),
-       "Renovate must leave the references to Platform's reusable workflows alone")
+for owner in ["SeniorDeveloper-pl-Dominik-Sienkiewicz", "DominikSienkiewicz"]:
+    expect(not enabled(shared, {"manager": "github-actions", "depName": f"{owner}/Platform"}),
+           "Renovate must leave the references to Platform's reusable workflows alone")
 expect(not enabled(shared, {"manager": "gradle-wrapper", "depName": "gradle"}), "Renovate must leave the Gradle wrapper alone")
 
 application = (

@@ -19,7 +19,7 @@ grep -qx '  workflow_dispatch:' "$template" || fail 'the caller can be started b
 # --- pin ---
 # Dokładny tag wydania (Decyzja 3), nie SHA: tylko taki ref przesuwa platform-bump i tylko taki akceptuje
 # platform-workflows-check bez ostrzeżenia.
-uses_re='^    uses: DominikSienkiewicz/Platform/\.github/workflows/platform-bump\.yml@v[0-9]+\.[0-9]+\.[0-9]+$'
+uses_re='^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/platform-bump\.yml@v[0-9]+\.[0-9]+\.[0-9]+$'
 [[ $(grep -cE "$uses_re" "$template") == 1 ]] || fail 'the caller calls platform-bump.yml by one exact vX.Y.Z tag'
 tag=$(grep -E "$uses_re" "$template" | sed -E 's/.*@//')
 
@@ -47,8 +47,8 @@ awk '
   index($0, "# platform-bump:workflows") { inside = 1 }
 ' "$root/frontend/packages/versions/bin/platform-bump.sh" > "$tmp/workflows.sh"
 [[ -s "$tmp/workflows.sh" ]] || fail 'no "# platform-bump:workflows" block in bin/platform-bump.sh'
-(cd "$repo" && OWNER=DominikSienkiewicz TARGET=99.0.0 bash "$tmp/workflows.sh")
-grep -qx '    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v99.0.0' \
+(cd "$repo" && OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz TARGET=99.0.0 bash "$tmp/workflows.sh")
+grep -qx '    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v99.0.0' \
   "$repo/.github/workflows/platform-bump.yml" || fail 'platform-bump must move the caller to the bumped tag'
 
 # --- docs ---

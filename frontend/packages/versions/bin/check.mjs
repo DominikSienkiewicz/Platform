@@ -5,7 +5,7 @@
 // Reguły:
 //   1. Kanon pilnuje wersji paczek, które zna; paczka bez wpisu w kanonie należy do konsumenta i nie jest błędem.
 //   2. Wersja paczki z kanonu musi być IDENTYCZNA z kanonem (exact, bez ^/~).
-//   3. Piny @dominiksienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
+//   3. Piny @seniordeveloper-pl-dominik-sienkiewicz/* (poza overrides) są EXACT i równe wydaniu, z którego pochodzi kanon —
 //      kanon z versions@X i preset z eslint-config@Y nie mogą pochodzić z różnych wydań.
 // `overrides` podlega tym samym regułom co zależność bezpośrednia — to tam żyją piny CVE paczek
 // transytywnych (overrides.next.postcss), które bez tego dryfowały po cichu przy ruchu kanonu.
@@ -27,7 +27,7 @@ const deprecated = canonFile.deprecated ?? {};
 // paczek). Bez niej konsument nie wie, czy podbić pin, czy powtórzyć bump. Kopia bez package.json (testy
 // hermetyczne) nie zna wersji — wtedy raport podaje ścieżkę versions.json.
 const canonVersion = readCanonVersion();
-const canonLabel = canonVersion ? `@dominiksienkiewicz/versions@${canonVersion}` : join(packageDir, "versions.json");
+const canonLabel = canonVersion ? `@seniordeveloper-pl-dominik-sienkiewicz/versions@${canonVersion}` : join(packageDir, "versions.json");
 
 function readCanonVersion() {
   try {
@@ -71,7 +71,7 @@ let drift = [];
 let governed = 0;
 for (const entry of declared) {
   const { name, have } = entry;
-  if (name.startsWith("@dominiksienkiewicz/")) continue; // pin platformy — poza kanonem
+  if (name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/")) continue; // pin platformy — poza kanonem
   if (have.startsWith("$")) continue; // referencja npm ("$typescript") — wersję rozwija npm
   const want = canon[name];
   if (want === undefined) continue; // paczka spoza kanonu należy do konsumenta
@@ -80,7 +80,7 @@ for (const entry of declared) {
 }
 
 // Bez znanej wersji kanonu (kopia testowa) wymagamy przynajmniej jednej wspólnej wartości wszystkich pinów.
-const platformPins = declared.filter(({ name, at }) => at === null && name.startsWith("@dominiksienkiewicz/"));
+const platformPins = declared.filter(({ name, at }) => at === null && name.startsWith("@seniordeveloper-pl-dominik-sienkiewicz/"));
 const pinValues = new Set(platformPins.map(({ have }) => have));
 const expectedPin = canonVersion ?? (pinValues.size === 1 ? [...pinValues][0] : null);
 let looseOrMixedPins = platformPins.filter(({ have }) => !/^\d+\.\d+\.\d+$/.test(have) || have !== expectedPin);
@@ -101,7 +101,7 @@ if (fix && (drift.length > 0 || (canonVersion && looseOrMixedPins.length > 0))) 
 // Kody bramek (N-SHOW-8) z linkiem do docs wydania, z którego pochodzi kanon.
 /** @param {string} code */
 const gateLink = (code) =>
-  `https://github.com/DominikSienkiewicz/Platform/blob/v${canonVersion ?? "main"}/docs/gates.md#${code.toLowerCase()}`;
+  `https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v${canonVersion ?? "main"}/docs/gates.md#${code.toLowerCase()}`;
 const deprecations = declared.filter(({ name }) => deprecated[name]);
 for (const d of deprecations) {
   const { since, removeIn, replacement } = deprecated[d.name];
@@ -136,7 +136,7 @@ if (drift.length === 0 && looseOrMixedPins.length === 0) {
 
 /** @param {{ at: string | null }} e */
 const where = (e) => (e.at ? ` [${e.at}]` : "");
-const platformCanon = "frontend/packages/versions/versions.json in DominikSienkiewicz/Platform";
+const platformCanon = "frontend/packages/versions/versions.json in SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform";
 
 // GitHub Actions: adnotacja na linii wpisu w package.json (pierwsze wystąpienie "nazwa": "wersja") i tabela w podsumowaniu.
 if (process.env.GITHUB_ACTIONS === "true") {

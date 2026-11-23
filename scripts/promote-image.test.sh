@@ -171,4 +171,51 @@ subjects=$(git -C "$bare" log --format=%s main)
 grep -qx "foreign 1" <<< "$subjects" || fail "shallow race lost the foreign commit"
 grep -qx "chore: promote" <<< "$subjects" || fail "shallow race lost the promote commit"
 
+# The workflow passes the exact signed repository with each tag. The unguarded interface above
+# remains available to callers that only pass FILE=TAG.
+new_repos guarded
+image=ghcr.io/example/backend
+run_promote --require-repository promote "values-backend.yaml=$image:2.0.0" "values-frontend.yaml=ghcr.io/example/frontend:1.0.0"
+[[ $rc -eq 1 && "$out" == *values-frontend.yaml* && "$out" == *'manual GitOps pull request'* ]] || fail "mismatch must request a manual cutover, even at the target tag: $out"
+[[ -z "$(git -C "$work" status --porcelain)" && "$(commits_in "$work")" -eq 1 ]] || fail 'one mismatched repository must leave all files untouched'
+for spec in missing duplicate tagged; do
+  if [[ "$spec" == missing ]]; then
+    printf 'image:\n  tag: 1.0.0\nsidecar:\n  repository: %s\n' "$image" > "$work/test.yaml"
+  elif [[ "$spec" == duplicate ]]; then
+    printf 'image:\n  repository: ghcr.io/other/backend\n  "repository": %s\n  tag: 1.0.0\n' "$image" > "$work/test.yaml"
+  else
+    printf 'image:\n  repository: !!binary %s\n  tag: 1.0.0\n' "$image" > "$work/test.yaml"
+  fi
+  run_promote --require-repository promote "test.yaml=$image:2.0.0"
+  [[ $rc -eq 1 && "$out" == *'manual GitOps pull request'* ]] || fail "$spec repository must fail closed: $out"
+done
+run_promote --require-repository promote "values-backend.yaml=$image:2.0.0"
+[[ $rc -eq 0 ]] || fail "matching signed repository must promote: $out"
+run_promote --require-repository promote "values-backend.yaml=$image:2.0.0"
+[[ $rc -eq 0 && "$(commits_in "$work")" -eq 2 ]] || fail "matching repository and tag must be idempotent: $out"
+new_repos guarded-pair
+sed 's!ghcr.io/example/backend!ghcr.io/example/frontend!' "$work/values-frontend.yaml" > "$work/frontend"
+mv "$work/frontend" "$work/values-frontend.yaml"
+git -C "$work" commit -qam set-frontend
+run_promote --require-repository promote "values-backend.yaml=$image:2.0.1" "values-frontend.yaml=ghcr.io/example/frontend:2.0.2"
+[[ $rc -eq 0 ]] || fail "a pair of signed repositories must promote: $out"
+git -C "$bare" show main:values-frontend.yaml | grep -qF 'tag: 2.0.2 #' || fail 'the guarded pair must preserve separate tags'
+
+new_repos guarded-race
+cat > "$work/.git/hooks/pre-push" <<HOOK
+#!/usr/bin/env bash
+set -eu
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+echo push >> "$tmp/guard-race"
+sed 's!ghcr.io/example/backend!ghcr.io/other/backend!' "$other/values-backend.yaml" > "$other/changed"
+mv "$other/changed" "$other/values-backend.yaml"
+git -C "$other" commit -qam changed-repository
+git -C "$other" push -q origin main
+HOOK
+chmod +x "$work/.git/hooks/pre-push"
+run_promote --require-repository promote "values-backend.yaml=$image:2.1.0"
+[[ $rc -eq 1 && "$out" == *'manual GitOps pull request'* ]] || fail "a remote repository change during promotion must request manual cutover: $out"
+[[ "$(wc -l < "$tmp/guard-race" | tr -d ' ')" == 1 ]] || fail 'a mismatched retry must not attempt another push'
+git -C "$bare" show main:values-backend.yaml | grep -qF 'tag: 1.0.0 #' || fail 'a racing repository change must not receive the promoted tag'
+
 echo "promote-image.test.sh: OK"

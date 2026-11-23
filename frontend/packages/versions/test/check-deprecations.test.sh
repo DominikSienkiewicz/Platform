@@ -9,7 +9,7 @@ fail() { echo "FAIL: $*" >&2; echo "$OUT" >&2; exit 1; }
 
 mkdir -p "$tmp/pkg/bin" "$tmp/app"
 cp "$here/../bin/check.mjs" "$tmp/pkg/bin/check.mjs"
-printf '{ "name": "@dominiksienkiewicz/versions", "version": "1.6.0" }\n' > "$tmp/pkg/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "1.6.0" }\n' > "$tmp/pkg/package.json"
 cat > "$tmp/pkg/versions.json" <<'JSON'
 { "versions": { "next": "16.4.0", "old-lib": "1.0.0" },
   "deprecated": { "old-lib": { "since": "1.6.0", "removeIn": "1.7.0", "replacement": "new-lib" } } }
@@ -28,6 +28,6 @@ printf '{ "dependencies": { "next": "16.3.0", "left-pad": "1.3.0" } }\n' > "$tmp
 if OUT=$(cd "$tmp/app" && node "$tmp/pkg/bin/check.mjs" 2>&1); then fail 'drift must still fail'; fi
 if grep -qF 'PLAT-FE-001' <<<"$OUT"; then fail 'a package outside the canon must not emit the retired PLAT-FE-001'; fi
 grep -qF '[PLAT-FE-002] platform-versions-check: versions that differ from the Platform canon' <<<"$OUT" || fail 'drift carries PLAT-FE-002'
-grep -qF '  PLAT-FE-002: https://github.com/DominikSienkiewicz/Platform/blob/v1.6.0/docs/gates.md#plat-fe-002' <<<"$OUT" \
+grep -qF '  PLAT-FE-002: https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/v1.6.0/docs/gates.md#plat-fe-002' <<<"$OUT" \
   || fail 'every code must link the docs of the canon release'
 echo 'OK: platform-versions-check warns on deprecated packages and codes every violation, not the packages outside the canon'

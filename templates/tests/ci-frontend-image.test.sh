@@ -37,7 +37,7 @@ grep -qE '^        run: docker build --secret id=github_token,env=GITHUB_TOKEN '
 if grep -qF -- '--build-arg' <<<"$job"; then fail 'frontend-image must pass no --build-arg: build arguments stay in the image history'; fi
 tokens=$(grep -E 'secrets\.GITHUB_TOKEN|github\.token' <<<"$job") || fail 'frontend-image must hand GITHUB_TOKEN to npm and docker build'
 while IFS= read -r line; do
-  [[ "$line" == '          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}' ]] || fail "the token may only be a step env: mapping, got: $line"
+  [[ "$line" == '          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}' || "$line" == '          GH_TOKEN: ${{ github.token }}' ]] || fail "the token may only be a step env: mapping, got: $line"
 done <<<"$tokens"
 if grep -qE '\$\{?GITHUB_TOKEN' <<<"$job"; then
   fail 'no run: script may expand $GITHUB_TOKEN: npm reads it through .npmrc, docker through env=GITHUB_TOKEN'
@@ -51,7 +51,7 @@ if grep -E '(npm|pnpm) (install|ci|i) ' <<<"$job" | grep -qvF -- '--ignore-scrip
 block changes
 inputs=$(sed -n "s/^inputs='\(.*\)'$/\1/p" "$tmp/changes.sh")
 [[ -n "$inputs" ]] || fail 'the changes block defines no inputs pattern'
-for path in templates/Dockerfile.frontend templates/frontend/next.config.ts templates/npmrc scripts/new-consumer.sh .github/workflows/ci.yml; do
+for path in scripts/legacy-frontend-smoke.mjs templates/Dockerfile.frontend templates/frontend/next.config.ts templates/npmrc scripts/new-consumer.sh .github/workflows/ci.yml; do
   grep -qE -- "$inputs" <<<"$path" || fail "a change of $path must build the image"
 done
 for path in templates/Dockerfile.backend docs/consuming.md frontend/packages/versions/versions.json scripts/new-consumer.sh.bak; do
@@ -152,9 +152,11 @@ printf '%s\n' @dominiksienkiewicz/versions@1.6.0 @dominiksienkiewicz/eslint-conf
 # shipped <version> <pinned package...>: wypisuje wyjście shipped dla manifestu, który przypina pakiety na <version>
 shipped() {
   local version="$1"; shift
-  node -e 'const [version, ...names] = process.argv.slice(1);
-    const pins = Object.fromEntries(names.map((name) => [`@dominiksienkiewicz/${name}`, version]));
-    process.stdout.write(JSON.stringify({ dependencies: { react: "19.2.0" }, devDependencies: pins }));' "$version" "$@" > "$tmp/package.json"
+  local scope="@seniordeveloper-pl-dominik-sienkiewicz"
+  [[ "$version" != 1.* ]] || scope="@dominiksienkiewicz"
+  node -e 'const [version, scope, ...names] = process.argv.slice(1);
+    const pins = Object.fromEntries(names.map((name) => [name.startsWith("@") ? name : `${scope}/${name}`, version]));
+    process.stdout.write(JSON.stringify({ dependencies: { react: "19.2.0" }, devDependencies: pins }));' "$version" "$scope" "$@" > "$tmp/package.json"
   : > "$tmp/output"
   (cd "$repo" && PATH="$tmp/npm-bin:$PATH" REGISTRY="$tmp/registry" GITHUB_OUTPUT="$tmp/output" MANIFEST="$tmp/package.json" \
     VERSION="$version" bash -euo pipefail "$tmp/shipped.sh" > "$tmp/out" 2>&1)
@@ -172,10 +174,16 @@ grep -qF '::notice::Platform v1.5.31 does not publish @dominiksienkiewicz/versio
 grep -qF '::notice::Platform v1.8.0 does not publish @dominiksienkiewicz/versions @dominiksienkiewicz/eslint-config at 1.8.0' "$tmp/out" \
   || fail 'the notice must name every package missing from the registry'
 mkdir -p "$repo/frontend/packages/gone" "$repo/frontend/packages/locked"
-printf '{ "name": "@dominiksienkiewicz/gone", "version": "2.0.0" }\n' > "$repo/frontend/packages/gone/package.json"
-printf '{ "name": "@dominiksienkiewicz/locked", "version": "2.0.0" }\n' > "$repo/frontend/packages/locked/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/gone", "version": "2.0.0" }\n' > "$repo/frontend/packages/gone/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/locked", "version": "2.0.0" }\n' > "$repo/frontend/packages/locked/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "2.0.0" }\n' > "$repo/frontend/packages/versions/package.json"
+printf '%s\n' '@seniordeveloper-pl-dominik-sienkiewicz/versions@2.0.0' >> "$tmp/registry"
 tag v2.0.0 "$(commit 'packages the registry answers with errors')"
-[[ "$(shipped 2.0.0 gone)" == false ]] || fail 'a package the registry answers with E404 is not published'
+[[ "$(shipped 2.0.0 versions)" == true ]] || fail 'a published organization package must be queried by its full scope'
+if [[ -n "$(shipped 2.0.0 gone)" ]]; then fail 'a registry E404 for an organization package recorded as shipped must fail the job'; fi
+if [[ -n "$(shipped 2.0.0)" ]]; then fail 'an empty set of Platform pins must not pass the image smoke'; fi
+if [[ -n "$(shipped 2.0.0 missing-from-tag)" ]]; then fail 'a missing organization package must fail the smoke'; fi
+if [[ -n "$(shipped 2.0.0 versions @dominiksienkiewicz/versions)" ]]; then fail 'a generated 2.x frontend cannot mix both npm scopes'; fi
 if [[ -n "$(shipped 2.0.0 locked)" ]]; then fail 'another registry error (E401) must fail the step, not skip the image'; fi
 
 # --- Czekanie na odpowiedź kontenera ---------------------------------------------------------------------------

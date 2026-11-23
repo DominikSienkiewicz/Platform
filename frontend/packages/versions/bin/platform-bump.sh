@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# platform-bump — KANON (jedno źródło): bin pakietu @dominiksienkiewicz/versions, publikowany z Platform.
+# platform-bump — KANON (jedno źródło): bin pakietu @seniordeveloper-pl-dominik-sienkiewicz/versions, publikowany z Platform.
 # Repo konsumenckie NIE trzymają kopii logiki — wołają go przez cienki stub -> node_modules/.../bin.
-# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm @dominiksienkiewicz/*) do
+# Podbija piny artefaktów Platform (Maven catalog + settings plugin + npm Platform) do
 # NAJNOWSZEJ opublikowanej wersji w GitHub Packages i NAKŁADA kanon wersji frontendu z versions.json.
 # Obie operacje obejmują też sekcję `overrides` w package.json (piny CVE paczek transytywnych,
 # np. overrides.next.postcss) — pomijając referencje npm w formie "$nazwa".
@@ -90,7 +90,13 @@ if [[ ! -f backend/settings.gradle.kts ]] && [[ ! -f frontend/package.json ]] &&
   exit 1
 fi
 
-OWNER="DominikSienkiewicz"
+OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"
+PLATFORM_NPM_PACKAGES="versions eslint-config openapi prettier-config tailwind-preset tsconfig vitest-config"
+# Wersje 1.x zachowują nazwę npm i podpis workflow z chwili wydania.
+release_owner() {
+  if [[ "${1%%.*}" == 1 || "${1%%.*}" == 0 ]]; then printf '%s' DominikSienkiewicz; else printf '%s' "$OWNER"; fi
+}
+npm_scope() { release_owner "$1" | tr '[:upper:]' '[:lower:]'; }
 CATALOG_PKG="pl.seniordeveloper.platform-catalog"
 
 TOKEN="${GPR_TOKEN:-${GITHUB_TOKEN:-}}"
@@ -231,22 +237,24 @@ preflight
 # platform-bump:provenance
 version_key() { local IFS=.; read -r -a part <<<"$1"; printf '%05d%05d%05d' "${part[0]}" "${part[1]}" "${part[2]}"; }
 verify_provenance() {
-  local file=$1 name
+  local file=$1 version=${2:-$TARGET} name signer
+  signer="$(release_owner "$version")"
   name=$(basename "$file")
   if [[ -n "$SKIP_PROVENANCE" ]]; then
     echo "WARNING: the provenance of $name was not verified: $SKIP_PROVENANCE"
-  elif [[ "$(version_key "$TARGET")" < "$(version_key 1.6.0)" ]]; then
-    echo "Provenance: Platform $TARGET predates the release attestations of 1.6.0, so $name is not verified."
+  elif [[ "$(version_key "$version")" < "$(version_key 1.6.0)" ]]; then
+    echo "Provenance: Platform $version predates the release attestations of 1.6.0, so $name is not verified."
   elif ! command -v gh >/dev/null 2>&1; then
+    if [[ "${version%%.*}" -ge 2 ]]; then echo "gh is required to verify the provenance of $name." >&2; return 1; fi
     echo "WARNING: gh is not installed, so the provenance of $name was not verified."
-  elif GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$OWNER/Platform" \
-    --signer-workflow "$OWNER/Platform/.github/workflows/release.yml" >/dev/null 2>"$file.provenance"; then
+  elif GH_TOKEN="${GH_TOKEN:-$TOKEN}" gh attestation verify "$file" --repo "$signer/Platform" --source-ref "refs/tags/v$version" \
+    --signer-workflow "$signer/Platform/.github/workflows/release.yml" >/dev/null 2>"$file.provenance"; then
     echo "Provenance: $name was built by Platform's release.yml."
   else
     echo "The provenance of $name does not verify, so platform-bump stops before using it:" >&2
     cat "$file.provenance" >&2
     echo "Pass --skip-provenance \"<reason>\" to bump anyway." >&2
-    exit 1
+    return 1
   fi
 }
 # platform-bump:provenance-end
@@ -257,14 +265,20 @@ verify_provenance() {
 # platform-bump:cli
 fetch_platform_cli() {
   local version=$1 base="${PLATFORM_RELEASES_URL:-https://github.com/$OWNER/Platform/releases/download}"
-  local cache="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}/$version"
-  local asset="dominiksienkiewicz-versions-$version.tgz" proto="=https" work expected actual
+  local cache_root="${PLATFORM_CLI_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/platform-cli}" cache
+  if [[ "${version%%.*}" -ge 2 ]]; then
+    if [[ -z "$SKIP_PROVENANCE" ]]; then cache_root="$cache_root/verified-organization"; else cache_root="$cache_root/unverified-organization"; fi
+  fi
+  cache="$cache_root/$version"
+  local asset proto="=https" work expected actual
+  asset="$(npm_scope "$version")-versions-$version.tgz"
   [[ "$base" == file://* ]] && proto="=file"
   if [[ -f "$cache/package/bin/platform-bump.sh" ]]; then
     printf '%s\n' "$cache/package"
     return 0
   fi
-  work="$(mktemp -d)"
+  mkdir -p "$cache" || return 2
+  work="$(mktemp -d "$cache/.install.XXXXXXXX")" || return 2
   if ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/$asset" -o "$work/$asset" 2>/dev/null \
     || ! curl -fsSL --proto "$proto" --proto-redir "$proto" "$base/v$version/SHA256SUMS" -o "$work/SHA256SUMS" 2>/dev/null; then
     rm -rf "$work"
@@ -277,9 +291,14 @@ fetch_platform_cli() {
     rm -rf "$work"
     return 2
   fi
-  verify_provenance "$work/$asset" >&2
-  mkdir -p "$cache"
-  tar -xzf "$work/$asset" -C "$cache"
+  if ! verify_provenance "$work/$asset" "$version" >&2 || ! tar -xzf "$work/$asset" -C "$work" || [[ ! -f "$work/package/bin/platform-bump.sh" ]]; then
+    rm -rf "$work"
+    return 2
+  fi
+  if ! mv "$work/package" "$cache/" 2>/dev/null && [[ ! -f "$cache/package/bin/platform-bump.sh" ]]; then
+    rm -rf "$work"
+    return 2
+  fi
   rm -rf "$work"
   printf '%s\n' "$cache/package"
 }
@@ -294,7 +313,21 @@ if [[ -z "$CURRENT" ]] && [[ "${#PROPERTY_PINS[@]}" -gt 0 ]]; then
   CURRENT="$(sed -n -E 's/^platformVersion=[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' "${PROPERTY_PINS[0]}" | head -1)"
 fi
 if [[ -z "$CURRENT" ]] && [[ -f frontend/package.json ]]; then
-  CURRENT="$(grep -oE '"@dominiksienkiewicz/[a-z-]+": "[0-9]+\.[0-9]+\.[0-9]+"' frontend/package.json | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+  CURRENT="$(python3 - "$PLATFORM_NPM_PACKAGES" <<'PY'
+import json, re, sys
+
+with open("frontend/package.json") as file:
+    manifest = json.load(file)
+for name in sys.argv[1].split():
+    for group in ("devDependencies", "dependencies", "optionalDependencies", "peerDependencies"):
+        deps = manifest.get(group, {})
+        for owner in ("seniordeveloper-pl-dominik-sienkiewicz", "dominiksienkiewicz"):
+            pin = deps.get(f"@{owner}/{name}", "")
+            if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", pin):
+                print(pin)
+                sys.exit(0)
+PY
+)"
 fi
 
 # Lista wycofanych wydań (releases/yanked.txt na main, publiczne repo): bump bez argumentu je omija, a jawny cel
@@ -312,11 +345,21 @@ yanked_line() { awk -v version="$1" '{ sub(/#.*/, "") } $1 == version { $1 = "";
 if [[ -z "$TARGET" ]]; then
   echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
   VERSIONS_JSON="$(mktemp)"
-  curl -fsSL --proto '=https' --proto-redir '=https' \
-    -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/users/$OWNER/packages/maven/$CATALOG_PKG/versions" -o "$VERSIONS_JSON"
+  extra_pages=()
+  page=1
+  output="$VERSIONS_JSON"
+  while :; do
+    : > "$SNAPSHOT/package-headers"
+    curl -fsSL --proto '=https' --proto-redir '=https' \
+      -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" -D "$SNAPSHOT/package-headers" \
+      "https://api.github.com/orgs/$OWNER/packages/maven/$CATALOG_PKG/versions?per_page=100&page=$page" -o "$output"
+    grep -Eiq '^link:.*rel="next"' "$SNAPSHOT/package-headers" || break
+    page=$((page + 1))
+    output="$SNAPSHOT/package-versions-$page.json"
+    extra_pages+=("$output")
+  done
   # Bez argumentu: najnowsze wydanie BIEŻĄCEGO majora; nowy MAJOR tylko jawnie (ADR-0002).
-  python3 - "$VERSIONS_JSON" "$CURRENT" "$YANKED_FILE" > "$VERSIONS_JSON.choice" <<'PY'
+  python3 - "$VERSIONS_JSON" "$CURRENT" "$YANKED_FILE" ${extra_pages[@]+"${extra_pages[@]}"} > "$SNAPSHOT/choice" <<'PY'
 # platform-bump:target — marker wycinania dla frontend/packages/versions/test/release-notes.test.sh
 import json, re, sys
 
@@ -332,24 +375,27 @@ key = lambda version: [int(part) for part in version.split(".")]
 releases = sorted(
     (
         v["name"]
-        for v in json.load(open(versions_path))
+        for page in [versions_path, *sys.argv[4:]]
+        for v in json.load(open(page))
         if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", v["name"]) and v["name"] not in yanked
     ),
     key=key,
 )
 if releases:
     same_major = [v for v in releases if current and v.split(".")[0] == current.split(".")[0]]
+    if current and not same_major:
+        sys.exit(f"No published release for major {current.split('.')[0]} in the package listing. Pass an explicit version to change major.")
     print(same_major[-1] if same_major else releases[-1], releases[-1])
 PY
   NEWEST=""
-  read -r TARGET NEWEST < "$VERSIONS_JSON.choice" || true
-  rm -f "$VERSIONS_JSON.choice"
+  read -r TARGET NEWEST < "$SNAPSHOT/choice" || true
   if [[ -n "${NEWEST:-}" ]] && [[ "${NEWEST%%.*}" != "${TARGET%%.*}" ]]; then
     echo "NOTE: Platform $NEWEST starts a new MAJOR and is not taken automatically."
     echo "      Read its release notes, then run platform-bump $NEWEST to cross it."
   fi
 fi
 [[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
+TARGET_SCOPE="$(npm_scope "$TARGET")"
 YANKED_REASON="$(yanked_line "$TARGET")"
 if [[ -n "$YANKED_REASON" ]]; then
   if [[ "$ALLOW_YANKED" != true ]]; then
@@ -375,6 +421,10 @@ if [[ -n "$SELF_VERSION" && "$SELF_VERSION" != "$TARGET" && "${PLATFORM_BUMP_HAN
     rm -rf "$SNAPSHOT"
     rm -f "$VERSIONS_JSON" "$YANKED_FILE"
     PLATFORM_BUMP_HANDOFF="$TARGET" exec bash "$handoff_root/bin/platform-bump.sh" ${PASS_ARGS[@]+"${PASS_ARGS[@]}"} "$TARGET"
+  fi
+  if [[ "${TARGET%%.*}" -ge 2 ]]; then
+    echo "Could not authenticate and load the CLI from the Platform $TARGET release assets; the bump cannot continue." >&2
+    exit 1
   fi
   echo "WARNING: the release assets of Platform $TARGET could not be read, so this bump runs the logic of $SELF_VERSION."
 fi
@@ -443,7 +493,7 @@ if [[ -n "$REPORT" ]]; then
     version="$CURRENT"; [[ "$side" == new ]] && version="$TARGET"
     [[ -n "$version" ]] || continue
     curl -fsSL --proto '=https' -u "${GITHUB_ACTOR:-platform-bump}:$TOKEN" \
-      "https://maven.pkg.github.com/$OWNER/Platform/pl/seniordeveloper/platform-catalog/$version/platform-catalog-$version.toml" \
+      "https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform/pl/seniordeveloper/platform-catalog/$version/platform-catalog-$version.toml" \
       -o "$report_dir/$side.toml" 2>/dev/null || rm -f "$report_dir/$side.toml"
     root=""
     if [[ "$side" == new && -n "$TARGET_ROOT" ]]; then
@@ -479,6 +529,13 @@ fi
 # Od tego miejsca bump pisze: migawka każdego pliku-kandydata, który błąd albo --dry-run przywraca.
 snapshot
 
+if [[ "${TARGET%%.*}" -ge 2 ]]; then
+  coordinates="$SELF_ROOT/migrations/lib/organization.py"
+  python3 "$coordinates" files "$PLATFORM_NPM_PACKAGES" > "$SNAPSHOT/coordinates"
+  while IFS= read -r -d '' migrated; do snapshot_file "$migrated"; done < "$SNAPSHOT/coordinates"
+  python3 "$coordinates" apply "$PLATFORM_NPM_PACKAGES" < "$SNAPSHOT/coordinates"
+fi
+
 # --- Backend: pin platformy żyje TYLKO w settings.gradle.kts (settings plugin + catalog)
 #     i settings-gradle.lockfile; conventions w build.gradle.kts są BEZ wersji (classpath settings). ---
 # platform-bump:backend-pins — test: frontend/packages/versions/test/backend-literal-pins.test.sh
@@ -508,9 +565,9 @@ if [[ -f backend/settings.gradle.kts ]] && ! grep -qF "$TARGET" backend/settings
   exit 1
 fi
 
-# --- Frontend: piny @dominiksienkiewicz/* + kanon wersji z @dominiksienkiewicz/versions ---
+# --- Frontend: piny pakietów Platform i kanon z wydania docelowego ---
 if [[ -f frontend/package.json ]]; then
-  python3 - "$TARGET" <<'PY'
+  python3 - "$TARGET" "$PLATFORM_NPM_PACKAGES" <<'PY'
 # platform-bump:pins — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
 
@@ -523,12 +580,16 @@ def walk(node, path, parent, visit):
         if isinstance(v, dict): walk(v, at, name, visit)
         elif isinstance(v, str) and name and not v.startswith("$"): visit(node, k, name, v, at)
 
-t=sys.argv[1]; p="frontend/package.json"; d=json.load(open(p))
+t=sys.argv[1]
+scope = "@dominiksienkiewicz/" if int(t.split(".")[0]) < 2 else "@seniordeveloper-pl-dominik-sienkiewicz/"
+packages = {scope + name for name in sys.argv[2].split()}
+p="frontend/package.json"
+d=json.load(open(p))
 def to_target(node, key, name, version, at):
-    if name.startswith("@dominiksienkiewicz/"): node[key]=t
-for sec in ("dependencies","devDependencies"):
+    if name in packages: node[key]=t
+for sec in ("dependencies","devDependencies","optionalDependencies","peerDependencies"):
     for k in list(d.get(sec,{})):
-        if k.startswith("@dominiksienkiewicz/"): d[sec][k]=t
+        if k in packages: d[sec][k]=t
 walk(d.get("overrides",{}), "overrides", None, to_target)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 PY
@@ -538,9 +599,9 @@ PY
   TARGET_PACKAGE="$TMPD"
   # Tylko brak wydania (E404/ETARGET) jest ostrzeżeniem; 401, sieć i reszta zatrzymują bump z komunikatem npm,
   # bo cicho pominięty kanon wychodzi dopiero jako dryf w CI (test: frontend/packages/versions/test/npm-pack-errors.test.sh).
-  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@dominiksienkiewicz/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
-    verify_provenance "$(ls "$TMPD"/dominiksienkiewicz-versions-*.tgz)"
-    tar -xzf "$TMPD"/dominiksienkiewicz-versions-*.tgz -C "$TMPD"
+  if ( cd frontend && GITHUB_TOKEN="$TOKEN" npm pack "@$TARGET_SCOPE/versions@$TARGET" --pack-destination "$TMPD" >/dev/null 2>"$TMPD/pack.err" ); then
+    verify_provenance "$TMPD/$TARGET_SCOPE-versions-$TARGET.tgz"
+    tar -xzf "$TMPD/$TARGET_SCOPE-versions-$TARGET.tgz" -C "$TMPD"
     python3 - "$TMPD/package/versions.json" <<'PY'
 # platform-bump:canon — marker wycinania dla frontend/packages/versions/test/apply-canon.test.sh
 import json,sys
@@ -568,10 +629,10 @@ walk(d.get("overrides",{}), "overrides", None, to_canon)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
 print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
 PY
-  elif grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
-    echo "WARNING: @dominiksienkiewicz/versions@$TARGET is not published, so the frontend canon was not applied."
+  elif [[ "${TARGET%%.*}" -lt 2 ]] && grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
+    echo "WARNING: @$TARGET_SCOPE/versions@$TARGET is not published, so the frontend canon was not applied."
   else
-    echo "ERROR: npm pack @dominiksienkiewicz/versions@$TARGET failed, so the frontend canon was not applied:" >&2
+    echo "ERROR: npm pack @$TARGET_SCOPE/versions@$TARGET failed, so the frontend canon was not applied:" >&2
     cat "$TMPD/pack.err" >&2
     echo "Fix the error above and run the bump again." >&2
     rm -rf "$TMPD"
@@ -586,6 +647,7 @@ fi
 for workflow in .github/workflows/*.yml .github/workflows/*.yaml; do
   [[ -f "$workflow" ]] || continue
   sed -i.bak -E \
+    -e "s#(uses:[[:space:]]*)DominikSienkiewicz/Platform/(\.github/workflows/)#\1$OWNER/Platform/\2#" \
     -e "s#(uses:[[:space:]]*$OWNER/Platform/\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml@)v[0-9]+(\.[0-9]+\.[0-9]+)?([[:space:]]|\$)#\1v$TARGET\3#" \
     -e "s#^([[:space:]]*platform-ref:[[:space:]]*)[\"']?v[0-9]+(\.[0-9]+\.[0-9]+)?[\"']?[[:space:]]*\$#\1v$TARGET#" \
     "$workflow" && rm -f "$workflow.bak"
@@ -660,9 +722,18 @@ fi
 # --- Dry run: pokaż zmienione linie względem migawki i zakończ; finish() przywraca pliki, Gradle nie rusza. ---
 # platform-bump:dry-run
 if [[ "$DRY_RUN" == true ]]; then
-  echo "==> Dry run: the bump to $TARGET changes these lines; nothing is written."
+  echo "==> Dry run: proposed changes for $TARGET"
   for file in "${CANDIDATES[@]}"; do
-    if [[ -e "$SNAPSHOT/files/$file" ]]; then
+    if [[ -s "$SNAPSHOT/coordinates" || "$file" == *.npmrc ]]; then
+      [[ -f "$file" ]] && ! cmp -s "$SNAPSHOT/files/$file" "$file" || continue
+      printf 'Updated %s\n' "$file"
+      case "$file" in
+        frontend/package.json)
+          diff -U0 "$SNAPSHOT/files/$file" "$file" | grep -E '^[-+][[:space:]]*"[@a-zA-Z0-9_./-]+":[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+",?$' || true ;;
+        .github/workflows/*.yml|.github/workflows/*.yaml)
+          diff -U0 "$SNAPSHOT/files/$file" "$file" | grep -E '^[-+][[:space:]]*uses: (DominikSienkiewicz|SeniorDeveloper-pl-Dominik-Sienkiewicz)/Platform/\.github/workflows/[a-zA-Z0-9_-]+\.ya?ml@[a-zA-Z0-9.]+[[:space:]]*$' || true ;;
+      esac
+    elif [[ -e "$SNAPSHOT/files/$file" ]]; then
       diff -u --label "a/$file" --label "b/$file" "$SNAPSHOT/files/$file" "$file" || true
     elif [[ -e "$file" ]]; then
       diff -u --label /dev/null --label "b/$file" /dev/null "$file" || true
@@ -736,7 +807,7 @@ for wrapper_dir in backend .; do
   [[ -f "$props" && -x "$wrapper_dir/gradlew" ]] || continue
   catalog_toml="$(mktemp)"
   if curl -fsSL --proto '=https' -u "${GITHUB_ACTOR:-platform-bump}:$TOKEN" \
-    "https://maven.pkg.github.com/$OWNER/Platform/pl/seniordeveloper/platform-catalog/$TARGET/platform-catalog-$TARGET.toml" \
+    "https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform/pl/seniordeveloper/platform-catalog/$TARGET/platform-catalog-$TARGET.toml" \
     -o "$catalog_toml" 2>/dev/null; then
     gradle_target="$(sed -n -E 's/^gradle[[:space:]]*=[[:space:]]*"([0-9.]+)".*/\1/p' "$catalog_toml" | head -1)"
     gradle_current="$(sed -n -E 's#^distributionUrl=.*gradle-([0-9.]+)-(bin|all)\.zip.*#\1#p' "$props" | head -1)"

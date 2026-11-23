@@ -1,5 +1,5 @@
 /*
- * @dominiksienkiewicz/tailwind-preset — design tokens (Tailwind v4, CSS-first).
+ * @seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset — design tokens (Tailwind v4, CSS-first).
  * Superset shadcn new-york (baseColor: neutral) + tokeny brand/font portfolio.
  *
  * Zawiera: @custom-variant dark (class-based), @theme (brand/fonts/radius), :root/.dark (pełny zestaw
@@ -8,7 +8,7 @@
  * lokalnej kopii bloku tokenów (patrz Attestate przed harmonizacją).
  *
  * Użycie w aplikacji (src/app/globals.css):
- *   @import "@dominiksienkiewicz/tailwind-preset/theme.css";   // tokeny PRZED tailwind
+ *   @import "@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset/theme.css";   // tokeny PRZED tailwind
  *   @import "tailwindcss";
  *   @import "tw-animate-css";                                   // opcjonalnie (animacje) — dep aplikacji
  */

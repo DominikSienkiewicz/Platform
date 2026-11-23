@@ -194,13 +194,13 @@ Generated from each `package.json` by `scripts/docs-gen.sh`.
 <!-- docs-gen:npm-packages -->
 | Package | Directory | Published | Bins | Description |
 |---|---|---|---|---|
-| `@dominiksienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
-| `@dominiksienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
-| `@dominiksienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
-| `@dominiksienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
-| `@dominiksienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
-| `@dominiksienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
-| `@dominiksienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | `frontend/packages/eslint-config/` | yes | — | Shared ESLint flat config: Next.js core-web-vitals and TypeScript. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/openapi` | `frontend/packages/openapi/` | yes | `platform-openapi-check`, `platform-openapi-gen` | Contract-first OpenAPI tooling (incubating): generate TypeScript types from the committed spec and check that they are current. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` | `frontend/packages/prettier-config/` | yes | — | Shared Prettier configuration with the Tailwind CSS class sorter (incubating). |
+| `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` | `frontend/packages/tailwind-preset/` | yes | — | Shared design tokens for Tailwind CSS v4, as a CSS-first @theme. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | `frontend/packages/tsconfig/` | yes | — | Shared TypeScript configurations, base and Next.js. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/versions` | `frontend/packages/versions/` | yes | `platform-bump`, `platform-doctor`, `platform-templates-check`, `platform-versions-check`, `platform-workflows-check` | The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor. |
+| `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` | `frontend/packages/vitest-config/` | yes | — | Shared Vitest base configuration with the Testing Library setup for jsdom and React. |
 <!-- /docs-gen -->
 
 ## Observability starter (*incubating*)

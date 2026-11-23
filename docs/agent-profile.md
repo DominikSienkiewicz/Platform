@@ -41,7 +41,7 @@ the arguments through unchanged.
 
 ## Vitest
 
-`@dominiksienkiewicz/vitest-config` sets `test.maxWorkers` to `AI_AGENT_MAX_WORKERS` (default 2) in agent
+`@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` sets `test.maxWorkers` to `AI_AGENT_MAX_WORKERS` (default 2) in agent
 mode. The value is read when the configuration module loads; an invalid one fails the import with its value.
 `CI` alone does not enable the profile, and a consumer's own `test.maxWorkers`, merged after `baseConfig`,
 still wins.

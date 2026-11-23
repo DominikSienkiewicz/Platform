@@ -95,19 +95,19 @@ setup_repo canon-no-overrides '{
 ( cd "$REPO" && python3 "$WORK/canon.py" "$WORK/versions.json" ) >/dev/null
 if grep -q 'overrides' "$REPO/frontend/package.json"; then fail "pusta sekcja overrides została dopisana"; fi
 
-# --- 5) Piny platformy: @dominiksienkiewicz/* w overrides też idą do wersji docelowej ---
+# --- 5) Piny platformy: @seniordeveloper-pl-dominik-sienkiewicz/* w overrides też idą do wersji docelowej ---
 setup_repo pins '{
-  "devDependencies": { "@dominiksienkiewicz/versions": "1.5.4" },
+  "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.5.4" },
   "overrides": {
-    "next": { "@dominiksienkiewicz/ui": "1.5.4" },
-    "@dominiksienkiewicz/query": "1.5.4",
+    "next": { "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig": "1.5.4" },
+    "@seniordeveloper-pl-dominik-sienkiewicz/openapi": "1.5.4",
     "react": "19.2.7"
   }
 }'
-( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 ) >/dev/null
-[[ "$(value_at devDependencies @dominiksienkiewicz/versions)" == "9.9.9" ]] || fail "regresja: pin platformy w devDependencies nie został podbity"
-[[ "$(value_at overrides next @dominiksienkiewicz/ui)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
-[[ "$(value_at overrides @dominiksienkiewicz/query)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
+( cd "$REPO" && python3 "$WORK/pins.py" 9.9.9 "versions tsconfig openapi" ) >/dev/null
+[[ "$(value_at devDependencies @seniordeveloper-pl-dominik-sienkiewicz/versions)" == "9.9.9" ]] || fail "regresja: pin platformy w devDependencies nie został podbity"
+[[ "$(value_at overrides next @seniordeveloper-pl-dominik-sienkiewicz/tsconfig)" == "9.9.9" ]] || fail "pin platformy w zagnieżdżonym override nie został podbity"
+[[ "$(value_at overrides @seniordeveloper-pl-dominik-sienkiewicz/openapi)" == "9.9.9" ]] || fail "pin platformy w płaskim override nie został podbity"
 [[ "$(value_at overrides react)" == "19.2.7" ]] || fail "blok pinów ruszył paczkę spoza scope'u platformy"
 
 [[ $fails -eq 0 ]] || exit 1

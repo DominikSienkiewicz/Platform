@@ -20,7 +20,7 @@ pluginManagement {
 		throw GradleException(
 			"No GitHub Packages credentials, so the Platform plugins cannot resolve. Set gpr.user and gpr.key in " +
 				"~/.gradle/gradle.properties, or GITHUB_ACTOR and GITHUB_TOKEN in the environment, with a classic token that " +
-				"has the read:packages scope (https://github.com/DominikSienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
+				"has the read:packages scope (https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/docs/consuming.md#prerequisites). " +
 				"To build against a local Platform instead, pass -PplatformRepository.",
 		)
 	}
@@ -29,7 +29,7 @@ pluginManagement {
 		gradlePluginPortal()
 		mavenCentral()
 		maven {
-			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			url = uri("https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform")
 			credentials {
 				username = gprUser
 				password = gprKey

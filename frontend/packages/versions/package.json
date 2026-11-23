@@ -1,5 +1,5 @@
 {
-  "name": "@dominiksienkiewicz/versions",
+  "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions",
   "version": "1.13.1",
   "description": "The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor.",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "agents"
   ],
   "scripts": {
-    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh && bash test/bump-transaction.test.sh && bash test/yank.test.sh && bash test/migrations.test.sh && bash test/workflows-check.test.sh && bash test/provenance.test.sh && bash test/check-fix.test.sh && bash test/doctor.test.sh && bash test/doctor-gradle.test.sh && bash test/doctor-login.test.sh && bash test/check-deprecations.test.sh && bash test/staleness-notice.test.sh && bash test/bump-report.test.sh && bash test/handoff.test.sh && bash test/agents-block.test.sh && bash test/agents-dir-blocks.test.sh"
+    "test": "bash test/check-overrides.test.sh && bash test/check-dependencies.test.sh && node --test test/canon.test.mjs test/self-canon.test.mjs test/engines.test.mjs && bash test/apply-canon.test.sh && bash test/gradle-regen.test.sh && bash test/release-notes.test.sh && bash test/backend-pins.test.sh && bash test/workflow-refs.test.sh && bash test/wrapper-bump.test.sh && bash test/local-overrides.test.sh && bash test/templates-check.test.sh && bash test/backend-literal-pins.test.sh && bash test/npm-pack-errors.test.sh && bash test/bump-transaction.test.sh && bash test/yank.test.sh && bash test/migrations.test.sh && bash test/workflows-check.test.sh && bash test/provenance.test.sh && bash test/check-fix.test.sh && bash test/doctor.test.sh && bash test/doctor-gradle.test.sh && bash test/doctor-login.test.sh && bash test/check-deprecations.test.sh && bash test/staleness-notice.test.sh && bash test/bump-report.test.sh && bash test/handoff.test.sh && bash test/agents-block.test.sh && bash test/agents-dir-blocks.test.sh && bash test/organization-upgrade.test.sh"
   },
   "exports": {
     ".": "./versions.json",
@@ -39,7 +39,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DominikSienkiewicz/Platform.git",
+    "url": "git+https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform.git",
     "directory": "frontend/packages/versions"
   }
 }

@@ -105,18 +105,23 @@ therefore never runs it.
   | Field | Value |
   |---|---|
   | Issuer | `https://token.actions.githubusercontent.com` |
-  | Subject (SAN) | `https://github.com/DominikSienkiewicz/Platform/.github/workflows/deploy.yml@<ref>`. Fulcio builds it from the token's `job_workflow_ref`, so `<ref>` is the ref that the `uses:` line names: a commit SHA when `promote.yml` calls `deploy.yml`, and `refs/tags/vX.Y.Z` for a direct caller pinned to a tag |
-  | Source repository (`githubWorkflowRepository`, OID 1.3.6.1.4.1.57264.1.5) | the calling repository, for example `DominikSienkiewicz/Azimuth` |
+  | Subject (SAN) | `https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@<ref>`. Fulcio builds it from the token's `job_workflow_ref`, so `<ref>` is the ref that the `uses:` line names: a commit SHA when `promote.yml` calls `deploy.yml`, and `refs/tags/vX.Y.Z` for a direct caller pinned to a tag |
+  | Source repository (`githubWorkflowRepository`, OID 1.3.6.1.4.1.57264.1.5) | the calling repository, for example `owner/myapp` |
   | Source ref (`githubWorkflowRef`, OID 1.3.6.1.4.1.57264.1.6) | the branch of the calling run, `refs/heads/release` for a promotion |
   | Trigger (`githubWorkflowTrigger`, OID 1.3.6.1.4.1.57264.1.2) | `push`, or `workflow_dispatch` for a manual run |
   | Predicate type of the signed statement | `https://sigstore.dev/cosign/sign/v1` |
 
-Verify one image by hand, by tag or by digest:
+A signature produced before the transfer records the original workflow owner
+`DominikSienkiewicz/Platform`. Organization runs use the new subject and source repository.
+For a rollout, pin the admission policy to the intended signer, caller and ref. Retain the old verified
+identity for existing image digests while they are needed for rollback.
+
+For an image signed after the transfer, verify its digest with the organization workflow identity:
 
 ```bash
 cosign verify ghcr.io/owner/myapp-backend:1.2.3 \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@' \
+  --certificate-identity-regexp '^https://github\.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@' \
   --certificate-github-workflow-repository owner/myapp
 ```
 

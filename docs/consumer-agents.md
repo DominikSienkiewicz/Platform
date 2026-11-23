@@ -15,7 +15,7 @@ agent needs to change a consumer without breaking a Platform gate; the procedure
   [consuming](consuming.md#libraries-your-application-owns)), frontend an exact version in `frontend/package.json`.
   Add it to Platform only when a second repository uses it ([add a JVM library](runbooks/add-jvm-library.md),
   [add a frontend dependency](runbooks/add-frontend-dependency.md)).
-- Frontend: a package of the canon is exact and equal to the canon of the installed `@dominiksienkiewicz/versions`,
+- Frontend: a package of the canon is exact and equal to the canon of the installed `@seniordeveloper-pl-dominik-sienkiewicz/versions`,
   `overrides` included; `npx platform-versions-check --fix` rewrites that drift offline and leaves your own packages
   alone.
 - An override above a BOM or a transitive pin is a last resort with its removal condition

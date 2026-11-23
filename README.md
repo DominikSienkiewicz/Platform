@@ -12,8 +12,8 @@ are published as versioned artifacts, and are consumed like any other dependency
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
-[![CI](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/DominikSienkiewicz/Platform/actions/workflows/ci.yml)
-[![Latest version](https://img.shields.io/github/v/tag/DominikSienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/DominikSienkiewicz/Platform/tags)
+[![CI](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml)
+[![Latest version](https://img.shields.io/github/v/tag/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform?filter=v*.*.*&sort=semver&label=version)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Reviewing this repository?** Start with [the tour](docs/tour.md): nine stops, each a problem, the code that
@@ -47,6 +47,11 @@ when a second repository needs it.
 
 ## What it publishes
 
+The 2.0.0 distribution uses the organization npm scope `@seniordeveloper-pl-dominik-sienkiewicz`.
+Existing 1.x npm versions keep their original scope. The Maven repository is
+`https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform`.
+After 2.0.0 is published, existing consumers can [move from 1.x](docs/consuming.md#move-a-1x-consumer-to-200).
+
 | Path | Artifact | Published to |
 |---|---|---|
 | `gradle/build-logic/` | six convention plugins (`seniordev.*-conventions`, including settings, the multi-module Sonar root and the opt-in nullness check) | GitHub Packages (Maven) |
@@ -54,15 +59,15 @@ when a second repository needs it.
 | `gradle/bom/` | `pl.seniordeveloper:platform-bom` — imports of the Spring BOMs, CVE floors and compatibility overrides with their reasons, from the catalog's versions | GitHub Packages (Maven) |
 | `gradle/observability-starter/` | `pl.seniordeveloper:platform-observability-starter` — actuator, probes and metrics defaults, opt-in Prometheus and a `tracing` feature, with which a server span answered 5xx has the status `ERROR` | GitHub Packages (Maven) |
 | `gradle/test-fixtures/` | `pl.seniordeveloper:platform-test-fixtures` (Testcontainers, test databases, migration and OpenAPI contract guards) | GitHub Packages (Maven) |
-| `frontend/packages/tsconfig/` | `@dominiksienkiewicz/tsconfig` | GitHub Packages (npm) |
-| `frontend/packages/eslint-config/` | `@dominiksienkiewicz/eslint-config` | GitHub Packages (npm) |
-| `frontend/packages/tailwind-preset/` | `@dominiksienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
-| `frontend/packages/vitest-config/` | `@dominiksienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
-| `frontend/packages/prettier-config/` | `@dominiksienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) |
-| `frontend/packages/versions/` | `@dominiksienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) |
-| `frontend/packages/openapi/` | `@dominiksienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) |
+| `frontend/packages/tsconfig/` | `@seniordeveloper-pl-dominik-sienkiewicz/tsconfig` | GitHub Packages (npm) |
+| `frontend/packages/eslint-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/eslint-config` | GitHub Packages (npm) |
+| `frontend/packages/tailwind-preset/` | `@seniordeveloper-pl-dominik-sienkiewicz/tailwind-preset` (CSS-first `@theme`) | GitHub Packages (npm) |
+| `frontend/packages/vitest-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/vitest-config` (jsdom + Testing Library) | GitHub Packages (npm) |
+| `frontend/packages/prettier-config/` | `@seniordeveloper-pl-dominik-sienkiewicz/prettier-config` — Prettier with the Tailwind class sorter | GitHub Packages (npm) |
+| `frontend/packages/versions/` | `@seniordeveloper-pl-dominik-sienkiewicz/versions` — the frontend version canon, the `platform-versions-check` guard that `frontend-ci` runs in strict mode, the `platform-bump` bin, the `platform-templates-check` drift report, `platform-workflows-check`, which holds callers to the reusable workflow contract, and `platform-doctor`, which diagnoses a repository against Platform's preconditions | GitHub Packages (npm) |
+| `frontend/packages/openapi/` | `@seniordeveloper-pl-dominik-sienkiewicz/openapi` — `platform-openapi-gen` and `platform-openapi-check`: TypeScript types generated from the committed OpenAPI spec | GitHub Packages (npm) |
 | `.github/workflows/` | ten reusable workflows, listed [below](#reusable-workflows) | called as `uses: …@vX.Y.Z` |
-| `default.json` | shared Renovate preset: it updates what the application owns (its Gradle and npm dependencies, pinned exactly, GitHub Actions and Docker images) and leaves the frame and every Platform pin to `platform-bump`; `scripts/renovate-preset.py` generates those rules from the catalog and the frontend canon | `extends: github>DominikSienkiewicz/Platform` |
+| `default.json` | shared Renovate preset: it updates what the application owns (its Gradle and npm dependencies, pinned exactly, GitHub Actions and Docker images) and leaves the frame and every Platform pin to `platform-bump`; `scripts/renovate-preset.py` generates those rules from the catalog and the frontend canon | `extends: github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` |
 | `templates/` | canonical files every repository keeps a copy of: the JVM starters, `.editorconfig`, `.sdkmanrc`, the `.gitignore` set, `Dockerfile.backend`, `npmrc`, `grype.yaml`, the scripts `merge.sh`, `platform-bump.sh` (stub), `bump-version.sh` and `agent-gradle.sh`, and the GitHub files; each one is listed in [templates/README.md](templates/README.md) | copied; `platform-templates-check` reports drift |
 | `releases/yanked.txt` | releases `platform-bump` no longer offers, with the reason and the replacement ([runbook](docs/runbooks/rollback.md)) | read from `main` by `platform-bump` |
 | `scripts/` | scripts Platform's own workflows run: `promote-image.sh` (sets the image tags in a GitOps repository, run by `promote.yml`), `changelog-section.sh` and `release-notes.sh` (release notes), `release-assets.sh` (the credential-free files of a GitHub Release), `new-consumer.sh` (a new repository rendered from the canon, `--frontend next` included), `check-doc-links.py` (offline link and anchor check of the Markdown), `canon-diff.py` (the consumer impact of a pull request, run by `consumer-impact.yml`, on the engine the bump's `--report` shares), `verify-consumable.sh` (the release resolves as a consumer resolves it), `canon-package-json.mjs` (canon CVE scan), and the maintainer's `consumer-audit.sh`, `repo-settings.sh` (GitHub settings as code, with `.github/rulesets/`) and `write-verification-metadata.sh` (Gradle dependency verification of Platform's modules) | not published |
@@ -118,9 +123,9 @@ assets instead of `frontend/node_modules`; `platform-bump.yml` always starts it 
 
 | Repository | Layout |
 |---|---|
-| `DominikSienkiewicz/Azimuth` | backend and frontend |
-| `DominikSienkiewicz/Touchstone` | multi-module backend, no frontend |
-| `DominikSienkiewicz/Training` | backend and frontend |
+| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Azimuth` | backend and frontend |
+| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Touchstone` | multi-module backend, no frontend |
+| `SeniorDeveloper-pl-Dominik-Sienkiewicz/Training` | backend and frontend |
 
 The list is [`scripts/consumers.txt`](scripts/consumers.txt), which
 `scripts/consumer-audit.sh` reads: it prints each repository's Platform pin, Gradle wrapper, runtime
@@ -129,7 +134,7 @@ only. Its output describes private repositories, so it runs on the maintainer's 
 
 ### Reusable workflows
 
-Consumers call them as `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
+Consumers call them as `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z`, with
 the tag of their Platform pin. Triggers are declared by the calling workflow; the platform keeps only
 the logic. What each caller must grant and pass, with a snippet per workflow, is in
 [docs/reusable-workflows.md](docs/reusable-workflows.md).
@@ -167,7 +172,7 @@ flowchart LR
   release["./release.sh"] -->|annotated tag| tag(("vX.Y.Z"))
   tag --> workflow["release.yml<br/>after green ci.yml"]
   workflow --> maven[("GitHub Packages Maven<br/>plugins, catalog, BOM,<br/>test-fixtures, observability-starter")]
-  workflow --> npm[("GitHub Packages npm<br/>@dominiksienkiewicz/*")]
+  workflow --> npm[("GitHub Packages npm<br/>@seniordeveloper-pl-dominik-sienkiewicz/*")]
   workflow --> notes["GitHub Release<br/>CHANGELOG section"]
 
   preset["default.json<br/>on main"]
@@ -219,7 +224,7 @@ sequenceDiagram
         R->>G: verify-bundle: build spring-app from the zip alone
     end
     Note over B,C: in the consumer, Mondays 06:00 UTC or workflow_dispatch
-    B->>P: npx @dominiksienkiewicz/versions@latest platform-bump
+    B->>P: npx @seniordeveloper-pl-dominik-sienkiewicz/versions@latest platform-bump
     B->>P: newest release of the current MAJOR
     B->>G: notes of every release since the current pin
     opt the running bin is not the target release
@@ -275,13 +280,13 @@ use. The logos only identify the services.
 
 | Logo | Service | Purpose | Interface | Status |
 |---|---|---|---|---|
-| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Packages" height="20"> | GitHub Packages | Registry of every Maven artifact and npm package of a release; it refuses anonymous reads, so consumers resolve them with a classic PAT with `read:packages` | Maven repository `https://maven.pkg.github.com/DominikSienkiewicz/Platform`, npm registry `https://npm.pkg.github.com`, the Packages REST API for the released versions | Published by `release.yml` on every `vX.Y.Z` tag |
+| <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Packages" height="20"> | GitHub Packages | Registry of every Maven artifact and npm package of a release; it refuses anonymous reads, so consumers resolve them with a classic PAT with `read:packages` | Maven repository `https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform`, npm registry `https://npm.pkg.github.com`, the Packages REST API for the released versions | Published by `release.yml` on every `vX.Y.Z` tag |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Releases" height="20"> | GitHub Releases | The notes of each release, and its credential-free assets: the offline Maven repository, the npm tarballs, `SHA256SUMS` and the attestation bundle; `platform-bump` takes the target release's bin from them | `gh release` in `release.yml`; the Releases REST API and HTTPS downloads in `platform-bump` | Every release; assets since 1.6.0 |
-| <img src="https://cdn.simpleicons.org/githubactions" alt="GitHub Actions" height="20"> | GitHub Actions | Platform's own CI, release, scans and canary, and the ten reusable workflows consumers call | `workflow_call`; `uses: DominikSienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z` | On |
+| <img src="https://cdn.simpleicons.org/githubactions" alt="GitHub Actions" height="20"> | GitHub Actions | Platform's own CI, release, scans and canary, and the ten reusable workflows consumers call | `workflow_call`; `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/<name>.yml@vX.Y.Z` | On |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Container Registry" height="20"> | GitHub Container Registry | The images `deploy.yml` builds and pushes and `container-scan.yml` scans; cosign stores their signatures next to them | `docker/login-action` and `docker/build-push-action` on `ghcr.io` | In consumers that call `deploy.yml` or `promote.yml` |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub" height="20"> | GitOps repository | `promote.yml` commits the new image tags with `scripts/promote-image.sh`, for a cluster that Argo CD syncs | GitHub App token from `actions/create-github-app-token`, `git push` | In consumers that call `promote.yml` |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub code scanning" height="20"> | GitHub code scanning (CodeQL) | SAST of Platform's own code; the alerts appear in Code scanning | `github/codeql-action` in `codeql.yml` | Platform only: pushes, pull requests and Mondays |
-| <img src="https://cdn.simpleicons.org/renovate" alt="Renovate" height="20"> | Renovate | Updates what a consumer owns (Gradle and npm dependencies, GitHub Actions, Docker images) and leaves the frame and the Platform pins to `platform-bump` | Preset `default.json`, `extends: ["github>DominikSienkiewicz/Platform"]`, read from `main` | In consumers that extend the preset |
+| <img src="https://cdn.simpleicons.org/renovate" alt="Renovate" height="20"> | Renovate | Updates what a consumer owns (Gradle and npm dependencies, GitHub Actions, Docker images) and leaves the frame and the Platform pins to `platform-bump` | Preset `default.json`, `extends: ["github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"]`, read from `main` | In consumers that extend the preset |
 | <img src="https://cdn.simpleicons.org/apachemaven" alt="Maven Central" height="20"> | Maven Central | Every dependency that is not a Platform artifact | `mavenCentral()` declared by `seniordev.settings-conventions` | Every consumer build |
 | | Foojay Disco API | Downloads the JDK 27 toolchain on a machine without it | `org.gradle.toolchains.foojay-resolver-convention`, applied by `seniordev.settings-conventions` | Local builds; the reusable workflows install the JDK with `setup-java` instead |
 | <img src="https://cdn.simpleicons.org/sonarqubecloud" alt="SonarQube Cloud" height="20"> | SonarQube Cloud | Static analysis and coverage of consumer code in the `dominiksienkiewicz` organization | `org.sonarqube` Gradle plugin, applied by `seniordev.quality-conventions` or `seniordev.sonar-conventions`; `https://sonarcloud.io` | Consumers; Platform does not analyse itself ([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md) is superseded) |
@@ -333,7 +338,7 @@ repository is public. Every GitHub Release from 1.6.0 on therefore carries the r
 `SHA256SUMS`, all attested. Build a starter from them without a token:
 
 ```bash
-gh release download vX.Y.Z --repo DominikSienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
+gh release download vX.Y.Z --repo SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform --pattern 'platform-maven-repo-*.zip' --pattern SHA256SUMS
 ```
 
 ```bash

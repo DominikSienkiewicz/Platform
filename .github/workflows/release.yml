@@ -110,7 +110,7 @@ jobs:
           # >>> version-exists
           version_exists() {
             local names
-            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/users/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
+            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/orgs/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
               || return 1
             grep -qxF "$V" <<<"$names"
           }
@@ -124,7 +124,7 @@ jobs:
               continue
             fi
             echo "== publish gradle/$m ($V) =="
-            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -PplatformVersion="$V" -PplatformReleaseDate="$release_date" publish )
+            ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -Pgpr.owner="$GPR_OWNER" -Pgpr.repo="$GPR_REPO" -PplatformVersion="$V" -PplatformReleaseDate="$release_date" publish )
             rc=$?
             if [ "$rc" -ne 0 ]; then
               echo "::error::publish $m ($V) nie powiódł się (kod $rc). Jeśli to 409: wersja jest częściowo opublikowana — usuń $V z GitHub Packages albo wydaj wyższą wersję (nie re-publikuj po partialu)."
@@ -169,7 +169,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       # --ignore-scripts: publikacja nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
       - run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Ustaw wersję na wszystkich paczkach
@@ -264,14 +264,14 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Every published artifact carries the version
         run: |
           # >>> verify-published
           set -uo pipefail
           maven_has() {
             local names
-            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/users/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
+            names=$(GH_TOKEN="$GITHUB_TOKEN" gh api --paginate "/orgs/$GPR_OWNER/packages/maven/$1/versions" --jq '.[].name' 2>/dev/null) \
               || return 1
             grep -qxF "$V" <<<"$names"
           }
@@ -326,7 +326,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Resolve the release as a consumer
         run: bash scripts/verify-consumable.sh "$V"
 
@@ -358,7 +358,7 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://npm.pkg.github.com"
-          scope: "@dominiksienkiewicz"
+          scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       - name: Build the credential-free assets
         run: bash scripts/release-assets.sh "$V" "$RUNNER_TEMP/assets"
       - name: Attest the provenance of the assets

@@ -1,7 +1,7 @@
 # A reviewer's tour of Platform
 
 Nine stops, each a problem a shared platform has to solve, the code that solves it here and the guard
-that keeps it solved. Read it at a release tag (`https://github.com/DominikSienkiewicz/Platform/tree/vX.Y.Z/docs/tour.md`):
+that keeps it solved. Read it at a release tag (`https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/tree/vX.Y.Z/docs/tour.md`):
 every link below is relative, so it then points at that release's code. The incidents behind several
 stops are written up in [`notes/`](notes/); how the repository is built with coding agents is in
 [engineering-with-agents.md](engineering-with-agents.md).

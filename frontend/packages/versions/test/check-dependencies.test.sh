@@ -14,7 +14,7 @@ PKG="$WORK/versions"
 mkdir -p "$PKG/bin"
 cp "$SRC" "$PKG/bin/check.mjs"
 cat > "$PKG/package.json" <<'JSON'
-{ "name": "@dominiksienkiewicz/versions", "version": "1.6.0" }
+{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions", "version": "1.6.0" }
 JSON
 cat > "$PKG/versions.json" <<'JSON'
 {
@@ -65,7 +65,7 @@ run_case alias '{ "dependencies": { "react": "npm:react@19.2.7" } }'
 # (e) the report names the canon release and a fix that exists in consumers: the stub lives in
 #     <repo>/scripts/, and the guard runs from frontend/
 run_case hint '{ "dependencies": { "next": "16.2.11" } }'
-grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "the report must name the canon release"
+grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/versions@1.6.0' <<<"$OUT" || fail "the report must name the canon release"
 grep -qF 'from the repository root run scripts/platform-bump.sh 1.6.0' <<<"$OUT" \
   || fail "the fix must name scripts/platform-bump.sh, where to run it from and the canon version"
 if grep -qF './platform-bump.sh' <<<"$OUT"; then fail "no consumer has ./platform-bump.sh"; fi
@@ -74,7 +74,7 @@ if grep -qF './release.sh' <<<"$OUT"; then fail "./release.sh is a Platform main
 # (f) a clean run names the canon release too
 run_case clean '{ "dependencies": { "next": "16.2.12" }, "devDependencies": { "typescript": "6.0.3" } }'
 [[ $RC -eq 0 ]] || fail "canon-compliant dependencies must pass (exit $RC)"
-grep -qF '@dominiksienkiewicz/versions@1.6.0' <<<"$OUT" || fail "a clean run must name the canon release"
+grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/versions@1.6.0' <<<"$OUT" || fail "a clean run must name the canon release"
 
 # (g) optionalDependencies are governed like dependencies
 run_case optional '{ "optionalDependencies": { "react": "^19.2.7" } }'
@@ -82,18 +82,18 @@ run_case optional '{ "optionalDependencies": { "react": "^19.2.7" } }'
 grep -qF '^19.2.7' <<<"$OUT" || fail "the report must show the optional dependency's ^19.2.7"
 
 # (h) a Platform pin must be exact
-run_case platform-caret '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "^1.6.0", "@dominiksienkiewicz/versions": "1.6.0" } }'
+run_case platform-caret '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "^1.6.0", "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.6.0" } }'
 [[ $RC -ne 0 ]] || fail "a caret on a Platform pin must fail the guard"
-grep -qF '@dominiksienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the loose Platform pin"
+grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the loose Platform pin"
 
 # (i) Platform pins must share the release the canon came from
-run_case platform-mixed '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "1.5.26", "@dominiksienkiewicz/versions": "1.6.0" } }'
+run_case platform-mixed '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "1.5.26", "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.6.0" } }'
 [[ $RC -ne 0 ]] || fail "Platform pins from two releases must fail the guard"
-grep -qF '@dominiksienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the pin off the canon release"
+grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/eslint-config' <<<"$OUT" || fail "the report must name the pin off the canon release"
 grep -qF '1.5.26' <<<"$OUT" || fail "the report must show the mismatching 1.5.26"
 
 # (j) Platform pins on the canon release pass
-run_case platform-ok '{ "devDependencies": { "@dominiksienkiewicz/eslint-config": "1.6.0", "@dominiksienkiewicz/versions": "1.6.0" } }'
+run_case platform-ok '{ "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config": "1.6.0", "@seniordeveloper-pl-dominik-sienkiewicz/versions": "1.6.0" } }'
 [[ $RC -eq 0 ]] || fail "Platform pins on the canon release must pass (exit $RC)"
 
 [[ $fails -eq 0 ]] || exit 1

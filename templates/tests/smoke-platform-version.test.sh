@@ -38,7 +38,7 @@ cat > "$tmp/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "gh $*" >> "$GH_LOG"
 [[ -z "${GH_FAIL:-}" ]] || { echo 'HTTP 401: Bad credentials' >&2; exit 1; }
-[[ "$*" == "api --paginate /users/DominikSienkiewicz/packages/maven/seniordev.settings-conventions.seniordev.settings-conventions.gradle.plugin/versions --jq .[].name" ]] \
+[[ "$*" == "api --paginate /orgs/SeniorDeveloper-pl-Dominik-Sienkiewicz/packages/maven/seniordev.settings-conventions.seniordev.settings-conventions.gradle.plugin/versions --jq .[].name" ]] \
   || { echo "unexpected gh $*" >&2; exit 2; }
 cat "$PUBLISHED"
 STUB
@@ -55,7 +55,7 @@ commit() {
 resolve() {
   : > "$tmp/output"
   RC=0
-  OUT=$(cd "$repo" && PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log" PUBLISHED="$tmp/published" GPR_OWNER=DominikSienkiewicz \
+  OUT=$(cd "$repo" && PATH="$tmp/bin:$PATH" GH_LOG="$tmp/gh.log" PUBLISHED="$tmp/published" GPR_OWNER=SeniorDeveloper-pl-Dominik-Sienkiewicz \
     GITHUB_OUTPUT="$tmp/output" bash -e "$tmp/resolve.sh" 2>&1) || RC=$?
   RESOLVED=$(sed -n 's/^version=//p' "$tmp/output")
 }

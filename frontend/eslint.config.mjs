@@ -1,5 +1,5 @@
 // Lint własnych paczek Platform: to biblioteki ESM dla Node i bundlerów, nie aplikacja Next, więc preset
-// z @dominiksienkiewicz/eslint-config (wymaga `next` w roocie i reguł aplikacji) tu nie pasuje.
+// z @seniordeveloper-pl-dominik-sienkiewicz/eslint-config (wymaga `next` w roocie i reguł aplikacji) tu nie pasuje.
 // TypeScript (.d.ts, testy typów) sprawdza `pnpm typecheck`.
 import js from "@eslint/js";
 import { defineConfig, globalIgnores } from "eslint/config";

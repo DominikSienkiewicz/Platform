@@ -38,7 +38,7 @@ Owner actions are MUST criteria; they are listed in [what is left](#what-is-left
 
 | Criterion | Level | Status | Evidence |
 |---|---|---|---|
-| `repo_public` | MUST | **Met** | The public repository `DominikSienkiewicz/Platform` on GitHub. |
+| `repo_public` | MUST | **Met** | The public repository `SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform` on GitHub. |
 | `repo_track` | MUST | **Met** | Git records what changed, who changed it and when. |
 | `repo_interim` | MUST | **Met** | Work lands on the public `main` before any release; `scripts/release-notes.sh` shows the unreleased changes since the last tag. |
 | `repo_distributed` | SUGGESTED | **Met** | Git. |
@@ -124,6 +124,6 @@ The five MUST criteria marked **Owner action**, each with the answer to give:
 
 ## Applying
 
-Sign in to [bestpractices.dev](https://www.bestpractices.dev) with GitHub, add `https://github.com/DominikSienkiewicz/Platform`
+Sign in to [bestpractices.dev](https://www.bestpractices.dev) with GitHub, add `https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`
 and answer each criterion with the evidence above. Once the badge is earned, its snippet can go into the README; until
 then the README carries none.

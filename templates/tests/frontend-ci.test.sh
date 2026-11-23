@@ -76,8 +76,8 @@ grep -qx '        if: ${{ inputs.strict }}' "$tmp/if.txt" || fail 'the OpenAPI t
 
 cd "$tmp"
 stub() {
-  mkdir -p node_modules/@dominiksienkiewicz/openapi/bin
-  printf 'console.log("checked"); process.exit(%s);\n' "$1" > node_modules/@dominiksienkiewicz/openapi/bin/check.mjs
+  mkdir -p node_modules/@seniordeveloper-pl-dominik-sienkiewicz/openapi/bin
+  printf 'console.log("checked"); process.exit(%s);\n' "$1" > node_modules/@seniordeveloper-pl-dominik-sienkiewicz/openapi/bin/check.mjs
 }
 contract='{"platform":{"openapi":{"spec":"contract/openapi.yaml","output":"src/api/schema.d.ts"}}}'
 
@@ -86,8 +86,8 @@ bash -e openapi.sh > out.txt 2>&1 || fail "a repo without platform.openapi must 
 grep -q '::notice::package.json configures no platform.openapi contract' out.txt || fail "no skip notice: $(cat out.txt)"
 
 printf '%s\n' "$contract" > package.json
-if bash -e openapi.sh > out.txt 2>&1; then fail 'a configured contract without @dominiksienkiewicz/openapi must fail'; fi
-grep -q '@dominiksienkiewicz/openapi is not installed' out.txt || fail "unexpected message: $(cat out.txt)"
+if bash -e openapi.sh > out.txt 2>&1; then fail 'a configured contract without @seniordeveloper-pl-dominik-sienkiewicz/openapi must fail'; fi
+grep -q '@seniordeveloper-pl-dominik-sienkiewicz/openapi is not installed' out.txt || fail "unexpected message: $(cat out.txt)"
 
 stub 1
 if bash -e openapi.sh > out.txt 2>&1; then fail 'stale types (platform-openapi-check exits 1) must fail the step'; fi
@@ -124,11 +124,11 @@ STRICT=false bash -e guard.sh
 if STRICT=true bash -e guard.sh; then
   echo 'Strict mode must require the version guard' >&2; exit 1
 fi
-mkdir -p node_modules/.bin node_modules/@dominiksienkiewicz/versions/bin
+mkdir -p node_modules/.bin node_modules/@seniordeveloper-pl-dominik-sienkiewicz/versions/bin
 touch node_modules/.bin/platform-versions-check
-printf 'process.exit(0);\n' > node_modules/@dominiksienkiewicz/versions/bin/check.mjs
+printf 'process.exit(0);\n' > node_modules/@seniordeveloper-pl-dominik-sienkiewicz/versions/bin/check.mjs
 STRICT=true bash -e guard.sh
-printf 'process.exit(7);\n' > node_modules/@dominiksienkiewicz/versions/bin/check.mjs
+printf 'process.exit(7);\n' > node_modules/@seniordeveloper-pl-dominik-sienkiewicz/versions/bin/check.mjs
 if STRICT=false bash -e guard.sh; then
   echo 'An installed failing guard must block both profiles' >&2; exit 1
 fi

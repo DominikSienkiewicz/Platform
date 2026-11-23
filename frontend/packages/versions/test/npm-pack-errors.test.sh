@@ -29,7 +29,7 @@ bump() {
   git -C "$dir" init -q
   printf '{ "devDependencies": { "@dominiksienkiewicz/versions": "1.5.31" } }\n' > "$dir/frontend/package.json"
   set +e
-  (cd "$dir" && FAKE_PACK="$1" GPR_TOKEN=x PATH="$work/bin:$PATH" bash "$work/tool/platform-bump.sh" 9.9.9) > "$dir.log" 2>&1
+  (cd "$dir" && FAKE_PACK="$1" GPR_TOKEN=x PATH="$work/bin:$PATH" bash "$work/tool/platform-bump.sh" 1.5.32) > "$dir.log" 2>&1
   rc=$?
   set -e
   log="$dir.log"

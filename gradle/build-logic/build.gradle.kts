@@ -284,7 +284,12 @@ tasks.withType<Test>().configureEach {
 }
 
 // --- Publikacja do GitHub Packages (Maven) ---
-val gprOwner = providers.gradleProperty("gpr.owner").orElse(providers.environmentVariable("GPR_OWNER")).getOrElse("DominikSienkiewicz")
+val gprOwner =
+	providers
+		.gradleProperty(
+			"gpr.owner",
+		).orElse(providers.environmentVariable("GPR_OWNER"))
+		.getOrElse("seniordeveloper-pl-dominik-sienkiewicz")
 val gprRepo = providers.gradleProperty("gpr.repo").orElse(providers.environmentVariable("GPR_REPO")).getOrElse("Platform")
 
 publishing {
@@ -294,7 +299,7 @@ publishing {
 				licenses {
 					license {
 						name.set("MIT License")
-						url.set("https://github.com/DominikSienkiewicz/Platform/blob/main/LICENSE")
+						url.set("https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/blob/main/LICENSE")
 					}
 				}
 			}
@@ -303,7 +308,7 @@ publishing {
 	repositories {
 		maven {
 			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/$gprOwner/$gprRepo")
+			url = uri("https://maven.pkg.github.com/${gprOwner.lowercase()}/$gprRepo")
 			credentials {
 				username = providers.gradleProperty("gpr.user").orElse(providers.environmentVariable("GITHUB_ACTOR")).orNull
 				password = providers.gradleProperty("gpr.key").orElse(providers.environmentVariable("GITHUB_TOKEN")).orNull

@@ -13,7 +13,7 @@ name: Build, scan and sign images (reusable)
 #     dokładnie te digesty, dopiero gdy obie bramki przeszły (łańcuch dostaw, Kyverno verifyImages po stronie klastra)
 #
 # Wołane z cienkiego callera z jawnymi sekretami (nie `inherit`) — snippet w docs/reusable-workflows.md:
-#   uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+#   uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
 #   secrets: { GPR_USER: ${{ secrets.GPR_USER }}, GPR_KEY: ${{ secrets.GPR_KEY }}, … }
 # Różnice między repo idą przez `with:` (app-name, has-worker, migrate-*, single-image, scan-images).
 

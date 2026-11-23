@@ -102,5 +102,23 @@ rm -f "$tmp/call"
 if run 1.8.0; then fail 'a checksum mismatch must stop the stub'; fi
 grep -qF 'does not match its SHA256SUMS' <<<"$OUT" || fail 'the mismatch must be named'
 [[ ! -e "$tmp/call" ]] || fail 'nothing may run after a mismatch'
+# Zainstalowany CLI 1.x ufa poprzedniemu sygnatariuszowi i nie potrafi sam pobrać narzędzia 2.x.
+release 2.0.0
+asset=seniordeveloper-pl-dominik-sienkiewicz-versions-2.0.0.tgz
+mv "$tmp/releases/v2.0.0/dominiksienkiewicz-versions-2.0.0.tgz" "$tmp/releases/v2.0.0/$asset"
+(cd "$tmp/releases/v2.0.0" && printf '%s  %s\n' "$(sha "$asset")" "$asset" > SHA256SUMS)
+mkdir -p "$tmp/bin" "$repo/frontend/node_modules/@dominiksienkiewicz/versions" "$repo/frontend/node_modules/.bin"
+printf '#!/usr/bin/env bash\nexit 99\n' > "$repo/frontend/node_modules/.bin/platform-bump"
+printf '{}\n' > "$repo/frontend/node_modules/@dominiksienkiewicz/versions/package.json"
+printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> "$STUB_GH_LOG"\n[[ ${REJECT:-0} == 0 ]]\n' > "$tmp/bin/gh"
+chmod +x "$tmp/bin/gh" "$repo/frontend/node_modules/.bin/platform-bump"
+export STUB_GH_LOG="$tmp/gh.log"
+mkdir -p "$tmp/cache/2.0.0/package/bin"
+printf '#!/usr/bin/env bash\necho cached > "$BUMP_CALL"\n' > "$tmp/cache/2.0.0/package/bin/platform-bump.sh"
+if REJECT=1 PATH="$tmp/bin:$PATH" run 2.0.0 --dry-run; then fail 'a forged v2 release must be refused'; fi
+[[ ! -e "$tmp/call" ]] || fail 'a rejected release must not execute'
+PATH="$tmp/bin:$PATH" run 2.0.0 --dry-run || fail 'the v2 stub must bootstrap even if the installed frontend bin is from v1'
+grep -qF -- '--signer-workflow SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/release.yml' "$STUB_GH_LOG" || fail 'the v2 bootstrap must verify the new signer'
+grep -qF /2.0.0/package/bin/platform-bump.sh "$tmp/call" || fail 'the verified 2.0.0 CLI must run'
 echo 'OK: a JVM-only repo bumps with the bin of the release assets, checked against SHA256SUMS'
 )

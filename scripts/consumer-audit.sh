@@ -11,7 +11,7 @@ set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 consumers="${CONSUMERS_FILE:-$root/scripts/consumers.txt}"
-platform_repo="${PLATFORM_REPO:-DominikSienkiewicz/Platform}"
+platform_repo_pattern="${PLATFORM_REPO:-(SeniorDeveloper-pl-Dominik-Sienkiewicz|DominikSienkiewicz)/Platform}"
 
 usage() { echo "Usage: $0 [--from DIR]" >&2; }
 
@@ -82,7 +82,10 @@ npm_pins() {
     const byVersion = {};
     for (const deps of [manifest.dependencies, manifest.devDependencies]) {
       for (const [name, version] of Object.entries(deps ?? {})) {
-        if (name.startsWith("@dominiksienkiewicz/")) (byVersion[version] ??= []).push(name.slice("@dominiksienkiewicz/".length));
+        const [scope, pkg] = name.split("/");
+        if (scope === "@seniordeveloper-pl-dominik-sienkiewicz" || scope === "@dominiksienkiewicz") {
+          (byVersion[version] ??= []).push(pkg);
+        }
       }
     }
     const pins = Object.entries(byVersion).map(([version, names]) => `${version}: ${names.sort().join(", ")}`);
@@ -93,7 +96,7 @@ npm_pins() {
 workflow_uses() {
   [ -d "$1/.github/workflows" ] || return 0
   cat "$1"/.github/workflows/*.y*ml 2>/dev/null \
-    | grep -ioE "uses:[[:space:]]*[\"']?$platform_repo/\.github/workflows/[^@[:space:]]+@[^[:space:]#\"']+" || true
+    | grep -ioE "uses:[[:space:]]*[\"']?$platform_repo_pattern/\.github/workflows/[^@[:space:]]+@[^[:space:]#\"']+" || true
 }
 
 workflow_refs() {

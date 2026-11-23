@@ -8,7 +8,7 @@ types and defaults are described in the workflow files themselves (every input h
 ## Rules that apply to every workflow
 
 - **Reference an exact tag.** Use the tag of your Platform pin, for example
-  `uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
+  `uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0`
   ([ADR-0002](adr/0002-release-and-versioning-contract.md), item 6). `platform-bump` moves it together
   with the pins, a legacy `@v1` included. There is no floating tag: `@v1` is retired and no longer moves.
 - **Grant the permissions listed below.** A called workflow can never get more than its caller
@@ -25,7 +25,7 @@ types and defaults are described in the workflow files themselves (every input h
   when the contract changes without updating its snapshot; copy the snapshot to
   `frontend/packages/versions/workflow-contract.txt` too, which `platform-workflows-check` reads.
 - **Check your callers.** `npx platform-workflows-check` (from `frontend/`, with
-  `@dominiksienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
+  `@seniordeveloper-pl-dominik-sienkiewicz/versions` installed) holds every caller in `.github/workflows/` to this
   contract: permissions, inputs, required inputs and secrets. `platform-bump` runs it against the
   release it moves to.
 
@@ -55,7 +55,7 @@ permissions:
   packages: read
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       working-directory: backend # "." for the templates/jvm layout
     secrets:
@@ -107,7 +107,7 @@ green. Name the task of each source set the fix commits touch, such as `red-proo
 ```yaml
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@vX.Y.Z
     with:
       red-proof: true
     secrets:
@@ -124,7 +124,7 @@ annotation and the job summary name that script. A strict caller whose `package.
 `platform.openapi` also gets `platform-openapi-check` ([api-contracts.md](api-contracts.md)).
 
 - Permissions: `contents: read`, `packages: read`.
-- Secret `gpr_token` (optional): a token that can read `@dominiksienkiewicz/*` from GitHub Packages.
+- Secret `gpr_token` (optional): a token that can read `@seniordeveloper-pl-dominik-sienkiewicz/*` from GitHub Packages.
   Without it the caller's automatic `GITHUB_TOKEN` is used, which also needs access to Platform's
   packages.
 - Inputs: [frontend-ci.yml](../.github/workflows/frontend-ci.yml).
@@ -135,7 +135,7 @@ permissions:
   packages: read
 jobs:
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@vX.Y.Z
     with:
       strict: true
     secrets:
@@ -176,7 +176,7 @@ permissions:
   contents: read
 jobs:
   api-contract:
-    uses: DominikSienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/api-contract.yml@vX.Y.Z
     with:
       spec-path: contract/openapi.yaml
 ```
@@ -213,7 +213,7 @@ permissions:
   packages: read
 jobs:
   scan:
-    uses: DominikSienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/security-scan.yml@vX.Y.Z
     with:
       only-if-deps-changed: true
     secrets:
@@ -249,7 +249,7 @@ permissions:
   packages: read
 jobs:
   container-scan:
-    uses: DominikSienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/container-scan.yml@vX.Y.Z
     with:
       images: '["ghcr.io/owner/app-backend:latest"]'
     secrets:
@@ -283,7 +283,7 @@ permissions:
   contents: read
 jobs:
   semgrep:
-    uses: DominikSienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/semgrep.yml@vX.Y.Z
 ```
 
 Inputs:
@@ -314,7 +314,7 @@ jobs:
       contents: read
       security-events: write
       id-token: write
-    uses: DominikSienkiewicz/Platform/.github/workflows/scorecard.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/scorecard.yml@vX.Y.Z
 ```
 
 Inputs:
@@ -377,7 +377,7 @@ jobs:
       contents: write
       pull-requests: write
       packages: read
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.12.0
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v2.0.0
     with:
       version: ${{ inputs.version || '' }}
     secrets:
@@ -439,7 +439,7 @@ permissions:
   id-token: write
 jobs:
   build:
-    uses: DominikSienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/deploy.yml@vX.Y.Z
     with:
       app-name: myapp
       scan-images: true
@@ -479,6 +479,17 @@ Grype and Trivy, and signed with cosign keyless once both gates pass
 [`scripts/promote-image.sh`](../scripts/promote-image.sh), which sets `image.tag` in `values-backend.yaml`
 and `values-frontend.yaml` under `values-dir`, commits and pushes to the default branch. Argo CD deploys the
 commit; the workflow does not wait for it and runs no smoke test.
+
+From Platform 2.0.0, each file must already point to the repository signed by the build:
+`ghcr.io/<lowercase GHCR_OWNER>/<app-name>-backend` or its `-frontend` counterpart. A single-image
+application uses the backend repository in `values.yaml`. The promotion checks every repository
+before updating any tags, including when the tag already matches. It repeats the check against the
+latest GitOps revision after a rejected push.
+
+For the first release after a registry move, let the build sign the images. When promotion reports a
+repository mismatch, open a manual GitOps pull request. Verify the signed image digests from the build
+and set both `image.repository` and the corresponding `image.tag` in each affected values file. After
+review and merge, later releases can update the tags automatically.
 
 - One image: `single-image: true` is for an application whose boot jar serves its own frontend. `build` calls
   `deploy.yml` with [`single-image`](#deployyml), so only `<app>-backend` is built, pushed, scanned and signed, and
@@ -533,7 +544,7 @@ permissions:
 jobs:
   promote:
     if: github.ref == 'refs/heads/release'
-    uses: DominikSienkiewicz/Platform/.github/workflows/promote.yml@vX.Y.Z
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/promote.yml@vX.Y.Z
     with:
       app-name: myapp
       infra-repository: <owner>/<gitops-repo>

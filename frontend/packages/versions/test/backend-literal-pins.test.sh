@@ -8,7 +8,8 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-mkdir -p "$work/bin" "$work/tool"
+mkdir -p "$work/bin" "$work/tool" "$work/migrations/lib"
+cp "$here/../migrations/lib/organization.py" "$work/migrations/lib/"
 printf '#!/usr/bin/env bash\nexit 22\n' > "$work/bin/curl"
 chmod +x "$work/bin/curl"
 cp "$here/../bin/platform-bump.sh" "$work/tool/platform-bump.sh"

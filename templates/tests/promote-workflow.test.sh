@@ -51,7 +51,7 @@ grep -qF 'GPR_KEY' "$tmp/out" || fail 'the preflight must name GPR_KEY when it i
 grep -qE '^[[:space:]]+(- )?uses: *(\./|\$/)' "$promote" \
   && fail 'promote.yml must not use a relative reference: called through an annotated tag it fails with "workflow was not found"'
 build_uses=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | grep -E '^    uses: ' || true)
-[[ "$build_uses" =~ ^\ {4}uses:\ DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
+[[ "$build_uses" =~ ^\ {4}uses:\ SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
   || fail 'promote.yml must call deploy.yml by its full reference at a commit SHA with a # vX.Y.Z comment'
 # Przypięty deploy.yml deklaruje ssh-deploy (domyślnie true) i platform-ref od v1.8.9 do 1.13.0, które je usuwa. Pin
 # i wejścia przesuwa razem późniejsze wydanie, gdy tag 1.13.0 już istnieje (action-pins, RELEASING.md). Płytki
@@ -131,8 +131,8 @@ grep -qFx '      BACKEND_TAG: ${{ needs.build.outputs.backend-tag }}' <<< "$prom
 grep -qFx '      FRONTEND_TAG: ${{ needs.build.outputs.frontend-tag }}' <<< "$promote_job" || fail 'FRONTEND_TAG must be the frontend-tag output of build'
 # shellcheck disable=SC1003 # a backslash, not an escaped quote
 continued=$(printf ' \\') # a shell line continuation, spelled once to keep the quoting readable
-grep -qFx "            \"\$VALUES_DIR/values-backend.yaml=\$BACKEND_TAG\"$continued" "$promote" || fail 'values-backend.yaml must get the backend tag'
-grep -qFx '            "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"' "$promote" || fail 'values-frontend.yaml must get the frontend tag'
+grep -qFx "            \"\$VALUES_DIR/values-backend.yaml=\$image_prefix-backend:\$BACKEND_TAG\"$continued" "$promote" || fail 'values-backend.yaml must get the signed backend repository and tag'
+grep -qFx '            "$VALUES_DIR/values-frontend.yaml=$image_prefix-frontend:$FRONTEND_TAG"' "$promote" || fail 'values-frontend.yaml must get the signed frontend repository and tag'
 grep -qFx "            \"chore: promote \$APP_NAME to backend \$BACKEND_TAG, frontend \$FRONTEND_TAG\"$continued" "$promote" || fail 'the commit message must name both tags'
 target_checkout=$(sed -n '/^      - name: Check out the GitOps repository$/,/^      - name: Fetch promote-image.sh/p' "$promote")
 grep -qFx '          repository: ${{ inputs.infra-repository }}' <<< "$target_checkout" || fail 'the target checkout must take infra-repository'
@@ -160,7 +160,7 @@ grants() { awk -v head="${2}permissions:" '$0 == head { p = 1; next } p && /^ +[
 
 # --- build: deploy.yml z wydania, które podpisuje, z uprawnieniami joba sign ---
 build=$(job build)
-pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
+pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
   | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.9.0\n%s\n' "$pin" | sort -C -V \
@@ -210,7 +210,7 @@ grep -qFx '        default: false' <<< "$input" || fail 'single-image must defau
 # --- build: deploy.yml w tym samym trybie, z wydania, które go ma ---
 build=$(job build)
 grep -qFx '      single-image: ${{ inputs.single-image }}' <<< "$build" || fail 'build must pass inputs.single-image to deploy.yml'
-pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
+pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.8.11\n%s\n' "$pin" | sort -C -V \
   || fail "deploy.yml has the single-image input since v1.8.11: promote.yml must not pin an older one, got v$pin"
@@ -222,6 +222,8 @@ grep -qFx '        if: ${{ !inputs.single-image }}' <<< "$two" || fail 'the comm
 one=$(step promote 'Commit the new image tag')
 [[ -n "$one" ]] || fail "promote must have the step 'Commit the new image tag'"
 grep -qFx '        if: ${{ inputs.single-image }}' <<< "$one" || fail 'the commit of one tag must run only with single-image'
+grep -qFx '      GHCR_OWNER: ${{ vars.GHCR_OWNER }}' <<< "$(job promote)" || fail 'promote must use the GHCR owner of the signed images'
+grep -qF 'promote-image.sh --require-repository' <<< "$two" || fail 'two-image promotion must require matching repositories'
 
 awk 'index($0, "# >>> promote-single") { inside = 1; next } index($0, "# <<< promote-single") { inside = 0 } inside { sub(/^          /, ""); print }' \
   <<< "$one" > "$tmp/promote-single.sh"
@@ -229,9 +231,9 @@ awk 'index($0, "# >>> promote-single") { inside = 1; next } index($0, "# <<< pro
 grep -qF 'FRONTEND_TAG' "$tmp/promote-single.sh" && fail 'the commit of one tag must not read the empty frontend tag'
 mkdir -p "$tmp/work/_platform/scripts"
 printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$@" > "$ARGS"\n' > "$tmp/work/_platform/scripts/promote-image.sh"
-(cd "$tmp/work" && env ARGS="$tmp/args" APP_NAME=training BACKEND_TAG=0.1.0 FRONTEND_TAG='' \
+(cd "$tmp/work" && env ARGS="$tmp/args" GHCR_OWNER=Example-Org APP_NAME=training BACKEND_TAG=0.1.0 FRONTEND_TAG='' \
   VALUES_DIR=clusters/prod/training bash "$tmp/promote-single.sh") > "$tmp/out" 2>&1 || fail 'the promote-single block must run'
-expected=$'chore: promote training to 0.1.0\nclusters/prod/training/values.yaml=0.1.0'
+expected=$'--require-repository\nchore: promote training to 0.1.0\nclusters/prod/training/values.yaml=ghcr.io/example-org/training-backend:0.1.0'
 [[ "$(cat "$tmp/args")" == "$expected" ]] \
   || fail "one image must commit only values.yaml with its tag, got: $(paste -sd'|' - < "$tmp/args")"
 

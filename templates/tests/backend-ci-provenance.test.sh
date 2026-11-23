@@ -25,7 +25,7 @@ exit 0
 GH
 chmod +x "$tmp/bin/gh"
 cache="$tmp/home/caches/modules-2/files-2.1"
-jar() { mkdir -p "$cache/$1/$2/1.6.0/abc"; : > "$cache/$1/$2/1.6.0/abc/$2-1.6.0$3.jar"; }
+jar() { local version=${4:-1.6.0}; mkdir -p "$cache/$1/$2/$version/abc"; : > "$cache/$1/$2/$version/abc/$2-$version$3.jar"; }
 run() { : > "$tmp/calls"; RC=0; OUT=$(GRADLE_USER_HOME="$tmp/home" GH_CALLS="$tmp/calls" PATH="$tmp/bin:$PATH" bash "$tmp/verify.sh" 2>&1) || RC=$?; }
 
 run
@@ -39,6 +39,13 @@ run
 [[ $RC -eq 0 ]] || fail 'attested Platform jars must pass'
 [[ $(wc -l < "$tmp/calls") -eq 2 ]] || fail 'only the two Platform main jars are verified'
 grep -qF -- '--signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml' "$tmp/calls" || fail 'the signer must be release.yml'
+
+jar pl.seniordeveloper platform-test-fixtures "" 2.0.0
+run
+[[ $RC -eq 0 ]] || fail 'mixed historical and organization jars must pass with their respective signers'
+org=SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform
+grep -F 'platform-test-fixtures-2.0.0.jar ' "$tmp/calls" | grep -Fq -- "--repo $org --signer-workflow $org/.github/workflows/release.yml --source-ref refs/tags/v2.0.0" || fail 'a 2.x jar requires the organization release workflow'
+grep -F 'platform-test-fixtures-1.6.0.jar ' "$tmp/calls" | grep -Fq -- '--signer-workflow DominikSienkiewicz/Platform/.github/workflows/release.yml --source-ref refs/tags/v1.6.0' || fail 'a 1.x jar requires its original signer'
 
 jar pl.seniordeveloper platform-unattested ""
 run
