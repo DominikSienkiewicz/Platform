@@ -38,6 +38,15 @@ while [ $# -gt 0 ]; do
       failures=0
       grep -qs buggy src/main/java/demo/*.java && failures=1
       [[ "$class" == *ParserTest && ! -f src/main/java/demo/Parser.java ]] && failures=1
+      if [[ "$class" == *WorkflowContractTest ]]; then
+        # The changed harness must stay at the fix, just like the test class on a real consumer.
+        [[ -f build.gradle && "$(cat build.gradle)" == *contractHarness* ]] || { shift; continue; }
+        grep -qF 'packages: read' .github/workflows/ci.yml || failures=1
+      fi
+      if [[ "$class" == *WorkflowLayoutTest ]]; then
+        for path in .github/workflows/*.yml; do [[ ! -f "$path" ]] || printf '%s\n' "$path" >> "$GRADLE_SEEN"; done
+        [[ ! -e .github/workflows/previous.yml && -f .github/workflows/build.yml && -f .github/workflows/extra.yml ]] || failures=1
+      fi
       mkdir -p "build/test-results/$task"
       printf '<testsuite name="%s" tests="1" failures="%s" errors="0"/>\n' "$class" "$failures" \
         > "build/test-results/$task/TEST-$class.xml" ;;
@@ -70,6 +79,20 @@ echo 'class Parser {}' > "$repo/src/main/java/demo/Parser.java"
 echo 'class ParserTest {}' > "$repo/src/test/java/demo/ParserTest.java"
 echo 'class ParserFixture {}' > "$repo/src/test/java/demo/ParserFixture.java"
 added=$(commit 'fix(parser)!: parse an empty line')
+mkdir -p "$repo/.github/workflows"
+printf 'permissions:\n  contents: read\n' > "$repo/.github/workflows/ci.yml"
+cp "$repo/.github/workflows/ci.yml" "$repo/.github/workflows/previous.yml"
+workflow_base=$(commit 'chore: add example workflows')
+printf '  packages: read\n' >> "$repo/.github/workflows/ci.yml"
+echo '/* contractHarness */' > "$repo/build.gradle"
+echo 'class WorkflowContractTest {}' > "$repo/src/test/java/demo/WorkflowContractTest.java"
+workflow_fix=$(commit 'fix(ci): allow package reads')
+git -C "$repo" mv .github/workflows/previous.yml .github/workflows/build.yml
+printf 'name: extra\n' > "$repo/.github/workflows/extra.yml"
+echo 'class WorkflowLayoutTest {}' > "$repo/src/test/java/demo/WorkflowLayoutTest.java"
+workflow_rename=$(commit 'fix(ci): restore the workflow entrypoint')
+echo 'class WorkflowContractTest { /* still passes */ }' > "$repo/src/test/java/demo/WorkflowContractTest.java"
+green_workflow=$(commit 'fix(ci): change only the test description')
 
 run() {
   : > "$tmp/calls"
@@ -114,6 +137,17 @@ run "$broken" "$added" 'test integrationTest'
 [[ "$(cat "$tmp/calls")" == 'test --tests demo.ParserTest integrationTest --tests demo.ParserTest --continue --no-daemon -Pplatform.test.retry=off' ]] \
   || fail "every task of red-proof-tasks gets the filter, and a fixture is no test class: $(cat "$tmp/calls")"
 [[ -f "$repo/src/main/java/demo/Parser.java" ]] || fail 'a production file the commit added is back afterwards'
+
+run "$workflow_base" "$workflow_fix"
+[[ $RC -eq 0 ]] || fail 'a workflow contract fixed only by changing YAML must fail on the parent, using the test harness from the fix'
+grep -qF 'demo.WorkflowContractTest` | red' "$tmp/summary" || fail 'the workflow assertion must actually run and produce red'
+run "$workflow_fix" "$workflow_rename"
+[[ $RC -eq 0 ]] || fail 'a newly added or renamed workflow must have its parent layout during the proof'
+grep -qxF '.github/workflows/previous.yml' "$tmp/seen" || fail 'the old name must be restored'
+if grep -Eq '/(build|extra)\.yml$' "$tmp/seen"; then fail 'new and renamed destinations must be absent on the parent'; fi
+[[ -z "$(git -C "$repo" status --porcelain)" && -f "$repo/.github/workflows/build.yml" ]] || fail 'the checkout must return to the PR head'
+run "$workflow_rename" "$green_workflow"
+[[ $RC -eq 1 && "$OUT" == *PLAT-RED-002* ]] || fail 'a workflow test already passing on the parent must still fail the proof'
 
 run "$base" "$added"
 [[ $RC -eq 1 ]] || fail 'one unproven fix: commit fails the whole pull request'

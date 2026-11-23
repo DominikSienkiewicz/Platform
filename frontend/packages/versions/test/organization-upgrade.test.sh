@@ -72,7 +72,7 @@ grep -qF -- "--signer-workflow $org/Platform/.github/workflows/release.yml" "$FA
 FIXTURE_EXTRA=''
 packed=$(consumer compact-pins 1.13.1)
 printf '{"dependencies":{"%s/example-app":"3.1.0","%s/versions":"1.13.1"}}\n' "$old" "$old" > "$packed/frontend/package.json"
-git -C "$packed" commit -qam compact
+git -C "$packed" -c user.name=t -c user.email=t@example.test commit -qam compact
 FAKE_VERSIONS='[{"name":"1.13.1"},{"name":"2.0.0"},{"name":"3.1.0"}]' bump "$packed" --print-target
 [[ $rc -eq 0 && "$(tail -1 "$packed.log")" == 1.13.1 ]] || fail 'compact JSON and unrelated scoped packages must not cause an automatic major upgrade'
 FAKE_VERSIONS='[{"name":"2.0.0"}]' FAKE_VERSIONS_NEXT='[{"name":"1.13.1"}]' bump "$packed" --print-target

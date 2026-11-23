@@ -1,8 +1,8 @@
 // Plugin z linii 1.x zachował adres sprzed przeniesienia. W smoke starego wydania zachowujemy jego dane logowania.
 settingsEvaluated { settings ->
-    settings.dependencyResolutionManagement.repositories.withType(MavenArtifactRepository).configureEach {
-        if (url.toString() == 'https://maven.pkg.github.com/DominikSienkiewicz/Platform') {
-            setUrl('https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform')
+    settings.dependencyResolutionManagement.repositories.withType(MavenArtifactRepository).configureEach { repository ->
+        if (repository.url.toString() == 'https://maven.pkg.github.com/DominikSienkiewicz/Platform') {
+            repository.setUrl('https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform')
         }
     }
 }
