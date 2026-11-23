@@ -64,7 +64,7 @@ for manifest in "$root"/frontend/packages/*/package.json; do
   mkdir -p "$fixture/frontend/packages/$package"
   cp "$manifest" "$fixture/frontend/packages/$package/"
 done
-printf '{ "name": "@dominiksienkiewicz/incubating", "private": true }\n' > "$fixture/frontend/packages/incubating/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/incubating", "private": true }\n' > "$fixture/frontend/packages/incubating/package.json"
 export PATH="$tmp/bin:$PATH" VERIFY_GRADLEW="$tmp/gradlew" VERIFY_BACKOFF=0 FAKE_ROOT="$fixture" FAKE_LOG="$tmp/gradle.log"
 check() { : > "$FAKE_LOG"; : > "$tmp/summary"; GITHUB_STEP_SUMMARY="$tmp/summary" bash "$fixture/scripts/verify-consumable.sh" 9.9.9 > "$tmp/out" 2>&1; }
 
@@ -74,9 +74,9 @@ grep -q '/spring-app --no-daemon help dependencies' "$FAKE_LOG" \
 [[ $(grep -c 'help dependencies --configuration testRuntimeClasspath --refresh-dependencies' "$FAKE_LOG") -eq 2 ]] \
   || fail 'both starters must resolve testRuntimeClasspath with --refresh-dependencies'
 # shellcheck disable=SC2016 # literal backticks of the Markdown row
-row='| `@dominiksienkiewicz/versions@9.9.9` | `sha512-fake` |'
+row='| `@seniordeveloper-pl-dominik-sienkiewicz/versions@9.9.9` | `sha512-fake` |'
 grep -qF "$row" "$tmp/summary" || fail 'the summary must list each npm integrity'
-if grep -qF '@dominiksienkiewicz/incubating' "$tmp/summary"; then fail 'private packages are not installed'; fi
+if grep -qF '@seniordeveloper-pl-dominik-sienkiewicz/incubating' "$tmp/summary"; then fail 'private packages are not installed'; fi
 
 if FAKE_GRADLE=failed check; then fail 'a FAILED dependency must fail the check'; fi
 grep -qF '::error title=Release not consumable::Gradle: templates/jvm/java-library does not resolve Platform 9.9.9' "$tmp/out" \
@@ -86,8 +86,8 @@ grep -qF 'docs/runbooks/rollback.md' "$tmp/out" || fail 'the failure must point 
 FAKE_GRADLE=flaky check || fail 'one failed first resolution must be retried'
 grep -qF 'Retrying in 0s' "$tmp/out" || fail 'the retry must be reported'
 
-if FAKE_GRADLE=ok FAKE_NPM_MISSING=@dominiksienkiewicz/versions check; then fail 'a tarball without its bin must fail'; fi
-grep -qF 'npm: @dominiksienkiewicz/versions@9.9.9 declares files it does not ship: bin/check.mjs' "$tmp/out" \
+if FAKE_GRADLE=ok FAKE_NPM_MISSING=@seniordeveloper-pl-dominik-sienkiewicz/versions check; then fail 'a tarball without its bin must fail'; fi
+grep -qF 'npm: @seniordeveloper-pl-dominik-sienkiewicz/versions@9.9.9 declares files it does not ship: bin/check.mjs' "$tmp/out" \
   || fail 'the failure must name the package and the missing file'
 
 echo 'OK: verify-consumable resolves both starters and every public npm package the way a consumer does'

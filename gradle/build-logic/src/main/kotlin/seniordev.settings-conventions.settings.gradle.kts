@@ -56,7 +56,7 @@ dependencyResolutionManagement {
 		mavenCentral()
 		maven {
 			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/DominikSienkiewicz/Platform")
+			url = uri("https://maven.pkg.github.com/seniordeveloper-pl-dominik-sienkiewicz/Platform")
 			// Pusta albo z samych spacji wartość liczy się jak brak, jak w preflighcie starterów (N-DX-18): puste gpr.*
 			// nie zasłania GITHUB_ACTOR/GITHUB_TOKEN.
 			credentials {

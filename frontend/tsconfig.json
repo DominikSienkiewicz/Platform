@@ -9,7 +9,7 @@
       "node"
     ],
     "paths": {
-      "@dominiksienkiewicz/vitest-config": [
+      "@seniordeveloper-pl-dominik-sienkiewicz/vitest-config": [
         "./packages/vitest-config/index.d.ts"
       ]
     }

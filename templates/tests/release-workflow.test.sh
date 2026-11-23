@@ -166,7 +166,7 @@ block npm-publish > "$tmp/publish.sh"
 [[ -s "$tmp/publish.sh" ]] || fail 'the npm-publish block is missing'
 
 mkdir -p "$tmp/bin" "$tmp/frontend/dist"
-: > "$tmp/frontend/dist/dominiksienkiewicz-versions-9.9.9.tgz"
+: > "$tmp/frontend/dist/seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz"
 cat > "$tmp/bin/npm" <<'STUB'
 #!/usr/bin/env bash
 echo "npm $*" >> "$STUB_LOG"
@@ -183,7 +183,7 @@ export STUB_LOG="$tmp/stub.log" PATH="$tmp/bin:$PATH"
 
 (cd "$tmp/frontend" && bash "$tmp/publish.sh") > "$tmp/out.txt" 2>&1 \
   || fail "npm publish must get a path, not a git spec, for every tarball: $(cat "$tmp/out.txt")"
-grep -q '^npm publish .*dominiksienkiewicz-versions-9.9.9.tgz$' "$STUB_LOG" || fail 'the packed tarball was not published'
+grep -q '^npm publish .*seniordeveloper-pl-dominik-sienkiewicz-versions-9.9.9.tgz$' "$STUB_LOG" || fail 'the packed tarball was not published'
 
 echo 'OK: release.yml publishes each npm tarball by an unambiguous path'
 )
@@ -248,8 +248,8 @@ checkout="$tmp/checkout"
 mkdir -p "$checkout/gradle/build-logic/src/main/kotlin" "$checkout/frontend/packages/eslint-config" "$checkout/frontend/packages/query"
 touch "$checkout/gradle/build-logic/src/main/kotlin/seniordev.java-conventions.gradle.kts" \
       "$checkout/gradle/build-logic/src/main/kotlin/seniordev.settings-conventions.settings.gradle.kts"
-printf '{ "name": "@dominiksienkiewicz/eslint-config" }\n' > "$checkout/frontend/packages/eslint-config/package.json"
-printf '{ "name": "@dominiksienkiewicz/query", "private": true }\n' > "$checkout/frontend/packages/query/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/eslint-config" }\n' > "$checkout/frontend/packages/eslint-config/package.json"
+printf '{ "name": "@seniordeveloper-pl-dominik-sienkiewicz/query", "private": true }\n' > "$checkout/frontend/packages/query/package.json"
 
 # Atrapy: gh wypisuje 1.6.0 dla każdej paczki Maven poza $MISSING_MAVEN; npm zna 1.6.0, chyba że ustawiono $MISSING_NPM.
 mkdir -p "$tmp/bin"
@@ -285,11 +285,11 @@ MISSING_MAVEN=seniordev.settings-conventions.seniordev.settings-conventions.grad
 [[ $RC -ne 0 ]] || fail 'a missing plugin marker must fail the release'
 grep -q 'settings-conventions.gradle.plugin has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing package'
 
-MISSING_NPM=@dominiksienkiewicz/eslint-config run
+MISSING_NPM=@seniordeveloper-pl-dominik-sienkiewicz/eslint-config run
 [[ $RC -ne 0 ]] || fail 'a missing npm package must fail the release'
-grep -q 'npm @dominiksienkiewicz/eslint-config has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing npm package'
+grep -q 'npm @seniordeveloper-pl-dominik-sienkiewicz/eslint-config has no version 1.6.0' <<<"$OUT" || fail 'the error must name the missing npm package'
 
-MISSING_NPM=@dominiksienkiewicz/query run
+MISSING_NPM=@seniordeveloper-pl-dominik-sienkiewicz/query run
 [[ $RC -eq 0 ]] || fail 'a private package is not published and must not be required'
 
 echo 'OK: verify-published requires the version on every Maven package and every public npm package'
