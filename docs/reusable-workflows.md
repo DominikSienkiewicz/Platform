@@ -74,7 +74,7 @@ Inputs:
 | `gradle-task` | string | `build` | Gradle task arguments as one line, separated by whitespace; passed literally, without shell parsing. The step sets PLATFORM_TEST_RETRY=detect, so a flaky test is retried once and still fails the build; -Pplatform.test.retry=off here turns that off. |
 | `verify-provenance` | boolean | `false` | Verify the artifact attestation of every Platform jar the build resolved (pl.seniordeveloper in the Gradle cache) against Platform's release.yml; Platform 1.6.0 and newer attest their jars. |
 | `lint-task` | string | empty | Optional Gradle task arguments run as a first step before gradle-task, such as `lint` from seniordev.java-conventions, so style failures arrive before the tests; empty skips the step. |
-| `red-proof` | boolean | `false` | On a pull_request event, run a red-proof job: every fix: commit of the pull request must add or change a test class, and those classes must fail against the production code (src/main) of the commit's parent. Needs the pull request's history, so the job checks out with full depth. |
+| `red-proof` | boolean | `false` | On a pull_request event, run the tests of every fix: commit against its parent's src/main and .github/workflows. Each fix must add or change a test class that fails on the parent. Requires full pull request history. |
 | `red-proof-tasks` | string | `test` | Gradle test tasks the red-proof job runs, separated by whitespace, each with --tests for every test class of the fix: commit, such as `test integrationTest`. |
 <!-- /docs-gen -->
 
@@ -88,8 +88,9 @@ pull request's base and head whose subject starts with `fix:` (`fix(scope):` and
 1. takes the test classes the commit added or changed: source files under `src/<set>/{java,kotlin,groovy}/` of
    any source set but `main`, named `…Test`, `…Tests`, `…IT`, `…ITCase` or `…Spec`, the class name read from the
    path;
-2. checks out the commit, then puts every `src/main/` file the commit changed back to its parent's version (a file
-   the commit added is removed);
+2. restores changed files under any `src/main/` and the repository's `.github/workflows/` to their parent
+   versions. Added files disappear and deleted or renamed paths return. Tests and their Gradle harness stay
+   at the fix commit, so a test that checks a workflow reads the actual parent YAML;
 3. runs each task of `red-proof-tasks` (default `test`) with `--tests <class>` for each of those classes, with
    `--continue` and `-Pplatform.test.retry=off`;
 4. reads the JUnit XML reports of those classes: at least one must report a failure or an error.

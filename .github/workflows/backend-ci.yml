@@ -36,7 +36,7 @@ on:
         type: string
         default: ""
       red-proof:
-        description: "On a pull_request event, run a red-proof job: every fix: commit of the pull request must add or change a test class, and those classes must fail against the production code (src/main) of the commit's parent. Needs the pull request's history, so the job checks out with full depth."
+        description: "On a pull_request event, run the tests of every fix: commit against its parent's src/main and .github/workflows. Each fix must add or change a test class that fails on the parent. Requires full pull request history."
         type: boolean
         default: false
       red-proof-tasks:
@@ -313,7 +313,7 @@ jobs:
           PY
 
   # Dowód czerwieni (TDD): commit `fix:` musi nieść test, który pada na kodzie produkcyjnym rodzica. Testy z commita,
-  # `src/main` z rodzica; gałąź jest zielona w każdym commicie, więc czerwień widać tylko tak. Blok testuje
+  # `src/main` i `.github/workflows` z rodzica; gałąź jest zielona w każdym commicie, więc czerwień widać tylko tak. Blok testuje
   # templates/tests/backend-ci-red-proof.test.sh.
   red-proof:
     name: Red-proof of fix commits
@@ -388,16 +388,13 @@ jobs:
               failed=1
               continue
             fi
-            # Testy z commita, kod produkcyjny z rodzica: plik dodany w commicie znika, zmieniony wraca do rodzica.
+            # --no-renames lists both paths when a file moves into or out of the production paths.
             git -C "$top" reset --quiet --hard
             git -C "$top" checkout --quiet --detach "$commit"
-            while IFS= read -r path; do
-              if git -C "$top" cat-file -e "$commit^:$path" 2> /dev/null; then
-                git -C "$top" checkout --quiet "$commit^" -- "$path"
-              else
-                git -C "$top" rm --quiet -- "$path"
-              fi
-            done < <(git diff-tree --no-commit-id --name-only -r "$commit" | grep -E '(^|/)src/main/' || true)
+            while IFS= read -r -d '' path; do
+              git -C "$top" --literal-pathspecs restore --source="$commit^" --staged --worktree -- "$path"
+            done < <(git -C "$top" diff --name-only -z --no-renames "$commit^" "$commit" -- \
+              ':(top,glob)**/src/main/**' ':(top,glob).github/workflows/**')
             find "$top" -type d -path '*/build/test-results' -prune -exec rm -rf {} +
             arguments=()
             for task in "${tasks[@]}"; do
