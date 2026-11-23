@@ -24,6 +24,9 @@ artifact was published. Its tag was removed and releases continued under the per
 
 ### Consumer action required
 
+- At the first signed image release after moving GHCR namespaces, open a manual GitOps pull
+  request for the repository and verified tag of every affected image. Tag-only promotion
+  resumes once all the Helm values identify the signed repositories.
 - Replace the 1.x bootstrap with `templates/platform-bump.sh` from the published v2.0.0 tag. Review
   `scripts/platform-bump.sh --dry-run 2.0.0`, then run `scripts/platform-bump.sh 2.0.0` and commit
   the updated pins, imports, lockfiles and workflows. The bootstrap verifies the release tarball with

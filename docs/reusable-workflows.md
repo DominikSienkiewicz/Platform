@@ -480,6 +480,17 @@ Grype and Trivy, and signed with cosign keyless once both gates pass
 and `values-frontend.yaml` under `values-dir`, commits and pushes to the default branch. Argo CD deploys the
 commit; the workflow does not wait for it and runs no smoke test.
 
+From Platform 2.0.0, each file must already point to the repository signed by the build:
+`ghcr.io/<lowercase GHCR_OWNER>/<app-name>-backend` or its `-frontend` counterpart. A single-image
+application uses the backend repository in `values.yaml`. The promotion checks every repository
+before updating any tags, including when the tag already matches. It repeats the check against the
+latest GitOps revision after a rejected push.
+
+For the first release after a registry move, let the build sign the images. When promotion reports a
+repository mismatch, open a manual GitOps pull request. Verify the signed image digests from the build
+and set both `image.repository` and the corresponding `image.tag` in each affected values file. After
+review and merge, later releases can update the tags automatically.
+
 - One image: `single-image: true` is for an application whose boot jar serves its own frontend. `build` calls
   `deploy.yml` with [`single-image`](#deployyml), so only `<app>-backend` is built, pushed, scanned and signed, and
   `promote` sets `image.tag` in `values.yaml` under `values-dir` alone, with the message

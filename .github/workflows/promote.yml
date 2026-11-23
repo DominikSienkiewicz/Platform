@@ -135,6 +135,7 @@ jobs:
       contents: read
     env:
       INFRA_REPOSITORY: ${{ inputs.infra-repository }}
+      GHCR_OWNER: ${{ vars.GHCR_OWNER }}
       APP_NAME: ${{ inputs.app-name }}
       VALUES_DIR: ${{ inputs.values-dir }}
       BACKEND_TAG: ${{ needs.build.outputs.backend-tag }}
@@ -181,10 +182,11 @@ jobs:
         if: ${{ !inputs.single-image }}
         run: |
           set -euo pipefail
-          bash _platform/scripts/promote-image.sh \
+          image_prefix="ghcr.io/$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')/$APP_NAME"
+          bash _platform/scripts/promote-image.sh --require-repository \
             "chore: promote $APP_NAME to backend $BACKEND_TAG, frontend $FRONTEND_TAG" \
-            "$VALUES_DIR/values-backend.yaml=$BACKEND_TAG" \
-            "$VALUES_DIR/values-frontend.yaml=$FRONTEND_TAG"
+            "$VALUES_DIR/values-backend.yaml=$image_prefix-backend:$BACKEND_TAG" \
+            "$VALUES_DIR/values-frontend.yaml=$image_prefix-frontend:$FRONTEND_TAG"
 
       # Jeden obraz: frontend-tag z deploy.yml jest pusty, więc idzie tylko tag backendu, do jednego pliku.
       - name: Commit the new image tag
@@ -192,7 +194,8 @@ jobs:
         run: |
           # >>> promote-single
           set -euo pipefail
-          bash _platform/scripts/promote-image.sh \
+          image_prefix="ghcr.io/$(printf '%s' "$GHCR_OWNER" | tr '[:upper:]' '[:lower:]')/$APP_NAME"
+          bash _platform/scripts/promote-image.sh --require-repository \
             "chore: promote $APP_NAME to $BACKEND_TAG" \
-            "$VALUES_DIR/values.yaml=$BACKEND_TAG"
+            "$VALUES_DIR/values.yaml=$image_prefix-backend:$BACKEND_TAG"
           # <<< promote-single
