@@ -7,7 +7,7 @@ body:
     attributes:
       label: Artifact
       description: The incubating Maven module, npm package or template.
-      placeholder: "@dominiksienkiewicz/<package> or pl.seniordeveloper:platform-<module>"
+      placeholder: "@seniordeveloper-pl-dominik-sienkiewicz/<package> or pl.seniordeveloper:platform-<module>"
     validations:
       required: true
   - type: input

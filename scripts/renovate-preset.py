@@ -6,8 +6,8 @@ are the `packageRules` whose description starts with "Frame:"; each one sets `en
 - the Gradle wrapper (the Gradle version belongs to the frame);
 - every library of gradle/catalog/libs.versions.toml and every `pl.seniordeveloper:*` artifact;
 - every plugin of the catalog and every `seniordev.*` convention plugin, by plugin id and by marker coordinate;
-- every key of frontend/packages/versions/versions.json and every `@dominiksienkiewicz/*` package;
-- the references to Platform's reusable workflows (`DominikSienkiewicz/Platform`).
+- every key of frontend/packages/versions/versions.json and every `@seniordeveloper-pl-dominik-sienkiewicz/*` package;
+- the references to Platform's reusable workflows (`SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform`).
 platform-bump moves all of them. The other rules and keys of default.json are hand-written and kept as they are;
 the frame rules take the place of the old ones, or go last when there are none.
 
@@ -23,7 +23,7 @@ import tomllib
 MARK = "Frame:"
 PLATFORM_ARTIFACTS = "pl.seniordeveloper:*"
 PLATFORM_PLUGINS = "seniordev.*"
-PLATFORM_PACKAGES = "@dominiksienkiewicz/*"
+PLATFORM_PACKAGES = ("@seniordeveloper-pl-dominik-sienkiewicz/*", "@dominiksienkiewicz/*")
 WIDTH = 120
 
 
@@ -52,7 +52,8 @@ def frame_rules(root):
         if not plugin.startswith(PLATFORM_PLUGINS[:-1])
     })
     plugin_names = [name for plugin in plugins for name in (plugin, f"{plugin}:{plugin}.gradle.plugin")]
-    packages = sorted(name for name in canon if not name.startswith(PLATFORM_PACKAGES[:-1]))
+    platform_scopes = tuple(pattern[:-1] for pattern in PLATFORM_PACKAGES)
+    packages = sorted(name for name in canon if not name.startswith(platform_scopes))
 
     return [
         {
@@ -81,14 +82,14 @@ def frame_rules(root):
                            "frontend/packages/versions/versions.json by scripts/renovate-preset.py); platform-bump "
                            "moves them.",
             "matchManagers": ["npm"],
-            "matchPackageNames": packages + [PLATFORM_PACKAGES],
+            "matchPackageNames": [*packages, *PLATFORM_PACKAGES],
             "enabled": False,
         },
         {
             "description": f"{MARK} Platform's reusable workflows are called by an exact vX.Y.Z that platform-bump "
                            "moves; Renovate neither updates nor SHA-pins them.",
             "matchManagers": ["github-actions"],
-            "matchDepNames": ["DominikSienkiewicz/Platform"],
+            "matchDepNames": ["SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform", "DominikSienkiewicz/Platform"],
             "enabled": False,
         },
     ]

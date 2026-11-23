@@ -51,7 +51,7 @@ grep -qF 'GPR_KEY' "$tmp/out" || fail 'the preflight must name GPR_KEY when it i
 grep -qE '^[[:space:]]+(- )?uses: *(\./|\$/)' "$promote" \
   && fail 'promote.yml must not use a relative reference: called through an annotated tag it fails with "workflow was not found"'
 build_uses=$(sed -n '/^  build:$/,/^  promote:$/p' "$promote" | grep -E '^    uses: ' || true)
-[[ "$build_uses" =~ ^\ {4}uses:\ DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
+[[ "$build_uses" =~ ^\ {4}uses:\ SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40}\ \#\ v([0-9]+\.[0-9]+\.[0-9]+)$ ]] \
   || fail 'promote.yml must call deploy.yml by its full reference at a commit SHA with a # vX.Y.Z comment'
 # Przypięty deploy.yml deklaruje ssh-deploy (domyślnie true) i platform-ref od v1.8.9 do 1.13.0, które je usuwa. Pin
 # i wejścia przesuwa razem późniejsze wydanie, gdy tag 1.13.0 już istnieje (action-pins, RELEASING.md). Płytki
@@ -160,7 +160,7 @@ grants() { awk -v head="${2}permissions:" '$0 == head { p = 1; next } p && /^ +[
 
 # --- build: deploy.yml z wydania, które podpisuje, z uprawnieniami joba sign ---
 build=$(job build)
-pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
+pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' <<< "$build" \
   | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.9.0\n%s\n' "$pin" | sort -C -V \
@@ -210,7 +210,7 @@ grep -qFx '        default: false' <<< "$input" || fail 'single-image must defau
 # --- build: deploy.yml w tym samym trybie, z wydania, które go ma ---
 build=$(job build)
 grep -qFx '      single-image: ${{ inputs.single-image }}' <<< "$build" || fail 'build must pass inputs.single-image to deploy.yml'
-pin=$(grep -E '^    uses: DominikSienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
+pin=$(grep -E '^    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/\.github/workflows/deploy\.yml@[0-9a-f]{40} # v' <<< "$build" | sed 's/.*# v//' || true)
 [[ -n "$pin" ]] || fail 'build must call deploy.yml at a commit SHA with a # vX.Y.Z comment'
 printf '1.8.11\n%s\n' "$pin" | sort -C -V \
   || fail "deploy.yml has the single-image input since v1.8.11: promote.yml must not pin an older one, got v$pin"

@@ -29,7 +29,7 @@ grep -qx 'group = "pl.example.orders"' "$out/backend/build.gradle.kts" || fail '
 grep -qx 'platformVersion=1.6.0' "$out/backend/gradle.properties" || fail 'the pin must be the requested version'
 [[ -x "$out/backend/gradlew" ]] || fail 'the wrapper must be executable'
 workflow="$out/.github/workflows/ci.yml"
-grep -qF 'uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$workflow" || fail 'the caller must use the exact tag'
+grep -qF 'uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.6.0' "$workflow" || fail 'the caller must use the exact tag'
 if grep -qE '@v1$|@v1[^.]|secrets: inherit' "$workflow"; then fail 'no @v1 and no secrets: inherit'; fi
 grep -qx '  packages: read' "$workflow" || fail 'the caller must grant packages: read'
 grep -qF 'gpr_token: ${{ secrets.GPR_TOKEN }}' "$workflow" || fail 'the caller must pass gpr_token explicitly'
@@ -87,7 +87,7 @@ echo 'OK: new-consumer --frontend next renders every path Dockerfile.frontend co
 # --- frontend ---
 # scripts/new-consumer.sh --frontend next: frontend/ z konfiguracjami paczek Platform, skryptami trybu strict
 # i package.json, który przechodzi platform-versions-check kanonu tego checkoutu (każda zależność z kanonu,
-# każdy @dominiksienkiewicz/* na wersji wydania), plus caller frontend-ci.yml ze strict: true.
+# każda paczka Platform w zakresie npm wydania), plus caller frontend-ci.yml ze strict: true.
 (
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -99,21 +99,24 @@ for file in package.json .npmrc .gitignore .nvmrc tsconfig.json eslint.config.mj
   Dockerfile src/app/layout.tsx src/app/page.tsx src/app/page.test.tsx src/app/globals.css; do
   [[ -f "$web/$file" ]] || fail "frontend/$file is missing"
 done
-cmp -s "$root/templates/npmrc" "$web/.npmrc" || fail 'frontend/.npmrc must be the canonical copy'
+scope=@seniordeveloper-pl-dominik-sienkiewicz
+if [[ $version == 1.* ]]; then scope=@dominiksienkiewicz; fi
+cmp -s <(sed "s/@seniordeveloper-pl-dominik-sienkiewicz:/$scope:/" "$root/templates/npmrc") "$web/.npmrc" \
+  || fail 'frontend/.npmrc must contain the canonical configuration for its release scope'
 cmp -s "$root/templates/Dockerfile.frontend" "$web/Dockerfile" || fail 'frontend/Dockerfile must be the canonical copy'
 cmp -s "$root/templates/frontend/next.config.ts" "$web/next.config.ts" || fail 'next.config.ts must be the canonical copy'
 for script in lint typecheck test build format:check; do
   node -e 'const s = require(process.argv[1]).scripts; if (!s[process.argv[2]]) process.exit(1)' "$web/package.json" "$script" \
     || fail "strict frontend-ci needs the $script script"
 done
-node -e 'const m = require(process.argv[1]); if (m.devDependencies["@dominiksienkiewicz/versions"] !== process.argv[2]) process.exit(1)' \
-  "$web/package.json" "$version" || fail "@dominiksienkiewicz/versions must be pinned at $version"
+node -e 'const m = require(process.argv[1]); if (m.devDependencies[process.argv[3] + "/versions"] !== process.argv[2]) process.exit(1)' \
+  "$web/package.json" "$version" "$scope" || fail "$scope/versions must be pinned at $version"
 (cd "$web" && node "$root/frontend/packages/versions/bin/check.mjs") > "$tmp/check" 2>&1 \
   || { cat "$tmp/check" >&2; fail 'the generated package.json must pass platform-versions-check of this canon'; }
 grep -qF 'Frontend: (cd' "$tmp/out" || fail 'the generator must say how to create package-lock.json'
 
 workflow="$tmp/shop/.github/workflows/ci.yml"
-grep -qF "uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version" "$workflow" || fail 'the frontend caller must use the exact tag'
+grep -qF "uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version" "$workflow" || fail 'the frontend caller must use the exact tag'
 grep -qx '      strict: true' "$workflow" || fail 'the frontend caller must run strict'
 [[ $(grep -c 'gpr_token: ${{ secrets.GPR_TOKEN }}' "$workflow") -eq 2 ]] || fail 'both callers pass gpr_token explicitly'
 

@@ -23,7 +23,7 @@ jobs:
       contents: write
       pull-requests: write
       packages: read
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.12.0
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v2.0.0
     with:
       version: ${{ inputs.version || '' }}
     secrets:

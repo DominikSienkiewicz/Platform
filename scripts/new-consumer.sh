@@ -14,7 +14,7 @@
 #   scripts/            platform-bump.sh, merge.sh, agent-gradle.sh, worktree-new.sh and worktree-status.sh;
 #   root files          .gitignore, backend/.gitignore, .editorconfig and .sdkmanrc from templates/;
 #   frontend/           with --frontend next: a Next.js app (src/ layout) whose package.json pins every dependency
-#                       at the canon of frontend/packages/versions and every @dominiksienkiewicz/* package at
+#                       at the canon of frontend/packages/versions and each Platform package from the scope of its release at
 #                       <version>, the strict scripts (lint, typecheck, test, build, format:check), .npmrc, the
 #                       tsconfig/eslint/vitest/prettier/Tailwind configs of the packages, next.config.ts,
 #                       Dockerfile.frontend and the public/ directory it copies, plus a frontend-ci.yml caller
@@ -121,7 +121,7 @@ permissions:
 
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v$version
     with:
       working-directory: backend
     secrets:
@@ -133,22 +133,24 @@ if [[ "$frontend" == next ]]; then
   mkdir -p "$web/src/app" "$web/public"
   # Etap runner Dockerfile.frontend kopiuje /app/public, a git nie przechowuje pustego katalogu.
   : > "$web/public/.gitkeep"
-  cp "$templates/npmrc" "$web/.npmrc"
+  scope=@seniordeveloper-pl-dominik-sienkiewicz
+  if [[ $version == 1.* ]]; then scope=@dominiksienkiewicz; fi
+  sed "s/^@[^:]*:registry=/$scope:registry=/" "$templates/npmrc" > "$web/.npmrc"
   cp "$templates/gitignore/frontend.gitignore" "$web/.gitignore"
   cp "$templates/frontend/next.config.ts" "$web/next.config.ts"
   cp "$templates/Dockerfile.frontend" "$web/Dockerfile"
   echo 24 > "$web/.nvmrc"
   # Wersje z kanonu tego checkoutu (frontend/packages/versions/versions.json): platform-versions-check przechodzi od razu.
   # Pliki niżej są już w formacie Prettiera (domyślne 80 kolumn), więc pierwszy `format:check` w CI jest zielony.
-  node - "$root/frontend/packages/versions/versions.json" "$version" "$name" > "$web/package.json" <<'NODE'
-const [canonPath, version, name] = process.argv.slice(2);
+  node - "$root/frontend/packages/versions/versions.json" "$version" "$name" "$scope" > "$web/package.json" <<'NODE'
+const [canonPath, version, name, scope] = process.argv.slice(2);
 const canon = JSON.parse(require("node:fs").readFileSync(canonPath, "utf8")).versions;
 const pick = (names) => Object.fromEntries(names.map((dependency) => {
   if (!canon[dependency]) throw new Error(`${dependency} has no entry in the canon`);
   return [dependency, canon[dependency]];
 }));
 const platform = ["eslint-config", "prettier-config", "tailwind-preset", "tsconfig", "versions", "vitest-config"]
-  .map((packageName) => [`@dominiksienkiewicz/${packageName}`, version]);
+  .map((packageName) => [`${scope}/${packageName}`, version]);
 const manifest = {
   name: `${name}-frontend`,
   version: "0.1.0",
@@ -164,7 +166,7 @@ const manifest = {
     format: "prettier --write .",
     "format:check": "prettier --check .",
   },
-  prettier: "@dominiksienkiewicz/prettier-config",
+  prettier: `${scope}/prettier-config`,
   dependencies: pick(["next", "react", "react-dom"]),
   devDependencies: Object.fromEntries(
     [
@@ -179,9 +181,9 @@ const manifest = {
 };
 process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
 NODE
-  cat > "$web/tsconfig.json" <<'JSON'
+  cat > "$web/tsconfig.json" <<JSON
 {
-  "extends": "@dominiksienkiewicz/tsconfig/next.json",
+  "extends": "$scope/tsconfig/next.json",
   "compilerOptions": { "paths": { "@/*": ["./src/*"] } },
   "include": [
     "next-env.d.ts",
@@ -193,12 +195,12 @@ NODE
   "exclude": ["node_modules"]
 }
 JSON
-  printf 'export { default } from "@dominiksienkiewicz/eslint-config/next";\n' > "$web/eslint.config.mjs"
+  printf 'export { default } from "%s/eslint-config/next";\n' "$scope" > "$web/eslint.config.mjs"
   printf 'export default { plugins: { "@tailwindcss/postcss": {} } };\n' > "$web/postcss.config.mjs"
-  cat > "$web/vitest.config.ts" <<'TS'
+  cat > "$web/vitest.config.ts" <<TS
 import { defineConfig, mergeConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
-import { baseConfig } from "@dominiksienkiewicz/vitest-config";
+import { baseConfig } from "$scope/vitest-config";
 
 export default mergeConfig(
   baseConfig,
@@ -209,7 +211,7 @@ export default mergeConfig(
   }),
 );
 TS
-  printf '@import "@dominiksienkiewicz/tailwind-preset/theme.css";\n@import "tailwindcss";\n' > "$web/src/app/globals.css"
+  printf '@import "%s/tailwind-preset/theme.css";\n@import "tailwindcss";\n' "$scope" > "$web/src/app/globals.css"
   cat > "$web/src/app/layout.tsx" <<'TSX'
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -247,7 +249,7 @@ describe("Home", () => {
 TSX
   cat >> "$out/.github/workflows/ci.yml" <<YML
   frontend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/frontend-ci.yml@v$version
     with:
       working-directory: frontend
       strict: true

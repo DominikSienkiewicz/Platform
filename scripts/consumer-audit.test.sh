@@ -32,7 +32,7 @@ FROM node:24-alpine
 EOF
 put acme/alpha/frontend/package.json <<'EOF'
 { "dependencies": { "next": "16.4.0" },
-  "devDependencies": { "@dominiksienkiewicz/versions": "1.5.26", "@dominiksienkiewicz/eslint-config": "1.5.26" } }
+  "devDependencies": { "@seniordeveloper-pl-dominik-sienkiewicz/versions": "2.0.0", "@dominiksienkiewicz/eslint-config": "1.5.26" } }
 EOF
 put acme/alpha/.github/workflows/ci.yml <<'EOF'
 jobs:
@@ -66,12 +66,12 @@ EOF
 put acme/beta/.github/workflows/ci.yml <<'EOF'
 jobs:
   backend:
-    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31
 EOF
 put acme/beta/.github/workflows/bump.yml <<'EOF'
 jobs:
   bump:
-    uses: DominikSienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
+    uses: SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/.github/workflows/platform-bump.yml@v1.5.31
 EOF
 printf 'main\n' | put acme/beta/branches.txt
 
@@ -80,7 +80,7 @@ printf '# fixtures\nacme/alpha\n\nacme/beta\n' > "$work/consumers.txt"
 expected=$(cat <<'EOF'
 | Repository | Platform pin | Gradle wrapper | Runtime image | test-fixtures | observability-starter | npm packages | Workflow refs | platform-bump.yml | Renovate branches |
 |---|---|---|---|---|---|---|---|---|---|
-| acme/alpha | 1.5.26 | 9.6.1 | `sapmachine:27-jre` | yes | no | 1.5.26: eslint-config, versions | v1 | no | 2 |
+| acme/alpha | 1.5.26 | 9.6.1 | `sapmachine:27-jre` | yes | no | 2.0.0: versions; 1.5.26: eslint-config | v1 | no | 2 |
 | acme/beta | 1.5.31 | 9.8.1 | `eclipse-temurin:27-jre` | no | yes | no frontend | v1.5.31 | yes | 0 |
 EOF
 )
