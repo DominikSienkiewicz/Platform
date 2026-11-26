@@ -20,6 +20,33 @@ artifact was published. Its tag was removed and releases continued under the per
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-26
+
+### Consumer action required
+
+- Frontend consumers should review application-specific Vitest 5 settings and refresh their lockfile.
+  Keep both TypeScript aliases: `typescript-native` runs the TypeScript 7 compiler and `typescript`
+  provides the TypeScript 6 JavaScript API for tools that import it. [Frontend adoption guide](docs/consuming.md)
+
+### Added
+
+- Renovate prepares dependency PRs with a Platform version and release notes. Merging a prepared
+  PR starts verification of the tagged commit and publication to GitHub Packages.
+- Maintainers can run `./release.sh` without arguments to review the next version and notes.
+
+### Changed
+
+- Update the Grype scanning action `anchore/scan-action` from 7.4.2 to 7.4.3 in Platform workflows. [#14](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/pull/14)
+- Update the PostgreSQL 18 image used by the JVM test fixtures from `pgvector/pgvector:0.8.2-pg18`
+  to `pgvector/pgvector:0.8.7-pg18`. [#15](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/pull/15)
+- Refresh the JVM stack to Gradle 9.9.2, Spring Boot 4.1.3, Spring Modulith 2.1.3 and Spring AI 2.0.3.
+  The frontend stack now includes React 19.3.1, TypeScript 7.0.2 and Vitest 5.1.2.
+
+### Fixed
+
+- Attach generated release files to the intended Renovate branch using GitHub's `branchName` field.
+- Preserve reviewed PR titles in release notes when a maintainer synchronizes `origin/main`.
+
 ## [2.0.1] - 2026-11-26
 
 ### Consumer action required
