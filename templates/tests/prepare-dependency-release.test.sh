@@ -78,6 +78,23 @@ git commit --allow-empty -qm 'fix(deps): update the example package'
 if bash scripts/prepare-dependency-release.sh "$pending"; then fail 'pending notes must be preserved for review'; fi
 git diff --exit-code
 
+git switch -qc security-fix "$head"
+git update-ref refs/remotes/origin/main "$base"
+advisories='GHSA-xxxx-vvvv-3333 CVE-2026-12345 GHSA-xxxx-vvvv-3333'
+DEPENDENCY_ADVISORIES="$advisories" bash scripts/prepare-dependency-release.sh "$base" >/dev/null
+notes=$(bash scripts/changelog-section.sh 2.1.4)
+[[ "$notes" == *'CVE-2026-12345'* && "$notes" == *'GHSA-xxxx-vvvv-3333'* ]] ||
+  fail 'release notes must name the CVE and GHSA from the dependency pull request'
+[[ $(grep -oF GHSA-xxxx-vvvv-3333 <<< "$notes" | wc -l) -eq 1 ]] || fail 'duplicate advisory'
+before_security_retry=$(git diff)
+DEPENDENCY_ADVISORIES="$advisories" bash scripts/prepare-dependency-release.sh "$base" >/dev/null
+[[ $(git diff) == "$before_security_retry" ]] || fail 'retry must preserve security notes'
+git restore .
+if DEPENDENCY_ADVISORIES='CVE-2026-12345 invalid' bash scripts/prepare-dependency-release.sh "$base"; then
+  fail 'invalid advisory identifiers must be refused'
+fi
+git diff --exit-code
+
 git switch -qc upstream-major "$head"
 git update-ref refs/remotes/origin/main "$base"
 [[ $(bash scripts/prepare-dependency-release.sh "$base" --review-major) == 2.2.0 ]] || fail 'an upstream major needs migration review'

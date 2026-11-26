@@ -44,6 +44,7 @@ date_of_update=$(TZ=UTC git show -s --format=%cd --date=format-local:%F "$notes_
 subject=$(git show -s --format=%s "$notes_head")
 python3 - "$tmp" "$current" "$target" "$date_of_update" "${2:-}" "$subject" <<'PY'
 from pathlib import Path
+import os
 import re
 import sys
 
@@ -60,6 +61,12 @@ if review:
     else:
         actions = actions.rstrip() + "\n" + action
     notes = "\n### ".join([actions, *sections])
+advisories = sorted(set(os.environ.get("DEPENDENCY_ADVISORIES", "").split()))
+for advisory in advisories:
+    if not re.fullmatch(r"CVE-[0-9]{4}-[0-9]{4,}|GHSA-(?:[23456789cfghjmpqrvwx]{4}-){2}[23456789cfghjmpqrvwx]{4}", advisory):
+        sys.exit("Cannot prepare dependency release: DEPENDENCY_ADVISORIES must contain space-separated CVE or GHSA IDs.")
+if advisories:
+    notes += "\n\n### Security\n\n- This dependency update addresses " + ", ".join(advisories) + "."
 heading = "## [Unreleased]"
 start = re.search(r"^## \[Unreleased\]$\n\s*(?=^## )", base, re.M)
 if not start or not base[start.end():].startswith(f"## [{current}] - "):
