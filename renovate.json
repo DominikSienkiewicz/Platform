@@ -2,40 +2,101 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Platform's own Renovate config: the shared preset plus the rules for the canons that live only here.",
   "extends": ["github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"],
+  "schedule": ["at any time"],
+  "ignoreUnstable": true,
+  "prBodyNotes": ["The daily job adds the Platform version and changelog to this branch. Review the release notes and merge after CI passes. Merging publishes the reviewed release after verification."],
   "packageRules": [
     {
-      "description": "The backend canon: Renovate proposes catalog versions in Platform only. The convention plugins read these versions from the generated PlatformVersions, so the catalog entry is the only edit (docs/versions.md).",
-      "matchManagers": ["gradle"],
+      "description": "Mark upstream major updates for migration review and a Platform minor release.",
+      "matchUpdateTypes": ["major"],
+      "additionalBranchPrefix": "major-",
+      "addLabels": ["upstream-major"]
+    },
+    {
+      "description": "Keep the two-week observation period for the updater that runs in CI.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["renovate"],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Group the JVM catalog, including tool and override versions without Gradle aliases.",
+      "matchManagers": ["gradle", "custom.regex"],
       "matchFileNames": ["gradle/catalog/libs.versions.toml"],
       "enabled": true,
       "groupName": "platform catalog",
       "addLabels": ["backend"]
     },
     {
-      "description": "The frontend canon: versions.json and the workspace manifests move in one pull request, or self-canon.test.mjs fails.",
+      "description": "Enable workspace and canon lookups before Renovate knows the update type. Group major updates by package or upstream monorepo.",
       "matchManagers": ["npm", "custom.regex"],
-      "matchFileNames": ["frontend/**"],
+      "matchFileNames": [
+        "frontend/package.json",
+        "frontend/packages/*/package.json",
+        "frontend/packages/versions/versions.json"
+      ],
       "enabled": true,
-      "matchUpdateTypes": ["minor", "patch"],
-      "groupName": "frontend canon",
       "addLabels": ["frontend"]
     },
     {
-      "description": "Major updates of the frontend canon stay separate, but each still updates versions.json and the manifests together.",
+      "description": "Keep all routine frontend updates together across the canon, manifests and pnpm lockfile.",
       "matchManagers": ["npm", "custom.regex"],
       "matchFileNames": ["frontend/**"],
-      "enabled": true,
-      "matchUpdateTypes": ["major"],
-      "addLabels": ["frontend"]
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "frontend canon",
+      "groupSlug": "frontend-canon"
+    },
+    {
+      "description": "Keep BOM overrides on the current stable patch line, including the two independent Jackson 2 floors.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": [
+        "org.projectlombok:lombok",
+        "org.apache.tomcat.embed:tomcat-embed-core",
+        "tools.jackson:jackson-bom",
+        "com.fasterxml.jackson:jackson-bom"
+      ],
+      "allowedVersions": "/^{{major}}\\.{{minor}}\\.\\d+$/"
+    },
+    {
+      "description": "Keep the JRE variant and the patch line of the Guava floor.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["com.google.guava:guava"],
+      "allowedVersions": "/^{{major}}\\.{{minor}}\\.\\d+-jre$/"
+    },
+    {
+      "description": "The Boot BOM supplies the jOOQ codegen version. Platform supplies its own artifact and plugin versions at release time.",
+      "matchDepNames": [
+        "org.jooq.jooq-codegen-gradle",
+        "pl.seniordeveloper:*",
+        "seniordev.*",
+        "@seniordeveloper-pl-dominik-sienkiewicz/**",
+        "@dominiksienkiewicz/**"
+      ],
+      "enabled": false
     }
   ],
   "customManagers": [
     {
       "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/renovate-version$/"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "depNameTemplate": "renovate",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
       "description": "The frontend canon: every exact version in versions.json, from npm.",
       "managerFilePatterns": ["/^frontend/packages/versions/versions\\.json$/"],
       "matchStrings": ["\"(?<depName>@?[a-z0-9][^\"]*)\":\\s*\"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
-      "datasourceTemplate": "npm"
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "Maven versions used through generated constants or build scripts, without a library or plugin alias in the catalog.",
+      "managerFilePatterns": ["/^gradle/catalog/libs\\.versions\\.toml$/"],
+      "matchStrings": ["# renovate: depName=(?<depName>[\\w.:-]+)(?: registryUrl=(?<registryUrl>https://[^\\s]+))?\\r?\\n[A-Za-z][A-Za-z0-9]*[ \\t]*=[ \\t]*\"(?<currentValue>[^\"\\s]+)\""],
+      "datasourceTemplate": "maven",
+      "versioningTemplate": "maven"
     },
     {
       "customType": "regex",

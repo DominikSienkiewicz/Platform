@@ -398,7 +398,7 @@ jobs:
         with:
           node-version: "24"
       - name: renovate-config-validator --strict
-        run: npx --yes --package renovate@44.132.5 -- renovate-config-validator --strict renovate.json default.json
+        run: npx --yes --package "renovate@$(< .github/renovate-version)" -- renovate-config-validator --strict renovate.json default.json
 
   # Wersja Platform dla backend-ci-smoke. Commit wydania z release.sh podbija pin startera do wersji, której
   # GitHub Packages jeszcze nie ma: release.yml publikuje ją dopiero po zielonym verify (= ten workflow), a push
@@ -524,6 +524,24 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the proposed dependency release
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          startsWith(github.head_ref, 'renovate/') && github.event.pull_request.user.type == 'Bot'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          PROPOSAL: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git merge-base --is-ancestor "$BASE" "$PROPOSAL" || { echo "::error::Update this dependency branch against main."; exit 1; }
+          pin=gradle/build-logic/gradle.properties
+          old=$(git show "$BASE:$pin" | sed -n 's/^platformVersion=//p')
+          new=$(git show "$PROPOSAL:$pin" | sed -n 's/^platformVersion=//p')
+          [[ "$new" != "$old" ]] || { echo "::error::Wait for the daily job to prepare the release version and changelog."; exit 1; }
+          bash scripts/changelog-section.sh --consumer-action "$new" CHANGELOG.md
       # Każdy śledzony *.test.sh poza frontend/ (tamte odpala `pnpm -r test`) — nowy test nie
       # wymaga dopisania do listy. Wszystkie biegną do końca, wynik zbiorczy jak w jobie gradle.
       - name: Wszystkie testy skryptów

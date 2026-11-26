@@ -133,8 +133,8 @@ lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-
 applies the convention plugins from source and declares every catalog library. Before the probe runs,
 the workflow publishes the scanned commit's `platform-bom` to Maven local, and the probe declares it as a
 platform, so the SBOM carries the CVE floors a consumer gets; `scripts/check-canon-floors.py` fails the
-scan when a Jackson or Tomcat component of the SBOM is below its catalog floor. It runs every Monday
-at 04:00 UTC, before the consumers' weekly scans, and on every push to `main` that changes the canon.
+scan when a Jackson or Tomcat component of the SBOM is below its catalog floor. It runs daily
+at 04:07 UTC, and on every push to `main` that changes the canon.
 Grype fails it on a HIGH or CRITICAL finding that has a fix. It is advisory and does not gate releases.
 `workflow_dispatch` with `ref=vX.Y.Z` scans the canon of an older release, for example to tell a
 consumer which releases are affected.
@@ -256,8 +256,9 @@ scripts/write-verification-metadata.sh
 ```
 
 It runs two passes per module with `--refresh-dependencies`, as `platform-bump` does for consumers:
-`build` (in build-logic without the TestKit suite), then `dependencies`. A Renovate pull request that
-bumps the catalog stays red on verification until you run the script and push its result to that branch.
+`build` (in build-logic without the TestKit suite), then `dependencies`. The daily updater invokes `scripts/refresh-catalog-update.sh <base-commit>` for catalog changes.
+This reads jOOQ from the selected Spring Boot BOM, regenerates the agent stack and runs both passes
+with `--write-locks`. The maintainer reviews the resulting checksums in the dependency PR.
 `gradle/catalog` has no file: it resolves nothing, as its empty lockfile shows. `test-fixtures` and
 `observability-starter` include `gradle/build-logic` for their convention plugin, and in a composite build the
 root's file verifies everything, so their files also hold the checksums of the plugin classpath.
