@@ -3,7 +3,7 @@
 ## Bootstrap
 
 Frontend requirements: Node.js ≥ 22.13 (this repository is built with Node 24) and pnpm
-11.18.0.
+11.29.0.
 
 ```bash
 # Gradle — publish every module of gradle/maven-modules.txt to the local Maven repository

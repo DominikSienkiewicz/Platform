@@ -99,20 +99,12 @@ opublikuj, podbij pin w repo konsumenta.
    automatycznie, dostaje idempotentną migrację `<SINCE>-<slug>.sh` (bez sieci, z testem before/after
    w `test/migrations/`), a jej wpis w CHANGELOG podaje slug albo „manual". `platform-bump` odpala runner
    z tarballa wydania DOCELOWEGO.
-7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.1 zarządza Netty 4.2.17.Final i PostgreSQL
-   42.7.13 — usunięto starsze piny CVE. Nie przywracaj ich bez sprawdzenia BOM-a.
-   Nadpisanie zgodności `lombok.version` 1.18.48 pozostaje, bo BOM ma 1.18.46 niezgodne
-   z javac 27. Nadpisania CVE `tomcat.version` 11.0.29, `jackson-bom.version` 3.1.8
-   i `jackson-2-bom.version` 2.21.8 wróciły, bo Boot 4.1.1 (najnowszy) zarządza podatnymi 11.0.24,
-   3.1.5 i 2.21.5 — wykrył to `canon-cve-scan.yml`; wersje stoją tylko w katalogu, a nakłada je `platform-bom`
-   (constraints z `because`, Jackson importowany przed Bootem), który importują konwencje — zdejmij je, gdy BOM
-   Boota dojdzie do poprawek. Podłoga CVE `guava` 33.7.2-jre (CVE-2026-102554) to constraint `platform-bom` bez
-   właściwości Boota (Boot Guavą nie zarządza): Javers 7.11.7–7.11.9 ciągnie 33.5.0-jre — zdejmij ją, gdy Javers
-   przyniesie >= 33.7.2. `spring-modulith-core` 2.1.1 nadal ciągnie ArchUnit 1.4.2, więc zarządzana
-   zależność ArchUnit 1.5.0 pozostaje na wszystkich konfiguracjach, także runtime.
-   Usuń te nadpisania dopiero, gdy upstream zapewni zgodne wersje; zarządzanie ArchUnit na runtime
-   pilnuje `PlatformToolVersionMirrorTest`. Polityka nadpisań (ostateczność, warunek usunięcia przy każdym):
-   `docs/adr/0008-overrides-are-a-last-resort.md`; tag `integration` to kontrakt (ADR-0009), `AI_AGENT` — ADR-0010.
+7. **Nadpisania ponad BOM-em Boota**: Boot 4.1.3 dostarcza zgodny Lombok 1.18.48 i Netty 4.2.20.Final.
+   Katalog wyznacza podłogi dla PostgreSQL JDBC, obu BOM-ów Jacksona, osadzonego Tomcata, Logbacka i
+   OpenTelemetry. Tomcat pozostaje na 11.0.29 do publikacji 11.0.30. Guava ma osobną podłogę także
+   na classpath narzędzi. Jacksona 2 dla pluginów ustala `jackson2Tooling`. Każdy wyjątek i warunek
+   usunięcia opisuje `docs/versions.md`. Modulith 2.1.3 nadal wprowadza ArchUnit 1.4.2, więc konwencje
+   wymagają ArchUnit 1.5.0 także na runtime. Patrz ADR-0008, ADR-0009 (tag `integration`) i ADR-0010 (`AI_AGENT`).
 8. **SonarCloud żyje w `quality-conventions`** — repo NIE deklarują inline `id("org.sonarqube")` ani
    bloku `sonar{}`. Plugin Sonara stoi tylko w KORZENIU: w jednomodułowym buildzie aplikuje go
    `quality-conventions`, w wielomodułowym root aplikuje `seniordev.sonar-conventions`, a moduły dopisują swój raport

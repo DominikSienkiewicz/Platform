@@ -11,7 +11,7 @@ of every library they manage. Twice the BOM chose a version Platform could not s
 
 - for compatibility: Boot 4.1.1 pins Lombok 1.18.46, which fails on javac 27, and
   `spring-modulith-core` 2.1.1 pulls ArchUnit 1.4.2, which cannot read Java 27 class files;
-- for security: Boot 4.1.1, the newest Boot, manages Tomcat 11.0.24 and Jackson 3.1.5 and 2.21.5,
+- for security: Boot 4.1.1, the newest Boot when this decision was adopted, manages Tomcat 11.0.24 and Jackson 3.1.5 and 2.21.5,
   each with HIGH or CRITICAL advisories fixed in a later patch of the same line.
 
 The frontend has the same pressure from transitive npm packages. An override fixes the version
@@ -45,6 +45,10 @@ languages.
   only for a parent that pins the exact vulnerable version, it is part of the canon, and it is
   removed in every consumer in the release that removes it from the canon, because `platform-bump`
   does not delete an override the canon dropped.
+
+The November 2026 security refresh keeps consumers on Boot 4.1.x. Logback and OpenTelemetry
+require a newer minor for the fixes on this train. Their [removal conditions](../versions.md#overrides-above-the-spring-boot-bom)
+track the corresponding Boot-managed versions.
 
 ## Consequences
 

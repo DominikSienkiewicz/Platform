@@ -59,6 +59,23 @@ grep -qF 'com.google.guava:guava 33.5.0-jre is below the floor 33.7.2-jre (guava
 sbom guava-at-floor com.google.guava:guava:33.7.2-jre
 run guava-at-floor guava-libs || fail 'Guava at its floor must pass'
 
+cat > "$work/runtime-libs.versions.toml" <<'TOML'
+[versions]
+postgresqlJdbc = "42.7.15"
+openTelemetry = "1.68.0"
+logback = "1.6.8"
+TOML
+sbom boot-runtime org.postgresql:postgresql:42.7.14 io.opentelemetry:opentelemetry-api:1.62.0 \
+  ch.qos.logback:logback-core:1.5.38 ch.qos.logback:logback-classic:1.5.38
+if run boot-runtime runtime-libs; then fail 'the scan must reject the older runtime versions managed by Boot'; fi
+for coordinate in org.postgresql:postgresql io.opentelemetry:opentelemetry-api ch.qos.logback:logback-core ch.qos.logback:logback-classic; do
+  grep -qF "$coordinate " "$work/out.txt" || fail "the scan must identify $coordinate below its floor"
+done
+sbom patched-runtime org.postgresql:postgresql:42.7.15 io.opentelemetry:opentelemetry-api:1.68.0 \
+  ch.qos.logback:logback-core:1.6.8 ch.qos.logback:logback-classic:1.6.8
+run patched-runtime runtime-libs || fail 'the patched runtime must pass'
+grep -qF 'OK: 4 components' "$work/out.txt" || fail 'the scan must check each runtime component'
+
 # Każda podłoga CVE z gradle/bom (`because("CVE`) ma swój klucz w skrypcie. Klucz stoi w deklaracji nad
 # `because`; sam powód cytuje wersję Boota (`libs.versions.springBoot`), która podłogą nie jest.
 python3 "$root/scripts/check-canon-floors.py" --keys > "$work/keys.txt"

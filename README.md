@@ -9,7 +9,7 @@ are published as versioned artifacts, and are consumed like any other dependency
 ![Java 27](https://img.shields.io/badge/Java-27-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
 ![Gradle 9](https://img.shields.io/badge/Gradle-9-02303A?style=for-the-badge&logo=gradle&logoColor=white)
 ![Kotlin DSL](https://img.shields.io/badge/Kotlin-DSL-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-![TypeScript 6](https://img.shields.io/badge/TypeScript-6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![TypeScript 7](https://img.shields.io/badge/TypeScript-7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
 [![CI](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform/actions/workflows/ci.yml)
@@ -413,8 +413,8 @@ reusable CI workflows install it with `setup-java` instead ([`docs/versions.md`]
 runtime image is `sapmachine:27-jre`.
 Consumers run Gradle 9.8.1 or newer, the first Gradle that starts on JDK 27 (9.6.1 stops with Groovy's
 "Unsupported class file major version 71"): TestKit builds a consumer on that minimum. Platform's own wrappers run
-the catalog's version, 9.8.2, and `platform-bump` moves an older consumer wrapper up to it, never a newer one down.
-Node.js ≥ 22.13 (built with Node 24) and pnpm 11.18.0 for the frontend packages, which declare the
+the catalog's version, 9.9.2, and `platform-bump` moves an older consumer wrapper up to it, never a newer one down.
+Node.js ≥ 22.13 (built with Node 24) and pnpm 11.29.0 for the frontend packages, which declare the
 Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases
 are in the [compatibility matrix](docs/compatibility.md). Every Monday `upstream-canary.yml` builds a
 starter on the current Gradle release candidate and watches for an `eclipse-temurin` image of the
