@@ -411,8 +411,7 @@ and compiles Platform's Java modules and consumers on toolchain 27. The JVM star
 Gradle selects or downloads Java 27; Foojay provisions the toolchain locally when it is not installed, and the
 reusable CI workflows install it with `setup-java` instead ([`docs/versions.md`](docs/versions.md)). The backend
 runtime image is `sapmachine:27-jre`.
-Consumers run Gradle 9.8.1 or newer, the first Gradle that starts on JDK 27 (9.6.1 stops with Groovy's
-"Unsupported class file major version 71"): TestKit builds a consumer on that minimum. Platform's own wrappers run
+Platform supports consumers on Gradle 9.8.1 or newer. TestKit builds a consumer on that minimum with JDK 27. Platform's own wrappers run
 the catalog's version, 9.9.2, and `platform-bump` moves an older consumer wrapper up to it, never a newer one down.
 Node.js ≥ 22.13 (built with Node 24) and pnpm 11.29.0 for the frontend packages, which declare the
 Node range in `engines`; CI runs the frontend workspace on both Node 22.13.0 and 24. Earlier releases

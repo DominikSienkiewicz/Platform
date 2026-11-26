@@ -269,7 +269,7 @@ reads the entry from the catalog of the target release and moves an older consum
 the distribution's SHA-256. A newer wrapper stays, as the repository's own choice, and the bump says so.
 
 A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
-`gradle/build-logic/gradle.properties` (9.8.1, the first Gradle that starts on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
+`gradle/build-logic/gradle.properties` (9.8.1 on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
 consumer on that version, and `seniordev.settings-conventions` fails an older build with a message
 that names the fix. Raising the minimum is a consumer action: a MINOR release with a CHANGELOG entry.
 
@@ -322,7 +322,7 @@ bump: CI installs with `--frozen-lockfile`.
 ### TypeScript compiler and tooling API
 
 The native TypeScript 7 compiler supplies `tsc` through the exact npm alias
-`@typescript/native`. ESLint, Next.js and the OpenAPI generator import the JavaScript compiler API
+`typescript-native`. ESLint, Next.js and the OpenAPI generator import the JavaScript compiler API
 through `typescript`, which points to the TypeScript 6 compatibility package. Keep both entries
 when editing a consumer manifest. Use `npm exec -- tsc --version` to check the native compiler.
 [Microsoft's side-by-side configuration](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-60)
