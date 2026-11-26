@@ -207,6 +207,9 @@ and starts release verification. [Setup and release procedure](RELEASING.md#dail
 
 ### From a tag to a consumer pull request
 
+For a manual release, run `./release.sh` on a clean `main` synchronized with `origin/main`.
+It shows the proposed version and release notes for confirmation. [Release runbook](docs/runbooks/cut-release.md)
+
 Read it top to bottom: nothing is published before `ci.yml` passes on the tagged commit, and a consumer adopts
 the release through a pull request, never by itself.
 

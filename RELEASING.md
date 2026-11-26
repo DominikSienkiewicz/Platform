@@ -184,24 +184,26 @@ automatically. [GitHub workflow triggers](https://docs.github.com/en/actions/how
    `scripts/release-notes.sh v<previous>..HEAD` prints what it would compose. To write the notes by hand
    instead, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and start a new empty `## [Unreleased]`
    above it; the section must have a `### Consumer action required` subsection, `None.` when nothing is
-   required. In [docs/compatibility.md](docs/compatibility.md), give the top row that version and the
-   release date when it reads `unreleased`.
+   required. The release script stamps a pending top row in the [compatibility matrix](docs/compatibility.md)
+   with the version and release date.
 3. Commit and push those changes through the normal branch and merge flow, so `main` equals
    `origin/main` with a clean tree.
-4. Release:
+4. Run the release helper and confirm the displayed version and notes.
 
 ```bash
-./release.sh "fix: short description"
+./release.sh
 ```
 
-```bash
-./release.sh "feat: short description" 1.6.0
-```
+With no arguments it uses the published tag for the current `platformVersion` and checks every
+commit since that tag for consumer actions. A recorded action selects the next MINOR. Otherwise
+it proposes the next PATCH. A prepared changelog section for the next PATCH or MINOR takes
+precedence and must satisfy the same checks. Running it again at the released commit reports
+that the tag already exists and finishes.
 
-The first form releases a patch (current version + 0.0.1), the second an explicit version. Append
-`-y` after the version, or set `ASSUME_YES=1`, to skip the confirmation prompt. The message is
-required: an English Conventional Commit, which becomes the body of the release commit
-`chore(release): platform X.Y.Z`.
+To supply your own release message, use `./release.sh "fix: short description"` for the next
+patch, or `./release.sh "feat: publish under new coordinates" 3.0.0` for an explicit version.
+The English Conventional Commit becomes the body of the release commit. Append `-y` after
+an explicit version or set `ASSUME_YES=1` to skip confirmation.
 
 The notes are the version's section of CHANGELOG.md. A hand-written `## [X.Y.Z] - YYYY-MM-DD` section is
 used as it is. Without one, `release.sh` composes it with `scripts/release-notes.sh` from the commits since
@@ -224,7 +226,7 @@ Before it changes anything, `release.sh` refuses to run when:
 - the message is not a Conventional Commit or contains Polish characters;
 - the version's tag already exists;
 - a hand-written section for the version has no `### Consumer action required` subsection;
-- an argument does not fit `"<message>" [X.Y.Z] [-y]`, for example a leftover `--skip-canary`;
+- supplied arguments do not fit `"<message>" [X.Y.Z] [-y]`, for example a leftover `--skip-canary`;
 - the section has to be composed, but CHANGELOG.md has no `## [Unreleased]` heading, has entries under
   it, or a first-parent subject since the previous tag is not a Conventional Commit (write the section
   by hand in those cases);
@@ -243,8 +245,12 @@ Before it changes anything, `release.sh` refuses to run when:
 
 It then bumps `platformVersion` in every `gradle/*/gradle.properties` and
 `templates/jvm/*/gradle.properties`, and `version` in every `frontend/packages/*/package.json`,
-commits only those files (and CHANGELOG.md when it composed the section), pushes `main`, and creates
-and pushes the annotated `vX.Y.Z` tag, whose message is the CHANGELOG section. The tree therefore always carries one
+and commits them with the generated changelog section and any pending compatibility row.
+It checks the branch, commit and working tree again after confirmation. It pushes the release
+commit to `main` together with the annotated `vX.Y.Z` tag using `git push --atomic`.
+If the remote rejects the push, both refs stay at their previous values. Inspect the rejection
+and the remote refs before retrying the printed command for the prepared local commit and tag.
+The tag message is the CHANGELOG section. The tree therefore always carries one
 version; `templates/tests/platform-version-sync.test.sh` fails when a file drifts or a build script
 falls back to a hard-coded version, and `templates/tests/release-script.test.sh` pins every
 refusal above.

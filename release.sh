@@ -2,7 +2,7 @@
 # release.sh — świadome wydanie Platform (publish-only, deliberate versioning).
 #
 # Bumpuje platformVersion we wszystkich miejscach, commituje jako "chore(release): platform X.Y.Z"
-# z TWOIM message w body, taguje annotated vX.Y.Z treścią sekcji CHANGELOG.md i pcha main + tag.
+# z komunikatem wydania w body, taguje annotated vX.Y.Z treścią sekcji CHANGELOG.md i pcha main + tag atomowo.
 # Ręcznie napisana sekcja "## [X.Y.Z] - YYYY-MM-DD" wygrywa; bez niej release.sh składa ją z commitów od taga
 # poprzedniego wydania (scripts/release-notes.sh), wstawia pod "## [Unreleased]" i commituje CHANGELOG.md razem
 # z plikami wersji.
@@ -10,7 +10,7 @@
 # samej sekcji.
 #
 # Odmawia przed jakąkolwiek zmianą, gdy drzewo robocze nie jest czyste, bieżąca gałąź to nie
-# main albo HEAD różni się od origin/main — commit wydania zawiera wyłącznie pliki wersji (i złożoną sekcję).
+# main albo HEAD różni się od origin/main. Commit wydania obejmuje wersje, złożone notatki i oczekujący wiersz macierzy zgodności.
 # Kontrakt (docs/adr/0002-release-and-versioning-contract.md) — odmawia też, gdy:
 #   - message nie jest angielskim Conventional Commit;
 #   - ręcznie napisana sekcja wersji nie ma podsekcji "### Consumer action required";
@@ -23,6 +23,7 @@
 #     BREAKING CHANGE, a wydanie byłoby patchem albo jego sekcja w CHANGELOG mówi "None.".
 #
 # Użycie:
+#   ./release.sh                               # dobiera PATCH lub MINOR z historii i pokazuje plan
 #   ./release.sh "fix: opis zmiany"            # patch +0.0.1 od aktualnej wersji
 #   ./release.sh "feat: opis" 1.2.0            # konkretna wersja
 #   ./release.sh "..." 1.2.0 -y                # bez pytania o potwierdzenie (też: ASSUME_YES=1)
@@ -31,8 +32,13 @@ cd "$(dirname "$0")"   # zawsze z roota Platform
 
 MSG="${1:-}"
 VERSION="${2:-}"
+LATEST=0
+if [[ $# -eq 0 ]]; then
+  LATEST=1
+  MSG="chore: release the latest changes on main"
+fi
 [[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
-# Tylko forma "<message>" [X.Y.Z] [-y]: inny argument (np. dawne --skip-canary) to pomyłka, której nie wolno pominąć.
+# Gdy podano argumenty, obowiązuje forma "<message>" [X.Y.Z] [-y]: inny argument (np. dawne --skip-canary) to pomyłka, której nie wolno pominąć.
 STRAY=""
 if [[ "${2:-}" == -* ]]; then STRAY="$2"
 elif [[ $# -ge 3 ]] && [[ "$3" != "-y" ]]; then STRAY="$3"
@@ -82,17 +88,38 @@ git fetch --quiet --tags origin || {
   echo "Fix that, then release: the composed notes and the history check start at the previous release's tag."
   exit 1
 }
-[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
+planned_head="$(git rev-parse HEAD)"
+[[ "$planned_head" == "$(git rev-parse origin/main)" ]] \
   || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
 
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
-# Wersja: jawna (arg 2) albo patch +0.0.1 od aktualnej.
+# Tylko tryb bezargumentowy dobiera MINOR z historii lub przygotowanej sekcji.
+NEWEST="$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - / { print substr($2, 2, length($2) - 2); exit }' CHANGELOG.md)"
 if [[ -z "$VERSION" ]]; then
-  echo "$CUR" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+  [[ "$CUR" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
     || { echo "Aktualne platformVersion '$CUR' nie jest X.Y.Z — podaj wersję jawnie."; exit 1; }
   IFS='.' read -r MA MI PA <<< "$CUR"
   VERSION="$MA.$MI.$((PA + 1))"
+  if [[ "$LATEST" == 1 ]]; then
+    previous="refs/tags/v$CUR"
+    if ! git ls-remote --exit-code --refs origin "$previous" > /dev/null || ! git merge-base --is-ancestor "$previous" HEAD; then
+      echo "Cannot select a release: confirm v$CUR is published on origin and belongs to main."
+      exit 1
+    fi
+    if [[ "$(git rev-parse "$previous^{commit}")" == "$(git rev-parse HEAD)" ]]; then
+      echo "Nothing to release: main is already tagged v$CUR."
+      exit 0
+    fi
+    next_minor="$MA.$((MI + 1)).0"
+    markers="$(bash scripts/release-notes.sh --markers "$previous..HEAD")"
+    # Gotowa sekcja następnego PATCH/MINOR przechodzi dalej do wspólnych bramek wydania.
+    if [[ "$NEWEST" == "$next_minor" ]]; then
+      VERSION="$NEWEST"
+    elif [[ "$NEWEST" != "$VERSION" && -n "$markers" ]]; then
+      VERSION="$next_minor"
+    fi
+  fi
 fi
 echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Wersja '$VERSION' nie jest X.Y.Z"; exit 1; }
 
@@ -108,12 +135,16 @@ CONTRACT="docs/adr/0002-release-and-versioning-contract.md"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -r "$WORK_DIR"' EXIT
 CHANGELOG=CHANGELOG.md
+RELEASE_DATE=$(date +%Y-%m-%d)
 COMPOSED_FROM=""
 if ! bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md > /dev/null; then
-  LAST_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' HEAD 2>/dev/null || true)"
+  if [[ "$LATEST" == 1 ]]; then
+    LAST_TAG="v$CUR"
+  else
+    LAST_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*.[0-9]*.[0-9]*' HEAD 2>/dev/null || true)"
+  fi
   COMPOSED_FROM="${LAST_TAG:-the first commit}"
   # Najnowsza sekcja bez taga to niewydana ręczna sekcja (np. 1.13.0 przed wydaniem): nowa sekcja stanęłaby nad nią.
-  NEWEST="$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - / { print substr($2, 2, length($2) - 2); exit }' CHANGELOG.md)"
   if [[ -n "$NEWEST" ]] && ! git rev-parse -q --verify "refs/tags/v$NEWEST" > /dev/null \
     && ! git ls-remote --exit-code --tags origin "v$NEWEST" > /dev/null 2>&1; then
     echo "The newest section of CHANGELOG.md, \"## [$NEWEST]\", has no v$NEWEST tag: release $NEWEST first"
@@ -132,7 +163,7 @@ if ! bash scripts/changelog-section.sh "$VERSION" CHANGELOG.md > /dev/null; then
     exit 1
   fi
   compose_status=0
-  awk -v heading="## [$VERSION] - $(date +%Y-%m-%d)" -v notes="$WORK_DIR/notes.md" '
+  awk -v heading="## [$VERSION] - $RELEASE_DATE" -v notes="$WORK_DIR/notes.md" '
     /^## \[Unreleased\][[:space:]]*$/ {
       found = 1; inside = 1
       print; print ""; print heading; print ""
@@ -221,6 +252,11 @@ if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
   [[ "$ans" = "y" ]] || [[ "$ans" = "Y" ]] || { echo "Przerwane."; exit 0; }
 fi
 
+if [[ "$(git symbolic-ref --quiet --short HEAD)" != main || "$(git rev-parse HEAD)" != "$planned_head" || -n "$(git status --porcelain --untracked-files=all)" ]]; then
+  echo "The checkout changed after planning the release. Review the changes and run release.sh again." >&2
+  exit 1
+fi
+
 # Bump: platformVersion w gradle.properties modułów i starterów + "version" paczek npm.
 for f in "${PROPERTY_FILES[@]}"; do
   sed -i.bak -E "s/^platformVersion=.*/platformVersion=$VERSION/" "$f"
@@ -236,13 +272,30 @@ if [[ -n "$COMPOSED_FROM" ]]; then
   cp "$WORK_DIR/CHANGELOG.md" CHANGELOG.md
   git add -- CHANGELOG.md
 fi
+# Pierwszy wiersz macierzy opisuje wydawany stos tylko wtedy, gdy oznaczono go jako oczekujący.
+MATRIX=docs/compatibility.md
+if [[ -f "$MATRIX" ]]; then
+  awk -v replacement="| $VERSION | $RELEASE_DATE |" '
+    /^<!-- compatibility-matrix -->$/ { first_row = NR + 3 }
+    NR == first_row { sub(/^\| [Uu]nreleased \| [Pp]ending \|/, replacement) }
+    { print }
+  ' "$MATRIX" > "$WORK_DIR/matrix.md"
+  if ! cmp -s "$MATRIX" "$WORK_DIR/matrix.md"; then
+    cp "$WORK_DIR/matrix.md" "$MATRIX"
+    git add -- "$MATRIX"
+  fi
+fi
 git commit -m "chore(release): platform $VERSION" -m "$MSG"
-git push origin main
 # --cleanup=verbatim: domyślne "strip" wycina linie zaczynające się od '#', czyli nagłówki Markdown sekcji.
 TAG_MESSAGE="$WORK_DIR/tag-message"
 printf 'Platform %s\n\n%s\n' "$VERSION" "$SECTION" > "$TAG_MESSAGE"
-git tag -a --cleanup=verbatim -F "$TAG_MESSAGE" "v$VERSION"
-git push origin "v$VERSION"
+release_commit=$(git rev-parse HEAD)
+git tag -a --cleanup=verbatim -F "$TAG_MESSAGE" "v$VERSION" "$release_commit"
+if ! git push --atomic origin "$release_commit:refs/heads/main" "refs/tags/v$VERSION"; then
+  echo "The release commit and annotated tag are ready locally. Check origin/main and v$VERSION before retrying:" >&2
+  echo "  git push --atomic origin $release_commit:refs/heads/main refs/tags/v$VERSION" >&2
+  exit 1
+fi
 
 echo ""
 echo "════════════════════════════════════════════════"

@@ -130,8 +130,10 @@ Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach p
 napisana sekcja wygrywa; bez niej `release.sh` składa ją `scripts/release-notes.sh` z commitów od ostatniego taga
 (trailery `Consumer-Action:` i commity z `!`, inaczej `None.`) i wstawia pod `## [Unreleased]`.
 
-**`./release.sh` wymaga message jako 1. argumentu** (angielski Conventional Commit, zero atrybucji AI) —
-trafia do BODY commita `chore(release): platform X.Y.Z` (`Użycie: ./release.sh "commit message" [X.Y.Z] [-y]`). Formy:
+**`./release.sh` bez argumentów** proponuje PATCH lub MINOR, pokazuje notatki i prosi o potwierdzenie.
+Uwzględnia akcje konsumentów z pełnej historii oraz przygotowaną sekcję następnego wydania.
+Własny komunikat w formacie angielskiego Conventional Commit trafia do treści commita wydania.
+
 - `./release.sh "fix: opis"` — patch +0.0.1 od aktualnej wersji
 - `./release.sh "feat: opis" 1.2.0` — konkretna wersja (obowiązkowa dla `feat`/`!:`/`BREAKING CHANGE`)
 - `./release.sh "..." 1.2.0 -y` — pomiń potwierdzenie (lub `ASSUME_YES=1`)
@@ -140,7 +142,7 @@ Skrypt odmawia, gdy drzewo robocze nie jest czyste, gałąź ≠ `main`, `HEAD` 
 angielskim Conventional Commit, argument nie pasuje do formy, sekcji nie da się złożyć (brak `## [Unreleased]`, wpisy
 pod nim, temat spoza Conventional Commits, najnowsza sekcja bez taga, brak commitów od taga) albo patch miałby akcję
 konsumenta.
-Commituje wyłącznie pliki wersji (i `CHANGELOG.md` ze złożoną sekcją) i tworzy annotated tag z treścią sekcji. `release.yml` publikuje dopiero po
+Commit wydania obejmuje pliki wersji, złożoną sekcję `CHANGELOG.md` oraz numer i datę w oczekującym wierszu macierzy zgodności. Skrypt wysyła commit i tag z treścią sekcji w jednym atomowym pushu. `release.yml` publikuje dopiero po
 zielonym CI (`verify` = `ci.yml`) na otagowanym commicie; ruchomego tagu `v1` nie ma (wycofany, ADR-0014).
 Ekstrakcja sekcji: `scripts/changelog-section.sh`; refusals pilnuje
 `templates/tests/release-script.test.sh`.
