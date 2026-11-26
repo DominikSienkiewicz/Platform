@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """check-canon-floors.py <bom.json> <libs.versions.toml>: the canon SBOM honours the catalog's CVE floors.
 
-platform-bom raises Jackson and Tomcat above the versions Spring Boot manages (CVE floors, `because("CVE…")` in
+platform-bom raises vulnerable dependency versions (documented security floors in
 gradle/bom/build.gradle.kts). canon-cve-scan.yml scans the SBOM of gradle/canon-probe, so a component below its
 floor means the probe lost platform-bom and Grype reports versions no consumer gets. A floor whose catalog key is
 missing (an older tag) is skipped. `--keys` prints the catalog keys this script enforces; its test compares them
@@ -20,6 +20,9 @@ FLOORS = {
         "org.apache.tomcat.embed:tomcat-embed-el",
         "org.apache.tomcat.embed:tomcat-embed-websocket",
     ],
+    "postgresqlJdbc": ["org.postgresql:postgresql"],
+    "openTelemetry": ["io.opentelemetry:opentelemetry-api"],
+    "logback": ["ch.qos.logback:logback-core", "ch.qos.logback:logback-classic"],
     "guava": ["com.google.guava:guava"],
 }
 

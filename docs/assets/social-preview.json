@@ -11,7 +11,7 @@
     },
     {
       "icon": "gradle",
-      "label": "Gradle 9.8",
+      "label": "Gradle 9.9",
       "color": "#1DA6C4"
     },
     {
@@ -21,7 +21,7 @@
     },
     {
       "icon": "typescript",
-      "label": "TypeScript 6",
+      "label": "TypeScript 7",
       "color": "#3178C6"
     }
   ],

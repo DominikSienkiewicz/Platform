@@ -6,6 +6,7 @@ release reads its row; a maintainer who bumps a toolchain, a BOM or Gradle adds 
 <!-- compatibility-matrix -->
 | Platform | Released | Java toolchain | Runtime image | JDK running Gradle | Gradle minimum | Gradle tested | Spring Boot | Spring Modulith | Spring AI | Node | Next.js | pnpm (Platform) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Unreleased | Pending | 27 | `sapmachine:27-jre` | 27 | 9.8.1 | 9.9.2 | 4.1.3 | 2.1.3 | 2.0.3 | >=22.13 | 16.4.6 | 11.29.0 |
 | 1.11.1 | 2026-11-20 | 27 | `sapmachine:27-jre` | 27 | 9.8.1 | 9.8.2 | 4.1.1 | 2.1.1 | 2.0.2 | >=22.13 | 16.4.6 | 11.18.0 |
 | 1.10.3 | 2026-11-12 | 27 | `sapmachine:27-jre` | 27 | 9.8.1 | 9.8.2 | 4.1.1 | 2.1.1 | 2.0.2 | >=22.13 | 16.4.2 | 11.18.0 |
 | 1.8.8 | 2026-11-01 | 27 | `sapmachine:27-jre` | 27 | 9.8.1 | 9.8.2 | 4.1.1 | 2.1.1 | 2.0.1 | >=22.13 | 16.4.2 | 11.18.0 |
@@ -28,8 +29,7 @@ a Dockerfile (`platformRuntimeImageCheck`).
 - **Runtime image**: the final `FROM` of [`templates/Dockerfile.backend`](../templates/Dockerfile.backend).
 - **JDK running Gradle**: the JDK `backend-ci.yml` runs Gradle on; Platform's build-logic is compiled
   for it. From 1.8.0 it equals the Java toolchain, one JDK for everything
-  ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)), and the Gradle minimum is the
-  first Gradle that starts on it.
+  ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)).
 - **Gradle minimum**: the oldest Gradle the settings plugin accepts and TestKit builds a consumer on.
   **Gradle tested**: Platform's own wrappers and the version `platform-bump` gives a consumer.
 - **Spring Boot, Spring Modulith, Spring AI**: the BOMs `seniordev.spring-modulith-conventions`

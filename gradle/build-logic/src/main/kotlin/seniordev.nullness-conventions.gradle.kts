@@ -24,6 +24,11 @@ plugins {
 dependencies {
 	"errorprone"("com.google.errorprone:error_prone_core:${PlatformVersions.ERROR_PRONE}")
 	"errorprone"("com.uber.nullaway:nullaway:${PlatformVersions.NULLAWAY}")
+	constraints {
+		add("errorprone", "com.google.guava:guava:${PlatformVersions.GUAVA}") {
+			because("CVE-2026-118042: Error Prone runs on the annotation processor classpath")
+		}
+	}
 }
 
 tasks.withType<JavaCompile>().configureEach {

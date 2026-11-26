@@ -15,7 +15,12 @@ test("versions.json parses to a non-empty versions object", () => {
 
 test("every canon version is exact", () => {
   const exact = /^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/;
-  const loose = Object.entries(canon).filter(([, version]) => !exact.test(version));
+  const aliases = { typescript: "@typescript/typescript6", "typescript-native": "typescript" };
+  const loose = Object.entries(canon).filter(([name, version]) => {
+    const target = aliases[name];
+    const prefix = `npm:${target}@`;
+    return !exact.test(target && version.startsWith(prefix) ? version.slice(prefix.length) : version);
+  });
   assert.deepEqual(loose, [], "versions.json must hold exact versions, without ^, ~ or ranges");
 });
 

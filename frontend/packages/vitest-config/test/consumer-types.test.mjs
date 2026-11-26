@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
 const require = createRequire(import.meta.url);
-const tsc = require.resolve("typescript/bin/tsc");
+const tsc = fileURLToPath(new URL("./bin/tsc", import.meta.resolve("typescript-native/package.json")));
 const consumers = [];
 after(() => consumers.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 

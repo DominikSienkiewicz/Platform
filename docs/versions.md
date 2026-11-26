@@ -29,8 +29,8 @@ Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-cata
 `platform-test-fixtures`, `platform-observability-starter` and `seniordev.spring-modulith-conventions` import
 `platform-bom` of their own release, so the floors live in one place and reach every classpath those
 builds resolve. `PlatformBomImportFunctionalTest` holds the conventions to it with `dependencyInsight`:
-the BOM's Lombok, Jackson and Tomcat win, also over a consumer's `jackson-bom.version`, because the BOM
-imports the fixed Jackson BOMs before Boot ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)).
+Lombok follows Boot and the Platform Jackson and Tomcat floors win. The Jackson BOM imports precede Boot's,
+so a consumer's `jackson-bom.version` cannot lower those floors ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)).
 Consumers delete their own override blocks when they adopt that release. A build without the Spring
 conventions takes the same floors with:
 
@@ -58,6 +58,7 @@ sources contain no version literal.
 | `JAVA` | `JavaLanguageVersion.of(…)` in `seniordev.java-conventions` | `java` |
 | `GOOGLE_JAVA_FORMAT`, `CHECKSTYLE`, `JACOCO` | `seniordev.java-conventions` | `googleJavaFormat`, `checkstyle`, `jacoco` |
 | `SPOTBUGS`, `PITEST_TOOL`, `PITEST_JUNIT5` | `seniordev.quality-conventions` | `spotbugs`, `pitestTool`, `pitestJunit5` |
+| `GUAVA` | The Checkstyle and Error Prone tool classpaths | `guava` |
 | `PLATFORM` | the `platform-bom` import of `seniordev.spring-modulith-conventions` and the pin check | `platform` (the release) |
 | `JUNIT`, `ARCHUNIT` | the JUnit baseline of `seniordev.java-conventions`, the JUnit BOM and ArchUnit of `seniordev.spring-modulith-conventions` | `junit`, `archunit` |
 | `ERROR_PRONE`, `NULLAWAY` | the `errorprone` dependencies of `seniordev.nullness-conventions` | `errorprone`, `nullaway` |
@@ -75,39 +76,28 @@ Gradle, and on JDK 27 it picked a release that crashes on the new javac.
 
 ## Overrides above the Spring Boot BOM
 
-Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the previous
-`netty.version` and `postgresql.version` overrides have been removed. Keeping them
-would force versions older than the BOM. The `lombok.version` override remains at
-`1.18.48`: the BOM still pins 1.18.46, incompatible with javac 27.
+Spring Boot 4.1.3 manages Spring Framework 7.0.11, Spring Security 7.1.3, Netty 4.2.20.Final and Lombok 1.18.48. The jOOQ generator follows Boot's jOOQ version, 3.21.9.
 
-Platform raises three versions managed by the Spring Boot 4.1.1 BOM to address published vulnerabilities.
-
-| Property | Boot 4.1.1 | Override | Why |
+| Component | Boot 4.1.3 | Platform | Reason and removal condition |
 |---|---|---|---|
-| `tomcat.version` | 11.0.24 | 11.0.29 | The November advisories affect embedded core and WebSocket through 11.0.27. The BOM also aligns the EL module. [Apache Tomcat security advisories](https://tomcat.apache.org/security-11.html#Fixed_in_Apache_Tomcat_11.0.29) |
-| `jackson-bom.version` | 3.1.5 | 3.1.8 | HIGH advisories in jackson-core and jackson-databind, fixed in 3.1.7 |
-| `jackson-2-bom.version` | 2.21.5 | 2.21.8 | the same advisories in the 2.x line, fixed in 2.21.7 |
+| PostgreSQL JDBC | 42.7.14 | 42.7.15 | The November security release fixes SQL parsing, authentication and TLS issues. Remove when Boot manages 42.7.15 or later. [pgJDBC](https://jdbc.postgresql.org/) |
+| Embedded Tomcat | 11.0.27 | 11.0.29 | Retain the fixes for the November advisories across core, EL and WebSocket. Track the separate cluster TLS-PSK fix in 11.0.30. Remove when Boot covers the outstanding fixes. [Apache advisories](https://tomcat.apache.org/security-11.html) |
+| Jackson 3 BOM | 3.1.8 | 3.1.9 | Parser limits and polymorphic type handling. Remove when Boot manages 3.1.9 or later. [Release notes](https://github.com/FasterXML/jackson/wiki/Jackson-Release-3.1.9) |
+| Jackson 2 BOM | 2.21.8 | 2.21.9 | Corresponding parser and databinding fixes. Remove when Boot manages 2.21.9 or later. [Release notes](https://github.com/FasterXML/jackson/wiki/Jackson-Release-2.21.9) |
+| OpenTelemetry Java BOM | 1.62.0 | 1.68.0 | CVE-2026-118259 affects incoming W3C trace state. Align the API, context, SDK and exporters. Remove when Boot manages 1.68.0 or later. [OpenTelemetry advisory](https://github.com/open-telemetry/opentelemetry-java/security/advisories/GHSA-ccrj-gw8r-854m) |
+| Logback Classic and Core | 1.5.38 | 1.6.8 | CVE-2026-19880 and CVE-2026-104721 affect sifting appenders that use untrusted MDC values. Remove when Boot manages 1.6.8 or later. [Logback release notes](https://logback.qos.ch/news.html) |
 
-Each takes the newest patch of the line Boot manages, not a newer minor. Remove an override as soon
-as a Boot release manages a fixed version; `canon-cve-scan.yml` shows whether that release is clean.
+Guava has a separate floor because Boot does not manage it. Platform requires `33.8.0-jre` for
+the application BOM and Gradle tooling. Older versions can use excessive CPU when untrusted keys
+collide in `HashBiMap` or `LinkedHashMultimap`. Remove a floor when the dependencies that bring
+Guava onto that classpath resolve the fixed version themselves. [Guava advisory](https://github.com/google/guava/security/advisories/GHSA-v5x9-67m3-7m56)
 
-Guava has a CVE floor although Boot does not manage it. `javers-persistence-sql` 7.11.x, which
-`javers-spring-boot-starter-sql` brings, declares Guava 33.5.0-jre up to Javers 7.11.9, the newest release.
-That version has CVE-2026-102554 (GHSA-xxph-c9ww-hj94, HIGH, fixed in 33.7.2). Javers is not part of the frame: an
-application declares it in its own `appLibs` catalog. `platform-bom` still constrains `com.google.guava:guava` to the
-catalog's `guava` (33.7.2-jre) on every classpath it reaches, and `PlatformBomImportFunctionalTest` checks that a
-consumer declaring the Javers starter with its own version resolves it. Drop the floor when a Javers release brings
-Guava 33.7.2 or later.
-
-The convention plugins themselves carry one floor of their own. The CycloneDX Gradle plugin brings
-Jackson 2.22.2, with four HIGH advisories fixed in 2.22.3. `gradle/build-logic` therefore imports
-`com.fasterxml.jackson:jackson-bom` at the catalog's `jackson2Tooling` (2.22.3). The import is part of the
-plugin's published metadata, so it also applies on a consumer's Gradle build classpath. It never reaches
-an application, whose Jackson 2 stays at `jackson2Bom` from `platform-bom`. Drop it when CycloneDX brings
-Jackson 2.22.3 or later.
+On the Gradle plugin classpath, `jackson2Tooling` aligns Jackson 2 at 2.22.4 to fix
+CVE-2026-110879 in polymorphic deserialization. Remove this import once CycloneDX and the other
+plugins resolve a fixed Jackson version themselves. [Databind advisory](https://github.com/FasterXML/jackson-databind/security/advisories/GHSA-m8xf-2cr7-77ph)
 
 ArchUnit is overridden differently, because no BOM manages it and so there is no property to set:
-`spring-modulith-core` 2.1.1 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
+`spring-modulith-core` 2.1.3 declares ArchUnit `1.4.2` as a compile dependency, and that version cannot
 read class-file major 71 (javac 27). Spring Modulith builds `ApplicationModules` at application start,
 so on the runtime classpath it imports no classes and the context fails with "No classes found in
 packages". Tests never saw it, because `archunit-junit5` pulls the catalog version onto the test
@@ -133,7 +123,7 @@ lockfile resolved from `versions.json`, and the CycloneDX SBOM of `gradle/canon-
 applies the convention plugins from source and declares every catalog library. Before the probe runs,
 the workflow publishes the scanned commit's `platform-bom` to Maven local, and the probe declares it as a
 platform, so the SBOM carries the CVE floors a consumer gets; `scripts/check-canon-floors.py` fails the
-scan when a Jackson or Tomcat component of the SBOM is below its catalog floor. It runs daily
+scan when a checked component in the SBOM falls below its catalog floor. It runs daily
 at 04:07 UTC, and on every push to `main` that changes the canon.
 Grype fails it on a HIGH or CRITICAL finding that has a fix. It is advisory and does not gate releases.
 `workflow_dispatch` with `ref=vX.Y.Z` scans the canon of an older release, for example to tell a
@@ -211,9 +201,8 @@ The reusable `backend-ci.yml` and `deploy.yml` install the toolchain JDK with
 `org.gradle.java.installations.paths` in the Gradle user home. Gradle itself runs on the
 `java-version` JDK, which is the same Java 27 since 1.8.0: Platform builds and tests `build-logic` with Gradle on
 JDK 27 and supports no other JDK for Gradle ([ADR-0034](adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)).
-The Kotlin embedded in Gradle 9.8.2 (2.4.10) targets at most JVM 26, so `build-logic` pins its bytecode to 26 for
-Kotlin and Java until that Kotlin can target 27; both inputs stay, so a
-consumer can try a newer toolchain without moving Gradle. `templates/tests/jdk-everywhere.test.sh` fails
+Gradle 9.9.2 embeds Kotlin 2.4.21. Platform targets JVM 26 bytecode for its Kotlin and Java build logic
+to preserve compatibility with the minimum consumer Gradle. `templates/tests/jdk-everywhere.test.sh` fails
 when any JDK of the workflows, SDKMAN or the starters' daemon criteria leaves the
 catalog's `java`.
 
@@ -280,7 +269,7 @@ reads the entry from the catalog of the target release and moves an older consum
 the distribution's SHA-256. A newer wrapper stays, as the repository's own choice, and the bump says so.
 
 A consumer may run an older Gradle than Platform does, down to `minimumConsumerGradle` in
-`gradle/build-logic/gradle.properties` (9.8.1, the first Gradle that starts on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
+`gradle/build-logic/gradle.properties` (9.8.1 on JDK 27). `PlatformMinimumGradleFunctionalTest` builds a
 consumer on that version, and `seniordev.settings-conventions` fails an older build with a message
 that names the fix. Raising the minimum is a consumer action: a MINOR release with a CHANGELOG entry.
 
@@ -322,10 +311,18 @@ tested on the versions consumers run:
   and `frontend/packages/*/package.json` is the canon version;
 - `eslint-config`, `prettier-config` and `ui` declare their runtime dependencies and peers at the exact
   canon version;
-- the other packages keep peer ranges such as `^4`, which must admit the canon version;
+- the other packages keep peer ranges such as the Vitest preset's supported major versions, which must admit the published canon;
 - `react`, `react-dom` and `@types/node` are root devDependencies, because pnpm resolves the peers of
   workspace packages from the root and would otherwise pick versions off the canon.
 
 `frontend/packages/versions/test/self-canon.test.mjs` runs the guard on each of those manifests and
 checks the peer ranges. Regenerate `frontend/pnpm-lock.yaml` with `pnpm install` after a canon
 bump: CI installs with `--frozen-lockfile`.
+
+### TypeScript compiler and tooling API
+
+The native TypeScript 7 compiler supplies `tsc` through the exact npm alias
+`typescript-native`. ESLint, Next.js and the OpenAPI generator import the JavaScript compiler API
+through `typescript`, which points to the TypeScript 6 compatibility package. Keep both entries
+when editing a consumer manifest. Use `npm exec -- tsc --version` to check the native compiler.
+[Microsoft's side-by-side configuration](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-60)

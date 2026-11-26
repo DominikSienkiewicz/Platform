@@ -26,6 +26,8 @@ def load_values(paths):
             data = json.load(handle)
         versions = data.get("versions")
         values.update(versions if isinstance(versions, dict) else data)
+        if isinstance(versions, dict) and "typescript-native" in versions:
+            values["typescript"] = versions["typescript-native"].removeprefix("npm:typescript@")
     return values
 
 

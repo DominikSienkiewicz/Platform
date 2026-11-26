@@ -4,18 +4,18 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
-const tsc = createRequire(import.meta.url).resolve("typescript/bin/tsc");
+const nativeTsc = fileURLToPath(new URL("./bin/tsc", import.meta.resolve("typescript-native/package.json")));
+const editorTsc = fileURLToPath(import.meta.resolve("typescript/bin/tsc6"));
 const consumers = [];
 after(() => consumers.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
-function showConfig(tsconfig) {
+function showConfig(tsconfig, tsc = nativeTsc) {
   const dir = mkdtempSync(join(tmpdir(), "platform-tsconfig-"));
   consumers.push(dir);
   mkdirSync(join(dir, "node_modules", "@seniordeveloper-pl-dominik-sienkiewicz"), { recursive: true });
@@ -35,7 +35,9 @@ test("a consumer without its own include compiles its own files", () => {
 });
 
 test("next.json leaves paths to the consumer and adds the next plugin", () => {
-  const config = showConfig({ extends: "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json", include: ["src"] });
-  assert.equal(config.compilerOptions.paths, undefined, "paths in a preset resolve against node_modules");
-  assert.ok(config.compilerOptions.plugins.some((plugin) => plugin.name === "next"));
+  const next = { extends: "@seniordeveloper-pl-dominik-sienkiewicz/tsconfig/next.json", include: ["src"] };
+  assert.equal(showConfig(next).compilerOptions.paths, undefined, "paths in a preset resolve against node_modules");
+  const editorOptions = showConfig(next, editorTsc).compilerOptions;
+  assert.equal(editorOptions.paths, undefined);
+  assert.ok(editorOptions.plugins.some((plugin) => plugin.name === "next"), "the editor must load the Next.js plugin");
 });

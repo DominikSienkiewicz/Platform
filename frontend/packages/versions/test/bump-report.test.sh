@@ -14,6 +14,7 @@ java = "27"                 # toolchain
 jsoup = "1.23.2"
 wiremock = "3.13.2"
 mapstruct = "1.6.3"
+jackson2Tooling = "2.22.3"
 
 [libraries]
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
@@ -25,10 +26,23 @@ modulith-web = [
   "jsoup",
 ]
 TOML
-sed -e 's/^java = "27"/java = "28"/' -e 's/^jsoup = "1.23.2"/jsoup = "1.24.0"/' -e 's/^wiremock = "3.13.2"/wiremock = "3.14.0"/' \
-  -e '/^mapstruct = { /d' "$tmp/old.toml" > "$tmp/new.toml"
-printf '{ "versions": { "react": "19.2.8", "vue": "3.5.0" } }\n' > "$tmp/old.json"
-printf '{ "versions": { "react": "19.2.9", "vue": "3.6.0" } }\n' > "$tmp/new.json"
+{
+  cat <<'TOML'
+[versions]
+postgresqlJdbc = "42.7.15"
+logback = "1.6.8"
+openTelemetry = "1.68.0"
+TOML
+  sed -e '/^\[versions\]$/d' -e 's/^java = "27"/java = "28"/' -e 's/^jsoup = "1.23.2"/jsoup = "1.24.0"/' \
+    -e 's/^wiremock = "3.13.2"/wiremock = "3.14.0"/' -e 's/^jackson2Tooling = "2.22.3"/jackson2Tooling = "2.22.4"/' \
+    -e '/^mapstruct = { /d' "$tmp/old.toml"
+} > "$tmp/new.toml"
+printf '{ "versions": { "react": "19.2.8", "vue": "3.5.0", "typescript": "6.0.3" } }\n' > "$tmp/old.json"
+cat > "$tmp/new.json" <<'JSON'
+{ "versions": { "react":"19.2.9", "vue":"3.6.0", "typescript":"npm:@typescript/typescript6@6.0.2",
+    "typescript-native":"npm:typescript@7.0.2", "vite":"8.4.0" },
+  "companions": { "typescript":"typescript-native", "vitest":"vite" } }
+JSON
 printf 'backend-ci.yml input gradle-task type=string default="build"\nsonar.yml input token type=string default=""\n' > "$tmp/old.txt"
 printf 'backend-ci.yml input gradle-task type=string default="build"\nbackend-ci.yml input region type=string required=true\nsonar.yml input token type=string default=""\nsonar.yml input host type=string required=true\n' > "$tmp/new.txt"
 
@@ -36,7 +50,7 @@ repo="$tmp/repo"
 mkdir -p "$repo/backend" "$repo/frontend" "$repo/.github/workflows"
 printf 'plugins {\n  id("seniordev.java-conventions")\n}\ndependencies {\n  implementation(libs.jsoup)\n  implementation(libs.versions.jsoup.get())\n}\n' > "$repo/backend/build.gradle.kts"
 printf 'FROM sapmachine:27-jre\n' > "$repo/backend/Dockerfile"
-printf '{ "dependencies": { "react": "19.2.8" } }\n' > "$repo/frontend/package.json"
+printf '{ "dependencies": { "react": "19.2.8" }, "devDependencies": { "typescript": "6.0.3" }, "overrides": { "vitest": "4.1.12" } }\n' > "$repo/frontend/package.json"
 printf 'jobs:\n  ci:\n    uses: DominikSienkiewicz/Platform/.github/workflows/backend-ci.yml@v1.5.31\n' > "$repo/.github/workflows/ci.yml"
 
 report() {
@@ -62,12 +76,27 @@ grep -qF 'wiremock' <<<"$affects" && fail 'an unused alias does not affect the r
 grep -qF 'catalog `libs.versions.wiremock`: 3.13.2 → 3.14.0' <<<"$unused" || fail 'an unused version goes to Not used here'
 grep -qF 'catalog `libs.mapstruct` removed' <<<"$unused" || fail 'a removed unused alias goes to Not used here'
 grep -qF 'frontend canon `vue`' <<<"$unused" || fail 'an unused package goes to Not used here'
+grep -qF 'frontend canon `typescript-native` added' <<<"$affects" || fail 'adding a compiler companion affects existing TypeScript consumers'
+grep -qF 'frontend canon `vite` added' <<<"$unused" || fail 'an override alone does not install a companion'
+for key in postgresqlJdbc logback openTelemetry jackson2Tooling; do
+  grep -F "catalog \`libs.versions.$key\`" <<<"$affects" | grep -qF 'imposed by the Platform conventions' \
+    || fail "the convention-managed $key must affect the backend"
+done
 grep -qF '`sonar.yml` input `host` added (required)' <<<"$unused" || fail 'a workflow the repo does not call goes to Not used here'
 grep -qF 'every caller of `backend-ci.yml` must pass the new required input `region`' <<<"$actions" || fail 'a used breaking change is an action'
 grep -qF 'sonar.yml' <<<"$actions" && fail 'an action of an unused workflow is not this repo'"'"'s action'
 
 FALLBACK=$(PLATFORM_TOML_FALLBACK=1 report)
 [[ "$FALLBACK" == "$OUT" ]] || { OUT=$FALLBACK; fail 'the fallback TOML reader must give the same report'; }
+
+printf 'plugins { alias(libs.plugins.conventions.quality) }\n' > "$repo/backend/build.gradle.kts"
+OUT=$(report)
+grep -qF 'catalog `libs.versions.jackson2Tooling`' <<<"$(section "Affects this repo")" \
+  || fail 'a convention applied by its catalog alias also updates the plugin classpath'
+printf 'plugins { java }\n' > "$repo/backend/build.gradle.kts"
+OUT=$(report)
+grep -qF 'catalog `libs.versions.jackson2Tooling`' <<<"$(section "Not used here")" \
+  || fail 'plain Gradle projects do not receive the Platform plugin classpath'
 
 OUT=$(python3 "$here/../bin/bump-report.py" --repo "$repo" --current 1.5.31 --target 1.6.0 --catalog-old "$tmp/old.toml" --catalog-new "$tmp/missing.toml")
 grep -qF '> Note: the catalogs of both releases were not available' <<<"$OUT" || fail 'a missing release file must be named, not skipped silently'

@@ -22,6 +22,7 @@ class PlatformVersionsTest {
 				"java" to PlatformVersions.JAVA.toString(),
 				"googleJavaFormat" to PlatformVersions.GOOGLE_JAVA_FORMAT,
 				"checkstyle" to PlatformVersions.CHECKSTYLE,
+				"guava" to PlatformVersions.GUAVA,
 				"jacoco" to PlatformVersions.JACOCO,
 				"spotbugs" to PlatformVersions.SPOTBUGS,
 				"pitestTool" to PlatformVersions.PITEST_TOOL,
