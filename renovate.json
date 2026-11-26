@@ -4,7 +4,20 @@
   "extends": ["github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"],
   "schedule": ["at any time"],
   "ignoreUnstable": true,
+  "prBodyNotes": ["The daily job adds the Platform version and changelog to this branch. Review the release notes and merge after CI passes. Merging publishes the reviewed release after verification."],
   "packageRules": [
+    {
+      "description": "Mark upstream major updates for migration review and a Platform minor release.",
+      "matchUpdateTypes": ["major"],
+      "additionalBranchPrefix": "major-",
+      "addLabels": ["upstream-major"]
+    },
+    {
+      "description": "Keep the two-week observation period for the updater that runs in CI.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["renovate"],
+      "minimumReleaseAge": "14 days"
+    },
     {
       "description": "Group the JVM catalog, including tool and override versions without Gradle aliases.",
       "matchManagers": ["gradle", "custom.regex"],
@@ -62,6 +75,13 @@
     }
   ],
   "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^\\.github/renovate-version$/"],
+      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+\\.\\d+)\\s*$"],
+      "depNameTemplate": "renovate",
+      "datasourceTemplate": "npm"
+    },
     {
       "customType": "regex",
       "description": "The frontend canon: every exact version in versions.json, from npm.",

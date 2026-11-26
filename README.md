@@ -103,6 +103,7 @@ flowchart LR
     end
 
     preset -->|"extends, read from main"| renovate
+    renovate -->|"daily pull requests for Platform dependencies"| platform
     renovate -->|"pull requests for app-owned dependencies"| consumer
     gradleSrc -->|"release.yml: Gradle publish"| maven
     maven -->|"settings plugin, catalog, BOM, libraries"| gradleBuild
@@ -199,6 +200,11 @@ crosses. One reference floats: the
 Renovate preset is read from `main` on every Renovate run. There is no floating workflow tag: a caller
 pins the exact tag ([ADR-0002](docs/adr/0002-release-and-versioning-contract.md)).
 
+At 04:23 UTC each day, GitHub Actions checks the JVM catalog, frontend canon and GitHub Actions
+pins for stable updates. Renovate opens a PR with the proposed dependencies. The daily job adds the
+Platform version, lockfiles, checksums and changelog. Merging the reviewed PR tags the merge commit
+and starts release verification. [Setup and release procedure](RELEASING.md#daily-dependency-releases).
+
 ### From a tag to a consumer pull request
 
 Read it top to bottom: nothing is published before `ci.yml` passes on the tagged commit, and a consumer adopts
@@ -213,7 +219,11 @@ sequenceDiagram
     participant B as platform-bump.yml
     participant C as Consumer repository
 
-    M->>R: ./release.sh pushes main and the tag vX.Y.Z
+    alt Dependency update
+        M->>R: Merge prepared dependency PR, tag the merge and dispatch release.yml
+    else Maintainer release
+        M->>R: ./release.sh pushes main and the tag vX.Y.Z
+    end
     R->>R: verify: ci.yml on the tagged commit
     R->>P: publish the Maven modules and npm packages, attest their provenance
     par checks of the published release
@@ -286,7 +296,7 @@ use. The logos only identify the services.
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub Container Registry" height="20"> | GitHub Container Registry | The images `deploy.yml` builds and pushes and `container-scan.yml` scans; cosign stores their signatures next to them | `docker/login-action` and `docker/build-push-action` on `ghcr.io` | In consumers that call `deploy.yml` or `promote.yml` |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub" height="20"> | GitOps repository | `promote.yml` commits the new image tags with `scripts/promote-image.sh`, for a cluster that Argo CD syncs | GitHub App token from `actions/create-github-app-token`, `git push` | In consumers that call `promote.yml` |
 | <img src="https://cdn.simpleicons.org/github/181717/ffffff" alt="GitHub code scanning" height="20"> | GitHub code scanning (CodeQL) | SAST of Platform's own code; the alerts appear in Code scanning | `github/codeql-action` in `codeql.yml` | Platform only: pushes, pull requests and Mondays |
-| <img src="https://cdn.simpleicons.org/renovate" alt="Renovate" height="20"> | Renovate | Updates what a consumer owns (Gradle and npm dependencies, GitHub Actions, Docker images) and leaves the frame and the Platform pins to `platform-bump` | Preset `default.json`, `extends: ["github>SeniorDeveloper-pl-Dominik-Sienkiewicz/Platform"]`, read from `main` | In consumers that extend the preset |
+| <img src="https://cdn.simpleicons.org/renovate" alt="Renovate" height="20"> | Renovate | Proposes Platform catalog, frontend and Actions updates. Consumers use the shared preset for application-owned dependencies | Platform’s `renovate.json` and the shared `default.json` preset | Daily in Platform after GitHub App setup, also in consumers that extend the preset |
 | <img src="https://cdn.simpleicons.org/apachemaven" alt="Maven Central" height="20"> | Maven Central | Every dependency that is not a Platform artifact | `mavenCentral()` declared by `seniordev.settings-conventions` | Every consumer build |
 | | Foojay Disco API | Downloads the JDK 27 toolchain on a machine without it | `org.gradle.toolchains.foojay-resolver-convention`, applied by `seniordev.settings-conventions` | Local builds; the reusable workflows install the JDK with `setup-java` instead |
 | <img src="https://cdn.simpleicons.org/sonarqubecloud" alt="SonarQube Cloud" height="20"> | SonarQube Cloud | Static analysis and coverage of consumer code in the `dominiksienkiewicz` organization | `org.sonarqube` Gradle plugin, applied by `seniordev.quality-conventions` or `seniordev.sonar-conventions`; `https://sonarcloud.io` | Consumers; Platform does not analyse itself ([ADR-0012](docs/adr/0012-platform-scans-itself-in-sonarqube-cloud.md) is superseded) |

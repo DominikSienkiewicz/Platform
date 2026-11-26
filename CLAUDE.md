@@ -128,6 +128,8 @@ Ta sama wartość stoi w każdym `gradle/*/gradle.properties`, `templates/jvm/*/
 i `frontend/packages/*/package.json` — bumpuje je `release.sh`, a rozjazd albo `getOrElse("X.Y.Z")`
 w skrypcie builda wywala `templates/tests/platform-version-sync.test.sh`. Placeholder `platform`
 w `libs.versions.toml` jest celowo nierozwiązywalny.
+Codziennie o 04:23 UTC `daily-dependencies.yml` przygotowuje PR Renovate z zależnościami, numerem wydania i changelogiem.
+Po scaleniu tego PR-a przez właściciela na GitHubie `dependency-release.yml` oznacza zweryfikowane drzewo tagiem i uruchamia zwykłe wydanie.
 Publikacja na tag `vX.Y.Z`. Bump = jeden PR tu + bump pinu w repo konsumentach przez `scripts/platform-bump.sh` albo reusable `platform-bump.yml` (Decyzja 5; preset Renovate pomija ramę i aktualizuje resztę).
 
 **Kontrakt wydania: `docs/adr/0002-release-and-versioning-contract.md`.** Akcja konsumenta = MINOR w linii

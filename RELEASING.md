@@ -4,9 +4,9 @@ The model is **publish-only with deliberate versioning**. GitHub Packages (Maven
 only source of truth for released artifacts. A single `platformVersion` in
 `gradle/build-logic/gradle.properties` is the version of every artifact, on GitHub Packages and in
 consumers' pins alike. [`release.yml`](.github/workflows/release.yml) publishes that version and
-runs only when someone asks for it: a pushed `vX.Y.Z` tag or a manual `workflow_dispatch`. Nothing
-bumps versions automatically, and nothing prunes old versions automatically. What a version number
-means and what every release must carry is the
+runs on a pushed `vX.Y.Z` tag or a dispatch at that tag. The maintainer can cut a release locally.
+For dependency updates, merging the prepared pull request approves its version and starts the same
+release workflow. The numbering and release notes follow the
 [release and versioning contract](docs/adr/0002-release-and-versioning-contract.md).
 
 Consumers pin everything to one release and move it with `scripts/platform-bump.sh`, or on a
@@ -125,12 +125,47 @@ all seven npm packages, and that `v2.0.0` contains `SHA256SUMS`, the attestation
 `seniordeveloper-pl-dominik-sienkiewicz-versions-2.0.0.tgz`.
 Existing 1.x consumers should then [bootstrap the 2.0.0 launcher](docs/consuming.md#move-a-1x-consumer-to-200).
 
+## Daily dependency releases
+
+At **04:23 UTC** the [daily workflow](.github/workflows/daily-dependencies.yml) runs Renovate against
+Platform. It can also be started from **Actions → Daily dependency updates → Run workflow** on `main`.
+Spring BOMs, explicit catalog pins such as Tomcat, the frontend canon and GitHub Actions are checked
+for stable releases. The consumer preset gives ordinary releases three days to mature. Recognized
+security updates can be proposed on the next run. The daily [CVE scan](docs/versions.md#cve-response)
+also covers transitive dependencies. A fix that requires a new BOM override follows the CVE response procedure.
+
+### One-time GitHub setup
+
+Install a dedicated GitHub App on this repository. Give it read access to repository administration,
+metadata and Dependabot alerts, and read/write access to contents, issues, pull requests, workflows,
+checks and commit statuses. Enable the dependency graph and Dependabot alerts for advisory-driven
+pull requests. Use the scheduled runner as the sole Renovate installation managing Platform's
+`renovate/` branches. [Renovate's GitHub App setup](https://docs.renovatebot.com/modules/platform/github/#running-as-a-github-app).
+
+In **Settings → Secrets and variables → Actions**, set the repository variable
+`DEPENDENCY_APP_CLIENT_ID` to the app's client ID and the secret `DEPENDENCY_APP_PRIVATE_KEY` to its
+PEM private key. The workflow mints short-lived tokens for Platform. Commits from the app start PR CI
+automatically. [GitHub workflow triggers](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
+
+### Reviewing and publishing an update
+
+1. Open the Renovate PR. The daily job refreshes affected Gradle locks and checksums, the backend stack
+   snapshot and the pnpm lockfile. It adds the proposed Platform version and changelog to the same PR.
+   Check the dependency diff, new checksums, advisory IDs for security fixes and the consumer-action notes.
+2. Wait for CI on the prepared commit. A compatible update gets the next PATCH. An upstream major
+   update or consumer-action marker gets the next MINOR with migration notes. Pending hand-written
+   release notes require maintainer review. If another change reaches `main` first, run the daily
+   workflow again to rebase the candidate before merging.
+3. Merge the PR on GitHub. The [post-merge workflow](.github/workflows/dependency-release.yml)
+   compares the merged tree with the reviewed head, creates the annotated version tag on the merge
+   commit and dispatches `release.yml` at that tag. Full CI must pass before Maven or npm publication.
+   If dispatch failed after tagging, rerun the post-merge job. A matching tag can be reused.
+   If release verification itself fails, inspect the failed Release run before retrying.
+
 ## Cutting a release
 
-1. Bump the pinned actions by hand. Every action in `.github/workflows/` is pinned by commit SHA
-   with a `# vX.Y.Z` comment. Renovate moves them once the Renovate app runs in Platform; until then
-   nothing does.
-   Check each one against its latest release and update SHA and comment together. Pin the commit the
+1. Review the pinned actions. The daily workflow proposes their SHA and version comment together.
+   When updating an action manually, pin the commit the
    tag points at, `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, not the SHA of an annotated tag
    that `git ls-remote --tags` or `git/ref/tags` returns: the runner accepts both, but OpenSSF Scorecard
    rejects a tag object as an imposter commit and does not publish the result. The `action-pins` job of

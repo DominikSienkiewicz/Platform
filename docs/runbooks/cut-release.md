@@ -1,6 +1,10 @@
 # Cut a Platform release
 
-**Preconditions:** `main` is green and equal to `origin/main`, and the working tree is clean.
+For a dependency update prepared by the daily workflow, review its version and changelog and merge
+the PR on GitHub. The merge triggers release verification on the new tag.
+[Daily dependency releases](../../RELEASING.md#daily-dependency-releases).
+
+**Manual release preconditions:** `main` is green and equal to `origin/main`, and the working tree is clean.
 `scripts/release-notes.sh v<previous>..HEAD` shows the notes since the last tag.
 
 1. Optional: to write the notes by hand, turn `## [Unreleased]` into `## [X.Y.Z] - YYYY-MM-DD` with a

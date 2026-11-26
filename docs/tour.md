@@ -66,7 +66,7 @@ The story: [notes/integration-coverage.md](notes/integration-coverage.md).
 
 When the newest Spring Boot manages a version Platform cannot ship (Lombok that fails on javac 27,
 Tomcat and Jackson with fixed advisories, ArchUnit that cannot read Java 27 class files), the convention
-overrides it in one place, with the condition for removing it. Guard: `canon-cve-scan.yml` every Monday and
+overrides it in one place, with the condition for removing it. Guard: `canon-cve-scan.yml` daily and
 [ADR-0008](adr/0008-overrides-are-a-last-resort.md). The ArchUnit case:
 [notes/archunit-class-file-71.md](notes/archunit-class-file-71.md).
 

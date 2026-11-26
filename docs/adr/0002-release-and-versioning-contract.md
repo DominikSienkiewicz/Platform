@@ -101,3 +101,11 @@ or a `BREAKING CHANGE:` footer without one, so the MINOR rule of item 4 applies 
 Whether a change needs consumer action is still a human judgement, recorded in the commit that causes it.
 `release-draft.yml` is removed. The `pr-title` check stays advisory: `main` is integrated by direct push, which a required
 status check would reject.
+
+## Update — reviewed dependency releases (2026-11-26)
+
+The daily dependency job prepares the version files and changelog on the update branch. The owner
+approves the release by merging that PR on GitHub. The post-merge job verifies the reviewed tree,
+tags the merge and dispatches the existing release workflow. Publication remains gated by full CI
+on the tagged commit. An upstream major update receives a migration-review note and a MINOR
+candidate. The maintainer can still use `release.sh` for other releases.
