@@ -32,7 +32,7 @@ dependencies {
 	constraints {
 		listOf("tomcat-embed-core", "tomcat-embed-el", "tomcat-embed-websocket").forEach { artifact ->
 			api("org.apache.tomcat.embed:$artifact:${libs.versions.tomcat.get()}") {
-				because("CVE: Spring Boot ${libs.versions.springBoot.get()} manages Tomcat 11.0.24 (three Critical, fixed in 11.0.25)")
+				because("CVE: Tomcat 11.0.29 fixes CVE-2026-116561, CVE-2026-116600 and related advisories affecting 11.0.27")
 			}
 		}
 		// Boot Guavą nie zarządza: przynosi ją tranzytywnie Javers (biblioteka aplikacji spoza ramy, ADR-0037) i Error Prone,
