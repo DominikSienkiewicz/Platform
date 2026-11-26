@@ -349,7 +349,7 @@ jobs:
       #      Base-image OS CVE, tylko fixowalne. Snyk (druga opinia) biegnie w osobnym jobie snyk-advisory.
       - name: Grype scan — backend (gate)
         if: ${{ inputs.scan-images }}
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:
           image: ${{ steps.digests.outputs.backend }}
           fail-build: true
@@ -358,7 +358,7 @@ jobs:
           output-format: table
       - name: Grype scan — frontend (gate)
         if: ${{ inputs.scan-images && !inputs.single-image }}
-        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        uses: anchore/scan-action@11983a512817154c80a9db660c1a184be7513ed6 # v7.4.3
         with:
           image: ${{ steps.digests.outputs.frontend }}
           fail-build: true
