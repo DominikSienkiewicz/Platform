@@ -17,7 +17,7 @@ java = "27"                              # → PlatformVersions: toolchain w jav
 springBoot = "4.1.3"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
 lombok = "1.18.48"                       # wersja z BOM-u Boota; zachowana dla konsumentów katalogu i testu zgodności z javac 27.
 # renovate: depName=org.apache.tomcat.embed:tomcat-embed-core
-tomcat = "11.0.29"                       # → platform-bom: podłoga CVE dla osadzonego Tomcata. Zdejmij, gdy BOM Boota >= 11.0.29
+tomcat = "11.0.29"                       # → platform-bom: pozostaje na 11.0.29 do wydania 11.0.30 z poprawką klastrowego TLS-PSK. Zdejmij podłogę, gdy BOM Boota obejmie tę poprawkę.
 # renovate: depName=tools.jackson:jackson-bom
 jacksonBom = "3.1.9"                     # przed Bootem: ograniczenia parsera i walidacja typów. Zdejmij, gdy BOM Boota >= 3.1.9.
 # renovate: depName=com.fasterxml.jackson:jackson-bom
