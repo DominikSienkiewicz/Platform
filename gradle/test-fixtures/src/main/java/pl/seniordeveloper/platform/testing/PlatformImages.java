@@ -10,7 +10,7 @@ package pl.seniordeveloper.platform.testing;
 public final class PlatformImages {
 
   /** PostgreSQL 18 + pgvector (RAG / embeddings). */
-  public static final String PGVECTOR = "pgvector/pgvector:0.8.2-pg18";
+  public static final String PGVECTOR = "pgvector/pgvector:0.8.7-pg18";
 
   private PlatformImages() {}
 }
