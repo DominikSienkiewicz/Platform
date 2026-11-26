@@ -29,6 +29,7 @@ springAi = "2.0.2"
 junit = "6.1.3"
 tomcat = "11.0.29"
 jooq = "3.21.6"  # lustro z BOM-u
+lombok = "1.18.48"  # lustro z BOM-u
 EOF
 git add "$catalog"
 git -c user.name=fixture -c user.email=fixture@example.invalid -c commit.gpgSign=false commit -qm base
@@ -41,7 +42,9 @@ echo "curl ${!#}" >> "$CALLS"
 cat <<POM
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <groupId>org.springframework.boot</groupId><artifactId>spring-boot-dependencies</artifactId>
-  <version>4.1.1</version><properties><jooq.version>${FIXTURE_JOOQ:-3.21.7}</jooq.version></properties>
+  <version>4.1.1</version><properties>
+    <jooq.version>${FIXTURE_JOOQ:-3.21.7}</jooq.version><lombok.version>${FIXTURE_LOMBOK:-1.18.50}</lombok.version>
+  </properties>
 </project>
 POM
 EOF
@@ -65,6 +68,7 @@ change_version() {
 change_version springBoot 4.1.0 4.1.1
 if [[ -f scripts/refresh-catalog-update.sh ]]; then refresh; fi
 grep -qxF 'jooq = "3.21.7"  # lustro z BOM-u' "$catalog" || fail 'jOOQ must mirror the selected Boot BOM'
+grep -qxF 'lombok = "1.18.50"  # lustro z BOM-u' "$catalog" || fail 'Lombok must mirror the selected Boot BOM'
 grep -qxF 'curl https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.1/spring-boot-dependencies-4.1.1.pom' "$CALLS" || fail 'the POM must come from the selected Boot release'
 python3 scripts/agents-stack.py --check || fail 'the exported backend stack must match the new catalog'
 for module in build-logic test-fixtures; do
@@ -91,12 +95,17 @@ grep -qF 'org.example:broken:1.0 FAILED' output || fail 'the unresolved dependen
 change_version springBoot 4.1.0 4.1.1
 if FIXTURE_JOOQ='unresolved' refresh > output 2>&1; then fail 'the Boot POM must contain an exact stable jOOQ version'; fi
 grep -qxF 'jooq = "3.21.6"  # lustro z BOM-u' "$catalog" || fail 'an invalid POM must preserve the existing jOOQ pin'
+if FIXTURE_LOMBOK='unresolved' refresh > output 2>&1; then fail 'the Boot POM must contain an exact stable Lombok version'; fi
+grep -qxF 'jooq = "3.21.6"  # lustro z BOM-u' "$catalog" || fail 'an invalid Lombok must also preserve the jOOQ pin'
 git show "$base:$catalog" > "$catalog"
 change_version jooq 3.21.6 3.22.0
 if refresh > output 2>&1; then fail 'a jOOQ update without a matching Boot update must fail'; fi
 grep -qF 'jOOQ must follow' output || fail 'a standalone jOOQ update must explain the Boot requirement'
+git show "$base:$catalog" > "$catalog"
+change_version lombok 1.18.48 1.18.50
+if refresh > output 2>&1; then fail 'a Lombok update without a matching Boot update must fail'; fi
 
 : > "$CALLS"
 bash scripts/write-verification-metadata.sh build-logic
 if grep -Fq -- '--write-locks' "$CALLS"; then fail 'the existing metadata-only invocation must keep lockfiles unchanged'; fi
-echo 'OK: a catalog update refreshes the Boot jOOQ mirror, agent stack, locks and verification metadata'
+echo 'OK: a catalog update refreshes the Boot jOOQ and Lombok mirrors, agent stack, locks and verification metadata'

@@ -49,7 +49,9 @@
       "description": "Keep BOM overrides on the current stable patch line, including the two independent Jackson 2 floors.",
       "matchManagers": ["custom.regex"],
       "matchPackageNames": [
-        "org.projectlombok:lombok",
+        "org.postgresql:postgresql",
+        "ch.qos.logback:logback-classic",
+        "io.opentelemetry:opentelemetry-bom",
         "org.apache.tomcat.embed:tomcat-embed-core",
         "tools.jackson:jackson-bom",
         "com.fasterxml.jackson:jackson-bom"
@@ -63,9 +65,10 @@
       "allowedVersions": "/^{{major}}\\.{{minor}}\\.\\d+-jre$/"
     },
     {
-      "description": "The Boot BOM supplies the jOOQ codegen version. Platform supplies its own artifact and plugin versions at release time.",
+      "description": "The Boot BOM supplies the Lombok and jOOQ codegen versions. Platform supplies its own artifact and plugin versions at release time.",
       "matchDepNames": [
         "org.jooq.jooq-codegen-gradle",
+        "org.projectlombok:lombok",
         "pl.seniordeveloper:*",
         "seniordev.*",
         "@seniordeveloper-pl-dominik-sienkiewicz/**",

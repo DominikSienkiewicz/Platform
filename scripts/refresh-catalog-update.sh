@@ -23,9 +23,11 @@ previous = tomllib.loads(previous_path.read_text())["versions"]
 catalog = catalog_path.read_text()
 current = tomllib.loads(catalog)["versions"]
 boot_version = current["springBoot"]
+boot_mirrors = {"jooq": "jOOQ", "lombok": "Lombok"}
 if boot_version == previous["springBoot"]:
-    if current["jooq"] != previous["jooq"]:
-        sys.exit("jOOQ must follow the version managed by Spring Boot.")
+    for key, name in boot_mirrors.items():
+        if current[key] != previous[key]:
+            sys.exit(f"{name} must follow the version managed by Spring Boot.")
     sys.exit(0)
 
 stable = r"[0-9]+\.[0-9]+\.[0-9]+"
@@ -40,13 +42,14 @@ ns = {"": "http://maven.apache.org/POM/4.0.0"}
 coordinates = [pom.findtext(key, namespaces=ns) for key in ("groupId", "artifactId", "version")]
 if coordinates != ["org.springframework.boot", artifact, boot_version]:
     sys.exit(f"The Maven POM does not identify Spring Boot {boot_version}.")
-jooq = pom.findtext("properties/jooq.version", default="", namespaces=ns).strip()
-if not re.fullmatch(stable, jooq):
-    sys.exit(f"Spring Boot {boot_version} does not declare a stable jooq.version.")
-updated, count = re.subn(r'(?m)^(jooq\s*=\s*")[^"]+(")', rf'\g<1>{jooq}\2', catalog)
-if count != 1 or tomllib.loads(updated)["versions"]["jooq"] != jooq:
-    sys.exit("Cannot update the jOOQ pin in gradle/catalog/libs.versions.toml.")
-catalog_path.write_text(updated)
+for key, name in boot_mirrors.items():
+    version = pom.findtext(f"properties/{key}.version", default="", namespaces=ns).strip()
+    if not re.fullmatch(stable, version):
+        sys.exit(f"Spring Boot {boot_version} does not declare a stable {key}.version.")
+    catalog, count = re.subn(rf'(?m)^({key}\s*=\s*")[^"]+(")', rf'\g<1>{version}\2', catalog)
+    if count != 1 or tomllib.loads(catalog)["versions"][key] != version:
+        sys.exit(f"Cannot update the {name} pin in gradle/catalog/libs.versions.toml.")
+catalog_path.write_text(catalog)
 PY
 python3 scripts/agents-stack.py
 bash scripts/write-verification-metadata.sh --write-locks
