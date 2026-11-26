@@ -60,7 +60,7 @@ if (canonManager) {
     `the canon regex must match every key of versions.json and nothing else; unmatched: ${keys.filter((k) => !matched.includes(k))}`);
   for (const [key, target, version] of [
     ["typescript", "@typescript/typescript6", "6.0.2"],
-    ["@typescript/native", "typescript", "7.0.2"],
+    ["typescript-native", "typescript", "7.0.2"],
   ]) {
     const entry = JSON.stringify({ [key]: `npm:${target}@${version}` });
     const hit = regex(canonManager).exec(entry);
@@ -211,7 +211,7 @@ cp "$root/gradle/catalog/libs.versions.toml" "$tmp/repo/gradle/catalog/"
 cp "$root/frontend/packages/versions/versions.json" "$tmp/repo/frontend/packages/versions/"
 hand() { jq -c '[.packageRules[] | select((.description // "") | startswith("Frame:") | not)], del(.packageRules)' "$1"; }
 hand "$tmp/repo/default.json" > "$tmp/hand.before"
-jq '.versions.typescript = "npm:@typescript/typescript6@6.0.2" | .versions["@typescript/native"] = "npm:typescript@7.0.2"' \
+jq '.versions.typescript = "npm:@typescript/typescript6@6.0.2" | .versions["typescript-native"] = "npm:typescript@7.0.2"' \
   "$tmp/repo/frontend/packages/versions/versions.json" > "$tmp/aliases.json"
 mv "$tmp/aliases.json" "$tmp/repo/frontend/packages/versions/versions.json"
 
