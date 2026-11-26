@@ -14,10 +14,26 @@
 set -euo pipefail
 usage='Usage: release-notes.sh [--markers] <from>..<to>'
 
+# Domyślny merge GitHuba ma tytuł PR-a w pierwszej linii body. Temat zastępujemy tylko
+# w rzeczywistym merge'u dwóch commitów i tylko wtedy, gdy tytuł jest Conventional Commit.
+release_history() {
+  git log --format='%h%x1f%s%x1f%b%x1f%P%x1e' "$@" | awk -v RS=$'\036' -v FS=$'\037' '
+    {
+      sub(/^\n+/, "", $1)
+      if ($1 == "") next
+      if ($4 ~ /^[0-9a-f]+ [0-9a-f]+$/ && $2 ~ /^Merge pull request #[0-9]+ from /) {
+        split($3, body, "\n")
+        if (body[1] ~ /^(feat|fix|docs|chore|refactor|test|build|ci|perf|revert)(\([a-z0-9-]+\))?!?: .+/)
+          $2 = body[1]
+      }
+      printf "%s\037%s\037%s\036", $1, $2, $3
+    }'
+}
+
 # markers <zakres>: każdy trailer Consumer-Action, pierwsza stopka BREAKING CHANGE i "!" w temacie każdego commita
 # zakresu, merge commity włącznie.
 markers() {
-  git log --format='%h%x1f%s%x1f%b%x1e' "$1" | awk -v RS=$'\036' -v FS=$'\037' '
+  release_history "$1" | awk -v RS=$'\036' -v FS=$'\037' '
     {
       sub(/^\n+/, "", $1)
       if ($1 == "") next
@@ -89,7 +105,7 @@ while IFS=$'\037' read -r sha subject; do
   else
     unclassified+="- $subject ($sha)"$'\n'
   fi
-done < <(git log --first-parent --format='%h%x1f%s' "$range")
+done < <(release_history --first-parent "$range" | awk -v RS=$'\036' -v FS=$'\037' '{ print $1 FS $2 }')
 
 printf '### Consumer action required\n\n%s\n' "${actions:-None.}"
 for heading in Added Changed Fixed; do

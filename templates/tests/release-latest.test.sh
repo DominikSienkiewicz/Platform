@@ -33,7 +33,7 @@ git tag -a v2.0.1 -m 'Platform 2.0.1'
 git switch -qc update
 git commit --allow-empty -qm 'fix: upgrade the test runner' -m 'Consumer-Action: Review the test configuration.'
 git switch -q main
-git merge -q --no-ff update -m 'fix: update dependencies'
+git merge -q --no-ff update -m 'Merge pull request #15 from example/update' -m 'fix(deps): update dependencies'
 git push -qu origin main v2.0.1
 
 before=$(git rev-parse HEAD)
@@ -42,6 +42,7 @@ if ! bash release.sh <<< n > "$tmp/plan" 2>&1; then
   fail 'the zero-argument release should present a plan'
 fi
 grep -Fq 'Plan: 2.0.1 -> 2.1.0' "$tmp/plan" || fail 'the merged action requires a minor'
+grep -Fq -- '- update dependencies (' "$tmp/plan" || fail 'use the conventional title from the GitHub merge'
 grep -Fq 'Review the test configuration.' "$tmp/plan" || fail 'the plan must show the action'
 [[ $(git rev-parse HEAD) == "$before" && -z $(git status --porcelain) ]] || fail 'declining must preserve the checkout'
 
@@ -118,4 +119,12 @@ rm "$tmp/origin.git/hooks/update"
 git push -q --atomic origin "$release_commit:refs/heads/main" refs/tags/v2.2.1
 release
 [[ $(remote_commit refs/tags/v2.2.1) == "$(git rev-parse HEAD)" ]] || fail 'retry must publish the same release'
+git switch -qc region
+git commit --allow-empty -qm 'feat: add deployment regions'
+git switch -q main
+git merge -q --no-ff region -m 'Merge pull request #16 from example/region' -m 'feat(ci)!: require the region input'
+git push -q origin main
+release
+[[ $(remote_commit refs/tags/v2.3.0) == "$(git rev-parse HEAD)" ]] || fail 'a breaking PR title must select a minor'
+grep -Fq -- '- Breaking change: require the region input' CHANGELOG.md || fail 'the PR title must explain consumer action'
 echo 'OK: latest release, confirmation, notes, version files, matrix and idempotent rerun'

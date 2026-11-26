@@ -208,7 +208,7 @@ an explicit version or set `ASSUME_YES=1` to skip confirmation.
 The notes are the version's section of CHANGELOG.md. A hand-written `## [X.Y.Z] - YYYY-MM-DD` section is
 used as it is. Without one, `release.sh` composes it with `scripts/release-notes.sh` from the commits since
 the previous `vX.Y.Z` tag and inserts it under an empty `## [Unreleased]`, dated today: the first-parent
-subjects grouped as **Added** (`feat`), **Fixed** (`fix`) and **Changed** (every other type), and under
+subjects (including the conventional PR title from a default GitHub merge) grouped as **Added** (`feat`), **Fixed** (`fix`) and **Changed** (every other type), and under
 `### Consumer action required` the `Consumer-Action:` trailers of every commit in the range, the merge
 commits of `./merge.sh` included, plus a `Breaking change: …` line for a commit without a trailer that has a
 `!` in its subject or a `BREAKING CHANGE:` footer. A merge commit and the commits it brings in count as one change: a
