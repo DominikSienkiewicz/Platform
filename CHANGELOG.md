@@ -20,6 +20,18 @@ artifact was published. Its tag was removed and releases continued under the per
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-26
+
+### Consumer action required
+
+None.
+
+### Security
+
+- Raise the embedded Tomcat modules `core`, `el` and `websocket` from 11.0.27 to 11.0.29 in `platform-bom`.
+  This fixes CVE-2026-106012, CVE-2026-116561, CVE-2026-116600, CVE-2026-116830, CVE-2026-117517,
+  CVE-2026-118028, CVE-2026-118233, CVE-2026-118436 and CVE-2026-121649.
+
 ## [2.0.0] - 2026-11-23
 
 ### Consumer action required

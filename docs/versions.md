@@ -80,12 +80,11 @@ Boot 4.1.1 manages Netty 4.2.17.Final and PostgreSQL 42.7.13, so the previous
 would force versions older than the BOM. The `lombok.version` override remains at
 `1.18.48`: the BOM still pins 1.18.46, incompatible with javac 27.
 
-Three CVE overrides came back after the first canon scan, because no Boot release newer than
-4.1.1 exists yet and its BOM manages vulnerable versions:
+Platform raises three versions managed by the Spring Boot 4.1.1 BOM to address published vulnerabilities.
 
 | Property | Boot 4.1.1 | Override | Why |
 |---|---|---|---|
-| `tomcat.version` | 11.0.24 | 11.0.27 | three CRITICAL advisories (GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5), fixed in 11.0.25 |
+| `tomcat.version` | 11.0.24 | 11.0.29 | The November advisories affect embedded core and WebSocket through 11.0.27. The BOM also aligns the EL module. [Apache Tomcat security advisories](https://tomcat.apache.org/security-11.html#Fixed_in_Apache_Tomcat_11.0.29) |
 | `jackson-bom.version` | 3.1.5 | 3.1.8 | HIGH advisories in jackson-core and jackson-databind, fixed in 3.1.7 |
 | `jackson-2-bom.version` | 2.21.5 | 2.21.8 | the same advisories in the 2.x line, fixed in 2.21.7 |
 
