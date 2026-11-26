@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Oznaczenie dokładnego scalenia i ponowienie po awarii dispatchu na atrapach API.
+# Oznaczenie dokładnego scalenia i pojedyncze zdarzenie wydania na atrapach API.
 set -euo pipefail
 scripts=$(cd "$(dirname "$0")" && pwd)
 fixture=$(mktemp -d)
@@ -40,11 +40,10 @@ state = pathlib.Path(os.environ['STATE'])
 tag = os.environ.get('TAG', 'v2.0.2')
 if args[:2] == ['workflow', 'run']:
     assert args[2:] == ['release.yml', '--ref', tag]
-    if (state/'dispatch-fails').exists(): sys.exit(1)
-    with (state/'dispatches').open('a') as output: output.write(tag + '\n')
+    with (state/'events').open('a') as output: output.write('workflow_dispatch ' + tag + '\n')
 elif args[:2] == ['run', 'list']:
     assert args[args.index('--commit') + 1] == os.environ['MERGED']
-    print((state/'runs').read_text() if (state/'runs').exists() else '[]')
+    print('[]')  # Zdarzenie push może dotrzeć do Actions po odpowiedzi API.
 elif args[0] == 'api':
     endpoint = next(a for a in args if a.startswith('repos/')).split('/git/')[1]
     fields = dict(a.split('=', 1) for a in args if '=' in a)
@@ -58,7 +57,10 @@ elif args[0] == 'api':
         print(json.dumps({'sha':'a'*40}))
     elif endpoint == 'refs':
         assert fields == {'ref':'refs/tags/' + tag, 'sha':'a'*40}
+        if (state/'ref-fails').exists() or (state/'refs').exists(): sys.exit(1)
         (state/'refs').write_text(json.dumps([{'ref':fields['ref'], 'object':{'type':'tag','sha':fields['sha']}}]))
+        with (state/'events').open('a') as output: output.write('push ' + tag + '\n')
+        if (state/'response-lost').exists(): sys.exit(1)
         print('{}')
     elif endpoint == 'tags/' + 'a'*40:
         print((state/'tag').read_text())
@@ -70,21 +72,31 @@ GH
 chmod +x bin/gh
 export MERGED="$merged"
 finalize() { bash "$scripts/tag-dependency-release.sh" "$1" "$2"; }
-touch state/dispatch-fails
-if [[ -f "$scripts/tag-dependency-release.sh" ]] && finalize "$merged" "$approved"; then fail 'dispatch failure must fail the job'; fi
-[[ -s state/tag ]] || fail 'the annotated tag must survive a failed dispatch'
+finalize "$merged" "$approved"
+[[ $(cat state/events) == 'push v2.0.2' ]] || fail 'the tag push must be the only release trigger, even before its run is visible'
 jq -e --arg sha "$merged" '.object.sha == $sha and .tag == "v2.0.2" and (.message | contains("### Consumer action required\n\nNone."))' state/tag >/dev/null || fail 'the tag must identify the merge and include the reviewed notes'
-rm state/dispatch-fails
 finalize "$merged" "$approved"
-[[ $(cat state/creates) == tag && $(cat state/dispatches) == v2.0.2 ]] || fail 'retry must reuse the tag and dispatch exactly once'
-printf '[{"headBranch":"v2.0.2","status":"completed","conclusion":"success"}]\n' > state/runs
-finalize "$merged" "$approved"
-[[ $(cat state/dispatches) == v2.0.2 ]] || fail 'a successful release must skip another dispatch'
+[[ $(cat state/creates) == tag && $(cat state/events) == 'push v2.0.2' ]] || fail 'retry must verify the existing tag without another release'
+
+workflow="$scripts/../.github/workflows/dependency-release.yml"
+grep -Fq 'permission-contents: write' "$workflow" || fail 'the installation token must be allowed to create the tag'
+grep -Fq "GH_TOKEN: \${{ steps.app.outputs.token }}" "$workflow" || fail 'the tag push must authenticate as the dependency App'
+grep -Fq 'tags: ["v*.*.*"]' "$scripts/../.github/workflows/release.yml" || fail 'version tag pushes must trigger release.yml'
+
+mkdir recovery
+touch recovery/ref-fails
+if STATE="$fixture/recovery" finalize "$merged" "$approved"; then fail 'a failed tag creation without a matching ref must fail'; fi
+[[ ! -e recovery/events ]] || fail 'a failed ref creation started a release'
+rm recovery/ref-fails
+touch recovery/response-lost
+STATE="$fixture/recovery" finalize "$merged" "$approved" || fail 'verify the matching tag if its creation response was lost'
+STATE="$fixture/recovery" finalize "$merged" "$approved"
+[[ $(cat recovery/events) == 'push v2.0.2' ]] || fail 'recovering a ref creation must emit exactly one tag push'
 
 reject() {
   if finalize "$1" "$2" > state/error 2>&1; then fail "expected refusal: $3"; fi
   grep -Fq -- "$3" state/error || fail "unexpected reason: $(cat state/error)"
-  [[ $(cat state/creates) == tag && $(cat state/dispatches) == v2.0.2 ]] || fail 'an invalid candidate mutated the release'
+  [[ $(cat state/creates) == tag && $(cat state/events) == 'push v2.0.2' ]] || fail 'an invalid candidate mutated the release'
 }
 reject "$approved" "$approved" 'checkout does not match'
 reject "$merged" "$base" 'merged tree differs'
@@ -110,5 +122,5 @@ write_release 2.1.0 'Reconfigure the servlet.'
 minor=$(git rev-parse HEAD)
 mkdir minor-state
 STATE="$fixture/minor-state" TAG=v2.1.0 MERGED="$minor" finalize "$minor" "$minor"
-[[ $(cat minor-state/dispatches) == v2.1.0 ]] || fail 'a reviewed minor release with consumer action must dispatch'
-echo 'OK: tags only the reviewed merge, recovers a failed dispatch and rejects conflicting releases'
+[[ $(cat minor-state/events) == 'push v2.1.0' ]] || fail 'a reviewed minor release with consumer action must trigger one run'
+echo 'OK: one tag push releases the reviewed merge, including after a retry; conflicting tags are rejected'

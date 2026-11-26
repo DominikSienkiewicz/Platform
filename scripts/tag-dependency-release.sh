@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tag-dependency-release.sh <merge-sha> <reviewed-head-sha>: po scaleniu PR-a oznacza sprawdzony commit
-# i zleca release.yml. Checkout zawiera obie rewizje, historię i tagi. Token Actions ma contents/actions: write.
+# tagiem. Utworzenie referencji przez aplikację GitHub lub opiekuna uruchamia release.yml.
 set -euo pipefail
 fail() { echo "$*" >&2; exit 1; }
 [[ $# == 2 ]] || fail 'Usage: tag-dependency-release.sh <merge-sha> <reviewed-head-sha>'
@@ -48,26 +48,26 @@ message=$(printf 'Platform %s\n\n%s' "$version" "$section")
 api='repos/{owner}/{repo}/git'
 ref="refs/tags/$tag"
 # matching-refs zwraca także dłuższe nazwy zaczynające się od taga. Błąd API przerywa pracę.
-existing=$(gh api "$api/matching-refs/tags/$tag" | jq -r --arg ref "$ref" '.[] | select(.ref == $ref) | [.object.type, .object.sha] | @tsv')
-if [[ -n $existing ]]; then
-  IFS=$'\t' read -r kind sha <<< "$existing"
-  [[ $kind == tag && $sha =~ ^[a-f0-9]{40}$ ]] || fail "Existing $tag is not an annotated tag."
-  gh api "$api/tags/$sha" | jq -e --arg tag "$tag" --arg merge "$merged" --arg notes "$message" '
-    .tag == $tag and .object.type == "commit" and .object.sha == $merge and
-    (.message | rtrimstr("\n")) == $notes
-  ' >/dev/null || fail "Existing $tag differs from the reviewed commit or release notes."
-else
+find_tag_ref() {
+  gh api "$api/matching-refs/tags/$tag" | jq -r --arg ref "$ref" '.[] | select(.ref == $ref) | [.object.type, .object.sha] | @tsv'
+}
+existing=$(find_tag_ref)
+if [[ -z $existing ]]; then
   object=$(gh api "$api/tags" --method POST -f "tag=$tag" -f "message=$message" -f "object=$merged" -f type=commit | jq -er '.sha')
   [[ $object =~ ^[a-f0-9]{40}$ ]] || fail 'GitHub did not return the annotated tag object.'
-  gh api "$api/refs" --method POST -f "ref=$ref" -f "sha=$object" >/dev/null
+  if gh api "$api/refs" --method POST -f "ref=$ref" -f "sha=$object" >/dev/null; then
+    echo "Created $tag on the reviewed merge."
+    exit 0
+  fi
+  # Odpowiedź mogła zaginąć lub drugi job mógł właśnie utworzyć ten sam tag.
+  existing=$(find_tag_ref)
+  [[ -n $existing ]] || fail "Could not create $ref."
 fi
 
-# GITHUB_TOKEN nie uruchomi release.yml przez utworzenie taga. Ponowienie po nieudanym dispatchu
-# zastaje już tag; istniejący udany lub trwający run nie wymaga kolejnego.
-scheduled=$(gh run list --workflow release.yml --commit "$merged" --limit 100 --json headBranch,status,conclusion |
-  jq -r --arg tag "$tag" 'any(.[]; .headBranch == $tag and (.status != "completed" or .conclusion == "success"))')
-if [[ $scheduled == true ]]; then
-  echo "Release $tag is already running or has succeeded."
-  exit 0
-fi
-gh workflow run release.yml --ref "$tag"
+IFS=$'\t' read -r kind sha <<< "$existing"
+[[ $kind == tag && $sha =~ ^[a-f0-9]{40}$ ]] || fail "Existing $tag is not an annotated tag."
+gh api "$api/tags/$sha" | jq -e --arg tag "$tag" --arg merge "$merged" --arg notes "$message" '
+  .tag == $tag and .object.type == "commit" and .object.sha == $merge and
+  (.message | rtrimstr("\n")) == $notes
+' >/dev/null || fail "Existing $tag differs from the reviewed commit or release notes."
+echo "Verified existing $tag on the reviewed merge."
