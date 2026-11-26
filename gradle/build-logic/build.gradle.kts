@@ -21,8 +21,7 @@ java {
 	withSourcesJar()
 }
 
-// Kotlin wbudowany w Gradle 9.8.2 (2.4.10) zna JVM-target najwyżej 26, więc bytecode build-logic to jawnie 26
-// dla Kotlina i Javy (bez ostrzeżenia o niespójności 27 vs 26). Podnieś do 27, gdy embedded Kotlin dostanie JVM_27.
+// Wspólny cel JVM 26 dla Kotlina i Javy zapewnia zgodność klas pluginu z kompilatorem Kotlin w Gradle.
 val buildLogicBytecode = 26
 kotlin.compilerOptions.jvmTarget = JvmTarget.fromTarget(buildLogicBytecode.toString())
 tasks.withType<JavaCompile>().configureEach { options.release = buildLogicBytecode }
@@ -57,6 +56,7 @@ val generatePlatformVersions =
 				"JAVA" to libs.versions.java,
 				"GOOGLE_JAVA_FORMAT" to libs.versions.googleJavaFormat,
 				"CHECKSTYLE" to libs.versions.checkstyle,
+				"GUAVA" to libs.versions.guava,
 				"JACOCO" to libs.versions.jacoco,
 				"SPOTBUGS" to libs.versions.spotbugs,
 				"PITEST_TOOL" to libs.versions.pitestTool,
@@ -173,10 +173,15 @@ dependencies {
 	// Wykrywanie niestabilnych testów (N-REL-13), stosowane tylko na żądanie -Pplatform.test.retry=detect.
 	implementation("org.gradle:test-retry-gradle-plugin:${libs.versions.testRetry.get()}")
 	implementation("org.cyclonedx:cyclonedx-gradle-plugin:${libs.versions.cyclonedx.get()}")
-	// Jackson 2 pluginów: CycloneDX ciągnie 2.22.2 z czterema High, poprawka w 2.22.3 (jackson2Tooling w kanonie).
+	// CycloneDX wnosi Jacksona na classpath pluginów; jego podłoga chroni także przed CVE-2026-110879.
 	// Platforma trafia do metadanych pluginu, więc obowiązuje też na classpath buildu konsumenta; aplikacji
 	// konsumenta nie dotyczy — tam Jacksona 2 trzyma jackson2Bom z platform-bom.
 	implementation(platform("com.fasterxml.jackson:jackson-bom:${libs.versions.jackson2Tooling.get()}"))
+	constraints {
+		implementation("com.google.guava:guava:${libs.versions.guava.get()}") {
+			because("CVE-2026-118042: the build plugin classpath resolves independently of the application BOM")
+		}
+	}
 	implementation("org.sonarqube:org.sonarqube.gradle.plugin:${libs.versions.sonarqube.get()}")
 	// Error Prone + NullAway (N-CAP-11), aplikowany tylko przez opt-in seniordev.nullness-conventions.
 	implementation("net.ltgt.gradle:gradle-errorprone-plugin:${libs.versions.errorpronePlugin.get()}")
@@ -243,6 +248,9 @@ tasks.withType<Test>().configureEach {
 		"jacksonBom" to libs.versions.jacksonBom,
 		"jackson2Bom" to libs.versions.jackson2Bom,
 		"guava" to libs.versions.guava,
+		"postgresqlJdbc" to libs.versions.postgresqlJdbc,
+		"openTelemetry" to libs.versions.openTelemetry,
+		"logback" to libs.versions.logback,
 		"pitestTool" to libs.versions.pitestTool,
 		"pitestJunit5" to libs.versions.pitestJunit5,
 		"checkstyle" to libs.versions.checkstyle,

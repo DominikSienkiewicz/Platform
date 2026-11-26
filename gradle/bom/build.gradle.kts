@@ -16,13 +16,16 @@ javaPlatform {
 }
 
 dependencies {
-	// Jackson PRZED Bootem: przy imporcie POM-u przez io.spring.dependency-management wygrywa pierwszy
+	// Jackson i OpenTelemetry przed Bootem: przy imporcie POM-u przez io.spring.dependency-management wygrywa pierwszy
 	// zaimportowany BOM, a w Gradle najwyższa wersja — ta kolejność daje poprawioną wersję w obu modelach.
 	api(platform("tools.jackson:jackson-bom:${libs.versions.jacksonBom.get()}")) {
-		because("CVE: Spring Boot ${libs.versions.springBoot.get()} manages Jackson 3.1.5 (High, fixed in 3.1.7)")
+		because("Security: enforce parser limits and validate deserialized types until Spring Boot manages Jackson 3.1.9 or later")
 	}
 	api(platform("com.fasterxml.jackson:jackson-bom:${libs.versions.jackson2Bom.get()}")) {
-		because("CVE: Spring Boot ${libs.versions.springBoot.get()} manages Jackson 2.21.5 (High, fixed in 2.21.7)")
+		because("Security: enforce parser limits and validate deserialized types until Spring Boot manages Jackson 2.21.9 or later")
+	}
+	api(platform("io.opentelemetry:opentelemetry-bom:${libs.versions.openTelemetry.get()}")) {
+		because("CVE-2026-118259: align OpenTelemetry API and SDK until Spring Boot manages the patched release")
 	}
 	api(platform(libs.spring.boot.bom))
 	api(platform(libs.spring.modulith.bom))
@@ -30,6 +33,14 @@ dependencies {
 	api(platform(libs.junit.bom))
 
 	constraints {
+		api("org.postgresql:postgresql:${libs.versions.postgresqlJdbc.get()}") {
+			because("CVE-2026-134841 and related advisories: update the JDBC driver until Spring Boot manages the patched release")
+		}
+		listOf("logback-classic", "logback-core").forEach { artifact ->
+			api("ch.qos.logback:$artifact:${libs.versions.logback.get()}") {
+				because("CVE-2026-104721: align Logback modules at a release with the complete MDC discriminator fix")
+			}
+		}
 		listOf("tomcat-embed-core", "tomcat-embed-el", "tomcat-embed-websocket").forEach { artifact ->
 			api("org.apache.tomcat.embed:$artifact:${libs.versions.tomcat.get()}") {
 				because("CVE: Tomcat 11.0.29 fixes CVE-2026-116561, CVE-2026-116600 and related advisories affecting 11.0.27")
@@ -38,10 +49,7 @@ dependencies {
 		// Boot Guavą nie zarządza: przynosi ją tranzytywnie Javers (biblioteka aplikacji spoza ramy, ADR-0037) i Error Prone,
 		// więc podłoga jest constraintem.
 		api("com.google.guava:guava:${libs.versions.guava.get()}") {
-			because("CVE-2026-102554: javers-persistence-sql 7.11.x brings Guava 33.5.0-jre (High, fixed in 33.7.2)")
-		}
-		api("org.projectlombok:lombok:${libs.versions.lombok.get()}") {
-			because("compatibility: Spring Boot ${libs.versions.springBoot.get()} manages Lombok 1.18.46, which fails on javac 27")
+			because("CVE-2026-118042: prevent hash flooding when Javers or another dependency brings older Guava")
 		}
 		api("com.tngtech.archunit:archunit:${libs.versions.archunit.get()}") {
 			because("compatibility: spring-modulith-core brings ArchUnit 1.4.2, which cannot read class-file 71 (Java 27)")

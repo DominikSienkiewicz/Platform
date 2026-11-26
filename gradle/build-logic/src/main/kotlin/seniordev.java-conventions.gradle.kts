@@ -26,8 +26,8 @@ import java.math.BigDecimal
  * seniordev.java-conventions
  * --------------------------
  * Bazowy "agent-friendly" plugin dla każdego modułu Java w organizacji:
- *   - toolchain Java 27 (non-LTS; baseline portfolio 2026-09). Wymaga Lomboka >= 1.18.48 (nadpisanie
- *     BOM-a w spring-modulith-conventions) i google-java-format >= 1.35.0 (pin niżej)
+ *   - toolchain Java 27 (non-LTS; baseline portfolio 2026-09). Wymaga Lomboka >= 1.18.48 z BOM-u Boota
+ *     i google-java-format >= 1.35.0
  *   - Spotless (Google Java Format) — jeden formatter dla wszystkich repo
  *   - Checkstyle (maxWarnings = 0) — twarda konwencja
  *   - JaCoCo + statyczny próg pokrycia `coverageMinimum` (ułamek 0..1, domyślnie 0.00; repo samo go podnosi);
@@ -139,6 +139,12 @@ checkstyle {
 	maxWarnings = 0
 	configDirectory.set(layout.buildDirectory.dir("platform-config/checkstyle"))
 	config = resources.text.fromFile(File(checkstyleDir, "checkstyle.xml"))
+}
+
+dependencies.constraints {
+	add("checkstyle", "com.google.guava:guava:${PlatformVersions.GUAVA}") {
+		because("CVE-2026-118042: Checkstyle runs on a separate tool classpath")
+	}
 }
 
 tasks.withType<Checkstyle>().configureEach {

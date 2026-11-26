@@ -26,8 +26,8 @@ plugins {
 // Repozytoria pochodzą z settings konsumenta — patrz seniordev.java-conventions.
 
 // BOM-y i ograniczenia z jednego miejsca (N-CAP-12, ADR-0013): pl.seniordeveloper:platform-bom tego samego
-// wydania importuje BOM-y Boota, Modulith, Spring AI i JUnit oraz poprawione BOM-y Jacksona (przed Bootem, bo
-// w imporcie Maven wygrywa pierwszy), a jego constraints niosą podłogę Tomcata i nadpisania Lomboka i ArchUnit
+// wydania importuje BOM-y Boota, Modulith, Spring AI i JUnit oraz poprawione BOM-y Jacksona i OpenTelemetry (przed Bootem, bo
+// w imporcie Maven wygrywa pierwszy), a jego constraints niosą podłogi bezpieczeństwa oraz wersję ArchUnit
 // z uzasadnieniem. Dawniej stały tu trzy importy i cztery `ext[...]`, osobno od BOM-u, który konsumenci spoza
 // Springa importowali sami. Wersja BOM-u = PlatformVersions.PLATFORM, czyli wydanie tych konwencji.
 val platformVersion = PlatformVersions.PLATFORM
@@ -82,7 +82,7 @@ dependencyManagement {
 	imports {
 		mavenBom("pl.seniordeveloper:platform-bom:$platformVersion")
 	}
-	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.1 deklaruje ArchUnit 1.4.2
+	// Nadpisanie KOMPATYBILNOŚCI (nie CVE) dla RUNTIME: spring-modulith-core 2.1.3 deklaruje ArchUnit 1.4.2
 	// jako zależność compile, a żaden BOM (Boot/Modulith) nie zarządza ArchUnit — nie ma propercji do
 	// nadpisania przez ext. ArchUnit 1.4.2 nie czyta class-file 71 (javac 27, toolchain java-conventions),
 	// więc ApplicationModules budowane przy starcie aplikacji nie importuje żadnej klasy i kontekst pada

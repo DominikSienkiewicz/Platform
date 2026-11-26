@@ -12,25 +12,30 @@
 
 [versions]
 platform = "0.0.0-injected-at-publish"   # PLACEHOLDER — nadpisywany injectem (platformVersion) w build.gradle.kts; celowo nierozwiązywalny, żeby zepsuty inject failował głośno
-gradle = "9.8.2"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
+gradle = "9.9.2"                         # lustro: distributionUrl wrapperów gradle/*/gradle/wrapper i gradle-version w canon-cve-scan.yml; platform-bump podbija nim wrapper konsumenta
 java = "27"                              # → PlatformVersions: toolchain w java-conventions. non-LTS; baseline portfolio (2026-09)
-springBoot = "4.1.1"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
-# renovate: depName=org.projectlombok:lombok
-lombok = "1.18.48"                       # → platform-bom: constraint z because, importowany przez spring-modulith-conventions (nadpisuje BOM-owe 1.18.46, które pada na javac 27). Zdejmij, gdy BOM Boota >= 1.18.48
+springBoot = "4.1.3"                     # → PlatformVersions: springBootVersion w spring-modulith-conventions (import BOM-u)
+lombok = "1.18.48"                       # wersja z BOM-u Boota; zachowana dla konsumentów katalogu i testu zgodności z javac 27.
 # renovate: depName=org.apache.tomcat.embed:tomcat-embed-core
 tomcat = "11.0.29"                       # → platform-bom: podłoga CVE dla osadzonego Tomcata. Zdejmij, gdy BOM Boota >= 11.0.29
 # renovate: depName=tools.jackson:jackson-bom
-jacksonBom = "3.1.8"                     # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 3.1.5 (High, poprawka 3.1.7). Zdejmij, gdy BOM Boota >= 3.1.7
+jacksonBom = "3.1.9"                     # przed Bootem: ograniczenia parsera i walidacja typów. Zdejmij, gdy BOM Boota >= 3.1.9.
 # renovate: depName=com.fasterxml.jackson:jackson-bom
-jackson2Bom = "2.21.8"                   # → platform-bom: import przed Bootem — CVE: Boot 4.1.1 ma 2.21.5 (High, poprawka 2.21.7). Zdejmij, gdy BOM Boota >= 2.21.7
+jackson2Bom = "2.21.9"                   # przed Bootem: ograniczenia parsera i walidacja typów. Zdejmij, gdy BOM Boota >= 2.21.9.
+# renovate: depName=org.postgresql:postgresql
+postgresqlJdbc = "42.7.15"               # podłoga sterownika JDBC; zdejmij, gdy BOM Boota >= 42.7.15.
+# renovate: depName=io.opentelemetry:opentelemetry-bom
+openTelemetry = "1.68.0"                 # podłoga OpenTelemetry dla śledzenia; zdejmij, gdy BOM Boota >= 1.68.0.
+# renovate: depName=ch.qos.logback:logback-classic
+logback = "1.6.8"                        # podłoga dla logback-classic i logback-core; zdejmij, gdy BOM Boota >= 1.6.8.
 # renovate: depName=com.google.guava:guava
-guava = "33.7.2-jre"                     # → platform-bom: podłoga CVE (constraint z because) — CVE-2026-102554: javers-persistence-sql 7.11.x (do najnowszego 7.11.9) ciągnie 33.5.0-jre (High, poprawka 33.7.2). Javers jest poza ramą (appLibs aplikacji), Boot Guavą nie zarządza. Zdejmij, gdy Javers przyniesie >= 33.7.2
+guava = "33.8.0-jre"                     # CVE-2026-118042; podłoga dla aplikacji, pluginów, Checkstyle i Error Prone. Zdejmij z danego classpath, gdy jego zależności przyniosą >= 33.8.0-jre.
 springDependencyManagement = "1.1.7"
-springModulith = "2.1.1"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
-springAi = "2.0.2"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u). >= 2.0.2: MCP Java SDK 2.1.0, w którym metoda JSON-RPC bez handlera to błąd -32601 z HTTP 200, a nie HTTP 500 (2.0.1 ciągnie SDK 2.0.0, java-sdk#784)
+springModulith = "2.1.3"                 # → PlatformVersions: springModulithVersion w spring-modulith-conventions (import BOM-u)
+springAi = "2.0.3"                       # → PlatformVersions: springAiVersion w spring-modulith-conventions (import BOM-u). >= 2.0.2: MCP Java SDK 2.1.0, w którym metoda JSON-RPC bez handlera to błąd -32601 z HTTP 200, a nie HTTP 500 (2.0.1 ciągnie SDK 2.0.0, java-sdk#784)
 junit = "6.1.3"                          # → PlatformVersions: enforcedPlatform junit-bom w spring-modulith-conventions i baseline JUnit w java-conventions
 archunit = "1.5.0"                       # → PlatformVersions: archunitVersion w spring-modulith-conventions — też zarządzana na runtime (spring-modulith-core 2.1.1 ciągnie 1.4.2, które nie czyta class-file 71)
-jooq = "3.21.7"                          # lustro jooq.version z BOM-u Boota: tylko dla pluginu generatora jooq-codegen (pluginów żaden BOM nie zarządza); bump wyłącznie razem z Bootem, rozjazd wywala PlatformBomImportFunctionalTest
+jooq = "3.21.9"                          # lustro jooq.version z BOM-u Boota: tylko dla pluginu generatora jooq-codegen (pluginów żaden BOM nie zarządza); bump wyłącznie razem z Bootem, rozjazd wywala PlatformBomImportFunctionalTest
 spotless = "8.9.0"
 # renovate: depName=com.pinterest.ktlint:ktlint-cli
 ktlint = "1.8.0"                          # formater Kotlin w Spotless samego build-logic (D-14); konsumenci go nie dostają
@@ -51,7 +56,7 @@ pitestTool = "1.30.0"                    # → PlatformVersions: pitestVersion w
 pitestJunit5 = "1.2.3"                   # → PlatformVersions: junit5PluginVersion w quality-conventions
 cyclonedx = "3.5.1"
 # renovate: depName=com.fasterxml.jackson:jackson-bom
-jackson2Tooling = "2.22.3"               # → build-logic: platform jackson-bom na classpath pluginów — CVE: CycloneDX 3.5.1 ciągnie Jacksona 2.22.2 (4x High, poprawka 2.22.3). Aplikacji konsumenta nie dotyczy (tam jackson2Bom). Zdejmij, gdy CycloneDX przyniesie Jacksona >= 2.22.3
+jackson2Tooling = "2.22.4"               # CVE-2026-110879 w jackson-databind na classpath pluginów. Zdejmij, gdy CycloneDX przyniesie >= 2.22.4.
 # renovate: depName=org.jacoco:org.jacoco.agent
 jacoco = "0.8.16"                        # → PlatformVersions: toolVersion w java-conventions; Java 27 oficjalnie, Java 28 eksperymentalnie
 # renovate: depName=org.gradle.toolchains:foojay-resolver registryUrl=https://plugins.gradle.org/m2/
