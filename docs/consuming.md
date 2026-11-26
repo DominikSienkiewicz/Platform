@@ -532,6 +532,12 @@ release of `@seniordeveloper-pl-dominik-sienkiewicz/versions` you install. `plat
 canon; a package outside the canon, and an override for it, belong to your application and are left alone, as are
 an application's `peerDependencies`.
 
+For TypeScript projects, the canon pairs the native TypeScript 7 `tsc` with the TypeScript 6
+JavaScript API for tools that import `typescript`. Keep both exact npm aliases in the manifest when
+updating an existing project. Review application-owned test configuration against the
+[Vitest 5 migration guide](https://vitest.dev/guide/migration.html) when adopting the shared Vitest 5 preset.
+After the bump, check `npm exec -- tsc --version` and refresh the consumer lockfile.
+
 `tsconfig.json` (`"@/*": ["./*"]` in a layout without `src/`):
 
 ```json

@@ -29,8 +29,8 @@ Platform publishes its versions twice, from one source ([ADR-0013](adr/0013-cata
 `platform-test-fixtures`, `platform-observability-starter` and `seniordev.spring-modulith-conventions` import
 `platform-bom` of their own release, so the floors live in one place and reach every classpath those
 builds resolve. `PlatformBomImportFunctionalTest` holds the conventions to it with `dependencyInsight`:
-the BOM's Lombok, Jackson and Tomcat win, also over a consumer's `jackson-bom.version`, because the BOM
-imports the fixed Jackson BOMs before Boot ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)).
+Lombok follows Boot and the Platform Jackson and Tomcat floors win. The Jackson BOM imports precede Boot's,
+so a consumer's `jackson-bom.version` cannot lower those floors ([ADR-0013](adr/0013-catalog-for-aliases-bom-for-constraints.md)).
 Consumers delete their own override blocks when they adopt that release. A build without the Spring
 conventions takes the same floors with:
 
@@ -58,6 +58,7 @@ sources contain no version literal.
 | `JAVA` | `JavaLanguageVersion.of(…)` in `seniordev.java-conventions` | `java` |
 | `GOOGLE_JAVA_FORMAT`, `CHECKSTYLE`, `JACOCO` | `seniordev.java-conventions` | `googleJavaFormat`, `checkstyle`, `jacoco` |
 | `SPOTBUGS`, `PITEST_TOOL`, `PITEST_JUNIT5` | `seniordev.quality-conventions` | `spotbugs`, `pitestTool`, `pitestJunit5` |
+| `GUAVA` | The Checkstyle and Error Prone tool classpaths | `guava` |
 | `PLATFORM` | the `platform-bom` import of `seniordev.spring-modulith-conventions` and the pin check | `platform` (the release) |
 | `JUNIT`, `ARCHUNIT` | the JUnit baseline of `seniordev.java-conventions`, the JUnit BOM and ArchUnit of `seniordev.spring-modulith-conventions` | `junit`, `archunit` |
 | `ERROR_PRONE`, `NULLAWAY` | the `errorprone` dependencies of `seniordev.nullness-conventions` | `errorprone`, `nullaway` |
@@ -165,14 +166,6 @@ Resolution rules cannot be detected from the build model, because dependency-man
 built on `eachDependency`. A rule beats the BOM, so after a bump it can pin a version older than the
 one the new BOMs manage. Remove an override as soon as the Platform BOMs manage an equal or higher
 version; move one that must stay into `seniordev.spring-modulith-conventions`, so every consumer gets it.
-
-## TypeScript compiler and tooling API
-
-The native TypeScript 7 compiler supplies `tsc` through the exact npm alias
-`@typescript/native`. ESLint, Next.js and the OpenAPI generator import the JavaScript compiler API
-through `typescript`, which points to the TypeScript 6 compatibility package. Keep both entries
-when editing a consumer manifest. Use `npm exec -- tsc --version` to check the native compiler.
-[Microsoft's side-by-side configuration](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-60)
 
 ## Runtime image for the JDK 27 toolchain
 
@@ -318,10 +311,18 @@ tested on the versions consumers run:
   and `frontend/packages/*/package.json` is the canon version;
 - `eslint-config`, `prettier-config` and `ui` declare their runtime dependencies and peers at the exact
   canon version;
-- the other packages keep peer ranges such as `^4`, which must admit the canon version;
+- the other packages keep peer ranges such as the Vitest preset's supported major versions, which must admit the published canon;
 - `react`, `react-dom` and `@types/node` are root devDependencies, because pnpm resolves the peers of
   workspace packages from the root and would otherwise pick versions off the canon.
 
 `frontend/packages/versions/test/self-canon.test.mjs` runs the guard on each of those manifests and
 checks the peer ranges. Regenerate `frontend/pnpm-lock.yaml` with `pnpm install` after a canon
 bump: CI installs with `--frozen-lockfile`.
+
+### TypeScript compiler and tooling API
+
+The native TypeScript 7 compiler supplies `tsc` through the exact npm alias
+`@typescript/native`. ESLint, Next.js and the OpenAPI generator import the JavaScript compiler API
+through `typescript`, which points to the TypeScript 6 compatibility package. Keep both entries
+when editing a consumer manifest. Use `npm exec -- tsc --version` to check the native compiler.
+[Microsoft's side-by-side configuration](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/#running-side-by-side-with-typescript-60)

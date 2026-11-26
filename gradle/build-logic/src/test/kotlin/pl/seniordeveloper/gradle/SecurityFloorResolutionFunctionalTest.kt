@@ -44,7 +44,12 @@ class SecurityFloorResolutionFunctionalTest {
 			""".trimIndent(),
 		)
 
-		val output = consumer.runner("showSecurityFloors").build().output.lines()
+		val output =
+			consumer
+				.runner("showSecurityFloors")
+				.build()
+				.output
+				.lines()
 		mapOf(
 			"runtimeClasspath=org.postgresql:postgresql" to "postgresqlJdbc",
 			"runtimeClasspath=io.opentelemetry:opentelemetry-sdk" to "openTelemetry",

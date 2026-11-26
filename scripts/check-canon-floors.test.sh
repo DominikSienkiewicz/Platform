@@ -76,10 +76,10 @@ sbom patched-runtime org.postgresql:postgresql:42.7.15 io.opentelemetry:opentele
 run patched-runtime runtime-libs || fail 'the patched runtime must pass'
 grep -qF 'OK: 4 components' "$work/out.txt" || fail 'the scan must check each runtime component'
 
-# Każda podłoga CVE z gradle/bom (`because("CVE`) ma swój klucz w skrypcie. Klucz stoi w deklaracji nad
+# Każda podłoga CVE z gradle/bom (`because("CVE` lub `because("Security:`) ma swój klucz w skrypcie. Klucz stoi w deklaracji nad
 # `because`; sam powód cytuje wersję Boota (`libs.versions.springBoot`), która podłogą nie jest.
 python3 "$root/scripts/check-canon-floors.py" --keys > "$work/keys.txt"
-grep -B1 'because("CVE' "$root/gradle/bom/build.gradle.kts" | grep -v 'because(' \
+grep -EB1 'because\("(CVE|Security:)' "$root/gradle/bom/build.gradle.kts" | grep -v 'because(' \
   | grep -oE 'libs\.versions\.[A-Za-z0-9]+' | sed 's/^libs\.versions\.//' \
   | sort -u > "$work/bom-keys.txt"
 [[ -s "$work/bom-keys.txt" ]] || fail 'gradle/bom/build.gradle.kts must declare at least one CVE floor'

@@ -406,7 +406,7 @@ workflow comments, which are written for the maintainer.
 ## Requirements
 
 JDK 27, one JDK for everything ([ADR-0034](docs/adr/0034-one-jdk-27-for-gradle-build-logic-and-toolchain.md)):
-it runs the Gradle daemon, builds `build-logic` (Java 26 bytecode until the Kotlin embedded in Gradle can target 27)
+it runs the Gradle daemon, builds `build-logic` (JVM 26 bytecode for the minimum supported Gradle)
 and compiles Platform's Java modules and consumers on toolchain 27. The JVM starters carry daemon JVM criteria, so their wrapper starts from any JDK and
 Gradle selects or downloads Java 27; Foojay provisions the toolchain locally when it is not installed, and the
 reusable CI workflows install it with `setup-java` instead ([`docs/versions.md`](docs/versions.md)). The backend
