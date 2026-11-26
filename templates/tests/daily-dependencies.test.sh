@@ -79,7 +79,7 @@ cat > "$tmp/gh" <<'GH'
 set -eu
 [[ "$*" == 'api graphql --input - --jq .data.createCommitOnBranch.commit.oid' ]]
 jq -e --arg head "$EXPECTED_HEAD" '.variables.input | .expectedHeadOid == $head and
-  .branch == {repositoryNameWithOwner:"org/platform",refName:"renovate/catalog"} and
+  .branch == {repositoryNameWithOwner:"org/platform",branchName:"renovate/catalog"} and
   (.fileChanges.additions | length == 2 and .[1].path == "gradle/build-logic/settings-gradle.lockfile" and
   (.[1].contents | @base64d) == "new\n" and .[0].path == "CHANGELOG.md" and
   (.[0].contents | @base64d) == "# Changelog\n\nDependency release\n")' > /dev/null
