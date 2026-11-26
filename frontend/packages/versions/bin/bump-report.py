@@ -26,7 +26,7 @@ import canon_diff  # noqa: E402
 CONVENTION_VERSIONS = {
     "java", "gradle", "googleJavaFormat", "checkstyle", "jacoco", "spotbugs", "pitestTool", "pitestJunit5",
     "springBoot", "springModulith", "springAi", "junit", "archunit", "lombok", "tomcat", "jacksonBom", "jackson2Bom",
-    "guava", "errorprone", "nullaway",
+    "postgresqlJdbc", "logback", "openTelemetry", "jackson2Tooling", "guava", "errorprone", "nullaway",
 }
 ALIAS = re.compile(r"\blibs\.([A-Za-z0-9_.]+)")
 USES = re.compile(r"uses:\s*[A-Za-z0-9_.-]+/Platform/\.github/workflows/([A-Za-z0-9_.-]+\.ya?ml)@")
@@ -63,14 +63,17 @@ def uses_platform_conventions(repo):
     return any("seniordev." in (read(path) or "") for path in gradle_scripts(repo))
 
 
-def frontend_packages(repo):
+def frontend_packages(repo, target_canon):
     text = read(os.path.join(repo, "frontend", "package.json"))
     if not text:
         return set()
     manifest = json.loads(text)
-    names = set()
-    for section in ("dependencies", "devDependencies", "optionalDependencies"):
-        names.update(manifest.get(section, {}))
+    direct = {
+        name for section in ("dependencies", "devDependencies", "optionalDependencies")
+        for name in manifest.get(section, {})
+    }
+    companions = json.loads(target_canon).get("companions", {}) if target_canon else {}
+    names = direct | {package for owner, package in companions.items() if owner in direct}
 
     def walk(node):
         for key, value in node.items():
@@ -107,7 +110,7 @@ def main():
 
     affects, unused, actions, notes = [], [], [], []
     aliases = used_aliases(repo)
-    conventions = uses_platform_conventions(repo)
+    conventions = any(alias.startswith("libs.plugins.conventions.") for alias in aliases) or uses_platform_conventions(repo)
 
     old_catalog, new_catalog = read(args.catalog_old), read(args.catalog_new)
     if old_catalog is None or new_catalog is None:
@@ -131,7 +134,7 @@ def main():
                 unused.append(change.line)
 
     old_canon, new_canon = read(args.canon_old), read(args.canon_new)
-    packages = frontend_packages(repo)
+    packages = frontend_packages(repo, new_canon)
     if packages:
         if old_canon is None or new_canon is None:
             notes.append("the frontend canons of both releases were not available, so the frontend is not compared")
