@@ -58,6 +58,15 @@ if (canonManager) {
   const keys = Object.keys(JSON.parse(canon).versions);
   expect(JSON.stringify(matched.sort()) === JSON.stringify([...keys].sort()),
     `the canon regex must match every key of versions.json and nothing else; unmatched: ${keys.filter((k) => !matched.includes(k))}`);
+  for (const [key, target, version] of [
+    ["typescript", "@typescript/typescript6", "6.0.2"],
+    ["@typescript/native", "typescript", "7.0.2"],
+  ]) {
+    const entry = JSON.stringify({ [key]: `npm:${target}@${version}` });
+    const hit = regex(canonManager).exec(entry);
+    expect(hit?.groups.depName === key && hit.groups.packageName === target && hit.groups.currentValue === version,
+      `the canon must look up ${key} as ${target} at ${version} while preserving the npm alias`);
+  }
 }
 const snykManager = managerFor("container-scan");
 expect(snykManager, "renovate.json must manage the Snyk image digest");
@@ -202,6 +211,9 @@ cp "$root/gradle/catalog/libs.versions.toml" "$tmp/repo/gradle/catalog/"
 cp "$root/frontend/packages/versions/versions.json" "$tmp/repo/frontend/packages/versions/"
 hand() { jq -c '[.packageRules[] | select((.description // "") | startswith("Frame:") | not)], del(.packageRules)' "$1"; }
 hand "$tmp/repo/default.json" > "$tmp/hand.before"
+jq '.versions.typescript = "npm:@typescript/typescript6@6.0.2" | .versions["@typescript/native"] = "npm:typescript@7.0.2"' \
+  "$tmp/repo/frontend/packages/versions/versions.json" > "$tmp/aliases.json"
+mv "$tmp/aliases.json" "$tmp/repo/frontend/packages/versions/versions.json"
 
 awk '{ print } /^\[libraries\]$/ { print "probe-library = { group = \"org.example.probe\", name = \"probe-core\", version = \"1.0.0\" }" }' \
   "$root/gradle/catalog/libs.versions.toml" > "$tmp/repo/gradle/catalog/libs.versions.toml"
@@ -211,6 +223,9 @@ python3 "$script" --root "$tmp/repo" > /dev/null
 python3 "$script" --check --root "$tmp/repo" > /dev/null || fail 'a regenerated default.json must pass --check'
 jq -e '[.packageRules[].matchPackageNames // [] | .[]] | index("org.example.probe:probe-core")' "$tmp/repo/default.json" > /dev/null \
   || fail 'the new catalog coordinate must reach default.json'
+jq -e '.packageRules[] | select(.matchManagers == ["npm"] and .enabled == false)
+  | .matchPackageNames | index("@typescript/typescript6") != null and index("typescript") != null' \
+  "$tmp/repo/default.json" > /dev/null || fail 'Renovate must also protect npm aliases by their registry package names'
 hand "$tmp/repo/default.json" > "$tmp/hand.after"
 cmp -s "$tmp/hand.before" "$tmp/hand.after" || fail 'regeneration must keep the hand-written rules and the rest of the preset'
 

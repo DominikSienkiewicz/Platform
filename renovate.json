@@ -86,7 +86,7 @@
       "customType": "regex",
       "description": "The frontend canon: every exact version in versions.json, from npm.",
       "managerFilePatterns": ["/^frontend/packages/versions/versions\\.json$/"],
-      "matchStrings": ["\"(?<depName>@?[a-z0-9][^\"]*)\":\\s*\"(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
+      "matchStrings": ["\"(?<depName>(?:@[a-z0-9_.-]+/)?[a-z0-9_.-]+)\":\\s*\"(?:npm:(?<packageName>(?:@[a-z0-9_.-]+/)?[a-z0-9_.-]+)@)?(?<currentValue>\\d+\\.\\d+\\.\\d+)\""],
       "datasourceTemplate": "npm",
       "versioningTemplate": "npm"
     },

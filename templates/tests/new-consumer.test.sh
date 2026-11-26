@@ -126,6 +126,31 @@ fi
 echo 'OK: new-consumer --frontend next renders a strict Next.js frontend that passes the version canon'
 )
 
+(
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/scripts" "$tmp/frontend/packages/versions"
+ln -s "$root/templates" "$tmp/templates"
+cp "$root/scripts/new-consumer.sh" "$tmp/scripts/"
+canon="$tmp/frontend/packages/versions/versions.json"
+jq '.versions.typescript = "npm:@typescript/typescript6@6.0.2" | .versions["@typescript/native"] = "npm:typescript@7.0.2"' \
+  "$root/frontend/packages/versions/versions.json" > "$canon"
+render_next() {
+  bash "$tmp/scripts/new-consumer.sh" --name shop --package pl.example.shop --kind java-library \
+    --frontend next --platform-version 2.0.1 --out "$1" > /dev/null
+}
+render_next "$tmp/current"
+jq -e --slurpfile canon "$canon" '.devDependencies as $deps | ["@typescript/native","typescript","vite"] |
+  all(.[]; $deps[.] == $canon[0].versions[.])' "$tmp/current/frontend/package.json" > /dev/null \
+  || fail 'the frontend must install both TypeScript aliases and the Vite peer from the canon'
+# CI nakłada kanon starego wydania na obecny checkout, więc nowy klucz kompilatora może w nim pozostać.
+jq '.versions.typescript = "6.0.3"' "$canon" > "$tmp/old.json"
+mv "$tmp/old.json" "$canon"
+render_next "$tmp/legacy"
+jq -e '.devDependencies | .typescript == "6.0.3" and (has("@typescript/native") | not)' \
+  "$tmp/legacy/frontend/package.json" > /dev/null || fail 'a legacy frontend needs only its own tsc'
+)
+
 # --- import-order ---
 # scripts/new-consumer.sh zostawia importy w kolejności google-java-format także wtedy, gdy nowy pakiet sortuje się
 # za org.* (pl.example.bank): podmieniony prefiks nie może zostać na starym miejscu, bo spotlessCheck świeżo

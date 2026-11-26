@@ -53,7 +53,8 @@ def frame_rules(root):
     })
     plugin_names = [name for plugin in plugins for name in (plugin, f"{plugin}:{plugin}.gradle.plugin")]
     platform_scopes = tuple(pattern[:-1] for pattern in PLATFORM_PACKAGES)
-    packages = sorted(name for name in canon if not name.startswith(platform_scopes))
+    registry_names = {spec[4:].rsplit("@", 1)[0] for spec in canon.values() if spec.startswith("npm:")}
+    packages = sorted(name for name in set(canon) | registry_names if not name.startswith(platform_scopes))
 
     return [
         {

@@ -102,6 +102,8 @@
         "@types/node",
         "@types/react",
         "@types/react-dom",
+        "@typescript/native",
+        "@typescript/typescript6",
         "@vitejs/plugin-react",
         "@vitest/coverage-v8",
         "eslint",

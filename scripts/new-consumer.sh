@@ -173,8 +173,9 @@ const manifest = {
       ...platform,
       ...Object.entries(pick([
         "@tailwindcss/postcss", "@testing-library/jest-dom", "@testing-library/react", "@types/node", "@types/react",
-        "@types/react-dom", "@vitejs/plugin-react", "eslint", "eslint-config-next", "jsdom", "prettier",
-        "prettier-plugin-tailwindcss", "tailwindcss", "typescript", "vitest",
+        "@types/react-dom", ...(canon.typescript.startsWith("npm:") ? ["@typescript/native"] : []),
+        "@vitejs/plugin-react", "eslint", "eslint-config-next", "jsdom", "prettier",
+        "prettier-plugin-tailwindcss", "tailwindcss", "typescript", "vite", "vitest",
       ])),
     ].sort(([a], [b]) => a.localeCompare(b)),
   ),
