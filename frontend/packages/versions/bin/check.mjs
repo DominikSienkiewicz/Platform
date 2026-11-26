@@ -10,8 +10,8 @@
 // `overrides` podlega tym samym regułom co zależność bezpośrednia — to tam żyją piny CVE paczek
 // transytywnych (overrides.next.postcss), które bez tego dryfowały po cichu przy ruchu kanonu.
 // Exit 1 przy naruszeniu — krok w reusable frontend-ci failuje build.
-// --fix (offline): przepisuje rozjechane wersje i piny platformy na kanon zainstalowanej paczki; wpisów nie dodaje
-// ani nie usuwa, a paczek spoza kanonu nie rusza. W GitHub Actions (GITHUB_ACTIONS=true) każde
+// --fix (offline): przepisuje rozjechane wersje i piny platformy na kanon zainstalowanej paczki; uzupełnia wymagane pary narzędzi,
+// a paczek spoza kanonu nie rusza. W GitHub Actions (GITHUB_ACTIONS=true) każde
 // naruszenie to adnotacja ::error z plikiem i linią, a tabela trafia do $GITHUB_STEP_SUMMARY.
 import { appendFileSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -77,6 +77,13 @@ for (const entry of declared) {
   if (want === undefined) continue; // paczka spoza kanonu należy do konsumenta
   governed += 1;
   if (have !== want) drift.push({ ...entry, want });
+}
+
+if (canonFile.companions) {
+  const { missingCompanions } = await import("../migrations/lib/frontend-companions.mjs");
+  for (const { section, name } of missingCompanions(pkg, canonFile.companions)) {
+    drift.push({ name, have: "(missing)", want: canon[name], at: null, node: pkg[section], key: name });
+  }
 }
 
 // Bez znanej wersji kanonu (kopia testowa) wymagamy przynajmniej jednej wspólnej wartości wszystkich pinów.

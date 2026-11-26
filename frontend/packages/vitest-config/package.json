@@ -25,18 +25,20 @@
     "registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
-    "vitest": "4.1.12",
+    "vitest": "5.1.2",
     "@vitejs/plugin-react": "6.0.5",
     "jsdom": "29.1.1",
     "@testing-library/react": "16.3.2",
-    "@testing-library/jest-dom": "6.9.1"
+    "@testing-library/jest-dom": "8.0.0",
+    "vite": "8.3.8"
   },
   "peerDependencies": {
-    "vitest": "^4",
+    "vitest": "^4 || ^5",
     "@vitejs/plugin-react": "^6",
     "jsdom": "^29",
     "@testing-library/react": "^16",
-    "@testing-library/jest-dom": "^6"
+    "@testing-library/jest-dom": "^6 || ^8",
+    "vite": "^8"
   },
   "repository": {
     "type": "git",

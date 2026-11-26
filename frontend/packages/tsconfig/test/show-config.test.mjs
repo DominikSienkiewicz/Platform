@@ -4,14 +4,13 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const packageDir = fileURLToPath(new URL("..", import.meta.url));
-const tsc = createRequire(import.meta.url).resolve("typescript/bin/tsc");
+const tsc = fileURLToPath(new URL("./bin/tsc", import.meta.resolve("typescript-native/package.json")));
 const consumers = [];
 after(() => consumers.forEach((dir) => rmSync(dir, { recursive: true, force: true })));
 
