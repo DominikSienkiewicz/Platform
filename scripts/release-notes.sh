@@ -30,6 +30,32 @@ release_history() {
     }'
 }
 
+# Porównanie trybów, pełnych identyfikatorów blobów i ścieżek zachowuje ręczne zmiany
+# z merge'a do przeglądu. Synchronizacja jest przezroczysta tylko dla identycznego zestawu zmian.
+same_upstream_changes() {
+  local merge=$1 parents ancestor upstream applied
+  local diff=(git diff-tree -r -z --no-abbrev --no-renames --no-commit-id)
+  parents=$(git show -s --format=%P "$merge") || return 1
+  [[ "$parents" =~ ^[0-9a-f]+\ [0-9a-f]+$ ]] || return 1
+  ancestor=$(git merge-base --all "$merge^1" "$merge^2") || return 1
+  [[ "$ancestor" != *$'\n'* ]] || return 1
+  upstream=$("${diff[@]}" "$ancestor" "$merge^2" | git hash-object --stdin) || return 1
+  applied=$("${diff[@]}" "$merge^1" "$merge" | git hash-object --stdin) || return 1
+  [[ "$upstream" == "$applied" ]]
+}
+
+release_subjects() {
+  local tip=$1 sha subject
+  shift
+  while IFS=$'\037' read -r sha subject; do
+    if [[ "$subject" == "Merge remote-tracking branch 'origin/main'" ]] && same_upstream_changes "$sha"; then
+      release_subjects "$sha^2" "^$sha^1" "$@"
+    else
+      printf '%s\037%s\n' "$sha" "$subject"
+    fi
+  done < <(release_history --first-parent "$tip" "$@" | awk -v RS=$'\036' -v FS=$'\037' '{ print $1 FS $2 }')
+}
+
 # markers <zakres>: każdy trailer Consumer-Action, pierwsza stopka BREAKING CHANGE i "!" w temacie każdego commita
 # zakresu, merge commity włącznie.
 markers() {
@@ -105,7 +131,15 @@ while IFS=$'\037' read -r sha subject; do
   else
     unclassified+="- $subject ($sha)"$'\n'
   fi
-done < <(release_history --first-parent "$range" | awk -v RS=$'\036' -v FS=$'\037' '{ print $1 FS $2 }')
+done < <(
+  if [[ "$range" == *..* ]]; then
+    from=${range%%..*}
+    to=${range#*..}
+    release_subjects "${to:-HEAD}" "^${from:-HEAD}"
+  else
+    release_subjects "$range"
+  fi
+)
 
 printf '### Consumer action required\n\n%s\n' "${actions:-None.}"
 for heading in Added Changed Fixed; do
