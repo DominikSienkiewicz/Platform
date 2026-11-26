@@ -109,3 +109,9 @@ approves the release by merging that PR on GitHub. The post-merge job verifies t
 tags the merge and dispatches the existing release workflow. Publication remains gated by full CI
 on the tagged commit. An upstream major update receives a migration-review note and a MINOR
 candidate. The maintainer can still use `release.sh` for other releases.
+
+## Update — one release run per dependency tag (2026-11-27)
+
+The dependency App creates the annotated tag on the reviewed merge commit. GitHub starts the release
+on the tag push. Retrying the post-merge job verifies the existing tag and notes. Manual workflow
+dispatch remains available to recover a tagged version that has no release run.

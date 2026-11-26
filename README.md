@@ -223,7 +223,7 @@ sequenceDiagram
     participant C as Consumer repository
 
     alt Dependency update
-        M->>R: Merge prepared dependency PR, tag the merge and dispatch release.yml
+        M->>R: Merge dependency PR (the App pushes the version tag)
     else Maintainer release
         M->>R: ./release.sh pushes main and the tag vX.Y.Z
     end

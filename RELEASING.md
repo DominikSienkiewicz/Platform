@@ -157,10 +157,13 @@ automatically. [GitHub workflow triggers](https://docs.github.com/en/actions/how
    release notes require maintainer review. If another change reaches `main` first, run the daily
    workflow again to rebase the candidate before merging.
 3. Merge the PR on GitHub. The [post-merge workflow](.github/workflows/dependency-release.yml)
-   compares the merged tree with the reviewed head, creates the annotated version tag on the merge
-   commit and dispatches `release.yml` at that tag. Full CI must pass before Maven or npm publication.
-   If dispatch failed after tagging, rerun the post-merge job. A matching tag can be reused.
-   If release verification itself fails, inspect the failed Release run before retrying.
+   compares the merged tree with the reviewed head. The dependency App creates the annotated tag
+   on the merge commit. That tag push starts `release.yml` once. Full CI must pass before Maven
+   or npm publication.
+   If tagging fails, rerun the post-merge job. It verifies an existing tag against the commit
+   and release notes. If a Release run fails, rerun its failed jobs. If an existing tag has no
+   Release run, confirm its commit and notes with the tagging job, then use the manual dispatch
+   on that tag described below.
 
 ## Cutting a release
 
