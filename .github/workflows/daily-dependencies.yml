@@ -165,7 +165,7 @@ jobs:
             git show ":$file" | jq -Rs --arg path "$file" '{path: $path, contents: @base64}'
           done | jq -s --arg repo "$GITHUB_REPOSITORY" --arg branch "$BRANCH" --arg head "$EXPECTED_HEAD" '{
             query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid } } }",
-            variables: {input: {branch: {repositoryNameWithOwner: $repo, refName: $branch}, expectedHeadOid: $head,
+            variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $head,
               message: {headline: "chore(deps): refresh generated dependency files"}, fileChanges: {additions: .}}}
           }' | gh api graphql --input - --jq .data.createCommitOnBranch.commit.oid
           # <<< attach-generated
