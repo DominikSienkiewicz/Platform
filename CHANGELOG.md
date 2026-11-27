@@ -20,6 +20,21 @@ artifact was published. Its tag was removed and releases continued under the per
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-27
+
+### Consumer action required
+
+None.
+
+### Changed
+
+- update dependency renovate to v44.238.2 (d66ca11)
+
+### Fixed
+
+- align Platform with its documented standards (3b22366)
+- trigger dependency releases once from the version tag (b00b784)
+
 ## [2.1.0] - 2026-11-26
 
 ### Consumer action required
