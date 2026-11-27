@@ -1,6 +1,6 @@
 {
   "name": "@seniordeveloper-pl-dominik-sienkiewicz/versions",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "The frontend version canon: the exact version of every frontend package of the Platform frame. Ships the platform-versions-check guard that frontend-ci runs, the platform-bump bin that moves a repository to a Platform release, platform-templates-check, platform-workflows-check and platform-doctor.",
   "license": "MIT",
   "engines": {
