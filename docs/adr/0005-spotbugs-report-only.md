@@ -28,7 +28,8 @@ SpotBugs stays report-only until both criteria hold:
 
 When both hold, the default switches to failing in a MINOR release with a consumer action
 entry, per [ADR-0002](0002-release-and-versioning-contract.md). A consumer may opt in earlier
-with `spotbugs { ignoreFailures.set(false) }`.
+with `platform { staticAnalysis { failOnBugs.set(true) } }`, the typed knob of the conventions; the older
+`spotbugs { ignoreFailures.set(false) }` still works.
 
 ## Consequences
 

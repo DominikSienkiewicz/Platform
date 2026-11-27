@@ -89,10 +89,10 @@ jobs:
           if err="$(docker manifest inspect "$IMAGE" 2>&1 >/dev/null)"; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           elif grep -qiE 'manifest unknown|manifest.*not found|no such manifest|name unknown|not found' <<<"$err"; then
-            echo "::notice title=container-scan::$IMAGE nie jest jeszcze opublikowany w GHCR — pomijam skan (brak manifestu)."
+            echo "::notice title=container-scan::$IMAGE is not published in GHCR yet, so the scan is skipped (no manifest)."
             echo "present=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::error title=container-scan::Nieoczekiwany błąd inspekcji $IMAGE (to NIE brak manifestu):"
+            echo "::error title=container-scan::Unexpected error inspecting $IMAGE (not a missing manifest):"
             echo "$err"
             exit 1
           fi

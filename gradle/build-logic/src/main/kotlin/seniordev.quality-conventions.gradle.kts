@@ -96,7 +96,7 @@ val spotbugsExclude =
 // Lokalne kopie w bloku register, jak w extractCheckstyleConfig (configuration cache; PlatformTaskActionCaptureTest).
 val extractSpotbugsConfig =
 	tasks.register("extractSpotbugsConfig") {
-		description = "Wypakowuje współdzielony spotbugs-exclude.xml z pluginu do build/."
+		description = "Extracts the shared spotbugs-exclude.xml from the plugin into build/."
 		val outputDir = layout.buildDirectory.dir("platform-config/spotbugs")
 		val text = spotbugsExclude
 		inputs.property("spotbugsExclude", text)

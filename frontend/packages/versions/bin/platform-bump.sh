@@ -103,7 +103,7 @@ TOKEN="${GPR_TOKEN:-${GITHUB_TOKEN:-}}"
 if [[ -z "$TOKEN" ]] && [[ -f "$HOME/.gradle/gradle.properties" ]]; then
   TOKEN="$(grep -E '^gpr\.key=' "$HOME/.gradle/gradle.properties" | cut -d= -f2- | tr -d ' ')"
 fi
-[[ -z "$TOKEN" ]] && { echo "Brak tokenu (GPR_TOKEN/GITHUB_TOKEN lub gpr.key w ~/.gradle/gradle.properties)"; exit 1; }
+[[ -z "$TOKEN" ]] && { echo "No token: set GPR_TOKEN or GITHUB_TOKEN, or gpr.key in ~/.gradle/gradle.properties."; exit 1; }
 
 VERSIONS_JSON=""
 RELEASES_JSON=""
@@ -343,7 +343,7 @@ yanked_line() { awk -v version="$1" '{ sub(/#.*/, "") } $1 == version { $1 = "";
 # platform-bump:yanked-end
 
 if [[ -z "$TARGET" ]]; then
-  echo "Sprawdzam najnowszą wersję $CATALOG_PKG w GitHub Packages…"
+  echo "Looking up the newest version of $CATALOG_PKG in GitHub Packages…"
   VERSIONS_JSON="$(mktemp)"
   extra_pages=()
   page=1
@@ -394,7 +394,7 @@ PY
     echo "      Read its release notes, then run platform-bump $NEWEST to cross it."
   fi
 fi
-[[ -z "$TARGET" ]] && { echo "Nie udało się ustalić wersji docelowej"; exit 1; }
+[[ -z "$TARGET" ]] && { echo "Could not determine the target version."; exit 1; }
 TARGET_SCOPE="$(npm_scope "$TARGET")"
 YANKED_REASON="$(yanked_line "$TARGET")"
 if [[ -n "$YANKED_REASON" ]]; then
@@ -432,7 +432,7 @@ fi
 TARGET_ROOT=""
 [[ -n "$SELF_VERSION" && "$SELF_VERSION" == "$TARGET" ]] && TARGET_ROOT="$SELF_ROOT"
 # platform-bump:handoff-end
-echo "==> Podbijam piny Platform do: $TARGET"
+echo "==> Moving the Platform pins to: $TARGET"
 # W GitHub Actions (reusable platform-bump.yml) wersja docelowa idzie też do wyjść kroku.
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then echo "target=$TARGET" >> "$GITHUB_OUTPUT"; fi
 
@@ -627,7 +627,7 @@ for sec in ("dependencies","devDependencies"):
             d[sec][k]=canon[k]; changed.append(f"{k}: {v} -> {canon[k]}")
 walk(d.get("overrides",{}), "overrides", None, to_canon)
 json.dump(d,open(p,"w"),indent=2,ensure_ascii=False); open(p,"a").write("\n")
-print("Kanon frontendu:", *changed, sep="\n  ") if changed else print("Kanon frontendu: bez zmian")
+print("Frontend canon:", *changed, sep="\n  ") if changed else print("Frontend canon: no changes")
 PY
   elif [[ "${TARGET%%.*}" -lt 2 ]] && grep -qE 'E404|ETARGET' "$TMPD/pack.err"; then
     echo "WARNING: @$TARGET_SCOPE/versions@$TARGET is not published, so the frontend canon was not applied."
@@ -828,10 +828,10 @@ done
 
 # platform-bump:gradle
 if [[ -f backend/settings.gradle.kts ]]; then
-  echo "==> Backend: regeneracja zamrożonego stanu (--write-locks)"
+  echo "==> Backend: regenerating the locked state (--write-locks)"
   if [[ -f backend/gradle/verification-metadata.xml ]]; then
     ( cd backend && ./gradlew build --write-locks --write-verification-metadata sha256 --refresh-dependencies --no-daemon )
-    echo "==> Backend: domykanie metadanych weryfikacji dla wszystkich konfiguracji (dependencies)"
+    echo "==> Backend: completing the verification metadata for every configuration (dependencies)"
     ( cd backend && ./gradlew dependencies --write-locks --write-verification-metadata sha256 --refresh-dependencies --no-daemon )
   else
     ( cd backend && ./gradlew dependencies --write-locks --no-daemon )
@@ -865,7 +865,7 @@ if [[ -f "$templates_check" ]]; then
 fi
 # platform-bump:templates-end
 
-echo "==> Gotowe. Zrecenzuj diff (gradle.lockfile / verification-metadata.xml) i zacommituj:"
+echo "==> Done. Review the diff (gradle.lockfile, verification-metadata.xml) and commit it:"
 git --no-pager diff --stat
 
 if [[ -s "$ACTIONS_FILE" ]]; then

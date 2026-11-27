@@ -121,7 +121,7 @@ val checkstyleFiles =
 // configuration cache nie serializuje. Pilnuje PlatformTaskActionCaptureTest.
 val extractCheckstyleConfig =
 	tasks.register("extractCheckstyleConfig") {
-		description = "Wypakowuje współdzieloną konfigurację Checkstyle z pluginu do build/."
+		description = "Extracts the shared Checkstyle configuration from the plugin into build/."
 		val outputDir = layout.buildDirectory.dir("platform-config/checkstyle")
 		val files = checkstyleFiles
 		inputs.property("files", files)

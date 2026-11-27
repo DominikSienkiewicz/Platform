@@ -27,8 +27,9 @@ languages.
   breaks the toolchain or carries a HIGH or CRITICAL advisory with a fix, and no newer release of the
   BOM's owner manages a good version. A newer Boot, Modulith or Spring AI release is always preferred
   to an override.
-- **The smallest step.** An override takes the newest patch of the line the BOM manages, never a newer
-  minor, so the BOM's compatibility testing still applies.
+- **The smallest step.** An override takes the newest patch of the line the BOM manages, so the BOM's
+  compatibility testing still applies. It takes a newer minor only when no release of that line carries the
+  fix, as the Logback and OpenTelemetry floors below do.
 - **Every override carries its removal condition** next to it in the source, as `USUŃ, gdy …` (remove
   when …), and in the table of `docs/versions.md`. The release that meets the condition removes the
   override; `canon-cve-scan.yml` shows whether a BOM release is clean.
@@ -42,9 +43,11 @@ languages.
   mirror tests compared the copies.)
 - **npm follows the same rule.** The default fix for a vulnerable transitive package is
   `npm update <package> --package-lock-only` and a committed lockfile. An entry in `overrides` is
-  only for a parent that pins the exact vulnerable version, it is part of the canon, and it is
-  removed in every consumer in the release that removes it from the canon, because `platform-bump`
-  does not delete an override the canon dropped.
+  only for a parent that pins the exact vulnerable version. An override of a canon package must match
+  the canon, which `platform-versions-check` enforces. An override of a package outside the canon
+  belongs to the consumer ([ADR-0037](0037-platform-governs-the-frame.md)): `platform-bump` keeps it,
+  and the consumer removes it once the parent ships the fix. (Until ADR-0037 such an override was part
+  of the canon and every consumer removed it in the release that dropped it from the canon.)
 
 The November 2026 security refresh keeps consumers on Boot 4.1.x. Logback and OpenTelemetry
 require a newer minor for the fixes on this train. Their [removal conditions](../versions.md#overrides-above-the-spring-boot-bom)

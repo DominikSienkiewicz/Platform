@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
-# bump-version.sh — CANON (Platform/templates/bump-version.sh, kopiowany do scripts/ każdego repo).
-# Bumpuje wersję WARSTWY APLIKACJI (single source of truth dla tagów obrazów GHCR / deploy.yml).
-# To NIE jest platform-bump.sh (tamten bumpuje warstwę Platform: zależności/konwencje).
+# bump-version.sh — CANON (Platform/templates/bump-version.sh, copied to scripts/ of every repository).
+# Bumps the version of the APPLICATION LAYER (the single source of truth for the GHCR image tags / deploy.yml).
+# This is NOT platform-bump.sh, which bumps the Platform layer (dependencies and conventions).
 #
-# Użycie:
+# Usage:
 #   scripts/bump-version.sh backend  <patch|minor|major|X.Y.Z>
 #   scripts/bump-version.sh frontend <patch|minor|major|X.Y.Z>
 #   scripts/bump-version.sh db new-migration <slug-kebab>
 #
-# Backend  → version= w backend/gradle.properties
-# Frontend → version w frontend/package.json (npm version --no-git-tag-version)
-# DB       → nowy changeset Liquibase (dodanie pliku JEST podbiciem schematu; forward-only).
-#            Repo na Flyway podmieniają blok `db` na V<n>__<slug>.sql w db/migration.
-# Po bumpie: commit na main, PR main → release; merge odpala warunkowy deploy.
+# Backend  → version= in backend/gradle.properties
+# Frontend → version in frontend/package.json (npm version --no-git-tag-version)
+# DB       → a new Liquibase changeset (adding the file IS the schema bump; forward-only).
+#            Repositories on Flyway replace the `db` block with V<n>__<slug>.sql in db/migration.
+# After the bump: commit on main, PR main → release; the merge starts the conditional deploy.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LAYER="${1:-}"
 ACTION="${2:-}"
 ARG="${3:-}"
-# Autor changesetu = nazwa repo (bez hardkodu per-repo — kanon jest repo-agnostyczny). Z worktree
-# (<repo>/.worktrees/<nazwa>) ROOT to katalog worktree, więc nazwę daje główne drzewo robocze:
-# pierwszy wpis `git worktree list`. Poza gitem zostaje katalog nad scripts/.
+# The changeset author is the repository name (nothing hard-coded per repository; the canon is
+# repository-agnostic). In a worktree (<repo>/.worktrees/<name>) ROOT is the worktree directory, so the
+# name comes from the main working tree: the first entry of `git worktree list`. Outside Git it is the
+# directory above scripts/.
 main_worktree="$({ git -C "$ROOT" worktree list --porcelain 2>/dev/null || true; } | sed -n '1s/^worktree //p')"
 AUTHOR="$(basename "${main_worktree:-$ROOT}" | tr '[:upper:]' '[:lower:]')"
 
@@ -30,7 +31,7 @@ usage() {
   exit 1
 }
 
-# Oblicza nową wersję semver z bieżącej i akcji (patch|minor|major|X.Y.Z).
+# Computes the new semver version from the current one and the action (patch|minor|major|X.Y.Z).
 bump_semver() {
   local current="$1" action="$2"
   if [[ "$action" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -43,11 +44,11 @@ bump_semver() {
     major) echo "$((major + 1)).0.0" ;;
     minor) echo "${major}.$((minor + 1)).0" ;;
     patch) echo "${major}.${minor}.$((patch + 1))" ;;
-    *) echo "Nieznana akcja: $action (patch|minor|major|X.Y.Z)" >&2; exit 1 ;;
+    *) echo "Unknown action: $action (patch|minor|major|X.Y.Z)" >&2; exit 1 ;;
   esac
 }
 
-# Przenośny sed in-place (GNU/BSD) przez plik tymczasowy.
+# Portable in-place sed (GNU and BSD) through a temporary file.
 sed_inplace() {
   local expr="$1" file="$2" tmp
   tmp="$(mktemp)"
@@ -59,7 +60,7 @@ case "$LAYER" in
     [[ -n "$ACTION" ]] || usage
     file="$ROOT/backend/gradle.properties"
     current="$(grep -E '^version=' "$file" | head -1 | cut -d= -f2 | tr -d '[:space:]')"
-    [[ -n "$current" ]] || { echo "Brak 'version=' w $file" >&2; exit 1; }
+    [[ -n "$current" ]] || { echo "No 'version=' in $file" >&2; exit 1; }
     next="$(bump_semver "$current" "$ACTION")"
     sed_inplace "s/^version=.*/version=${next}/" "$file"
     echo "backend: ${current} → ${next} (backend/gradle.properties)"
@@ -99,7 +100,7 @@ YAML
       sed_inplace 's/^databaseChangeLog:[[:space:]]*\[[[:space:]]*\][[:space:]]*$/databaseChangeLog:/' "$master"
     fi
     printf '  - include:\n      file: db/changelog/changes/%s\n' "$file" >>"$master"
-    echo "db: nowy changeset → changes/${file} (dopięty do master; changeset = schema bump)"
+    echo "db: new changeset → changes/${file} (included in master; a changeset is the schema bump)"
     ;;
 
   *) usage ;;

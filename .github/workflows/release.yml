@@ -46,7 +46,7 @@ jobs:
           fi
           # <<< tag-version-bijection
           echo "version=$V" >> "$GITHUB_OUTPUT"
-          echo "Wersja release: $V (z gradle.properties — jedno źródło: local == GitHub == pin)"
+          echo "Release version: $V (from gradle.properties, the one source: local == GitHub == pin)"
 
   # packages: read dla backend-ci-smoke w ci.yml: wołany workflow nie dostanie więcej, niż przyzna ten job.
   verify:
@@ -120,14 +120,14 @@ jobs:
           release_date=$(git log -1 --format=%cs)
           for m in "${modules[@]}"; do
             if version_exists "${PKG[$m]}"; then
-              echo "::notice::${PKG[$m]} $V już w registry — pomijam moduł $m (idempotentnie)"
+              echo "::notice::${PKG[$m]} $V is already in the registry, so module $m is skipped (idempotent)"
               continue
             fi
             echo "== publish gradle/$m ($V) =="
             ( cd "gradle/$m" && chmod +x ./gradlew && ./gradlew --no-daemon -Pgpr.owner="$GPR_OWNER" -Pgpr.repo="$GPR_REPO" -PplatformVersion="$V" -PplatformReleaseDate="$release_date" publish )
             rc=$?
             if [ "$rc" -ne 0 ]; then
-              echo "::error::publish $m ($V) nie powiódł się (kod $rc). Jeśli to 409: wersja jest częściowo opublikowana — usuń $V z GitHub Packages albo wydaj wyższą wersję (nie re-publikuj po partialu)."
+              echo "::error::publish $m ($V) failed (code $rc). On a 409 the version is partly published: delete $V from GitHub Packages or release a higher version (never republish after a partial publish)."
               exit 1
             fi
           done
@@ -172,7 +172,7 @@ jobs:
           scope: "@seniordeveloper-pl-dominik-sienkiewicz"
       # --ignore-scripts: publikacja nie potrzebuje skryptów lifecycle zależności (patrz ci.yml).
       - run: pnpm install --frozen-lockfile --ignore-scripts
-      - name: Ustaw wersję na wszystkich paczkach
+      - name: Set the version on every package
         run: pnpm -r exec npm pkg set version="$V"
       # Okno wsparcia (N-REL-6): platform-versions-check liczy wiek kanonu od releasedAt. Data commita taga, nie czas
       # buildu, więc tarball zostaje odtwarzalny; plik w repo daty nie ma.
@@ -203,9 +203,9 @@ jobs:
             [ -f "$d/package.json" ] || continue
             NAME=$(node -p "require('./$d/package.json').name")
             PRIV=$(node -p "require('./$d/package.json').private === true")
-            if [ "$PRIV" = "true" ]; then echo "== $NAME: private — pomijam =="; continue; fi
+            if [ "$PRIV" = "true" ]; then echo "== $NAME: private, skipped =="; continue; fi
             if npm view "$NAME@$V" version >/dev/null 2>&1; then
-              echo "::notice::$NAME@$V już w registry — pomijam (publish idempotentny)"
+              echo "::notice::$NAME@$V is already in the registry, skipped (idempotent publish)"
               continue
             fi
             ( cd "$d" && pnpm pack --pack-destination ../../dist >/dev/null )
@@ -230,9 +230,9 @@ jobs:
             rc=${PIPESTATUS[0]}
             if [ "$rc" -ne 0 ]; then
               if grep -qiE "E409|409 Conflict|cannot publish over" /tmp/pub-npm.log; then
-                echo "::notice::$tgz już opublikowane (konflikt wersji) — pomijam"
+                echo "::notice::$tgz is already published (version conflict), skipped"
               else
-                echo "::error::publish $tgz nie powiódł się (kod $rc)"; FAIL=1
+                echo "::error::publish $tgz failed (code $rc)"; FAIL=1
               fi
             fi
           done
@@ -432,7 +432,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: GitHub Release z sekcji CHANGELOG.md
+      - name: GitHub Release from the CHANGELOG.md section
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -447,7 +447,7 @@ jobs:
             printf '\n**Full diff:** https://github.com/%s/compare/%s...%s\n' "$GITHUB_REPOSITORY" "$previous" "$tag" >> notes.md
           fi
           if gh release view "$tag" >/dev/null 2>&1; then
-            echo "::notice::GitHub Release $tag już istnieje"
+            echo "::notice::GitHub Release $tag already exists"
           else
             gh release create "$tag" --title "Platform $VERSION" --notes-file notes.md --verify-tag
           fi

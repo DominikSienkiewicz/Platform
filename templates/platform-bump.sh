@@ -32,9 +32,9 @@ fi
 # i, gdy cel jest inny niż on, oddaje sterowanie binowi celu.
 if [[ ! -f frontend/package.json ]] && ! grep -qs '^platformVersion=' backend/gradle.properties gradle.properties \
   && ! grep -qs 'pl.seniordeveloper:platform-catalog:' backend/settings.gradle.kts settings.gradle.kts; then
-  echo "Brak $BIN — zainstaluj zależności frontendu: (cd frontend && npm install)." >&2
-  echo "Bin istnieje od @dominiksienkiewicz/versions 1.3.8 — starszy pin w frontend/package.json" >&2
-  echo "podbij ręcznie do najnowszej wersji platformy i powtórz npm install." >&2
+  echo "No $BIN: install the frontend dependencies (cd frontend && npm install)." >&2
+  echo "The bin exists since @dominiksienkiewicz/versions 1.3.8; raise an older pin in frontend/package.json" >&2
+  echo "by hand to the latest Platform release and run npm install again." >&2
   exit 1
 fi
 OWNER="SeniorDeveloper-pl-Dominik-Sienkiewicz"

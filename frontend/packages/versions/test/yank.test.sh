@@ -12,7 +12,7 @@ export FAKE_YANKED='# version reason replacement
 dir=$(consumer latest)
 bump "$dir" --dry-run
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail 'a bump without a version must succeed'; }
-grep -qF '==> Podbijam piny Platform do: 1.5.30' "$dir.log" || { cat "$dir.log"; fail 'the yanked 1.5.31 must be skipped for 1.5.30'; }
+grep -qF '==> Moving the Platform pins to: 1.5.30' "$dir.log" || { cat "$dir.log"; fail 'the yanked 1.5.31 must be skipped for 1.5.30'; }
 
 bump "$dir" 1.5.31
 [[ $rc -ne 0 ]] || { cat "$dir.log"; fail 'an explicit yanked target must be refused'; }
@@ -26,6 +26,6 @@ grep -qF 'WARNING: Platform 1.5.31 is yanked' "$dir.log" || fail '--allow-yanked
 FAKE_YANKED='' bump "$dir" --dry-run
 [[ $rc -eq 0 ]] || { cat "$dir.log"; fail 'an unreachable yank list must not block the bump'; }
 grep -qF 'could not read the list of yanked Platform releases' "$dir.log" || fail 'an unreachable yank list must warn'
-grep -qF '==> Podbijam piny Platform do: 1.5.31' "$dir.log" || fail 'without the list the newest release is the target'
+grep -qF '==> Moving the Platform pins to: 1.5.31' "$dir.log" || fail 'without the list the newest release is the target'
 
 echo 'OK: platform-bump skips yanked releases and refuses an explicit one without --allow-yanked'

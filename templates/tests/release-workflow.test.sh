@@ -47,8 +47,8 @@ export STUB_LOG="$tmp/stub.log" V=9.9.9 PATH="$tmp/bin:$PATH"
 
 (cd "$tmp/frontend" && bash "$tmp/pack.sh") > "$tmp/out.txt" 2>&1 || fail "packing must succeed: $(cat "$tmp/out.txt")"
 [[ "$(ls "$tmp/frontend/dist")" == "x-alpha-9.9.9.tgz" ]] || fail "only the public unreleased package is packed: $(ls "$tmp/frontend/dist")"
-grep -q 'private — pomijam' "$tmp/out.txt" || fail 'a private package must be reported as skipped'
-grep -q 'released@9.9.9 już w registry' "$tmp/out.txt" || fail 'an already published package must be skipped'
+grep -q 'private, skipped' "$tmp/out.txt" || fail 'a private package must be reported as skipped'
+grep -q 'released@9.9.9 is already in the registry' "$tmp/out.txt" || fail 'an already published package must be skipped'
 
 (cd "$tmp/frontend" && bash "$tmp/publish.sh") > "$tmp/out.txt" 2>&1 || fail "publishing the packed tarball must succeed"
 grep -qx 'npm publish ./dist/x-alpha-9.9.9.tgz' "$STUB_LOG" || fail 'the job must publish the attested tarball itself'
