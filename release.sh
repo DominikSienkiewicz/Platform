@@ -37,7 +37,7 @@ if [[ $# -eq 0 ]]; then
   LATEST=1
   MSG="chore: release the latest changes on main"
 fi
-[[ -z "$MSG" ]] && { echo "Użycie: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
+[[ -z "$MSG" ]] && { echo "Usage: ./release.sh \"commit message\" [X.Y.Z] [-y]"; exit 1; }
 # Gdy podano argumenty, obowiązuje forma "<message>" [X.Y.Z] [-y]: inny argument (np. dawne --skip-canary) to pomyłka, której nie wolno pominąć.
 STRAY=""
 if [[ "${2:-}" == -* ]]; then STRAY="$2"
@@ -58,12 +58,12 @@ AUTO_VERSION=0
 CONVENTIONAL='^(feat|fix|docs|chore|refactor|test|build|ci|perf|revert)(\([a-z0-9-]+\))?!?: .+'
 head -1 <<< "$MSG" | grep -Eq "$CONVENTIONAL" \
   || { echo "The release message must be a Conventional Commit, e.g. \"fix: short description\" (got \"$MSG\")."; exit 1; }
-if LC_ALL=C grep -Eq 'ą|ć|ę|ł|ń|ó|ś|ź|ż|Ą|Ć|Ę|Ł|Ń|Ó|Ś|Ź|Ż' <<< "$MSG"; then
+if LC_ALL=C grep -Eq 'ą|ć|ę|ł|ń|ó|ś|ź|ż|Ą|Ć|Ę|Ł|Ń|Ó|Ś|Ź|Ż' <<< "$MSG"; then # language-guard: allow
   echo "Release messages are in English; this one contains Polish characters."; exit 1
 fi
 
 PROP="gradle/build-logic/gradle.properties"
-[[ -f "$PROP" ]] || { echo "Brak $PROP — uruchom z roota repo Platform."; exit 1; }
+[[ -f "$PROP" ]] || { echo "$PROP not found: run release.sh from the root of the Platform repository."; exit 1; }
 # Każdy plik niosący platformVersion: moduły Gradle, startery JVM i paczki npm (jedna wersja w całym
 # drzewie — pilnuje templates/tests/platform-version-sync.test.sh). Globy, nie lista: nowy moduł
 # albo paczka wchodzą do wydania same.
@@ -71,12 +71,12 @@ shopt -s nullglob
 PROPERTY_FILES=(gradle/*/gradle.properties templates/jvm/*/gradle.properties)
 PACKAGE_FILES=(frontend/packages/*/package.json)
 shopt -u nullglob
-[[ "${#PACKAGE_FILES[@]}" -gt 0 ]] || { echo "Brak frontend/packages/*/package.json — uruchom z roota repo Platform."; exit 1; }
+[[ "${#PACKAGE_FILES[@]}" -gt 0 ]] || { echo "No frontend/packages/*/package.json found: run release.sh from the root of the Platform repository."; exit 1; }
 
 BR="$(git rev-parse --abbrev-ref HEAD)"
-[[ "$BR" == "main" ]] || { echo "Wydanie tylko z main — bieżąca gałąź: $BR."; exit 1; }
+[[ "$BR" == "main" ]] || { echo "Releases run only from main; the current branch is $BR."; exit 1; }
 if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
-  echo "Drzewo robocze nie jest czyste — commit wydania może zawierać wyłącznie podbicie wersji:"
+  echo "The working tree is not clean; the release commit may contain only the version bump:"
   git status --short --untracked-files=all
   exit 1
 fi
@@ -90,7 +90,7 @@ git fetch --quiet --tags origin || {
 }
 planned_head="$(git rev-parse HEAD)"
 [[ "$planned_head" == "$(git rev-parse origin/main)" ]] \
-  || { echo "HEAD różni się od origin/main — zsynchronizuj main przed wydaniem."; exit 1; }
+  || { echo "HEAD differs from origin/main; synchronize main before releasing."; exit 1; }
 
 CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 
@@ -98,7 +98,7 @@ CUR="$(grep -E '^platformVersion=' "$PROP" | cut -d= -f2 | tr -d ' ')"
 NEWEST="$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - / { print substr($2, 2, length($2) - 2); exit }' CHANGELOG.md)"
 if [[ -z "$VERSION" ]]; then
   [[ "$CUR" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] \
-    || { echo "Aktualne platformVersion '$CUR' nie jest X.Y.Z — podaj wersję jawnie."; exit 1; }
+    || { echo "The current platformVersion '$CUR' is not X.Y.Z; pass the version explicitly."; exit 1; }
   IFS='.' read -r MA MI PA <<< "$CUR"
   VERSION="$MA.$MI.$((PA + 1))"
   if [[ "$LATEST" == 1 ]]; then
@@ -121,11 +121,11 @@ if [[ -z "$VERSION" ]]; then
     fi
   fi
 fi
-echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Wersja '$VERSION' nie jest X.Y.Z"; exit 1; }
+echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "The version '$VERSION' is not X.Y.Z."; exit 1; }
 
 # Wersje są immutable — tag nie może już istnieć.
 if git rev-parse "v$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "v$VERSION" >/dev/null 2>&1; then
-  echo "Tag v$VERSION już istnieje (wersje immutable). Podaj wyższą."; exit 1
+  echo "Tag v$VERSION already exists, and released versions are immutable. Choose a higher version."; exit 1
 fi
 
 # Notatki wydania: sekcja CHANGELOG.md tej wersji (jedno źródło dla taga, GitHub Release i platform-bump).
@@ -248,8 +248,8 @@ else
 fi
 printf '  %s\n' "${SECTION//$'\n'/$'\n'  }"
 if [[ "${3:-}" != "-y" ]] && [[ "${ASSUME_YES:-}" != "1" ]]; then
-  read -r -p "Kontynuować (commit + tag v$VERSION + push)? [y/N] " ans
-  [[ "$ans" = "y" ]] || [[ "$ans" = "Y" ]] || { echo "Przerwane."; exit 0; }
+  read -r -p "Continue (commit, tag v$VERSION and push)? [y/N] " ans
+  [[ "$ans" = "y" ]] || [[ "$ans" = "Y" ]] || { echo "Aborted."; exit 0; }
 fi
 
 if [[ "$(git symbolic-ref --quiet --short HEAD)" != main || "$(git rev-parse HEAD)" != "$planned_head" || -n "$(git status --porcelain --untracked-files=all)" ]]; then
@@ -299,9 +299,9 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════════"
-echo "  Platform podbity: $CUR → $VERSION"
-echo "  Tag: v$VERSION (Release opublikuje po zielonym CI)"
+echo "  Platform bumped: $CUR → $VERSION"
+echo "  Tag: v$VERSION (the Release workflow publishes it after a green CI)"
 echo "  Branch: $BR   Commit: \"chore(release): platform $VERSION\" ($MSG)"
 echo "════════════════════════════════════════════════"
-echo "==> Release weryfikuje CI i publikuje z taga: Actions → Release."
-echo "==> U konsumenta: ./scripts/platform-bump.sh $VERSION   (podbije piny do $VERSION)"
+echo "==> The Release workflow verifies CI and publishes from the tag: Actions → Release."
+echo "==> In a consumer: ./scripts/platform-bump.sh $VERSION   (moves the pins to $VERSION)"

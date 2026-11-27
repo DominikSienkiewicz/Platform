@@ -31,7 +31,7 @@ public abstract class AbstractModulithVerificationTest {
   // protected (nie package-private), by podklasa konsumenta w innym pakiecie odziedziczyła @Test.
   /** Weryfikuje strukturę modułów: brak cykli i brak dostępu do internals innych modułów. */
   @Test
-  @DisplayName("Struktura modułów Spring Modulith jest poprawna (verify)")
+  @DisplayName("Spring Modulith verifies the module structure")
   protected void verifiesModuleStructure() {
     ApplicationModules.of(applicationClass()).verify();
   }

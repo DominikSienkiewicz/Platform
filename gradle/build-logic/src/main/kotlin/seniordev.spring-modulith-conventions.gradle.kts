@@ -122,7 +122,7 @@ tasks.named<Test>("test") {
 // Testy integracyjne (Testcontainers) — wolniejsze, osobny task, po `test`.
 val integrationTest =
 	tasks.register<Test>("integrationTest") {
-		description = "Uruchamia testy oznaczone tagiem \"integration\" (Testcontainers)."
+		description = "Runs the tests tagged \"integration\" (Testcontainers)."
 		group = "verification"
 		testClassesDirs = testSourceSet.output.classesDirs
 		classpath = testSourceSet.runtimeClasspath
