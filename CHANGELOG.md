@@ -20,6 +20,18 @@ artifact was published. Its tag was removed and releases continued under the per
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-27
+
+### Consumer action required
+
+None.
+
+### Fixed
+
+- update frontend canon (8726f9f)
+- align Platform with its documented standards (3b22366)
+- trigger dependency releases once from the version tag (b00b784)
+
 ## [2.1.0] - 2026-11-26
 
 ### Consumer action required
