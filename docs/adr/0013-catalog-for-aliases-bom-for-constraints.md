@@ -62,3 +62,15 @@ vulnerable 3.1.5 still gets the fixed Jackson, because the BOM imports Jackson b
 - Consumers delete their own override blocks (Azimuth's `eachDependency`, BookOfStyling's
   `extra["jackson-bom.version"]`, SkillSprintPlus's `eachDependency` on jackson-databind) in the bump PR to
   the release that carries this change.
+
+## Update — Lombok comes from the Boot BOM (2026-11-27)
+
+The Boot BOM now manages a Lombok that javac 27 accepts, so `platform-bom` carries no Lombok constraint. The
+catalog keeps the `lombok` version for catalog consumers, and `PlatformBomImportFunctionalTest` still checks that
+the BOM selects it. The Decision's list of constraints reads today:
+
+- the Jackson 3, Jackson 2 and OpenTelemetry BOMs are imported before Boot;
+- the constraints hold the CVE floors (PostgreSQL JDBC, Logback, Tomcat, Guava) and one compatibility override
+  (ArchUnit), each with its `because(...)` reason.
+
+Every floor and its removal condition is in [the overrides table](../versions.md#overrides-above-the-spring-boot-bom).
