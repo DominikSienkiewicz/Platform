@@ -403,8 +403,10 @@ zip alone, with an empty Gradle home and no `GITHUB_TOKEN`.
 
 Everything a consumer or an outside reader sees is in English: this README, `docs/**`, RELEASING.md,
 the `templates/**` READMEs, the pull request templates, package descriptions, workflow
-input descriptions and the messages of every gate. Polish appears only in CLAUDE.md and in code and
-workflow comments, which are written for the maintainer.
+input descriptions, the messages of every gate, and the output, step names and task descriptions of the
+scripts, workflows and plugins. Polish appears only in CLAUDE.md and in code and workflow comments, which are
+written for the maintainer; `templates/tests/english-output.test.sh` fails on Polish anywhere else in the
+scripts, workflows and sources.
 
 ## Requirements
 
