@@ -19,7 +19,7 @@
     "registry": "https://npm.pkg.github.com"
   },
   "devDependencies": {
-    "tailwindcss": "4.3.3"
+    "tailwindcss": "4.3.5"
   },
   "peerDependencies": {
     "tailwindcss": "^4"
